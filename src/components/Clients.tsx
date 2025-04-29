@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Logos de clientes fictícios
 const clientLogos = [
@@ -15,19 +16,19 @@ const clientLogos = [
 const testimonials = [
   {
     id: 1,
-    quote: "A Ascalate transformou completamente nossa visão financeira, proporcionando insights valiosos que impulsionaram nosso crescimento.",
+    quote: "A Ascalate transformou completamente nossa visão financeira, proporcionando insights valiosos que impulsionaram nosso crescimento em mais de 40% no último ano.",
     author: "Ricardo Mendes",
     position: "CEO, TechSolutions"
   },
   {
     id: 2,
-    quote: "O comprometimento e a excelência da equipe Ascalate foram fundamentais para superarmos desafios complexos e atingirmos resultados expressivos.",
+    quote: "O comprometimento e a excelência da equipe Ascalate foram fundamentais para superarmos desafios complexos e atingirmos resultados expressivos em tempo recorde.",
     author: "Luiza Campos",
     position: "CFO, Global Finance"
   },
   {
     id: 3,
-    quote: "Recomendo fortemente os serviços da Ascalate para empresas que buscam parceiros estratégicos com visão inovadora e execução impecável.",
+    quote: "Recomendo fortemente os serviços da Ascalate para empresas que buscam parceiros estratégicos com visão inovadora e execução impecável de projetos complexos.",
     author: "Felipe Torres",
     position: "Diretor, InnovateX"
   },
@@ -50,6 +51,9 @@ const Clients = () => {
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-ascalate-black mb-4">Nossos Clientes</h2>
           <div className="w-24 h-1 bg-ascalate-blue mx-auto"></div>
+          <p className="mt-6 text-lg text-gray-600 max-w-3xl mx-auto">
+            Empresas de diversos segmentos que confiam em nossa experiência e metodologia para impulsionar seus resultados.
+          </p>
         </div>
         
         <div className="flex flex-wrap justify-center items-center gap-10 mb-20">
@@ -107,8 +111,9 @@ const Clients = () => {
               <button 
                 onClick={prevTestimonial}
                 className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-ascalate-blue hover:text-white transition-colors duration-300"
+                aria-label="Depoimento anterior"
               >
-                &larr;
+                <ChevronLeft className="h-5 w-5" />
               </button>
               
               <div className="flex gap-2">
@@ -117,6 +122,7 @@ const Clients = () => {
                     key={index}
                     onClick={() => setCurrentTestimonial(index)}
                     className={`w-3 h-3 rounded-full ${currentTestimonial === index ? 'bg-ascalate-blue' : 'bg-gray-300'}`}
+                    aria-label={`Depoimento ${index + 1}`}
                   />
                 ))}
               </div>
@@ -124,8 +130,9 @@ const Clients = () => {
               <button 
                 onClick={nextTestimonial}
                 className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-ascalate-blue hover:text-white transition-colors duration-300"
+                aria-label="Próximo depoimento"
               >
-                &rarr;
+                <ChevronRight className="h-5 w-5" />
               </button>
             </div>
           </div>

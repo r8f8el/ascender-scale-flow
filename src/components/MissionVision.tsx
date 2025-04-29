@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Target, Eye, Lightbulb, Check, Star, Handshake } from 'lucide-react';
+import { Target, Eye, Lightbulb, Check, Star, Users } from 'lucide-react';
 
 const MissionVision = () => {
   return (
@@ -9,6 +9,9 @@ const MissionVision = () => {
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-ascalate-black mb-4">Missão, Visão e Valores</h2>
           <div className="w-24 h-1 bg-ascalate-blue mx-auto"></div>
+          <p className="mt-6 text-lg text-gray-600 max-w-3xl mx-auto">
+            Conheça os princípios que guiam nossas ações e definem nosso compromisso com o sucesso dos clientes.
+          </p>
         </div>
         
         <div className="grid md:grid-cols-2 gap-10">
@@ -60,7 +63,7 @@ const MissionVision = () => {
               />
               
               <ValueCard 
-                icon={Handshake} 
+                icon={Users} 
                 title="Colaboração" 
                 description="Trabalhamos em conjunto com nossos clientes, entendendo suas necessidades e co-criando soluções personalizadas."
               />
@@ -92,7 +95,7 @@ interface ValueCardProps {
 
 const ValueCard = ({ icon: Icon, title, description }: ValueCardProps) => {
   return (
-    <div className="p-5 border border-gray-100 rounded-lg hover:border-ascalate-blue hover:shadow-md transition-all duration-300">
+    <div className="p-6 border border-gray-100 rounded-lg hover:border-ascalate-blue hover:shadow-md transition-all duration-300">
       <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mb-4">
         <Icon className="h-6 w-6 text-ascalate-blue" />
       </div>

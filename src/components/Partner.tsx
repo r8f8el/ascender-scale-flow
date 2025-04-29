@@ -1,5 +1,6 @@
 
 import React, { useEffect, useRef } from 'react';
+import { LinkedIn } from 'lucide-react';
 
 const Partner = () => {
   const partnerId = useRef(null);
@@ -92,6 +93,9 @@ const Partner = () => {
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-ascalate-black mb-4">Sócio</h2>
           <div className="w-24 h-1 bg-ascalate-blue mx-auto"></div>
+          <p className="mt-6 text-lg text-gray-600 max-w-3xl mx-auto">
+            Conheça o profissional por trás da Ascalate e sua trajetória de sucesso.
+          </p>
         </div>
         
         <div className="flex flex-col md:flex-row items-center justify-center gap-10">
@@ -114,8 +118,11 @@ const Partner = () => {
             <div className="bg-white p-8 rounded-lg shadow-lg">
               <h3 className="text-2xl font-semibold mb-4 text-ascalate-darkblue">Experiência e Liderança</h3>
               <p className="text-gray-700 mb-6">
-                Especialista em consultoria financeira e estratégica, com ampla experiência no mercado. 
-                Comprometido com a excelência e a inovação em todas as soluções desenvolvidas para nossos clientes.
+                Com mais de 15 anos de experiência no mercado financeiro, Daniel Gomes é especialista em consultoria financeira e estratégica para empresas de diversos setores. Sua abordagem inovadora e capacidade analítica têm ajudado negócios a alcançarem seu máximo potencial e superarem expectativas.
+              </p>
+              
+              <p className="text-gray-700 mb-8">
+                Formado em Finanças e com MBA em Gestão Estratégica, Daniel combina conhecimento técnico com uma visão holística do mercado, entregando soluções personalizadas e resultados consistentes para seus clientes.
               </p>
               
               <a 
@@ -124,10 +131,8 @@ const Partner = () => {
                 rel="noopener noreferrer"
                 className="inline-flex items-center text-ascalate-blue hover:text-ascalate-darkblue transition-colors"
               >
-                <span className="mr-2">LinkedIn</span>
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-                </svg>
+                <LinkedIn className="h-5 w-5 mr-2" />
+                <span>Conecte-se no LinkedIn</span>
               </a>
             </div>
           </div>
