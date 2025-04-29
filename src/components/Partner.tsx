@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef } from 'react';
-import { LinkedIn } from 'lucide-react';
+import { Linkedin } from 'lucide-react';
 
 const Partner = () => {
   const partnerId = useRef(null);
@@ -131,7 +131,7 @@ const Partner = () => {
                 rel="noopener noreferrer"
                 className="inline-flex items-center text-ascalate-blue hover:text-ascalate-darkblue transition-colors"
               >
-                <LinkedIn className="h-5 w-5 mr-2" />
+                <Linkedin className="h-5 w-5 mr-2" />
                 <span>Conecte-se no LinkedIn</span>
               </a>
             </div>
