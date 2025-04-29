@@ -1,6 +1,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { Linkedin } from 'lucide-react';
+import { Card } from '@/components/ui/card';
 
 const Partner = () => {
   const partnerId = useRef(null);
@@ -89,34 +90,36 @@ const Partner = () => {
   
   return (
     <section id="partner" className="py-24 bg-gray-50 relative overflow-hidden" ref={partnerId}>
-      <div className="container mx-auto px-6 relative z-10">
+      <div className="container mx-auto px-4 sm:px-6 relative z-10">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-ascalate-black mb-4">Sócio</h2>
-          <div className="w-24 h-1 bg-ascalate-blue mx-auto"></div>
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Nosso Sócio</h2>
+          <div className="w-24 h-1 bg-blue-600 mx-auto"></div>
           <p className="mt-6 text-lg text-gray-600 max-w-3xl mx-auto">
             Conheça o profissional por trás da Ascalate e sua trajetória de sucesso.
           </p>
         </div>
         
-        <div className="flex flex-col md:flex-row items-center justify-center gap-10">
-          <div className="w-full md:w-1/3 animate-fade-in">
-            <div className="relative h-96 overflow-hidden rounded-xl shadow-xl">
-              <img 
-                src="/lovable-uploads/027f1a9b-f395-4414-aabe-9ab9ef8b5397.png" 
-                alt="Daniel Gomes" 
-                className="w-full h-full object-cover object-center"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-              <div className="absolute bottom-0 left-0 p-6">
-                <h3 className="text-2xl font-bold text-white">Daniel Gomes</h3>
-                <p className="text-blue-200">Sócio Fundador</p>
+        <div className="flex flex-col lg:flex-row items-center justify-center gap-10">
+          <div className="w-full lg:w-1/3 animate__animated animate__fadeIn">
+            <Card className="overflow-hidden shadow-xl border-none">
+              <div className="relative h-96 overflow-hidden">
+                <img 
+                  src="https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8OHx8ZXhlY3V0aXZlJTIwbWFufGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60" 
+                  alt="Daniel Gomes" 
+                  className="w-full h-full object-cover object-center"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                <div className="absolute bottom-0 left-0 p-6">
+                  <h3 className="text-2xl font-bold text-white">Daniel Gomes</h3>
+                  <p className="text-blue-200">Sócio Fundador</p>
+                </div>
               </div>
-            </div>
+            </Card>
           </div>
           
-          <div className="w-full md:w-1/2 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <div className="bg-white p-8 rounded-lg shadow-lg">
-              <h3 className="text-2xl font-semibold mb-4 text-ascalate-darkblue">Experiência e Liderança</h3>
+          <div className="w-full lg:w-1/2 animate__animated animate__fadeIn" style={{ animationDelay: '0.2s' }}>
+            <Card className="p-8 shadow-xl border-none">
+              <h3 className="text-2xl font-bold mb-4 text-blue-900">Experiência e Liderança</h3>
               <p className="text-gray-700 mb-6">
                 Com mais de 15 anos de experiência no mercado financeiro, Daniel Gomes é especialista em consultoria financeira e estratégica para empresas de diversos setores. Sua abordagem inovadora e capacidade analítica têm ajudado negócios a alcançarem seu máximo potencial e superarem expectativas.
               </p>
@@ -129,12 +132,12 @@ const Partner = () => {
                 href="https://www.linkedin.com/" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="inline-flex items-center text-ascalate-blue hover:text-ascalate-darkblue transition-colors"
+                className="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors"
               >
                 <Linkedin className="h-5 w-5 mr-2" />
                 <span>Conecte-se no LinkedIn</span>
               </a>
-            </div>
+            </Card>
           </div>
         </div>
       </div>

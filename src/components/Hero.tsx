@@ -5,16 +5,16 @@ const Hero = () => {
   return (
     <section className="py-16 bg-white relative z-10">
       <div className="container mx-auto px-4 text-center">
-        <h1 className="text-5xl md:text-6xl font-bold mb-6 text-ascalate-black">
-          Ascalate <span className="text-ascalate-blue">Business Consulting</span>
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-gray-900">
+          Ascalate <span className="text-blue-600">Business Consulting</span>
         </h1>
-        <p className="text-xl md:text-2xl text-gray-700 max-w-3xl mx-auto mb-10">
+        <p className="text-lg md:text-xl lg:text-2xl text-gray-700 max-w-3xl mx-auto mb-10">
           Transformando potencial em resultados através de consultoria estratégica e financeira de excelência
         </p>
         <div className="mt-8">
           <a 
             href="#contact" 
-            className="bg-ascalate-blue hover:bg-ascalate-darkblue text-white font-bold py-3 px-8 rounded-full transition-colors duration-300 inline-flex items-center"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-md transition-colors duration-300 inline-flex items-center shadow-lg"
           >
             Fale Conosco
             <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
