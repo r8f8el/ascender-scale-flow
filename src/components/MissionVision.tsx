@@ -46,7 +46,7 @@ const MissionVision = () => {
         </div>
         
         <div className="mt-16">
-          <Card className="animate__animated animate__fadeIn shadow-xl" style={{ animationDelay: '0.4s' }}>
+          <Card className="animate__animated animate__fadeIn shadow-xl border-t-4 border-blue-600" style={{ animationDelay: '0.4s' }}>
             <CardContent className="p-8">
               <div className="flex items-center mb-6">
                 <div className="flex-shrink-0">
