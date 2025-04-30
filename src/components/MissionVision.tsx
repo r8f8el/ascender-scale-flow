@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Target, Eye, Lightbulb, Check, Star, Users } from 'lucide-react';
+import { Target, Eye, Lightbulb } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 const MissionVision = () => {
@@ -30,11 +30,11 @@ const MissionVision = () => {
             </CardContent>
           </Card>
           
-          <Card className="animate__animated animate__fadeIn shadow-xl border-t-4 border-indigo-600" style={{ animationDelay: '0.2s' }}>
+          <Card className="animate__animated animate__fadeIn shadow-xl border-t-4 border-blue-600" style={{ animationDelay: '0.2s' }}>
             <CardContent className="p-8">
               <div className="flex items-center mb-6">
                 <div className="flex-shrink-0">
-                  <Eye className="h-10 w-10 text-indigo-600" />
+                  <Eye className="h-10 w-10 text-blue-600" />
                 </div>
                 <h3 className="ml-4 text-2xl font-bold">Visão</h3>
               </div>
@@ -48,67 +48,21 @@ const MissionVision = () => {
         <div className="mt-16">
           <Card className="animate__animated animate__fadeIn shadow-xl" style={{ animationDelay: '0.4s' }}>
             <CardContent className="p-8">
-              <div className="flex items-center mb-10">
+              <div className="flex items-center mb-6">
                 <div className="flex-shrink-0">
-                  <Lightbulb className="h-10 w-10 text-purple-600" />
+                  <Lightbulb className="h-10 w-10 text-blue-600" />
                 </div>
                 <h3 className="ml-4 text-2xl font-bold">Valores</h3>
               </div>
               
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <ValueCard 
-                  icon={Lightbulb} 
-                  title="Inovação" 
-                  description="Buscamos constantemente novas abordagens e tecnologias para oferecer soluções que agreguem valor aos nossos clientes."
-                />
-                
-                <ValueCard 
-                  icon={Check} 
-                  title="Transparência" 
-                  description="Mantemos uma comunicação clara e honesta, assegurando a confiança nas relações com nossos clientes e parceiros."
-                />
-                
-                <ValueCard 
-                  icon={Users} 
-                  title="Colaboração" 
-                  description="Trabalhamos em conjunto com nossos clientes, entendendo suas necessidades e co-criando soluções personalizadas."
-                />
-                
-                <ValueCard 
-                  icon={Star} 
-                  title="Excelência" 
-                  description="Comprometemo-nos a entregar serviços de alta qualidade que superem as expectativas, garantindo resultados sustentáveis."
-                />
-                
-                <ValueCard 
-                  icon={Check} 
-                  title="Ética" 
-                  description="Atuamos com integridade, respeitando normas e regulamentos, promovendo um ambiente de negócios justo e responsável."
-                />
-              </div>
+              <p className="text-gray-700">
+                Buscamos constantemente novas abordagens e tecnologias para oferecer soluções inovadoras que agreguem valor aos nossos clientes. Mantemos uma comunicação clara e honesta, assegurando a confiança nas relações. Trabalhamos em conjunto com nossos clientes, entendendo suas necessidades e co-criando soluções personalizadas. Comprometemo-nos a entregar serviços de alta qualidade que superem as expectativas, garantindo resultados sustentáveis e promovendo um ambiente de negócios justo e responsável.
+              </p>
             </CardContent>
           </Card>
         </div>
       </div>
     </section>
-  );
-};
-
-interface ValueCardProps {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-}
-
-const ValueCard = ({ icon: Icon, title, description }: ValueCardProps) => {
-  return (
-    <div className="p-6 border border-gray-100 rounded-lg hover:border-blue-600 hover:shadow-md transition-all duration-300">
-      <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mb-4">
-        <Icon className="h-6 w-6 text-blue-600" />
-      </div>
-      <h4 className="text-xl font-bold mb-2">{title}</h4>
-      <p className="text-gray-600">{description}</p>
-    </div>
   );
 };
 

@@ -104,7 +104,7 @@ const Partner = () => {
             <Card className="overflow-hidden shadow-xl border-none">
               <div className="relative h-96 overflow-hidden">
                 <img 
-                  src="https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8OHx8ZXhlY3V0aXZlJTIwbWFufGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60" 
+                  src="/lovable-uploads/9d76e17b-e7f3-435a-b95b-158ef80f185f.png" 
                   alt="Daniel Gomes" 
                   className="w-full h-full object-cover object-center"
                 />
