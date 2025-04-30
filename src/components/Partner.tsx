@@ -2,6 +2,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Linkedin } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 const Partner = () => {
   const partnerId = useRef(null);
@@ -102,12 +103,14 @@ const Partner = () => {
         <div className="flex flex-col lg:flex-row items-center justify-center gap-10">
           <div className="w-full lg:w-1/3 animate__animated animate__fadeIn">
             <Card className="overflow-hidden shadow-xl border-none">
-              <div className="relative h-96 w-full overflow-hidden flex items-center justify-center">
-                <img 
-                  src="/lovable-uploads/9d76e17b-e7f3-435a-b95b-158ef80f185f.png" 
-                  alt="Daniel Gomes" 
-                  className="w-auto h-full object-contain"
-                />
+              <div className="relative w-full overflow-hidden">
+                <AspectRatio ratio={3/4} className="bg-gray-100">
+                  <img 
+                    src="/lovable-uploads/9d76e17b-e7f3-435a-b95b-158ef80f185f.png" 
+                    alt="Daniel Gomes" 
+                    className="object-cover"
+                  />
+                </AspectRatio>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
                 <div className="absolute bottom-0 left-0 p-6">
                   <h3 className="text-2xl font-bold text-white">Daniel Gomes</h3>
