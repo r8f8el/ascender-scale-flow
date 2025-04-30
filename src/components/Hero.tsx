@@ -5,8 +5,8 @@ const Hero = () => {
   return (
     <section className="py-16 bg-white relative z-10">
       <div className="container mx-auto px-4 text-center">
-        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-gray-900">
-          Ascalate <span className="text-blue-600">Business Consulting</span>
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-black">
+          Ascalate <span className="text-black">Business Consulting</span>
         </h1>
         <p className="text-lg md:text-xl lg:text-2xl text-gray-700 max-w-3xl mx-auto mb-10">
           Transformando potencial em resultados através de consultoria estratégica e financeira de excelência

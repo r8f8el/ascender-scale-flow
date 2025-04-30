@@ -102,11 +102,11 @@ const Partner = () => {
         <div className="flex flex-col lg:flex-row items-center justify-center gap-10">
           <div className="w-full lg:w-1/3 animate__animated animate__fadeIn">
             <Card className="overflow-hidden shadow-xl border-none">
-              <div className="relative h-96 overflow-hidden">
+              <div className="relative h-96 w-full overflow-hidden">
                 <img 
                   src="/lovable-uploads/9d76e17b-e7f3-435a-b95b-158ef80f185f.png" 
                   alt="Daniel Gomes" 
-                  className="w-full h-full object-cover object-center"
+                  className="w-full h-full object-contain object-center"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
                 <div className="absolute bottom-0 left-0 p-6">
