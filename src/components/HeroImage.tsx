@@ -8,6 +8,9 @@ const HeroImage = () => {
         src="/lovable-uploads/60fea758-69b9-417c-9f0c-9d3acd779d10.png" 
         alt="Ascalate Hero Background" 
         className="w-full h-full object-cover"
+        loading="eager"
+        fetchpriority="high"
+        data-clonable="true"
       />
     </div>
   );

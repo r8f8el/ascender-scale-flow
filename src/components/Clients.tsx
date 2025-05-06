@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -108,6 +107,9 @@ const Clients = () => {
                   src={logo.src} 
                   alt={logo.alt} 
                   className="w-auto h-auto max-h-full max-w-full object-contain"
+                  loading="eager"
+                  fetchpriority="high"
+                  data-clonable="true"
                 />
               </Card>
             </motion.div>

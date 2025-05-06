@@ -38,6 +38,9 @@ const Partner = () => {
                     src="/lovable-uploads/9d76e17b-e7f3-435a-b95b-158ef80f185f.png" 
                     alt="Daniel Gomes" 
                     className="object-cover"
+                    loading="eager"
+                    fetchpriority="high"
+                    data-clonable="true"
                   />
                 </AspectRatio>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
@@ -116,4 +119,3 @@ const Partner = () => {
 };
 
 export default Partner;
-
