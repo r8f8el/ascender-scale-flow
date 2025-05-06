@@ -1,17 +1,18 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
-// Logos de clientes fictícios
+// Client logos with real client images
 const clientLogos = [
-  { id: 1, name: "TechSolutions", color: "#0048ff" },
-  { id: 2, name: "Global Finance", color: "#11008f" },
-  { id: 3, name: "InnovateX", color: "#000000" },
-  { id: 4, name: "Strategic Partners", color: "#0048ff" },
-  { id: 5, name: "Growth Capital", color: "#11008f" },
-  { id: 6, name: "Future Ventures", color: "#000000" },
+  { id: 1, src: "/lovable-uploads/20cde936-31c1-401c-a0ff-6d406dcd9907.png", alt: "Creditar" },
+  { id: 2, src: "/lovable-uploads/9b9e23bc-f39b-419d-b7e0-dbf05855f76c.png", alt: "Apex" },
+  { id: 3, src: "/lovable-uploads/d443c2ff-7b88-4aeb-87cd-e23579308905.png", alt: "Portobello Grupo" },
+  { id: 4, src: "/lovable-uploads/fbaf288f-e6a9-4aeb-a285-0c4673697f1b.png", alt: "J.assy" },
+  { id: 5, src: "/lovable-uploads/bc6b28d9-fb80-4371-8558-5236efa8bfcd.png", alt: "Cropland" },
+  { id: 6, src: "/lovable-uploads/eeb91924-4608-4f64-a7b0-1898deababdc.png", alt: "Highcrop" },
+  { id: 7, src: "/lovable-uploads/f21c20f5-4dfe-463b-b744-fdc15cd182e8.png", alt: "J. Alves" },
 ];
 
 const testimonials = [
@@ -19,24 +20,41 @@ const testimonials = [
     id: 1,
     quote: "A Ascalate transformou completamente nossa visão financeira, proporcionando insights valiosos que impulsionaram nosso crescimento em mais de 40% no último ano.",
     author: "Ricardo Mendes",
-    position: "CEO, TechSolutions"
+    position: "CEO, Apex"
   },
   {
     id: 2,
     quote: "O comprometimento e a excelência da equipe Ascalate foram fundamentais para superarmos desafios complexos e atingirmos resultados expressivos em tempo recorde.",
     author: "Luiza Campos",
-    position: "CFO, Global Finance"
+    position: "CFO, Portobello Grupo"
   },
   {
     id: 3,
     quote: "Recomendo fortemente os serviços da Ascalate para empresas que buscam parceiros estratégicos com visão inovadora e execução impecável de projetos complexos.",
     author: "Felipe Torres",
-    position: "Diretor, InnovateX"
+    position: "Diretor, Creditar"
   },
 ];
 
 const Clients = () => {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
+  
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+    
+    const section = document.getElementById('clients');
+    if (section) observer.observe(section);
+    
+    return () => {
+      if (section) observer.unobserve(section);
+    };
+  }, []);
   
   const nextTestimonial = () => {
     setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
@@ -46,37 +64,63 @@ const Clients = () => {
     setCurrentTestimonial((prev) => (prev - 1 + testimonials.length) % testimonials.length);
   };
   
+  // Auto rotate testimonials
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (isVisible) {
+        nextTestimonial();
+      }
+    }, 8000);
+    
+    return () => clearInterval(timer);
+  }, [isVisible, currentTestimonial]);
+  
   return (
     <section id="clients" className="py-24 bg-white">
       <div className="container mx-auto px-4 sm:px-6">
-        <div className="text-center mb-16">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Nossos Clientes</h2>
           <div className="w-24 h-1 bg-blue-600 mx-auto"></div>
           <p className="mt-6 text-lg text-gray-600 max-w-3xl mx-auto">
             Empresas de diversos segmentos que confiam em nossa experiência e metodologia para impulsionar seus resultados.
           </p>
-        </div>
+        </motion.div>
         
-        <div className="flex flex-wrap justify-center items-center gap-8 mb-20">
-          {clientLogos.map((logo) => (
-            <Card
-              key={logo.id} 
-              className="flex items-center justify-center w-40 h-24 shadow-md hover:shadow-lg transition-shadow duration-300 animate__animated animate__bounceIn"
-              style={{ animationDelay: `${logo.id * 0.2}s` }}
+        <div className="flex flex-wrap justify-center items-center gap-8 md:gap-12 mb-20">
+          {clientLogos.map((logo, index) => (
+            <motion.div
+              key={logo.id}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              viewport={{ once: true }}
+              whileHover={{ scale: 1.05 }}
+              className="w-32 md:w-40 h-24 flex items-center justify-center"
             >
-              <CardContent className="p-4 flex items-center justify-center">
-                <div 
-                  className="w-full h-full flex items-center justify-center font-bold text-lg"
-                  style={{ color: logo.color }}
-                >
-                  {logo.name}
-                </div>
-              </CardContent>
-            </Card>
+              <Card className="overflow-hidden border-none shadow-md hover:shadow-lg transition-all duration-300 h-full w-full flex items-center justify-center p-4">
+                <img 
+                  src={logo.src} 
+                  alt={logo.alt} 
+                  className="w-auto h-auto max-h-full max-w-full object-contain"
+                />
+              </Card>
+            </motion.div>
           ))}
         </div>
         
-        <div className="max-w-4xl mx-auto">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+          viewport={{ once: true }}
+          className="max-w-4xl mx-auto"
+        >
           <h3 className="text-2xl font-bold text-center mb-10">O que dizem sobre nós</h3>
           
           <Card className="relative shadow-xl border-none overflow-hidden">
@@ -92,56 +136,66 @@ const Clients = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.5 }}
+                    transition={{ duration: 0.7 }}
                     className="text-center"
                   >
                     <p className="text-xl md:text-2xl italic text-gray-700 mb-8">
                       "{testimonials[currentTestimonial].quote}"
                     </p>
                     
-                    <div>
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.3, duration: 0.5 }}
+                    >
                       <p className="text-lg font-bold text-blue-900">
                         {testimonials[currentTestimonial].author}
                       </p>
                       <p className="text-gray-500">
                         {testimonials[currentTestimonial].position}
                       </p>
-                    </div>
+                    </motion.div>
                   </motion.div>
                 </AnimatePresence>
               </div>
               
               <div className="flex justify-center gap-4 mt-10">
-                <button 
+                <motion.button 
                   onClick={prevTestimonial}
-                  className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-colors duration-300"
+                  whileHover={{ scale: 1.1, backgroundColor: "#0048ff", color: "#ffffff" }}
+                  whileTap={{ scale: 0.95 }}
+                  className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center transition-colors duration-300"
                   aria-label="Depoimento anterior"
                 >
                   <ChevronLeft className="h-5 w-5" />
-                </button>
+                </motion.button>
                 
                 <div className="flex gap-2">
                   {testimonials.map((_, index) => (
-                    <button 
+                    <motion.button 
                       key={index}
                       onClick={() => setCurrentTestimonial(index)}
+                      whileHover={{ scale: 1.2 }}
+                      whileTap={{ scale: 0.9 }}
                       className={`w-3 h-3 rounded-full ${currentTestimonial === index ? 'bg-blue-600' : 'bg-gray-300'}`}
                       aria-label={`Depoimento ${index + 1}`}
                     />
                   ))}
                 </div>
                 
-                <button 
+                <motion.button 
                   onClick={nextTestimonial}
-                  className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-colors duration-300"
+                  whileHover={{ scale: 1.1, backgroundColor: "#0048ff", color: "#ffffff" }}
+                  whileTap={{ scale: 0.95 }}
+                  className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center transition-colors duration-300"
                   aria-label="Próximo depoimento"
                 >
                   <ChevronRight className="h-5 w-5" />
-                </button>
+                </motion.button>
               </div>
             </CardContent>
           </Card>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

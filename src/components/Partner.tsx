@@ -3,6 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { Linkedin } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { motion } from 'framer-motion';
 
 const Partner = () => {
   const partnerId = useRef(null);
@@ -92,16 +93,28 @@ const Partner = () => {
   return (
     <section id="partner" className="py-24 bg-gray-50 relative overflow-hidden" ref={partnerId}>
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
-        <div className="text-center mb-16">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Nosso Sócio</h2>
           <div className="w-24 h-1 bg-blue-600 mx-auto"></div>
           <p className="mt-6 text-lg text-gray-600 max-w-3xl mx-auto">
             Conheça o profissional por trás da Ascalate e sua trajetória de sucesso.
           </p>
-        </div>
+        </motion.div>
         
         <div className="flex flex-col lg:flex-row items-center justify-center gap-10">
-          <div className="w-full lg:w-1/3 animate__animated animate__fadeIn">
+          <motion.div 
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="w-full lg:w-1/3"
+          >
             <Card className="overflow-hidden shadow-xl border-none">
               <div className="relative w-full overflow-hidden">
                 <AspectRatio ratio={3/4} className="bg-gray-100">
@@ -112,26 +125,64 @@ const Partner = () => {
                   />
                 </AspectRatio>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                <div className="absolute bottom-0 left-0 p-6">
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
+                  viewport={{ once: true }}
+                  className="absolute bottom-0 left-0 p-6"
+                >
                   <h3 className="text-2xl font-bold text-white">Daniel Gomes</h3>
                   <p className="text-blue-200">Sócio Fundador</p>
-                </div>
+                </motion.div>
               </div>
             </Card>
-          </div>
+          </motion.div>
           
-          <div className="w-full lg:w-1/2 animate__animated animate__fadeIn" style={{ animationDelay: '0.2s' }}>
+          <motion.div 
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            viewport={{ once: true }}
+            className="w-full lg:w-1/2"
+          >
             <Card className="p-8 shadow-xl border-none">
-              <h3 className="text-2xl font-bold mb-4 text-blue-900">Experiência e Liderança</h3>
-              <p className="text-gray-700 mb-6">
+              <motion.h3 
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+                viewport={{ once: true }}
+                className="text-2xl font-bold mb-4 text-blue-900"
+              >
+                Experiência e Liderança
+              </motion.h3>
+              
+              <motion.p 
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                viewport={{ once: true }}
+                className="text-gray-700 mb-6"
+              >
                 Com mais de 15 anos de experiência no mercado financeiro, Daniel Gomes é especialista em consultoria financeira e estratégica para empresas de diversos setores. Sua abordagem inovadora e capacidade analítica têm ajudado negócios a alcançarem seu máximo potencial e superarem expectativas.
-              </p>
+              </motion.p>
               
-              <p className="text-gray-700 mb-8">
+              <motion.p 
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+                viewport={{ once: true }}
+                className="text-gray-700 mb-8"
+              >
                 Formado em Finanças e com MBA em Gestão Estratégica, Daniel combina conhecimento técnico com uma visão holística do mercado, entregando soluções personalizadas e resultados consistentes para seus clientes.
-              </p>
+              </motion.p>
               
-              <a 
+              <motion.a 
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.6 }}
+                viewport={{ once: true }}
+                whileHover={{ scale: 1.05, color: "#0048ff" }}
                 href="https://www.linkedin.com/" 
                 target="_blank" 
                 rel="noopener noreferrer"
@@ -139,9 +190,9 @@ const Partner = () => {
               >
                 <Linkedin className="h-5 w-5 mr-2" />
                 <span>Conecte-se no LinkedIn</span>
-              </a>
+              </motion.a>
             </Card>
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>
