@@ -1,97 +1,13 @@
 
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { Linkedin } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { motion } from 'framer-motion';
 
 const Partner = () => {
-  const partnerId = useRef(null);
-  
-  // Efeito para criar animação de partículas no fundo
-  useEffect(() => {
-    const canvas = document.createElement('canvas');
-    canvas.className = "absolute inset-0 w-full h-full";
-    partnerId.current?.appendChild(canvas);
-    
-    const ctx = canvas.getContext('2d');
-    let animationFrameId: number;
-    const particles: Particle[] = [];
-    
-    const resize = () => {
-      canvas.width = partnerId.current?.clientWidth || window.innerWidth;
-      canvas.height = partnerId.current?.clientHeight || window.innerHeight;
-      
-      // Recriar partículas quando o tamanho muda
-      particles.length = 0;
-      for (let i = 0; i < 50; i++) {
-        particles.push(new Particle(canvas));
-      }
-    };
-    
-    class Particle {
-      x: number;
-      y: number;
-      size: number;
-      speedX: number;
-      speedY: number;
-      color: string;
-      canvas: HTMLCanvasElement;
-      
-      constructor(canvas: HTMLCanvasElement) {
-        this.canvas = canvas;
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        this.size = Math.random() * 3 + 1;
-        this.speedX = Math.random() * 2 - 1;
-        this.speedY = Math.random() * 2 - 1;
-        
-        const colors = ['#0048ff33', '#11008f33', '#00000033'];
-        this.color = colors[Math.floor(Math.random() * colors.length)];
-      }
-      
-      update() {
-        this.x += this.speedX;
-        this.y += this.speedY;
-        
-        if (this.x > this.canvas.width || this.x < 0) {
-          this.speedX = -this.speedX;
-        }
-        
-        if (this.y > this.canvas.height || this.y < 0) {
-          this.speedY = -this.speedY;
-        }
-      }
-      
-      draw(ctx: CanvasRenderingContext2D) {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fillStyle = this.color;
-        ctx.fill();
-      }
-    }
-    
-    const animate = () => {
-      ctx?.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach(particle => {
-        particle.update();
-        particle.draw(ctx!);
-      });
-      animationFrameId = requestAnimationFrame(animate);
-    };
-    
-    window.addEventListener('resize', resize);
-    resize();
-    animate();
-    
-    return () => {
-      window.removeEventListener('resize', resize);
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, []);
-  
   return (
-    <section id="partner" className="py-24 bg-gray-50 relative overflow-hidden" ref={partnerId}>
+    <section id="partner" className="py-24 bg-gradient-to-b from-white to-gray-50 relative overflow-hidden">
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -101,7 +17,7 @@ const Partner = () => {
           className="text-center mb-16"
         >
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Nosso Sócio</h2>
-          <div className="w-24 h-1 bg-blue-600 mx-auto"></div>
+          <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-ascalate-blue mx-auto"></div>
           <p className="mt-6 text-lg text-gray-600 max-w-3xl mx-auto">
             Conheça o profissional por trás da Ascalate e sua trajetória de sucesso.
           </p>
@@ -115,7 +31,7 @@ const Partner = () => {
             viewport={{ once: true }}
             className="w-full lg:w-1/3"
           >
-            <Card className="overflow-hidden shadow-xl border-none">
+            <Card className="overflow-hidden shadow-2xl border-none rounded-2xl transform transition-all duration-300 hover:shadow-ascalate-blue/20 hover:-translate-y-1">
               <div className="relative w-full overflow-hidden">
                 <AspectRatio ratio={3/4} className="bg-gray-100">
                   <img 
@@ -124,7 +40,7 @@ const Partner = () => {
                     className="object-cover"
                   />
                 </AspectRatio>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
                 <motion.div 
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -146,13 +62,13 @@ const Partner = () => {
             viewport={{ once: true }}
             className="w-full lg:w-1/2"
           >
-            <Card className="p-8 shadow-xl border-none">
+            <Card className="p-8 shadow-xl border-none rounded-2xl backdrop-blur-sm bg-white/90">
               <motion.h3 
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
                 transition={{ duration: 0.5 }}
                 viewport={{ once: true }}
-                className="text-2xl font-bold mb-4 text-blue-900"
+                className="text-2xl font-bold mb-4 text-ascalate-darkblue"
               >
                 Experiência e Liderança
               </motion.h3>
@@ -186,7 +102,7 @@ const Partner = () => {
                 href="https://www.linkedin.com/" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors"
+                className="inline-flex items-center text-ascalate-blue hover:text-ascalate-darkblue transition-colors rounded-full px-6 py-2 border border-ascalate-blue hover:border-ascalate-darkblue"
               >
                 <Linkedin className="h-5 w-5 mr-2" />
                 <span>Conecte-se no LinkedIn</span>

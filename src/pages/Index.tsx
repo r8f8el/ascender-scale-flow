@@ -9,7 +9,6 @@ import MissionVision from '../components/MissionVision';
 import Clients from '../components/Clients';
 import Contact from '../components/Contact';
 import Footer from '../components/Footer';
-import BackgroundAnimation from '../components/BackgroundAnimation';
 import ScrollToTop from '../components/ScrollToTop';
 
 const Index = () => {
@@ -34,8 +33,7 @@ const Index = () => {
   }, []);
   
   return (
-    <div className="min-h-screen">
-      <BackgroundAnimation />
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
       <Navbar />
       <HeroImage />
       <Hero />
