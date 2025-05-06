@@ -9,10 +9,6 @@ export const Logo: React.FC<{ className?: string }> = ({ className = "h-16 w-aut
         alt="Ascalate Logo" 
         className="h-full"
       />
-      <span className="ml-2 text-xs font-medium text-gray-500 flex flex-col items-start">
-        <span>BUSINESS</span>
-        <span>CONSULTING</span>
-      </span>
     </div>
   );
 };
