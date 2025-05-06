@@ -99,7 +99,7 @@ const Partner = () => {
                 transition={{ duration: 0.5, delay: 0.6 }}
                 viewport={{ once: true }}
                 whileHover={{ scale: 1.05, color: "#0048ff" }}
-                href="https://www.linkedin.com/" 
+                href="https://www.linkedin.com/in/danielgomesgo?originalSubdomain=br" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="inline-flex items-center text-ascalate-blue hover:text-ascalate-darkblue transition-colors rounded-full px-6 py-2 border border-ascalate-blue hover:border-ascalate-darkblue"
@@ -116,3 +116,4 @@ const Partner = () => {
 };
 
 export default Partner;
+
