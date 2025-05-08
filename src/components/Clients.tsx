@@ -3,15 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
-// Client logos with real client images
+// Client logos with real client images - reordered and removed Creditar
 const clientLogos = [
-  { id: 1, src: "/lovable-uploads/20cde936-31c1-401c-a0ff-6d406dcd9907.png", alt: "Creditar" },
-  { id: 2, src: "/lovable-uploads/9b9e23bc-f39b-419d-b7e0-dbf05855f76c.png", alt: "Apex" },
-  { id: 3, src: "/lovable-uploads/d443c2ff-7b88-4aeb-87cd-e23579308905.png", alt: "Portobello Grupo" },
-  { id: 4, src: "/lovable-uploads/fbaf288f-e6a9-4aeb-a285-0c4673697f1b.png", alt: "J.assy" },
-  { id: 5, src: "/lovable-uploads/bc6b28d9-fb80-4371-8558-5236efa8bfcd.png", alt: "Cropland" },
-  { id: 6, src: "/lovable-uploads/eeb91924-4608-4f64-a7b0-1898deababdc.png", alt: "Highcrop" },
-  { id: 7, src: "/lovable-uploads/f21c20f5-4dfe-463b-b744-fdc15cd182e8.png", alt: "J. Alves" },
+  { id: 1, src: "/lovable-uploads/d443c2ff-7b88-4aeb-87cd-e23579308905.png", alt: "Portobello Grupo" },
+  { id: 2, src: "/lovable-uploads/fbaf288f-e6a9-4aeb-a285-0c4673697f1b.png", alt: "J.assy" },
+  { id: 3, src: "/lovable-uploads/9b9e23bc-f39b-419d-b7e0-dbf05855f76c.png", alt: "Apex" },
+  { id: 4, src: "/lovable-uploads/bc6b28d9-fb80-4371-8558-5236efa8bfcd.png", alt: "Cropland" },
+  { id: 5, src: "/lovable-uploads/eeb91924-4608-4f64-a7b0-1898deababdc.png", alt: "Highcrop" },
+  { id: 6, src: "/lovable-uploads/f21c20f5-4dfe-463b-b744-fdc15cd182e8.png", alt: "J. Alves" },
 ];
 
 const testimonials = [
@@ -108,7 +107,7 @@ const Clients = () => {
                   alt={logo.alt} 
                   className="w-auto h-auto max-h-full max-w-full object-contain"
                   loading="eager"
-                  fetchpriority="high"
+                  fetchPriority="high"
                   data-clonable="true"
                 />
               </Card>

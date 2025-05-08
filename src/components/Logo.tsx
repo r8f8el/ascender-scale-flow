@@ -9,7 +9,7 @@ export const Logo: React.FC<{ className?: string }> = ({ className = "h-16 w-aut
         alt="Ascalate Logo" 
         className="h-full"
         loading="eager"
-        fetchpriority="high"
+        fetchPriority="high"
         data-clonable="true"
       />
     </div>

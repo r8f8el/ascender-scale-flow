@@ -159,7 +159,7 @@ const Contact = () => {
           </div>
           
           <div className="w-full lg:w-1/2 animate__animated animate__fadeIn" style={{ animationDelay: '0.2s' }}>
-            <Card className="shadow-xl border-none mb-6">
+            <Card className="shadow-xl border-none">
               <CardContent className="p-8">
                 <h3 className="text-2xl font-bold mb-6 text-blue-900">Informações de contato</h3>
                 
@@ -194,15 +194,6 @@ const Contact = () => {
                       <a href="mailto:contato@ascalate.com.br" className="text-gray-700 hover:text-blue-600 transition-colors">contato@ascalate.com.br</a>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="shadow-xl border-none">
-              <CardContent className="p-8">
-                <h3 className="text-lg font-bold mb-4 text-blue-900">Nossa localização</h3>
-                <div className="w-full h-40 bg-gray-200 rounded-md flex items-center justify-center">
-                  <p className="text-gray-500">Mapa Indisponível</p>
                 </div>
               </CardContent>
             </Card>

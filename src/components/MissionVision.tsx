@@ -1,9 +1,17 @@
 
 import React from 'react';
-import { Target, Eye, Lightbulb } from 'lucide-react';
+import { Target, Eye, Lightbulb, Check } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 const MissionVision = () => {
+  const values = [
+    "Inovação: Buscamos constantemente novas abordagens e tecnologias para oferecer soluções que agreguem valor aos nossos clientes.",
+    "Transparência: Mantemos uma comunicação clara e honesta, assegurando a confiança nas relações com nossos clientes e parceiros.",
+    "Colaboração: Trabalhamos em conjunto com nossos clientes, entendendo suas necessidades e co-criando soluções personalizadas.",
+    "Excelência: Comprometemo-nos a entregar serviços de alta qualidade que superem as expectativas, garantindo resultados sustentáveis.",
+    "Ética: Atuamos com integridade, respeitando normas e regulamentos, promovendo um ambiente de negócios justo e responsável."
+  ];
+
   return (
     <section id="mission" className="py-24 bg-gradient-to-b from-white to-gray-50">
       <div className="container mx-auto px-4 sm:px-6">
@@ -55,9 +63,16 @@ const MissionVision = () => {
                 <h3 className="ml-4 text-2xl font-bold">Valores</h3>
               </div>
               
-              <p className="text-gray-700">
-                Buscamos constantemente novas abordagens e tecnologias para oferecer soluções inovadoras que agreguem valor aos nossos clientes. Mantemos uma comunicação clara e honesta, assegurando a confiança nas relações. Trabalhamos em conjunto com nossos clientes, entendendo suas necessidades e co-criando soluções personalizadas. Comprometemo-nos a entregar serviços de alta qualidade que superem as expectativas, garantindo resultados sustentáveis e promovendo um ambiente de negócios justo e responsável.
-              </p>
+              <ul className="space-y-4">
+                {values.map((value, index) => (
+                  <li key={index} className="flex items-start">
+                    <div className="flex-shrink-0 mt-1">
+                      <Check className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <p className="ml-3 text-gray-700">{`${index + 1}. ${value}`}</p>
+                  </li>
+                ))}
+              </ul>
             </CardContent>
           </Card>
         </div>
