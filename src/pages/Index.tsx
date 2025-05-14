@@ -4,7 +4,7 @@ import Navbar from '../components/Navbar';
 import HeroImage from '../components/HeroImage';
 import Hero from '../components/Hero';
 import Services from '../components/Services';
-import Partner from '../components/Partner';
+import { Partner } from '../components/Partner'; // Changed to use named export
 import MissionVision from '../components/MissionVision';
 import Clients from '../components/Clients';
 import Contact from '../components/Contact';
