@@ -15,7 +15,8 @@ import {
   Bell, 
   LogOut, 
   User,
-  Shield 
+  Shield,
+  Database
 } from 'lucide-react';
 
 const AdminArea = () => {
@@ -95,6 +96,9 @@ const AdminArea = () => {
                     </div>
                     
                     <nav className="flex flex-col gap-4">
+                      <MobileNavLink to="/admin" icon={<Database size={20} />}>
+                        Dashboard
+                      </MobileNavLink>
                       <MobileNavLink to="/admin/clientes" icon={<Users size={20} />}>
                         Clientes
                       </MobileNavLink>
@@ -140,6 +144,9 @@ const AdminArea = () => {
             <h3 className="font-medium text-gray-500 uppercase text-xs tracking-wider mb-4">
               Menu Principal
             </h3>
+            <NavLink to="/admin" icon={<Database size={20} />}>
+              Dashboard
+            </NavLink>
             <NavLink to="/admin/clientes" icon={<Users size={20} />}>
               Gestão de Clientes
             </NavLink>

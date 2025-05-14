@@ -22,6 +22,13 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminArea from "./pages/AdminArea";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminUnauthorized from "./pages/AdminUnauthorized";
+import ClientesAdmin from "./pages/admin/ClientesAdmin";
+import ArquivosAdmin from "./pages/admin/ArquivosAdmin";
+import CronogramasAdmin from "./pages/admin/CronogramasAdmin";
+import SolicitacoesAdmin from "./pages/admin/SolicitacoesAdmin";
+import MensagensAdmin from "./pages/admin/MensagensAdmin";
+import LogsAdmin from "./pages/admin/LogsAdmin";
+import ConfiguracoesAdmin from "./pages/admin/ConfiguracoesAdmin";
 
 const queryClient = new QueryClient();
 
@@ -52,13 +59,13 @@ const App = () => (
               <Route path="/admin/unauthorized" element={<AdminUnauthorized />} />
               <Route path="/admin" element={<AdminProtectedRoute><AdminArea /></AdminProtectedRoute>}>
                 <Route index element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
-                <Route path="clientes" element={<AdminProtectedRoute><NotFound /></AdminProtectedRoute>} />
-                <Route path="arquivos" element={<AdminProtectedRoute><NotFound /></AdminProtectedRoute>} />
-                <Route path="cronogramas" element={<AdminProtectedRoute><NotFound /></AdminProtectedRoute>} />
-                <Route path="solicitacoes" element={<AdminProtectedRoute><NotFound /></AdminProtectedRoute>} />
-                <Route path="mensagens" element={<AdminProtectedRoute><NotFound /></AdminProtectedRoute>} />
-                <Route path="logs" element={<AdminProtectedRoute><NotFound /></AdminProtectedRoute>} />
-                <Route path="configuracoes" element={<AdminProtectedRoute><NotFound /></AdminProtectedRoute>} />
+                <Route path="clientes" element={<AdminProtectedRoute><ClientesAdmin /></AdminProtectedRoute>} />
+                <Route path="arquivos" element={<AdminProtectedRoute><ArquivosAdmin /></AdminProtectedRoute>} />
+                <Route path="cronogramas" element={<AdminProtectedRoute><CronogramasAdmin /></AdminProtectedRoute>} />
+                <Route path="solicitacoes" element={<AdminProtectedRoute><SolicitacoesAdmin /></AdminProtectedRoute>} />
+                <Route path="mensagens" element={<AdminProtectedRoute><MensagensAdmin /></AdminProtectedRoute>} />
+                <Route path="logs" element={<AdminProtectedRoute><LogsAdmin /></AdminProtectedRoute>} />
+                <Route path="configuracoes" element={<AdminProtectedRoute><ConfiguracoesAdmin /></AdminProtectedRoute>} />
               </Route>
               
               {/* Catch-all route */}
