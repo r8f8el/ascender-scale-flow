@@ -7,7 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { FileUp, CloudDownload, CloudCheck } from 'lucide-react';
+import { FileUp, CloudDownload, CheckCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger } from '@/components/ui/navigation-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -74,7 +74,7 @@ const OneDriveIntegration = () => {
                   </div>
                 </div>
                 <Alert className="bg-green-50 border-green-200">
-                  <CloudCheck className="h-4 w-4 text-green-600" />
+                  <CheckCircle className="h-4 w-4 text-green-600" />
                   <AlertTitle>Conectado</AlertTitle>
                   <AlertDescription>
                     Sua integração com o OneDrive/SharePoint está ativa e funcionando

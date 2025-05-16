@@ -37,11 +37,6 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
     }
   }, [isAdminAuthenticated, admin, requiredRole, toast]);
 
-  // Autenticação simulada para desenvolvimento - REMOVER EM PRODUÇÃO
-  if (process.env.NODE_ENV === 'development') {
-    return <>{children}</>;
-  }
-
   // Verificação real de autenticação
   if (!isAdminAuthenticated) {
     return <Navigate to="/admin/login" replace />;
