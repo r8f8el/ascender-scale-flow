@@ -1,57 +1,52 @@
 
 import React from 'react';
+import { Card } from '@/components/ui/card';
 
 export const Partner: React.FC = () => {
   return (
     <section id="partner" className="py-16 bg-white">
       <div className="container mx-auto px-4">
         <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
-          Nossos Parceiros
+          Nosso Sócio
         </h2>
         
-        <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16">
-          <div className="w-full md:w-auto flex justify-center">
-            <img 
-              src="/lovable-uploads/9b9e23bc-f39b-419d-b7e0-dbf05855f76c.png" 
-              alt="Parceiro 1" 
-              className="h-12 md:h-16 object-contain"
-              loading="eager"
-              fetchPriority="high"
-              data-clonable="true"
-            />
+        <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16 max-w-5xl mx-auto">
+          <div className="w-full md:w-1/3 flex justify-center">
+            <Card className="overflow-hidden border-none shadow-lg hover:shadow-xl transition-all duration-300">
+              <img 
+                src="/lovable-uploads/6085375d-7e2a-4bdb-b082-c9f682b54aa1.png" 
+                alt="Daniel Ascalate" 
+                className="w-full h-auto object-cover"
+                loading="eager"
+                fetchPriority="high"
+              />
+            </Card>
           </div>
           
-          <div className="w-full md:w-auto flex justify-center">
-            <img 
-              src="/lovable-uploads/fbaf288f-e6a9-4aeb-a285-0c4673697f1b.png" 
-              alt="Parceiro 2" 
-              className="h-12 md:h-16 object-contain"
-              loading="eager"
-              fetchPriority="high"
-              data-clonable="true"
-            />
-          </div>
-          
-          <div className="w-full md:w-auto flex justify-center">
-            <img 
-              src="/lovable-uploads/f21c20f5-4dfe-463b-b744-fdc15cd182e8.png" 
-              alt="Parceiro 3" 
-              className="h-12 md:h-16 object-contain"
-              loading="eager"
-              fetchPriority="high"
-              data-clonable="true"
-            />
-          </div>
-          
-          <div className="w-full md:w-auto flex justify-center">
-            <img 
-              src="/lovable-uploads/eeb91924-4608-4f64-a7b0-1898deababdc.png" 
-              alt="Parceiro 4" 
-              className="h-12 md:h-16 object-contain"
-              loading="eager"
-              fetchPriority="high"
-              data-clonable="true"
-            />
+          <div className="w-full md:w-2/3">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">Daniel Ascalate</h3>
+            <p className="text-gray-700 mb-4">
+              Profissional com mais de 15 anos de experiência em consultoria contábil e fiscal, 
+              especializado em atender empresas de médio e grande porte, com foco em otimização 
+              tributária e compliance fiscal.
+            </p>
+            <p className="text-gray-700 mb-4">
+              Ao longo de sua carreira, Daniel desenvolveu uma metodologia própria que combina 
+              análise detalhada, planejamento estratégico e implementação personalizada, gerando 
+              resultados significativos para seus clientes.
+            </p>
+            <div className="flex flex-col md:flex-row gap-4 mt-2">
+              <div>
+                <p className="font-semibold text-blue-700">Formação</p>
+                <p className="text-gray-600">Ciências Contábeis - USP</p>
+                <p className="text-gray-600">MBA em Gestão Tributária - FGV</p>
+              </div>
+              <div>
+                <p className="font-semibold text-blue-700">Certificações</p>
+                <p className="text-gray-600">CRC Ativo</p>
+                <p className="text-gray-600">Especialista em IFRS</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

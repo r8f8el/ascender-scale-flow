@@ -1,6 +1,8 @@
 
 import { Navigate } from 'react-router-dom';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
+import { useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 interface AdminProtectedRouteProps {
   children: React.ReactNode;
@@ -12,6 +14,28 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
   requiredRole 
 }) => {
   const { isAdminAuthenticated, admin } = useAdminAuth();
+  const { toast } = useToast();
+  
+  useEffect(() => {
+    if (!isAdminAuthenticated) {
+      toast({
+        title: "Acesso Negado",
+        description: "Você precisa estar autenticado para acessar esta área.",
+        variant: "destructive"
+      });
+    } else if (
+      requiredRole && 
+      admin && 
+      admin.role !== requiredRole && 
+      admin.role !== 'super_admin'
+    ) {
+      toast({
+        title: "Permissão Insuficiente",
+        description: "Você não tem permissão para acessar este recurso.",
+        variant: "destructive"
+      });
+    }
+  }, [isAdminAuthenticated, admin, requiredRole]);
 
   // Not authenticated at all
   if (!isAdminAuthenticated) {

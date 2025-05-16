@@ -50,27 +50,37 @@ const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) 
   useEffect(() => {
     const storedAdmin = localStorage.getItem('ascalate_admin');
     if (storedAdmin) {
-      const parsedAdmin = JSON.parse(storedAdmin);
-      setAdmin(parsedAdmin);
-      setIsAdminAuthenticated(true);
+      try {
+        const parsedAdmin = JSON.parse(storedAdmin);
+        setAdmin(parsedAdmin);
+        setIsAdminAuthenticated(true);
+      } catch (error) {
+        console.error('Error parsing stored admin data:', error);
+        localStorage.removeItem('ascalate_admin');
+      }
     }
   }, []);
   
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
-    // In a real app, this would be an API call
-    const foundAdmin = mockAdmins.find(
-      (a) => a.email.toLowerCase() === email.toLowerCase() && a.password === password
-    );
-    
-    if (foundAdmin) {
-      const { password: _, ...adminWithoutPassword } = foundAdmin;
-      setAdmin(adminWithoutPassword);
-      setIsAdminAuthenticated(true);
-      localStorage.setItem('ascalate_admin', JSON.stringify(adminWithoutPassword));
-      return true;
+    try {
+      // In a real app, this would be an API call
+      const foundAdmin = mockAdmins.find(
+        (a) => a.email.toLowerCase() === email.toLowerCase() && a.password === password
+      );
+      
+      if (foundAdmin) {
+        const { password: _, ...adminWithoutPassword } = foundAdmin;
+        setAdmin(adminWithoutPassword);
+        setIsAdminAuthenticated(true);
+        localStorage.setItem('ascalate_admin', JSON.stringify(adminWithoutPassword));
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
     }
-    
-    return false;
   };
   
   const adminLogout = () => {

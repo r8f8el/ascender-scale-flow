@@ -47,6 +47,7 @@ const AdminLogin = () => {
         });
       }
     } catch (error) {
+      console.error('Error during login:', error);
       toast({
         title: "Erro",
         description: "Ocorreu um erro ao realizar o login. Tente novamente mais tarde.",
@@ -122,6 +123,11 @@ const AdminLogin = () => {
             >
               {isLoading ? "Entrando..." : "Entrar"}
             </Button>
+          </div>
+
+          <div className="mt-4 text-center text-sm text-gray-600">
+            <p>Email de teste: admin@ascalate.com.br</p>
+            <p>Senha de teste: admin123</p>
           </div>
         </form>
         
