@@ -16,7 +16,8 @@ import {
   LogOut, 
   User,
   Shield,
-  Database
+  Database,
+  Cloud
 } from 'lucide-react';
 
 const AdminArea = () => {
@@ -46,6 +47,7 @@ const AdminArea = () => {
     else if (path.includes('/admin/mensagens')) setPageTitle('Mensagens Automáticas');
     else if (path.includes('/admin/logs')) setPageTitle('Logs de Acesso');
     else if (path.includes('/admin/configuracoes')) setPageTitle('Configurações');
+    else if (path.includes('/admin/onedrive')) setPageTitle('Integração OneDrive/SharePoint');
     else setPageTitle('Painel Administrativo');
   }, [location]);
 
@@ -117,6 +119,9 @@ const AdminArea = () => {
                       <MobileNavLink to="/admin/logs" icon={<Shield size={20} />}>
                         Logs de Acesso
                       </MobileNavLink>
+                      <MobileNavLink to="/admin/onedrive" icon={<Cloud size={20} />}>
+                        OneDrive/SharePoint
+                      </MobileNavLink>
                       <MobileNavLink to="/admin/configuracoes" icon={<Settings size={20} />}>
                         Configurações
                       </MobileNavLink>
@@ -164,6 +169,9 @@ const AdminArea = () => {
             </NavLink>
             <NavLink to="/admin/logs" icon={<Shield size={20} />}>
               Logs de Acesso
+            </NavLink>
+            <NavLink to="/admin/onedrive" icon={<Cloud size={20} />}>
+              OneDrive/SharePoint
             </NavLink>
             <NavLink to="/admin/configuracoes" icon={<Settings size={20} />}>
               Configurações

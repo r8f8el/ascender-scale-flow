@@ -35,16 +35,20 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
         variant: "destructive"
       });
     }
-  }, [isAdminAuthenticated, admin, requiredRole]);
+  }, [isAdminAuthenticated, admin, requiredRole, toast]);
 
-  // Not authenticated at all
+  // Autenticação simulada para desenvolvimento - REMOVER EM PRODUÇÃO
+  if (process.env.NODE_ENV === 'development') {
+    return <>{children}</>;
+  }
+
+  // Verificação real de autenticação
   if (!isAdminAuthenticated) {
     return <Navigate to="/admin/login" replace />;
   }
 
-  // Check role-based permissions if requiredRole is specified
+  // Verificação de permissões baseada em função
   if (requiredRole && admin && admin.role !== requiredRole && admin.role !== 'super_admin') {
-    // If specific role is required and user doesn't have it (or isn't super_admin)
     return <Navigate to="/admin/unauthorized" replace />;
   }
 

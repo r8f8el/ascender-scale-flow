@@ -14,7 +14,7 @@ export const Partner: React.FC = () => {
           <div className="w-full md:w-1/3 flex justify-center">
             <Card className="overflow-hidden border-none shadow-lg hover:shadow-xl transition-all duration-300">
               <img 
-                src="/lovable-uploads/6085375d-7e2a-4bdb-b082-c9f682b54aa1.png" 
+                src="/lovable-uploads/bba0a347-b616-49c0-b4a9-7542b10fea2c.png" 
                 alt="Daniel Ascalate" 
                 className="w-full h-auto object-cover"
                 loading="eager"

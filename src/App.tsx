@@ -29,6 +29,7 @@ import SolicitacoesAdmin from "./pages/admin/SolicitacoesAdmin";
 import MensagensAdmin from "./pages/admin/MensagensAdmin";
 import LogsAdmin from "./pages/admin/LogsAdmin";
 import ConfiguracoesAdmin from "./pages/admin/ConfiguracoesAdmin";
+import OneDriveIntegration from "./pages/admin/OneDriveIntegration";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +67,7 @@ const App = () => (
                 <Route path="mensagens" element={<AdminProtectedRoute><MensagensAdmin /></AdminProtectedRoute>} />
                 <Route path="logs" element={<AdminProtectedRoute><LogsAdmin /></AdminProtectedRoute>} />
                 <Route path="configuracoes" element={<AdminProtectedRoute><ConfiguracoesAdmin /></AdminProtectedRoute>} />
+                <Route path="onedrive" element={<AdminProtectedRoute><OneDriveIntegration /></AdminProtectedRoute>} />
               </Route>
               
               {/* Catch-all route */}
