@@ -40,6 +40,27 @@ const mockAdmins = [
     password: 'consultor123',
     role: 'admin' as const
   },
+  { 
+    id: '3', 
+    name: 'Daniel Gomes', 
+    email: 'daniel@ascalate.com.br', 
+    password: 'admin123',
+    role: 'super_admin' as const
+  },
+  { 
+    id: '4', 
+    name: 'Rafael Gontijo', 
+    email: 'rafael.gontijo@ascalate.com.br', 
+    password: 'admin123',
+    role: 'super_admin' as const
+  },
+  { 
+    id: '5', 
+    name: 'Artur Servian', 
+    email: 'artur.servian@ascalate.com.br', 
+    password: 'admin123',
+    role: 'admin' as const
+  },
 ];
 
 const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {

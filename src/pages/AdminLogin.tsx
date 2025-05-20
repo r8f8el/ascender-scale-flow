@@ -126,8 +126,11 @@ const AdminLogin = () => {
           </div>
 
           <div className="mt-4 text-center text-sm text-gray-600">
-            <p>Email de teste: admin@ascalate.com.br</p>
-            <p>Senha de teste: admin123</p>
+            <p>Emails de teste: </p>
+            <p>daniel@ascalate.com.br</p>
+            <p>rafael.gontijo@ascalate.com.br</p>
+            <p>artur.servian@ascalate.com.br</p>
+            <p>Senha padrão: admin123</p>
           </div>
         </form>
         
