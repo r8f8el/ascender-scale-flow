@@ -31,15 +31,20 @@ export const Partner: React.FC = () => {
               tributária e compliance fiscal.
             </p>
             <p className="text-gray-700 mb-4">
-              Ao longo de sua carreira, Daniel desenvolveu uma metodologia própria que combina 
-              análise detalhada, planejamento estratégico e implementação personalizada, gerando 
-              resultados significativos para seus clientes.
+              Possui MBA em Gestão Financeira com ênfase em Controladoria, Auditoria e Compliance pela 
+              Fundação Getulio Vargas (FGV). Atua como consultor nas áreas de Planejamento Financeiro e 
+              Estratégico, com experiência na avaliação de Business Plans que somam mais de R$ 3,5 bilhões em ativos.
+            </p>
+            <p className="text-gray-700 mb-4">
+              Tem histórico de atuação em projetos diversos, abrangendo os setores de Hospitalidade e 
+              Entretenimento, Agronegócio, Indústrias, Construtoras e Incorporadoras, Varejo, Saúde, 
+              Estética, entre outros.
             </p>
             <div className="flex flex-col md:flex-row gap-4 mt-2">
               <div>
                 <p className="font-semibold text-blue-700">Formação</p>
                 <p className="text-gray-600">Ciências Contábeis - USP</p>
-                <p className="text-gray-600">MBA em Gestão Tributária - FGV</p>
+                <p className="text-gray-600">MBA em Gestão Financeira - FGV</p>
               </div>
               <div>
                 <p className="font-semibold text-blue-700">Certificações</p>
