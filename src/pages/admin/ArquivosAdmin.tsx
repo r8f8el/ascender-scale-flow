@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -295,7 +294,7 @@ const ArquivosAdmin = () => {
               <SelectValue placeholder="Filtrar por cliente" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos os clientes</SelectItem>
+              <SelectItem key="todos" value="todos">Todos os clientes</SelectItem>
               {clientes.map(cliente => (
                 <SelectItem key={cliente.id} value={cliente.nome}>
                   {cliente.nome}
@@ -309,7 +308,7 @@ const ArquivosAdmin = () => {
               <SelectValue placeholder="Filtrar por pasta" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas as pastas</SelectItem>
+              <SelectItem key="todas" value="todas">Todas as pastas</SelectItem>
               {pastas.map(pasta => (
                 <SelectItem key={pasta.id} value={pasta.nome}>
                   {pasta.nome}
@@ -332,7 +331,7 @@ const ArquivosAdmin = () => {
       
       <Card>
         <Table>
-          <TableCaption>Total de {arquivosFiltrados.length} arquivos encontrados</TableCaption>
+          <TableCaption>Total de {arquivos.length} arquivos encontrados</TableCaption>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[30%]">Nome</TableHead>
@@ -344,8 +343,8 @@ const ArquivosAdmin = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {arquivosFiltrados.length > 0 ? (
-              arquivosFiltrados.map((arquivo) => (
+            {arquivos.length > 0 ? (
+              arquivos.map((arquivo) => (
                 <TableRow key={arquivo.id}>
                   <TableCell className="font-medium flex items-center gap-2">
                     <FileText className="h-4 w-4" />
