@@ -15,7 +15,7 @@ export const Partner: React.FC = () => {
             <Card className="overflow-hidden border-none shadow-lg hover:shadow-xl transition-all duration-300">
               <img 
                 src="/lovable-uploads/bba0a347-b616-49c0-b4a9-7542b10fea2c.png" 
-                alt="Daniel Ascalate" 
+                alt="Daniel Gomes" 
                 className="w-full h-auto object-cover"
                 loading="eager"
                 fetchPriority="high"
@@ -24,7 +24,7 @@ export const Partner: React.FC = () => {
           </div>
           
           <div className="w-full md:w-2/3">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">Daniel Ascalate</h3>
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">Daniel Gomes</h3>
             <p className="text-gray-700 mb-4">
               Profissional com mais de 15 anos de experiência em consultoria contábil e fiscal, 
               especializado em atender empresas de médio e grande porte, com foco em otimização 
@@ -40,18 +40,6 @@ export const Partner: React.FC = () => {
               Entretenimento, Agronegócio, Indústrias, Construtoras e Incorporadoras, Varejo, Saúde, 
               Estética, entre outros.
             </p>
-            <div className="flex flex-col md:flex-row gap-4 mt-2">
-              <div>
-                <p className="font-semibold text-blue-700">Formação</p>
-                <p className="text-gray-600">Ciências Contábeis - USP</p>
-                <p className="text-gray-600">MBA em Gestão Financeira - FGV</p>
-              </div>
-              <div>
-                <p className="font-semibold text-blue-700">Certificações</p>
-                <p className="text-gray-600">CRC Ativo</p>
-                <p className="text-gray-600">Especialista em IFRS</p>
-              </div>
-            </div>
           </div>
         </div>
       </div>
