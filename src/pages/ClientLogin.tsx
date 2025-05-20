@@ -84,7 +84,7 @@ const ClientLogin = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="seu.email@empresa.com.br"
+                  placeholder="rafael.gontijo@ascalate.com.br"
                   className="mt-1"
                 />
               </div>
@@ -124,8 +124,8 @@ const ClientLogin = () => {
         <p className="mt-4 text-center text-sm text-gray-600">
           Em caso de dificuldades no acesso, entre em contato com nossa equipe pelo email:
           <br />
-          <a href="mailto:contato@ascalate.com.br" className="font-medium text-[#0056b3] hover:text-[#003d7f]">
-            contato@ascalate.com.br
+          <a href="mailto:daniel@ascalate.com.br" className="font-medium text-[#0056b3] hover:text-[#003d7f]">
+            daniel@ascalate.com.br
           </a>
         </p>
       </div>

@@ -182,7 +182,7 @@ const Contact = () => {
                       <Phone className="h-6 w-6 text-blue-600" />
                     </div>
                     <div className="ml-4">
-                      <a href="tel:+5500000000000" className="text-gray-700 hover:text-blue-600 transition-colors">(XX) XXXX-XXXX</a>
+                      <a href="tel:+5562936180447" className="text-gray-700 hover:text-blue-600 transition-colors">(62) 93618-0447</a>
                     </div>
                   </div>
                   
@@ -191,7 +191,7 @@ const Contact = () => {
                       <Mail className="h-6 w-6 text-blue-600" />
                     </div>
                     <div className="ml-4">
-                      <a href="mailto:contato@ascalate.com.br" className="text-gray-700 hover:text-blue-600 transition-colors">contato@ascalate.com.br</a>
+                      <a href="mailto:daniel@ascalate.com.br" className="text-gray-700 hover:text-blue-600 transition-colors">daniel@ascalate.com.br</a>
                     </div>
                   </div>
                 </div>

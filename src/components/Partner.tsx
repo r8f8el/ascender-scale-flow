@@ -26,16 +26,9 @@ export const Partner: React.FC = () => {
           <div className="w-full md:w-2/3">
             <h3 className="text-2xl font-bold text-gray-900 mb-4">Daniel Gomes</h3>
             <p className="text-gray-700 mb-4">
-              Profissional com mais de 15 anos de experiência em consultoria contábil e fiscal, 
-              especializado em atender empresas de médio e grande porte, com foco em otimização 
-              tributária e compliance fiscal.
-            </p>
-            <p className="text-gray-700 mb-4">
               Possui MBA em Gestão Financeira com ênfase em Controladoria, Auditoria e Compliance pela 
               Fundação Getulio Vargas (FGV). Atua como consultor nas áreas de Planejamento Financeiro e 
-              Estratégico, com experiência na avaliação de Business Plans que somam mais de R$ 3,5 bilhões em ativos.
-            </p>
-            <p className="text-gray-700 mb-4">
+              Estratégico, com experiência na avaliação de Business Plans que somam mais de R$ 3,5 bilhões em ativos. 
               Tem histórico de atuação em projetos diversos, abrangendo os setores de Hospitalidade e 
               Entretenimento, Agronegócio, Indústrias, Construtoras e Incorporadoras, Varejo, Saúde, 
               Estética, entre outros.
