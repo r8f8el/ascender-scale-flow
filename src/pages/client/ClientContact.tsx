@@ -127,10 +127,12 @@ const ClientContact = () => {
       </div>
       
       <div className="mt-8 bg-blue-50 p-4 rounded-lg border border-blue-100">
-        <h3 className="font-medium text-blue-800 mb-2">Aviso de disponibilidade:</h3>
+        <h3 className="font-medium text-blue-800 mb-2">Endereço:</h3>
         <p className="text-blue-700 text-sm">
-          Nossa equipe está comprometida em responder todas as solicitações em até 24 horas úteis. 
-          Para questões urgentes, recomendamos o contato via telefone ou WhatsApp.
+          Avenida Portugal, 1148<br />
+          Edifício Orion<br />
+          Goiânia, Goiás<br />
+          Brasil
         </p>
       </div>
     </div>

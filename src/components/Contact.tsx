@@ -170,8 +170,9 @@ const Contact = () => {
                     </div>
                     <div className="ml-4">
                       <p className="text-gray-700">
-                        Rua Exemplo, 123<br />
-                        Caldas Novas, Goiás<br />
+                        Avenida Portugal, 1148<br />
+                        Edificio Orion<br />
+                        Goiânia, Goiás<br />
                         Brasil
                       </p>
                     </div>
