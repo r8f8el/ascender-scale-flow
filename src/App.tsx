@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,7 +12,6 @@ import ClientRequests from "./pages/client/ClientRequests";
 import ClientSchedule from "./pages/client/ClientSchedule";
 import ClientContact from "./pages/client/ClientContact";
 import Forum from "./pages/Forum";
-import NewsletterSignup from "./pages/NewsletterSignup";
 import AuthProvider from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -47,7 +45,6 @@ const App = () => (
               {/* Public routes */}
               <Route path="/" element={<Index />} />
               <Route path="/forum" element={<Forum />} />
-              <Route path="/newsletter" element={<NewsletterSignup />} />
               
               {/* Client routes */}
               <Route path="/cliente/login" element={<ClientLogin />} />

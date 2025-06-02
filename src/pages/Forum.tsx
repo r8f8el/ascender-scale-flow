@@ -13,12 +13,25 @@ const Forum = () => {
     cargo: '',
     email: ''
   });
+  const [newsletterData, setNewsletterData] = useState({
+    nome: '',
+    email: ''
+  });
   const [isLoading, setIsLoading] = useState(false);
+  const [isNewsletterLoading, setIsNewsletterLoading] = useState(false);
   const { toast } = useToast();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleNewsletterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setNewsletterData(prev => ({
       ...prev,
       [name]: value
     }));
@@ -51,6 +64,36 @@ const Forum = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsNewsletterLoading(true);
+
+    try {
+      const { error } = await supabase.functions.invoke('send-newsletter-signup', {
+        body: newsletterData
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Cadastro realizado com sucesso!",
+        description: "Você receberá nossas atualizações em breve.",
+      });
+
+      // Limpar o formulário
+      setNewsletterData({ nome: '', email: '' });
+    } catch (error) {
+      console.error('Erro ao cadastrar email:', error);
+      toast({
+        title: "Erro ao cadastrar",
+        description: "Ocorreu um erro. Tente novamente mais tarde.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsNewsletterLoading(false);
     }
   };
 
@@ -96,13 +139,14 @@ const Forum = () => {
           </div>
         </div>
 
-        {/* Formulário de inscrição */}
-        <div className="max-w-md mx-auto">
+        {/* Dois formulários lado a lado */}
+        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8">
+          {/* Formulário de inscrição no evento */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-center text-[#003366]">Formulário de Inscrição</CardTitle>
+              <CardTitle className="text-center text-[#003366]">Inscrição no Evento</CardTitle>
               <CardDescription className="text-center">
-                Preencha os dados abaixo para garantir sua vaga
+                Preencha os dados abaixo para garantir sua vaga no evento
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -154,6 +198,78 @@ const Forum = () => {
                   {isLoading ? 'Enviando...' : 'Garantir minha vaga'}
                 </Button>
               </form>
+            </CardContent>
+          </Card>
+
+          {/* Formulário de cadastro para atualizações */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-center text-[#003366]">Receba Atualizações</CardTitle>
+              <CardDescription className="text-center">
+                Cadastre seu email para receber conteúdos exclusivos e novidades
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleNewsletterSubmit} className="space-y-4">
+                <div>
+                  <Label htmlFor="newsletter-nome">Nome</Label>
+                  <Input
+                    type="text"
+                    id="newsletter-nome"
+                    name="nome"
+                    value={newsletterData.nome}
+                    onChange={handleNewsletterChange}
+                    required
+                    className="mt-1"
+                    placeholder="Seu nome completo"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="newsletter-email">Email</Label>
+                  <Input
+                    type="email"
+                    id="newsletter-email"
+                    name="email"
+                    value={newsletterData.email}
+                    onChange={handleNewsletterChange}
+                    required
+                    className="mt-1"
+                    placeholder="seu@email.com"
+                  />
+                </div>
+
+                <Button 
+                  type="submit" 
+                  className="w-full bg-[#f07c00] hover:bg-[#e56b00] text-white"
+                  disabled={isNewsletterLoading}
+                >
+                  {isNewsletterLoading ? 'Cadastrando...' : 'Quero receber atualizações'}
+                </Button>
+              </form>
+
+              {/* Benefícios do cadastro */}
+              <div className="mt-6">
+                <h4 className="font-semibold mb-3 text-center">O que você receberá:</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center">
+                    <span className="text-[#f07c00] mr-2">📊</span>
+                    <span>Insights exclusivos sobre FP&A</span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="text-[#f07c00] mr-2">🎯</span>
+                    <span>Convites para eventos especiais</span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="text-[#f07c00] mr-2">📚</span>
+                    <span>Materiais gratuitos e templates</span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="text-[#f07c00] mr-2">🤝</span>
+                    <span>Oportunidades de networking</span>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
