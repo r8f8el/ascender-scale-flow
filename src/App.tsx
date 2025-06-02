@@ -12,6 +12,7 @@ import ClientRequests from "./pages/client/ClientRequests";
 import ClientSchedule from "./pages/client/ClientSchedule";
 import ClientContact from "./pages/client/ClientContact";
 import Forum from "./pages/Forum";
+import ParticipantData from "./pages/ParticipantData";
 import AuthProvider from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -45,6 +46,7 @@ const App = () => (
               {/* Public routes */}
               <Route path="/" element={<Index />} />
               <Route path="/forum" element={<Forum />} />
+              <Route path="/participante-dados" element={<ParticipantData />} />
               
               {/* Client routes */}
               <Route path="/cliente/login" element={<ClientLogin />} />
