@@ -46,6 +46,7 @@ const App = () => (
               {/* Public routes */}
               <Route path="/" element={<Index />} />
               <Route path="/forum" element={<Forum />} />
+              <Route path="/newsletter" element={<NewsletterSignup />} />
               
               {/* Client routes */}
               <Route path="/cliente/login" element={<ClientLogin />} />
