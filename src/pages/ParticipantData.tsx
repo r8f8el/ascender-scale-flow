@@ -66,11 +66,18 @@ const ParticipantData = () => {
       {/* Header com logo */}
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-center mb-8">
-          <img 
-            src="/lovable-uploads/b73f783c-4401-4f9e-abf0-f7119839392f.png" 
-            alt="Ascalate Logo" 
-            className="h-16 w-auto"
-          />
+          <a 
+            href="https://ascalate.com.br" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="cursor-pointer hover:opacity-80 transition-opacity"
+          >
+            <img 
+              src="/lovable-uploads/244710e0-c1bc-438e-978d-5daddf1771c0.png" 
+              alt="Ascalate Logo" 
+              className="h-16 w-auto"
+            />
+          </a>
         </div>
 
         {/* Título da página */}
