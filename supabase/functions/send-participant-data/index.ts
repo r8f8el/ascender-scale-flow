@@ -71,9 +71,14 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log("Admin email sent:", adminEmailResponse);
+    console.log("Admin email response:", JSON.stringify(adminEmailResponse));
+    
+    if (adminEmailResponse.error) {
+      console.error("Error sending admin email:", adminEmailResponse.error);
+      throw new Error(`Failed to send admin email: ${adminEmailResponse.error.message}`);
+    }
 
-    console.log("Sending participant confirmation email...");
+    console.log("Admin email sent successfully, sending participant confirmation email...");
 
     // Enviar email de confirmação para o participante
     const participantEmailResponse = await resend.emails.send({
@@ -104,11 +109,19 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log("Participant email sent:", participantEmailResponse);
+    console.log("Participant email response:", JSON.stringify(participantEmailResponse));
+    
+    if (participantEmailResponse.error) {
+      console.error("Error sending participant email:", participantEmailResponse.error);
+      throw new Error(`Failed to send participant email: ${participantEmailResponse.error.message}`);
+    }
 
     console.log("Both emails sent successfully");
 
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ 
+      success: true,
+      message: "Emails sent successfully"
+    }), {
       status: 200,
       headers: {
         "Content-Type": "application/json",
