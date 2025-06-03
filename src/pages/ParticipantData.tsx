@@ -164,25 +164,6 @@ const ParticipantData = () => {
                   {isLoading ? 'Enviando...' : 'Enviar dados para receber arquivos'}
                 </Button>
               </form>
-
-              {/* Informações adicionais */}
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-semibold mb-2 text-center text-[#003366]">O que você receberá:</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center">
-                    <span className="text-[#f07c00] mr-2">📄</span>
-                    <span>Materiais do evento</span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="text-[#f07c00] mr-2">📊</span>
-                    <span>Apresentações e documentos</span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="text-[#f07c00] mr-2">🎯</span>
-                    <span>Recursos exclusivos</span>
-                  </div>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </div>
