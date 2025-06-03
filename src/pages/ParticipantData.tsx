@@ -31,15 +31,20 @@ const ParticipantData = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.functions.invoke('send-participant-data', {
+      const { data, error } = await supabase.functions.invoke('send-participant-data', {
         body: formData
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error details:', error);
+        throw error;
+      }
+
+      console.log('Success response:', data);
 
       toast({
         title: "Dados enviados com sucesso!",
-        description: "Recebemos seus dados e você receberá os arquivos em breve.",
+        description: "Recebemos seus dados e você receberá os arquivos em breve no seu email.",
       });
 
       // Limpar o formulário
@@ -48,7 +53,7 @@ const ParticipantData = () => {
       console.error('Erro ao enviar dados:', error);
       toast({
         title: "Erro ao enviar dados",
-        description: "Ocorreu um erro. Tente novamente mais tarde.",
+        description: "Ocorreu um erro ao processar sua solicitação. Tente novamente.",
         variant: "destructive",
       });
     } finally {

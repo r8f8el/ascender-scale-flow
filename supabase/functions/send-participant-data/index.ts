@@ -78,49 +78,11 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error(`Failed to send admin email: ${adminEmailResponse.error.message}`);
     }
 
-    console.log("Admin email sent successfully, sending participant confirmation email...");
-
-    // Enviar email de confirmação para o participante
-    const participantEmailResponse = await resend.emails.send({
-      from: "Ascalate <onboarding@resend.dev>",
-      to: [email],
-      subject: "Dados recebidos - Arquivos serão enviados em breve",
-      html: `
-        <h2>Olá ${nome}!</h2>
-        <p>Recebemos seus dados com sucesso.</p>
-        
-        <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3>Dados confirmados:</h3>
-          <p><strong>Nome:</strong> ${nome}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Empresa:</strong> ${empresa}</p>
-          <p><strong>Cargo:</strong> ${cargo}</p>
-        </div>
-        
-        <p>Os arquivos serão enviados para este email em breve.</p>
-        
-        <p>Atenciosamente,<br>
-        Equipe Ascalate</p>
-        
-        <hr>
-        <p style="color: #666; font-size: 12px;">
-          Se você não solicitou esses arquivos, pode ignorar esta mensagem.
-        </p>
-      `,
-    });
-
-    console.log("Participant email response:", JSON.stringify(participantEmailResponse));
-    
-    if (participantEmailResponse.error) {
-      console.error("Error sending participant email:", participantEmailResponse.error);
-      throw new Error(`Failed to send participant email: ${participantEmailResponse.error.message}`);
-    }
-
-    console.log("Both emails sent successfully");
+    console.log("Email sent successfully to admin");
 
     return new Response(JSON.stringify({ 
       success: true,
-      message: "Emails sent successfully"
+      message: "Dados recebidos com sucesso! Os arquivos serão enviados em breve."
     }), {
       status: 200,
       headers: {
