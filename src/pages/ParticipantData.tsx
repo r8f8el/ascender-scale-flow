@@ -73,9 +73,9 @@ const ParticipantData = () => {
             className="cursor-pointer hover:opacity-80 transition-opacity"
           >
             <img 
-              src="/lovable-uploads/244710e0-c1bc-438e-978d-5daddf1771c0.png" 
+              src="/lovable-uploads/7fa50647-4743-4716-bf52-1146fa92f463.png" 
               alt="Ascalate Logo" 
-              className="h-16 w-auto"
+              className="h-20 w-auto"
             />
           </a>
         </div>
