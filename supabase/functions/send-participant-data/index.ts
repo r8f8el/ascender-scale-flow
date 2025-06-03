@@ -19,13 +19,28 @@ interface ParticipantDataRequest {
 }
 
 const handler = async (req: Request): Promise<Response> => {
+  console.log("Function called with method:", req.method);
+  
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log("Starting to process request...");
+    
     const { nome, email, telefone, empresa, cargo }: ParticipantDataRequest = await req.json();
+    
+    console.log("Received data:", { nome, email, telefone, empresa, cargo });
+    
+    // Verificar se a chave API está configurada
+    const apiKey = Deno.env.get("RESEND_API_KEY");
+    if (!apiKey) {
+      console.error("RESEND_API_KEY not configured");
+      throw new Error("Email service not configured");
+    }
+    
+    console.log("API Key configured, sending admin email...");
 
     // Enviar email para rafael.gontijo@ascalate.com.br com os dados do participante
     const adminEmailResponse = await resend.emails.send({
@@ -56,6 +71,10 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
+    console.log("Admin email sent:", adminEmailResponse);
+
+    console.log("Sending participant confirmation email...");
+
     // Enviar email de confirmação para o participante
     const participantEmailResponse = await resend.emails.send({
       from: "Ascalate <onboarding@resend.dev>",
@@ -85,7 +104,9 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log("Emails sent successfully:", { adminEmailResponse, participantEmailResponse });
+    console.log("Participant email sent:", participantEmailResponse);
+
+    console.log("Both emails sent successfully");
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
@@ -95,9 +116,15 @@ const handler = async (req: Request): Promise<Response> => {
       },
     });
   } catch (error: any) {
-    console.error("Error in send-participant-data function:", error);
+    console.error("Detailed error in send-participant-data function:", error);
+    console.error("Error stack:", error.stack);
+    console.error("Error message:", error.message);
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: "Check function logs for more information"
+      }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
