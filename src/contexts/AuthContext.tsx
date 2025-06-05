@@ -1,73 +1,225 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface Client {
   id: string;
   name: string;
   email: string;
+  company?: string;
 }
 
 interface AuthContextType {
   isAuthenticated: boolean;
   client: Client | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  user: User | null;
+  session: Session | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
+  signUp: (email: string, password: string, name: string, company?: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   client: null,
-  login: async () => false,
-  logout: () => {},
+  user: null,
+  session: null,
+  loading: true,
+  login: async () => ({ success: false }),
+  logout: async () => {},
+  signUp: async () => ({ success: false }),
 });
 
 export const useAuth = () => useContext(AuthContext);
 
-// Mock clients database - in a real app, this would be fetched from a server
-const mockClients = [
-  { id: '1', name: 'Portobello', email: 'cliente@portobello.com.br', password: 'portobello123' },
-  { id: '2', name: 'J.Assy', email: 'cliente@jassy.com.br', password: 'jassy123' },
-];
-
 const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [client, setClient] = useState<Client | null>(null);
-  
-  // Check if there's a stored session on component mount
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const { toast } = useToast();
+
+  // Function to fetch client profile from Supabase
+  const fetchClientProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('client_users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching client profile:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error fetching client profile:', error);
+      return null;
+    }
+  };
+
+  // Set up auth state listener
   useEffect(() => {
-    const storedClient = localStorage.getItem('ascalate_client');
-    if (storedClient) {
-      const parsedClient = JSON.parse(storedClient);
-      setClient(parsedClient);
-      setIsAuthenticated(true);
-    }
-  }, []);
-  
-  const login = async (email: string, password: string): Promise<boolean> => {
-    // In a real app, this would be an API call
-    const foundClient = mockClients.find(
-      (c) => c.email.toLowerCase() === email.toLowerCase() && c.password === password
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Fetch client profile
+          const clientProfile = await fetchClientProfile(session.user.id);
+          if (clientProfile) {
+            setClient({
+              id: clientProfile.id,
+              name: clientProfile.name,
+              email: clientProfile.email,
+              company: clientProfile.company
+            });
+            setIsAuthenticated(true);
+          } else {
+            setClient(null);
+            setIsAuthenticated(false);
+          }
+        } else {
+          setClient(null);
+          setIsAuthenticated(false);
+        }
+        
+        setLoading(false);
+      }
     );
-    
-    if (foundClient) {
-      const { password: _, ...clientWithoutPassword } = foundClient;
-      setClient(clientWithoutPassword);
-      setIsAuthenticated(true);
-      localStorage.setItem('ascalate_client', JSON.stringify(clientWithoutPassword));
-      return true;
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setSession(session);
+        setUser(session.user);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.toLowerCase().trim(),
+        password,
+      });
+
+      if (error) {
+        console.error('Login error:', error);
+        return { success: false, error: error.message };
+      }
+
+      if (data.user) {
+        // Check if user is a client
+        const clientProfile = await fetchClientProfile(data.user.id);
+        if (!clientProfile) {
+          await supabase.auth.signOut();
+          return { success: false, error: 'Acesso não autorizado. Esta conta não está registrada como cliente.' };
+        }
+      }
+
+      return { success: true };
+    } catch (error: any) {
+      console.error('Login error:', error);
+      return { success: false, error: 'Erro interno. Tente novamente.' };
+    } finally {
+      setLoading(false);
     }
-    
-    return false;
   };
-  
-  const logout = () => {
-    setClient(null);
-    setIsAuthenticated(false);
-    localStorage.removeItem('ascalate_client');
+
+  const signUp = async (email: string, password: string, name: string, company?: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase.auth.signUp({
+        email: email.toLowerCase().trim(),
+        password,
+        options: {
+          data: {
+            name: name.trim(),
+            company: company?.trim()
+          },
+          emailRedirectTo: `${window.location.origin}/cliente`
+        }
+      });
+
+      if (error) {
+        console.error('Signup error:', error);
+        return { success: false, error: error.message };
+      }
+
+      if (data.user) {
+        // Create client profile
+        const { error: clientError } = await supabase
+          .from('client_users')
+          .insert({
+            id: data.user.id,
+            name: name.trim(),
+            email: email.toLowerCase().trim(),
+            company: company?.trim()
+          });
+
+        if (clientError) {
+          console.error('Error creating client profile:', clientError);
+          return { success: false, error: 'Erro ao criar perfil do cliente.' };
+        }
+      }
+
+      return { success: true };
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      return { success: false, error: 'Erro interno. Tente novamente.' };
+    } finally {
+      setLoading(false);
+    }
   };
-  
+
+  const logout = async (): Promise<void> => {
+    try {
+      setLoading(true);
+      await supabase.auth.signOut();
+      setClient(null);
+      setUser(null);
+      setSession(null);
+      setIsAuthenticated(false);
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast({
+        title: "Erro ao sair",
+        description: "Ocorreu um erro ao fazer logout. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ isAuthenticated, client, login, logout }}>
+    <AuthContext.Provider value={{ 
+      isAuthenticated, 
+      client, 
+      user, 
+      session, 
+      loading, 
+      login, 
+      logout, 
+      signUp 
+    }}>
       {children}
     </AuthContext.Provider>
   );

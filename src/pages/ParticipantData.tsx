@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useInputSanitization } from '@/hooks/useInputSanitization';
 
 const ParticipantData = () => {
   const [formData, setFormData] = useState({
@@ -17,6 +18,7 @@ const ParticipantData = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { sanitizeFormData } = useInputSanitization();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -26,13 +28,72 @@ const ParticipantData = () => {
     }));
   };
 
+  const validateForm = (): boolean => {
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (!formData.nome.trim()) {
+      toast({
+        title: "Campo obrigatório",
+        description: "Por favor, informe seu nome completo.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (!emailPattern.test(formData.email)) {
+      toast({
+        title: "Email inválido",
+        description: "Por favor, informe um email válido.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (!formData.telefone.trim()) {
+      toast({
+        title: "Campo obrigatório",
+        description: "Por favor, informe seu telefone.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (!formData.empresa.trim()) {
+      toast({
+        title: "Campo obrigatório",
+        description: "Por favor, informe sua empresa.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    if (!formData.cargo.trim()) {
+      toast({
+        title: "Campo obrigatório",
+        description: "Por favor, informe seu cargo.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
+      // Sanitize form data
+      const sanitizedData = sanitizeFormData(formData);
+      
       const { data, error } = await supabase.functions.invoke('send-participant-data', {
-        body: formData
+        body: sanitizedData
       });
 
       if (error) {
@@ -109,6 +170,7 @@ const ParticipantData = () => {
                     required
                     className="mt-1"
                     placeholder="Seu nome completo"
+                    maxLength={100}
                   />
                 </div>
 
@@ -123,6 +185,7 @@ const ParticipantData = () => {
                     required
                     className="mt-1"
                     placeholder="seu@email.com"
+                    maxLength={255}
                   />
                 </div>
 
@@ -137,6 +200,7 @@ const ParticipantData = () => {
                     required
                     className="mt-1"
                     placeholder="(11) 99999-9999"
+                    maxLength={20}
                   />
                 </div>
 
@@ -151,6 +215,7 @@ const ParticipantData = () => {
                     required
                     className="mt-1"
                     placeholder="Nome da sua empresa"
+                    maxLength={100}
                   />
                 </div>
 
@@ -165,6 +230,7 @@ const ParticipantData = () => {
                     required
                     className="mt-1"
                     placeholder="Seu cargo na empresa"
+                    maxLength={100}
                   />
                 </div>
 
