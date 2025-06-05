@@ -7,11 +7,13 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
 import { Shield } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { adminLogin } = useAdminAuth();
@@ -25,10 +27,94 @@ const AdminLogin = () => {
     return input.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Input validation
+    const sanitizedEmail = sanitizeInput(email);
+    const sanitizedPassword = sanitizeInput(password);
+    
+    if (!sanitizedEmail || !sanitizedPassword) {
+      toast({
+        title: "Campos vazios",
+        description: "Por favor, preencha todos os campos.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!validateEmail(sanitizedEmail)) {
+      toast({
+        title: "Email inválido",
+        description: "Por favor, insira um email válido.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!sanitizedEmail.includes('@ascalate.com.br')) {
+      toast({
+        title: "Acesso negado",
+        description: "Apenas emails da Ascalate podem criar contas administrativas.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (sanitizedPassword.length < 6) {
+      toast({
+        title: "Senha muito curta",
+        description: "A senha deve ter pelo menos 6 caracteres.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: sanitizedEmail,
+        password: sanitizedPassword,
+        options: {
+          emailRedirectTo: `${window.location.origin}/admin`
+        }
+      });
+      
+      if (error) {
+        if (error.message.includes('User already registered')) {
+          toast({
+            title: "Email já cadastrado",
+            description: "Este email já possui uma conta. Tente fazer login.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Erro no cadastro",
+            description: error.message,
+            variant: "destructive"
+          });
+        }
+      } else if (data.user) {
+        toast({
+          title: "Conta criada com sucesso",
+          description: "Sua conta administrativa foi criada. Você pode fazer login agora.",
+        });
+        setIsSignUp(false);
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao criar a conta. Tente novamente mais tarde.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     const sanitizedEmail = sanitizeInput(email);
     const sanitizedPassword = sanitizeInput(password);
     
@@ -104,7 +190,32 @@ const AdminLogin = () => {
           </div>
         </div>
         
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <div className="flex justify-center space-x-4 mb-6">
+          <button
+            type="button"
+            onClick={() => setIsSignUp(false)}
+            className={`px-4 py-2 text-sm font-medium rounded-md ${
+              !isSignUp 
+                ? 'bg-[#0056b3] text-white' 
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            Login
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsSignUp(true)}
+            className={`px-4 py-2 text-sm font-medium rounded-md ${
+              isSignUp 
+                ? 'bg-[#0056b3] text-white' 
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            Criar Conta
+          </button>
+        </div>
+        
+        <form className="mt-8 space-y-6" onSubmit={isSignUp ? handleSignUp : handleLogin}>
           <div className="space-y-4 rounded-md shadow-sm">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -135,7 +246,7 @@ const AdminLogin = () => {
                   id="password"
                   name="password"
                   type="password"
-                  autoComplete="current-password"
+                  autoComplete={isSignUp ? "new-password" : "current-password"}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -144,6 +255,11 @@ const AdminLogin = () => {
                   maxLength={128}
                 />
               </div>
+              {isSignUp && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Mínimo de 6 caracteres
+                </p>
+              )}
             </div>
           </div>
           
@@ -153,13 +269,19 @@ const AdminLogin = () => {
               className="w-full bg-[#0056b3] hover:bg-[#003d7f]"
               disabled={isLoading}
             >
-              {isLoading ? "Entrando..." : "Entrar"}
+              {isLoading 
+                ? (isSignUp ? "Criando conta..." : "Entrando...") 
+                : (isSignUp ? "Criar Conta Admin" : "Entrar")
+              }
             </Button>
           </div>
         </form>
         
         <p className="mt-4 text-center text-sm text-gray-600">
-          Área restrita a administradores. Em caso de problemas, contate o suporte técnico.
+          {isSignUp 
+            ? "Crie sua conta administrativa usando um email @ascalate.com.br"
+            : "Área restrita a administradores. Em caso de problemas, contate o suporte técnico."
+          }
         </p>
       </div>
     </div>
