@@ -13,18 +13,17 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
   children, 
   requiredRole 
 }) => {
-  const { isAdminAuthenticated, admin, loading } = useAdminAuth();
+  const { isAdminAuthenticated, admin } = useAdminAuth();
   const { toast } = useToast();
   
   useEffect(() => {
-    if (!loading && !isAdminAuthenticated) {
+    if (!isAdminAuthenticated) {
       toast({
         title: "Acesso Negado",
         description: "Você precisa estar autenticado para acessar esta área.",
         variant: "destructive"
       });
     } else if (
-      !loading &&
       requiredRole && 
       admin && 
       admin.role !== requiredRole && 
@@ -36,23 +35,14 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
         variant: "destructive"
       });
     }
-  }, [isAdminAuthenticated, admin, requiredRole, toast, loading]);
+  }, [isAdminAuthenticated, admin, requiredRole, toast]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Carregando...</p>
-        </div>
-      </div>
-    );
-  }
-
+  // Verificação real de autenticação
   if (!isAdminAuthenticated) {
     return <Navigate to="/admin/login" replace />;
   }
 
+  // Verificação de permissões baseada em função
   if (requiredRole && admin && admin.role !== requiredRole && admin.role !== 'super_admin') {
     return <Navigate to="/admin/unauthorized" replace />;
   }

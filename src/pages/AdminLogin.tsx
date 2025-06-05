@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Logo } from '../components/Logo';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -14,13 +14,7 @@ const AdminLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { adminLogin, isAdminAuthenticated } = useAdminAuth();
-
-  // Redirect if already authenticated
-  if (isAdminAuthenticated) {
-    navigate('/admin');
-    return null;
-  }
+  const { adminLogin } = useAdminAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,9 +31,9 @@ const AdminLogin = () => {
     setIsLoading(true);
     
     try {
-      const result = await adminLogin(email, password);
+      const success = await adminLogin(email, password);
       
-      if (result.success) {
+      if (success) {
         toast({
           title: "Login realizado com sucesso",
           description: "Bem-vindo ao Painel Administrativo Ascalate."
@@ -48,7 +42,7 @@ const AdminLogin = () => {
       } else {
         toast({
           title: "Falha no login",
-          description: result.error || "Email ou senha inválidos.",
+          description: "Email ou senha inválidos.",
           variant: "destructive"
         });
       }
@@ -68,9 +62,7 @@ const AdminLogin = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8">
         <div className="flex flex-col items-center">
-          <Link to="/">
-            <Logo className="h-12 w-auto" />
-          </Link>
+          <Logo className="h-12 w-auto" />
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
             Painel Administrativo
           </h2>
@@ -132,10 +124,18 @@ const AdminLogin = () => {
               {isLoading ? "Entrando..." : "Entrar"}
             </Button>
           </div>
+
+          <div className="mt-4 text-center text-sm text-gray-600">
+            <p>Emails de teste: </p>
+            <p>daniel@ascalate.com.br</p>
+            <p>rafael.gontijo@ascalate.com.br</p>
+            <p>artur.servian@ascalate.com.br</p>
+            <p>Senha padrão: admin123</p>
+          </div>
         </form>
         
         <p className="mt-4 text-center text-sm text-gray-600">
-          Para obter acesso ao painel administrativo, entre em contato com o administrador do sistema.
+          Área restrita a administradores. Em caso de problemas, contate o suporte técnico.
         </p>
       </div>
     </div>
