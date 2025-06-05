@@ -75,7 +75,7 @@ const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) 
         .single();
       
       if (error) {
-        console.error('Error fetching admin profile:', error);
+        // Silent error handling for production
         return;
       }
 
@@ -89,7 +89,7 @@ const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) 
         setIsAdminAuthenticated(true);
       }
     } catch (error) {
-      console.error('Error fetching admin profile:', error);
+      // Silent error handling for production
     }
   };
   
@@ -133,7 +133,7 @@ const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) 
       setIsAdminAuthenticated(false);
       setSession(null);
     } catch (error) {
-      console.error('Admin logout error:', error);
+      // Silent error handling for production
     }
   };
   

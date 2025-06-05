@@ -75,7 +75,7 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
         .single();
       
       if (error) {
-        console.error('Error fetching client profile:', error);
+        // Silent error handling for production
         return;
       }
 
@@ -89,7 +89,7 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
         setIsAuthenticated(true);
       }
     } catch (error) {
-      console.error('Error fetching client profile:', error);
+      // Silent error handling for production
     }
   };
   
@@ -133,7 +133,7 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
       setIsAuthenticated(false);
       setSession(null);
     } catch (error) {
-      console.error('Logout error:', error);
+      // Silent error handling for production
     }
   };
   
