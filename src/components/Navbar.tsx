@@ -67,6 +67,14 @@ const Navbar = () => {
             >
               Contato
             </a>
+            <a 
+              href="https://ascalate.com.br/participante-dados" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-700 hover:text-blue-600 transition-colors duration-200 font-medium"
+            >
+              Fórum FP&A
+            </a>
             
             {/* Authentication Links */}
             {isAuthenticated ? (
@@ -163,6 +171,15 @@ const Navbar = () => {
                 onClick={() => setIsOpen(false)}
               >
                 Contato
+              </a>
+              <a 
+                href="https://ascalate.com.br/participante-dados" 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors duration-200 font-medium"
+                onClick={() => setIsOpen(false)}
+              >
+                Fórum FP&A
               </a>
               
               {/* Mobile Authentication Links */}
