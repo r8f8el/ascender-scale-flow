@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Logo } from './Logo';
@@ -21,6 +20,12 @@ const Navbar = () => {
           <NavLink href="#mission">Missão, Visão e Valores</NavLink>
           <NavLink href="#clients">Clientes</NavLink>
           <NavLink href="#contact">Contato</NavLink>
+          <a 
+            href="https://ascalate.com.br/participante-dados"
+            className="text-gray-800 hover:text-ascalate-blue font-medium transition-colors duration-300 relative after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-0.5 after:bottom-0 after:left-0 after:bg-ascalate-blue after:origin-bottom-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-bottom-left"
+          >
+            Fórum FP&A
+          </a>
           <Link 
             to="/cliente/login"
             className="text-white bg-[#0056b3] hover:bg-[#003d7f] px-4 py-2 rounded-md transition-colors duration-300"
@@ -43,6 +48,12 @@ const Navbar = () => {
                 <MobileNavLink href="#mission">Missão, Visão e Valores</MobileNavLink>
                 <MobileNavLink href="#clients">Clientes</MobileNavLink>
                 <MobileNavLink href="#contact">Contato</MobileNavLink>
+                <a 
+                  href="https://ascalate.com.br/participante-dados"
+                  className="text-gray-800 hover:text-ascalate-blue font-medium transition-colors duration-300 py-2 block"
+                >
+                  Fórum FP&A
+                </a>
                 <Link 
                   to="/cliente/login"
                   className="text-white bg-[#0056b3] hover:bg-[#003d7f] px-4 py-2 rounded-md transition-colors duration-300 text-center"
