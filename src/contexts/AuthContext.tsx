@@ -36,32 +36,15 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
+      (event, session) => {
         setSession(session);
         
         if (session?.user) {
-          // Check if user is a client (not admin)
+          // Check if user is a client (not admin) - defer Supabase calls
           if (!session.user.email?.includes('@ascalate.com.br')) {
-            try {
-              const { data: profile } = await supabase
-                .from('client_profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
-              
-              if (profile) {
-                setClient({
-                  id: profile.id,
-                  name: profile.name,
-                  email: profile.email,
-                  company: profile.company
-                });
-                setIsAuthenticated(true);
-              }
-            } catch (error) {
-              console.error('Error fetching client profile:', error);
-            }
+            setTimeout(() => {
+              fetchClientProfile(session.user.id);
+            }, 0);
           }
         } else {
           setClient(null);
@@ -73,34 +56,72 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        console.log('Existing session found:', session.user?.email);
         setSession(session);
+        if (session.user && !session.user.email?.includes('@ascalate.com.br')) {
+          fetchClientProfile(session.user.id);
+        }
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchClientProfile = async (userId: string) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('client_profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching client profile:', error);
+        return;
+      }
+
+      if (profile) {
+        setClient({
+          id: profile.id,
+          name: profile.name,
+          email: profile.email,
+          company: profile.company
+        });
+        setIsAuthenticated(true);
+      }
+    } catch (error) {
+      console.error('Error fetching client profile:', error);
+    }
+  };
   
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      // Input validation
+      if (!email || !password) {
+        return false;
+      }
+
+      // Email format validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return false;
+      }
+
       // Check if it's a client email (not admin)
       if (email.includes('@ascalate.com.br')) {
         return false; // Admin emails should not login through client portal
       }
 
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim().toLowerCase(),
         password,
       });
       
       if (error) {
-        console.error('Login error:', error.message);
         return false;
       }
       
       return !!data.user;
     } catch (error) {
-      console.error('Login error:', error);
       return false;
     }
   };

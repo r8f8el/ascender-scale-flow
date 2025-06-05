@@ -16,13 +16,44 @@ const ClientLogin = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const sanitizeInput = (input: string) => {
+    return input.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password) {
+    // Input validation
+    const sanitizedEmail = sanitizeInput(email);
+    const sanitizedPassword = sanitizeInput(password);
+    
+    if (!sanitizedEmail || !sanitizedPassword) {
       toast({
         title: "Campos vazios",
         description: "Por favor, preencha todos os campos.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!validateEmail(sanitizedEmail)) {
+      toast({
+        title: "Email inválido",
+        description: "Por favor, insira um email válido.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (sanitizedEmail.includes('@ascalate.com.br')) {
+      toast({
+        title: "Acesso negado",
+        description: "Use o portal administrativo para acessar com email da Ascalate.",
         variant: "destructive"
       });
       return;
@@ -31,7 +62,7 @@ const ClientLogin = () => {
     setIsLoading(true);
     
     try {
-      const success = await login(email, password);
+      const success = await login(sanitizedEmail, sanitizedPassword);
       
       if (success) {
         toast({
@@ -47,7 +78,6 @@ const ClientLogin = () => {
         });
       }
     } catch (error) {
-      console.error('Error during login:', error);
       toast({
         title: "Erro",
         description: "Ocorreu um erro ao realizar o login. Tente novamente mais tarde.",
@@ -91,6 +121,7 @@ const ClientLogin = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="seu.email@empresa.com"
                   className="mt-1"
+                  maxLength={254}
                 />
               </div>
             </div>
@@ -110,6 +141,7 @@ const ClientLogin = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="mt-1"
+                  maxLength={128}
                 />
               </div>
             </div>
@@ -123,13 +155,6 @@ const ClientLogin = () => {
             >
               {isLoading ? "Entrando..." : "Entrar"}
             </Button>
-          </div>
-
-          <div className="mt-4 text-center text-sm text-gray-600">
-            <p>Emails de teste para clientes:</p>
-            <p>cliente@portobello.com.br</p>
-            <p>cliente@jassy.com.br</p>
-            <p>Senhas: portobello123 / jassy123</p>
           </div>
         </form>
         

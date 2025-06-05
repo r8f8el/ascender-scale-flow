@@ -36,32 +36,15 @@ const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) 
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Admin auth state changed:', event, session?.user?.email);
+      (event, session) => {
         setSession(session);
         
         if (session?.user) {
-          // Check if user is an admin (ascalate email)
+          // Check if user is an admin (ascalate email) - defer Supabase calls
           if (session.user.email?.includes('@ascalate.com.br')) {
-            try {
-              const { data: profile } = await supabase
-                .from('admin_profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
-              
-              if (profile) {
-                setAdmin({
-                  id: profile.id,
-                  name: profile.name,
-                  email: profile.email,
-                  role: profile.role as 'admin' | 'super_admin'
-                });
-                setIsAdminAuthenticated(true);
-              }
-            } catch (error) {
-              console.error('Error fetching admin profile:', error);
-            }
+            setTimeout(() => {
+              fetchAdminProfile(session.user.id);
+            }, 0);
           }
         } else {
           setAdmin(null);
@@ -73,34 +56,72 @@ const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        console.log('Existing admin session found:', session.user?.email);
         setSession(session);
+        if (session.user && session.user.email?.includes('@ascalate.com.br')) {
+          fetchAdminProfile(session.user.id);
+        }
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchAdminProfile = async (userId: string) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('admin_profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching admin profile:', error);
+        return;
+      }
+
+      if (profile) {
+        setAdmin({
+          id: profile.id,
+          name: profile.name,
+          email: profile.email,
+          role: profile.role as 'admin' | 'super_admin'
+        });
+        setIsAdminAuthenticated(true);
+      }
+    } catch (error) {
+      console.error('Error fetching admin profile:', error);
+    }
+  };
   
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
     try {
+      // Input validation
+      if (!email || !password) {
+        return false;
+      }
+
+      // Email format validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return false;
+      }
+
       // Check if it's an admin email
       if (!email.includes('@ascalate.com.br')) {
         return false; // Non-admin emails should not login through admin portal
       }
 
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim().toLowerCase(),
         password,
       });
       
       if (error) {
-        console.error('Admin login error:', error.message);
         return false;
       }
       
       return !!data.user;
     } catch (error) {
-      console.error('Admin login error:', error);
       return false;
     }
   };
