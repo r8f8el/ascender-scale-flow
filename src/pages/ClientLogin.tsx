@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '../contexts/AuthContext';
+import { User } from 'lucide-react';
 
 const ClientLogin = () => {
   const [email, setEmail] = useState('');
@@ -35,7 +36,7 @@ const ClientLogin = () => {
       if (success) {
         toast({
           title: "Login realizado com sucesso",
-          description: "Bem-vindo à Área do Cliente Ascalate."
+          description: "Bem-vindo à sua área exclusiva."
         });
         navigate('/cliente');
       } else {
@@ -46,6 +47,7 @@ const ClientLogin = () => {
         });
       }
     } catch (error) {
+      console.error('Error during login:', error);
       toast({
         title: "Erro",
         description: "Ocorreu um erro ao realizar o login. Tente novamente mais tarde.",
@@ -64,9 +66,12 @@ const ClientLogin = () => {
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
             Área do Cliente
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Acesse sua área exclusiva de serviços Ascalate
-          </p>
+          <div className="flex items-center gap-2 mt-2">
+            <User size={18} className="text-blue-600" />
+            <p className="text-center text-sm text-gray-600">
+              Acesse sua área exclusiva
+            </p>
+          </div>
         </div>
         
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -84,7 +89,7 @@ const ClientLogin = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="rafael.gontijo@ascalate.com.br"
+                  placeholder="seu.email@empresa.com"
                   className="mt-1"
                 />
               </div>
@@ -119,14 +124,17 @@ const ClientLogin = () => {
               {isLoading ? "Entrando..." : "Entrar"}
             </Button>
           </div>
+
+          <div className="mt-4 text-center text-sm text-gray-600">
+            <p>Emails de teste para clientes:</p>
+            <p>cliente@portobello.com.br</p>
+            <p>cliente@jassy.com.br</p>
+            <p>Senhas: portobello123 / jassy123</p>
+          </div>
         </form>
         
         <p className="mt-4 text-center text-sm text-gray-600">
-          Em caso de dificuldades no acesso, entre em contato com nossa equipe pelo email:
-          <br />
-          <a href="mailto:rafael.gontijo@ascalate.com.br" className="font-medium text-[#0056b3] hover:text-[#003d7f]">
-            rafael.gontijo@ascalate.com.br
-          </a>
+          Problemas para acessar? Entre em contato com nossa equipe.
         </p>
       </div>
     </div>
