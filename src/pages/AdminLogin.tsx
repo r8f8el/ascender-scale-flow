@@ -7,63 +7,22 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
 import { Shield } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { adminLogin } = useAdminAuth();
 
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const sanitizeInput = (input: string) => {
-    return input.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-  };
-
-  const handleSignUp = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const sanitizedEmail = sanitizeInput(email);
-    const sanitizedPassword = sanitizeInput(password);
-    
-    if (!sanitizedEmail || !sanitizedPassword) {
+    if (!email || !password) {
       toast({
         title: "Campos vazios",
         description: "Por favor, preencha todos os campos.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!validateEmail(sanitizedEmail)) {
-      toast({
-        title: "Email inválido",
-        description: "Por favor, insira um email válido.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!sanitizedEmail.includes('@ascalate.com.br')) {
-      toast({
-        title: "Acesso negado",
-        description: "Apenas emails da Ascalate podem criar contas administrativas.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (sanitizedPassword.length < 6) {
-      toast({
-        title: "Senha muito curta",
-        description: "A senha deve ter pelo menos 6 caracteres.",
         variant: "destructive"
       });
       return;
@@ -72,91 +31,7 @@ const AdminLogin = () => {
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: sanitizedEmail,
-        password: sanitizedPassword,
-        options: {
-          emailRedirectTo: `${window.location.origin}/admin`
-        }
-      });
-      
-      if (error) {
-        console.log('Signup error:', error);
-        if (error.message.includes('User already registered') || error.message.includes('already been registered')) {
-          toast({
-            title: "Email já cadastrado",
-            description: "Este email já possui uma conta. Use a aba 'Login' para entrar.",
-            variant: "destructive"
-          });
-        } else if (error.message.includes('duplicate key value violates unique constraint')) {
-          toast({
-            title: "Email já existe",
-            description: "Este email já está cadastrado no sistema. Use a aba 'Login' para entrar.",
-            variant: "destructive"
-          });
-        } else {
-          toast({
-            title: "Erro no cadastro",
-            description: `Erro: ${error.message}. Tente usar a aba 'Login' se já possui conta.`,
-            variant: "destructive"
-          });
-        }
-      } else if (data.user) {
-        toast({
-          title: "Conta criada com sucesso",
-          description: "Sua conta administrativa foi criada. Você pode fazer login agora.",
-        });
-        setIsSignUp(false);
-      }
-    } catch (error) {
-      console.log('Signup catch error:', error);
-      toast({
-        title: "Erro",
-        description: "Possível email já cadastrado. Tente fazer login ou contate o suporte.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const sanitizedEmail = sanitizeInput(email);
-    const sanitizedPassword = sanitizeInput(password);
-    
-    if (!sanitizedEmail || !sanitizedPassword) {
-      toast({
-        title: "Campos vazios",
-        description: "Por favor, preencha todos os campos.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!validateEmail(sanitizedEmail)) {
-      toast({
-        title: "Email inválido",
-        description: "Por favor, insira um email válido.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!sanitizedEmail.includes('@ascalate.com.br')) {
-      toast({
-        title: "Acesso negado",
-        description: "Apenas emails da Ascalate podem acessar o painel administrativo.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setIsLoading(true);
-    
-    try {
-      const success = await adminLogin(sanitizedEmail, sanitizedPassword);
+      const success = await adminLogin(email, password);
       
       if (success) {
         toast({
@@ -172,6 +47,7 @@ const AdminLogin = () => {
         });
       }
     } catch (error) {
+      console.error('Error during login:', error);
       toast({
         title: "Erro",
         description: "Ocorreu um erro ao realizar o login. Tente novamente mais tarde.",
@@ -198,32 +74,7 @@ const AdminLogin = () => {
           </div>
         </div>
         
-        <div className="flex justify-center space-x-4 mb-6">
-          <button
-            type="button"
-            onClick={() => setIsSignUp(false)}
-            className={`px-4 py-2 text-sm font-medium rounded-md ${
-              !isSignUp 
-                ? 'bg-[#0056b3] text-white' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            Login
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsSignUp(true)}
-            className={`px-4 py-2 text-sm font-medium rounded-md ${
-              isSignUp 
-                ? 'bg-[#0056b3] text-white' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            Criar Conta
-          </button>
-        </div>
-        
-        <form className="mt-8 space-y-6" onSubmit={isSignUp ? handleSignUp : handleLogin}>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4 rounded-md shadow-sm">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -240,7 +91,6 @@ const AdminLogin = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="seu.email@ascalate.com.br"
                   className="mt-1"
-                  maxLength={254}
                 />
               </div>
             </div>
@@ -254,20 +104,14 @@ const AdminLogin = () => {
                   id="password"
                   name="password"
                   type="password"
-                  autoComplete={isSignUp ? "new-password" : "current-password"}
+                  autoComplete="current-password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="mt-1"
-                  maxLength={128}
                 />
               </div>
-              {isSignUp && (
-                <p className="mt-1 text-xs text-gray-500">
-                  Mínimo de 6 caracteres
-                </p>
-              )}
             </div>
           </div>
           
@@ -277,19 +121,21 @@ const AdminLogin = () => {
               className="w-full bg-[#0056b3] hover:bg-[#003d7f]"
               disabled={isLoading}
             >
-              {isLoading 
-                ? (isSignUp ? "Criando conta..." : "Entrando...") 
-                : (isSignUp ? "Criar Conta Admin" : "Entrar")
-              }
+              {isLoading ? "Entrando..." : "Entrar"}
             </Button>
+          </div>
+
+          <div className="mt-4 text-center text-sm text-gray-600">
+            <p>Emails de teste: </p>
+            <p>daniel@ascalate.com.br</p>
+            <p>rafael.gontijo@ascalate.com.br</p>
+            <p>artur.servian@ascalate.com.br</p>
+            <p>Senha padrão: admin123</p>
           </div>
         </form>
         
         <p className="mt-4 text-center text-sm text-gray-600">
-          {isSignUp 
-            ? "Apenas emails @ascalate.com.br podem criar contas administrativas"
-            : "Área restrita a administradores. Em caso de problemas, contate o suporte técnico."
-          }
+          Área restrita a administradores. Em caso de problemas, contate o suporte técnico.
         </p>
       </div>
     </div>

@@ -13,11 +13,11 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
   children, 
   requiredRole 
 }) => {
-  const { isAdminAuthenticated, admin, session } = useAdminAuth();
+  const { isAdminAuthenticated, admin } = useAdminAuth();
   const { toast } = useToast();
   
   useEffect(() => {
-    if (!isAdminAuthenticated && session === null) {
+    if (!isAdminAuthenticated) {
       toast({
         title: "Acesso Negado",
         description: "Você precisa estar autenticado para acessar esta área.",
@@ -35,16 +35,7 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
         variant: "destructive"
       });
     }
-  }, [isAdminAuthenticated, admin, requiredRole, toast, session]);
-
-  // Show loading state briefly while auth state is determining
-  if (session === null && !isAdminAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-600">Verificando autenticação administrativa...</div>
-      </div>
-    );
-  }
+  }, [isAdminAuthenticated, admin, requiredRole, toast]);
 
   // Verificação real de autenticação
   if (!isAdminAuthenticated) {

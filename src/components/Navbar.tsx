@@ -1,247 +1,82 @@
 
-import React, { useState, useEffect } from 'react';
-import { Menu, X, User, Shield } from 'lucide-react';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { Logo } from './Logo';
-import { useAuth } from '../contexts/AuthContext';
-import { useAdminAuth } from '../contexts/AdminAuthContext';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Menu } from 'lucide-react';
 
 const Navbar = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const { isAuthenticated, client, logout } = useAuth();
-  const { isAdminAuthenticated, admin, adminLogout } = useAdminAuth();
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const handleLogout = () => {
-    if (isAuthenticated) {
-      logout();
-    }
-    if (isAdminAuthenticated) {
-      adminLogout();
-    }
-    setIsOpen(false);
-  };
-
   return (
-    <nav className={`fixed w-full z-50 transition-all duration-300 ${
-      isScrolled ? 'bg-white/95 backdrop-blur-sm shadow-lg' : 'bg-white/90 backdrop-blur-sm'
-    }`}>
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-4">
-          {/* Logo */}
-          <div className="flex items-center">
+    <nav className="fixed w-full z-50 bg-white bg-opacity-90 backdrop-blur-sm shadow-sm">
+      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="flex items-center">
+          <Link to="/" className="flex items-center">
             <Logo className="h-10 w-auto" />
-          </div>
-
-          {/* Desktop Menu */}
-          <div className="hidden md:flex items-center space-x-8">
-            <a 
-              href="#services" 
-              className="text-gray-700 hover:text-blue-600 transition-colors duration-200 font-medium"
-            >
-              Serviços
-            </a>
-            <a 
-              href="#about" 
-              className="text-gray-700 hover:text-blue-600 transition-colors duration-200 font-medium"
-            >
-              Sobre
-            </a>
-            <a 
-              href="#clients" 
-              className="text-gray-700 hover:text-blue-600 transition-colors duration-200 font-medium"
-            >
-              Clientes
-            </a>
-            <a 
-              href="#contact" 
-              className="text-gray-700 hover:text-blue-600 transition-colors duration-200 font-medium"
-            >
-              Contato
-            </a>
-            <a 
-              href="https://ascalate.com.br/participante-dados" 
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-700 hover:text-blue-600 transition-colors duration-200 font-medium"
-            >
-              Fórum FP&A
-            </a>
-            
-            {/* Authentication Links */}
-            {isAuthenticated ? (
-              <div className="flex items-center gap-4">
-                <a 
-                  href="/cliente" 
-                  className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors duration-200 font-medium"
-                >
-                  <User size={16} />
-                  {client?.name}
-                </a>
-                <button 
-                  onClick={handleLogout}
-                  className="text-gray-700 hover:text-red-600 transition-colors duration-200 font-medium"
-                >
-                  Sair
-                </button>
-              </div>
-            ) : isAdminAuthenticated ? (
-              <div className="flex items-center gap-4">
-                <a 
-                  href="/admin" 
-                  className="flex items-center gap-2 text-red-600 hover:text-red-700 transition-colors duration-200 font-medium"
-                >
-                  <Shield size={16} />
-                  {admin?.name}
-                </a>
-                <button 
-                  onClick={handleLogout}
-                  className="text-gray-700 hover:text-red-600 transition-colors duration-200 font-medium"
-                >
-                  Sair
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-4">
-                <a 
-                  href="/cliente/login" 
-                  className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors duration-200 font-medium"
-                >
-                  <User size={16} />
-                  Área do Cliente
-                </a>
-                <a 
-                  href="/admin/login" 
-                  className="flex items-center gap-2 text-red-600 hover:text-red-700 transition-colors duration-200 font-medium"
-                >
-                  <Shield size={16} />
-                  Admin
-                </a>
-              </div>
-            )}
-          </div>
-
-          {/* Mobile Menu Button */}
-          <div className="md:hidden">
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="text-gray-700 hover:text-blue-600 transition-colors duration-200"
-            >
-              {isOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-          </div>
+          </Link>
         </div>
-
-        {/* Mobile Menu */}
-        {isOpen && (
-          <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 bg-white border-t">
-              <a 
-                href="#services" 
-                className="block px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors duration-200 font-medium"
-                onClick={() => setIsOpen(false)}
-              >
-                Serviços
-              </a>
-              <a 
-                href="#about" 
-                className="block px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors duration-200 font-medium"
-                onClick={() => setIsOpen(false)}
-              >
-                Sobre
-              </a>
-              <a 
-                href="#clients" 
-                className="block px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors duration-200 font-medium"
-                onClick={() => setIsOpen(false)}
-              >
-                Clientes
-              </a>
-              <a 
-                href="#contact" 
-                className="block px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors duration-200 font-medium"
-                onClick={() => setIsOpen(false)}
-              >
-                Contato
-              </a>
-              <a 
-                href="https://ascalate.com.br/participante-dados" 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block px-3 py-2 text-gray-700 hover:text-blue-600 transition-colors duration-200 font-medium"
-                onClick={() => setIsOpen(false)}
-              >
-                Fórum FP&A
-              </a>
-              
-              {/* Mobile Authentication Links */}
-              {isAuthenticated ? (
-                <div className="border-t pt-2">
-                  <a 
-                    href="/cliente" 
-                    className="flex items-center gap-2 px-3 py-2 text-blue-600 hover:text-blue-700 transition-colors duration-200 font-medium"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <User size={16} />
-                    {client?.name}
-                  </a>
-                  <button 
-                    onClick={handleLogout}
-                    className="block w-full text-left px-3 py-2 text-gray-700 hover:text-red-600 transition-colors duration-200 font-medium"
-                  >
-                    Sair
-                  </button>
-                </div>
-              ) : isAdminAuthenticated ? (
-                <div className="border-t pt-2">
-                  <a 
-                    href="/admin" 
-                    className="flex items-center gap-2 px-3 py-2 text-red-600 hover:text-red-700 transition-colors duration-200 font-medium"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <Shield size={16} />
-                    {admin?.name}
-                  </a>
-                  <button 
-                    onClick={handleLogout}
-                    className="block w-full text-left px-3 py-2 text-gray-700 hover:text-red-600 transition-colors duration-200 font-medium"
-                  >
-                    Sair
-                  </button>
-                </div>
-              ) : (
-                <div className="border-t pt-2">
-                  <a 
-                    href="/cliente/login" 
-                    className="flex items-center gap-2 px-3 py-2 text-blue-600 hover:text-blue-700 transition-colors duration-200 font-medium"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <User size={16} />
-                    Área do Cliente
-                  </a>
-                  <a 
-                    href="/admin/login" 
-                    className="flex items-center gap-2 px-3 py-2 text-red-600 hover:text-red-700 transition-colors duration-200 font-medium"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <Shield size={16} />
-                    Admin
-                  </a>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        
+        <div className="hidden md:flex items-center space-x-8">
+          <NavLink href="#services">O que entregamos</NavLink>
+          <NavLink href="#partner">Sócio</NavLink>
+          <NavLink href="#mission">Missão, Visão e Valores</NavLink>
+          <NavLink href="#clients">Clientes</NavLink>
+          <NavLink href="#contact">Contato</NavLink>
+          <Link 
+            to="/cliente/login"
+            className="text-white bg-[#0056b3] hover:bg-[#003d7f] px-4 py-2 rounded-md transition-colors duration-300"
+          >
+            Área do Cliente
+          </Link>
+        </div>
+        
+        <div className="md:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <button className="p-2 text-ascalate-blue">
+                <Menu size={24} />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[80%]">
+              <div className="flex flex-col space-y-4 mt-8">
+                <MobileNavLink href="#services">O que entregamos</MobileNavLink>
+                <MobileNavLink href="#partner">Sócio</MobileNavLink>
+                <MobileNavLink href="#mission">Missão, Visão e Valores</MobileNavLink>
+                <MobileNavLink href="#clients">Clientes</MobileNavLink>
+                <MobileNavLink href="#contact">Contato</MobileNavLink>
+                <Link 
+                  to="/cliente/login"
+                  className="text-white bg-[#0056b3] hover:bg-[#003d7f] px-4 py-2 rounded-md transition-colors duration-300 text-center"
+                >
+                  Área do Cliente
+                </Link>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
     </nav>
+  );
+};
+
+const NavLink = ({ href, children }: { href: string, children: React.ReactNode }) => {
+  return (
+    <a 
+      href={href} 
+      className="text-gray-800 hover:text-ascalate-blue font-medium transition-colors duration-300 relative after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-0.5 after:bottom-0 after:left-0 after:bg-ascalate-blue after:origin-bottom-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-bottom-left"
+    >
+      {children}
+    </a>
+  );
+};
+
+const MobileNavLink = ({ href, children }: { href: string, children: React.ReactNode }) => {
+  return (
+    <a 
+      href={href} 
+      className="text-gray-800 hover:text-ascalate-blue font-medium transition-colors duration-300 py-2 block"
+    >
+      {children}
+    </a>
   );
 };
 

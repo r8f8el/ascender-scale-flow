@@ -1,7 +1,5 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { Session, User } from '@supabase/supabase-js';
 
 interface Admin {
   id: string;
@@ -13,7 +11,6 @@ interface Admin {
 interface AdminAuthContextType {
   isAdminAuthenticated: boolean;
   admin: Admin | null;
-  session: Session | null;
   adminLogin: (email: string, password: string) => Promise<boolean>;
   adminLogout: () => void;
 }
@@ -21,120 +18,96 @@ interface AdminAuthContextType {
 const AdminAuthContext = createContext<AdminAuthContextType>({
   isAdminAuthenticated: false,
   admin: null,
-  session: null,
   adminLogin: async () => false,
   adminLogout: () => {},
 });
 
 export const useAdminAuth = () => useContext(AdminAuthContext);
 
+// Mock admins database - in a real app, this would be fetched from a server
+const mockAdmins = [
+  { 
+    id: '1', 
+    name: 'Admin Ascalate', 
+    email: 'admin@ascalate.com.br', 
+    password: 'admin123',
+    role: 'super_admin' as const
+  },
+  { 
+    id: '2', 
+    name: 'Consultor Ascalate', 
+    email: 'consultor@ascalate.com.br', 
+    password: 'consultor123',
+    role: 'admin' as const
+  },
+  { 
+    id: '3', 
+    name: 'Daniel Gomes', 
+    email: 'daniel@ascalate.com.br', 
+    password: 'admin123',
+    role: 'super_admin' as const
+  },
+  { 
+    id: '4', 
+    name: 'Rafael Gontijo', 
+    email: 'rafael.gontijo@ascalate.com.br', 
+    password: 'admin123',
+    role: 'super_admin' as const
+  },
+  { 
+    id: '5', 
+    name: 'Artur Servian', 
+    email: 'artur.servian@ascalate.com.br', 
+    password: 'admin123',
+    role: 'admin' as const
+  },
+];
+
 const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
   const [admin, setAdmin] = useState<Admin | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   
+  // Check if there's a stored admin session on component mount
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        
-        if (session?.user) {
-          // Check if user is an admin (ascalate email) - defer Supabase calls
-          if (session.user.email?.includes('@ascalate.com.br')) {
-            setTimeout(() => {
-              fetchAdminProfile(session.user.id);
-            }, 0);
-          }
-        } else {
-          setAdmin(null);
-          setIsAdminAuthenticated(false);
-        }
-      }
-    );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setSession(session);
-        if (session.user && session.user.email?.includes('@ascalate.com.br')) {
-          fetchAdminProfile(session.user.id);
-        }
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const fetchAdminProfile = async (userId: string) => {
-    try {
-      const { data: profile, error } = await supabase
-        .from('admin_profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      
-      if (error) {
-        // Silent error handling for production
-        return;
-      }
-
-      if (profile) {
-        setAdmin({
-          id: profile.id,
-          name: profile.name,
-          email: profile.email,
-          role: profile.role as 'admin' | 'super_admin'
-        });
+    const storedAdmin = localStorage.getItem('ascalate_admin');
+    if (storedAdmin) {
+      try {
+        const parsedAdmin = JSON.parse(storedAdmin);
+        setAdmin(parsedAdmin);
         setIsAdminAuthenticated(true);
+      } catch (error) {
+        console.error('Error parsing stored admin data:', error);
+        localStorage.removeItem('ascalate_admin');
       }
-    } catch (error) {
-      // Silent error handling for production
     }
-  };
+  }, []);
   
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
     try {
-      // Input validation
-      if (!email || !password) {
-        return false;
-      }
-
-      // Email format validation
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        return false;
-      }
-
-      // Check if it's an admin email
-      if (!email.includes('@ascalate.com.br')) {
-        return false; // Non-admin emails should not login through admin portal
-      }
-
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password,
-      });
+      // In a real app, this would be an API call
+      const foundAdmin = mockAdmins.find(
+        (a) => a.email.toLowerCase() === email.toLowerCase() && a.password === password
+      );
       
-      if (error) {
-        return false;
+      if (foundAdmin) {
+        const { password: _, ...adminWithoutPassword } = foundAdmin;
+        setAdmin(adminWithoutPassword);
+        setIsAdminAuthenticated(true);
+        localStorage.setItem('ascalate_admin', JSON.stringify(adminWithoutPassword));
+        return true;
       }
       
-      return !!data.user;
+      return false;
     } catch (error) {
+      console.error('Login error:', error);
       return false;
     }
   };
   
-  const adminLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      setAdmin(null);
-      setIsAdminAuthenticated(false);
-      setSession(null);
-    } catch (error) {
-      // Silent error handling for production
-    }
+  const adminLogout = () => {
+    setAdmin(null);
+    setIsAdminAuthenticated(false);
+    localStorage.removeItem('ascalate_admin');
   };
   
   return (
@@ -142,7 +115,6 @@ const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) 
       value={{ 
         isAdminAuthenticated, 
         admin, 
-        session,
         adminLogin, 
         adminLogout 
       }}
