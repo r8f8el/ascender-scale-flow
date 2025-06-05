@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { ClientUser } from '../types/database';
 
 interface Client {
   id: string;
@@ -44,9 +45,9 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   const { toast } = useToast();
 
   // Function to fetch client profile from Supabase
-  const fetchClientProfile = async (userId: string) => {
+  const fetchClientProfile = async (userId: string): Promise<ClientUser | null> => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('client_users')
         .select('*')
         .eq('id', userId)
@@ -57,7 +58,7 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
         return null;
       }
 
-      return data;
+      return data as ClientUser;
     } catch (error) {
       console.error('Error fetching client profile:', error);
       return null;
@@ -165,7 +166,7 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
 
       if (data.user) {
         // Create client profile
-        const { error: clientError } = await supabase
+        const { error: clientError } = await (supabase as any)
           .from('client_users')
           .insert({
             id: data.user.id,

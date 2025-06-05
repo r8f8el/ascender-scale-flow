@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { AdminUser } from '../types/database';
 
 interface Admin {
   id: string;
@@ -44,9 +45,9 @@ const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) 
   const { toast } = useToast();
 
   // Function to fetch admin profile from Supabase
-  const fetchAdminProfile = async (userId: string) => {
+  const fetchAdminProfile = async (userId: string): Promise<AdminUser | null> => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('admin_users')
         .select('*')
         .eq('id', userId)
@@ -57,7 +58,7 @@ const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) 
         return null;
       }
 
-      return data;
+      return data as AdminUser;
     } catch (error) {
       console.error('Error fetching admin profile:', error);
       return null;
@@ -165,7 +166,7 @@ const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) 
 
       if (data.user) {
         // Create admin profile
-        const { error: adminError } = await supabase
+        const { error: adminError } = await (supabase as any)
           .from('admin_users')
           .insert({
             id: data.user.id,
