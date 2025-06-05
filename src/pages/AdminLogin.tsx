@@ -81,16 +81,23 @@ const AdminLogin = () => {
       });
       
       if (error) {
-        if (error.message.includes('User already registered')) {
+        console.log('Signup error:', error);
+        if (error.message.includes('User already registered') || error.message.includes('already been registered')) {
           toast({
             title: "Email já cadastrado",
-            description: "Este email já possui uma conta. Tente fazer login.",
+            description: "Este email já possui uma conta. Use a aba 'Login' para entrar.",
+            variant: "destructive"
+          });
+        } else if (error.message.includes('duplicate key value violates unique constraint')) {
+          toast({
+            title: "Email já existe",
+            description: "Este email já está cadastrado no sistema. Use a aba 'Login' para entrar.",
             variant: "destructive"
           });
         } else {
           toast({
             title: "Erro no cadastro",
-            description: error.message,
+            description: `Erro: ${error.message}. Tente usar a aba 'Login' se já possui conta.`,
             variant: "destructive"
           });
         }
@@ -102,9 +109,10 @@ const AdminLogin = () => {
         setIsSignUp(false);
       }
     } catch (error) {
+      console.log('Signup catch error:', error);
       toast({
         title: "Erro",
-        description: "Ocorreu um erro ao criar a conta. Tente novamente mais tarde.",
+        description: "Possível email já cadastrado. Tente fazer login ou contate o suporte.",
         variant: "destructive"
       });
     } finally {
@@ -279,7 +287,7 @@ const AdminLogin = () => {
         
         <p className="mt-4 text-center text-sm text-gray-600">
           {isSignUp 
-            ? "Crie sua conta administrativa usando um email @ascalate.com.br"
+            ? "Apenas emails @ascalate.com.br podem criar contas administrativas"
             : "Área restrita a administradores. Em caso de problemas, contate o suporte técnico."
           }
         </p>
