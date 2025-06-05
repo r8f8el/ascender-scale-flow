@@ -1,25 +1,43 @@
 
 import React from 'react';
-import { BarChart3, Target, Rocket, ArrowRight } from 'lucide-react';
+import { BarChart3, Target, Calculator, ArrowRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 const services = [
   {
-    title: "Consultoria Financeira",
-    description: "Análise detalhada de dados financeiros para otimização de resultados e tomada de decisões estratégicas.",
+    title: "Consultoria em Planejamento Financeiro",
+    description: "Análise e estruturação de indicadores, projeções e relatórios financeiros com foco em resultados. Atuamos com:",
+    details: [
+      "Modelagem Financeira e Planejamento Orçamentário",
+      "Automação de relatórios e dashboards gerenciais",
+      "Análise de viabilidade e avaliação de planos de negócio",
+      "Implementação de práticas de controladoria e compliance"
+    ],
     icon: BarChart3,
     bgColor: "bg-blue-50"
   },
   {
-    title: "Planejamento Estratégico",
-    description: "Desenvolvimento de estratégias personalizadas para impulsionar o crescimento sustentável do seu negócio.",
+    title: "Consultoria em Planejamento Estratégico",
+    description: "Desenvolvimento de estratégias personalizadas para crescimento sustentável e alinhamento de metas ao posicionamento de mercado:",
+    details: [
+      "Estruturação de governança corporativa",
+      "Definição e modelagem de KPIs estratégicos",
+      "Análise de cenário, riscos e oportunidades",
+      "Planejamento de expansão e diversificação de portfólio"
+    ],
     icon: Target,
     bgColor: "bg-blue-50"
   },
   {
-    title: "Aceleração de Crescimento",
-    description: "Identificação de oportunidades e implementação de soluções para acelerar a expansão da sua empresa.",
-    icon: Rocket,
+    title: "Condução de Planejamento Orçamentário",
+    description: "Implementação estruturada do orçamento empresarial, conectando metas estratégicas à realidade financeira do negócio:",
+    details: [
+      "Elaboração de orçamentos por centro de custo e unidade de negócio",
+      "Simulações de cenários e sensibilidade (otimista, base, pessimista)",
+      "Integração com projeções de fluxo de caixa e DRE",
+      "Capacitação da equipe na cultura de orçamento contínuo"
+    ],
+    icon: Calculator,
     bgColor: "bg-blue-50"
   }
 ];
@@ -46,7 +64,16 @@ const Services = () => {
                     <service.icon className="h-8 w-8 text-blue-600" />
                   </div>
                   <h3 className="text-xl font-bold mb-4">{service.title}</h3>
-                  <p className="text-gray-600 mb-8">{service.description}</p>
+                  <p className="text-gray-600 mb-4">{service.description}</p>
+                  
+                  <ul className="space-y-2 mb-6">
+                    {service.details.map((detail, detailIndex) => (
+                      <li key={detailIndex} className="text-sm text-gray-700 flex items-start">
+                        <span className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                        {detail}
+                      </li>
+                    ))}
+                  </ul>
                   
                   <a href="#contact" className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">
                     <span>Saiba mais</span>
