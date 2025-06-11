@@ -75,7 +75,7 @@ const ParticipantData = () => {
             <img 
               src="/lovable-uploads/7fa50647-4743-4716-bf52-1146fa92f463.png" 
               alt="Ascalate Logo" 
-              className="h-20 w-auto"
+              className="w-48 h-auto md:w-56 lg:w-64"
             />
           </a>
         </div>
