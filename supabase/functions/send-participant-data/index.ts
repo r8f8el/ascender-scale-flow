@@ -2,8 +2,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -20,6 +18,7 @@ interface ParticipantDataRequest {
 
 const handler = async (req: Request): Promise<Response> => {
   console.log("Function called with method:", req.method);
+  console.log("Request headers:", Object.fromEntries(req.headers.entries()));
   
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -29,18 +28,30 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     console.log("Starting to process request...");
     
-    const { nome, email, telefone, empresa, cargo }: ParticipantDataRequest = await req.json();
+    const requestBody = await req.text();
+    console.log("Raw request body:", requestBody);
     
-    console.log("Received data:", { nome, email, telefone, empresa, cargo });
+    const { nome, email, telefone, empresa, cargo }: ParticipantDataRequest = JSON.parse(requestBody);
+    
+    console.log("Parsed data:", { nome, email, telefone, empresa, cargo });
+    
+    // Validar dados recebidos
+    if (!nome || !email || !telefone || !empresa || !cargo) {
+      console.error("Missing required fields");
+      throw new Error("Todos os campos são obrigatórios");
+    }
     
     // Verificar se a chave API está configurada
     const apiKey = Deno.env.get("RESEND_API_KEY");
     if (!apiKey) {
       console.error("RESEND_API_KEY not configured");
-      throw new Error("Email service not configured");
+      throw new Error("Serviço de email não configurado. Entre em contato com o suporte.");
     }
     
-    console.log("API Key configured, sending admin email...");
+    console.log("API Key configured, creating Resend instance...");
+    const resend = new Resend(apiKey);
+    
+    console.log("Sending admin email...");
 
     // Enviar email para rafael.gontijo@ascalate.com.br com os dados do participante
     const adminEmailResponse = await resend.emails.send({
@@ -75,14 +86,15 @@ const handler = async (req: Request): Promise<Response> => {
     
     if (adminEmailResponse.error) {
       console.error("Error sending admin email:", adminEmailResponse.error);
-      throw new Error(`Failed to send admin email: ${adminEmailResponse.error.message}`);
+      throw new Error(`Falha ao enviar email: ${adminEmailResponse.error.message}`);
     }
 
     console.log("Email sent successfully to admin");
 
     return new Response(JSON.stringify({ 
       success: true,
-      message: "Dados recebidos com sucesso! Os arquivos serão enviados em breve."
+      message: "Dados recebidos com sucesso! Os arquivos serão enviados em breve.",
+      emailId: adminEmailResponse.data?.id
     }), {
       status: 200,
       headers: {
@@ -97,8 +109,8 @@ const handler = async (req: Request): Promise<Response> => {
     
     return new Response(
       JSON.stringify({ 
-        error: error.message,
-        details: "Check function logs for more information"
+        error: error.message || "Erro interno do servidor",
+        details: "Verifique os logs da função para mais informações"
       }),
       {
         status: 500,
