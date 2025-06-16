@@ -30,28 +30,17 @@ const ParticipantData = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    console.log('Iniciando envio de dados:', formData);
-
     try {
-      // Validar se todos os campos estão preenchidos
-      if (!formData.nome || !formData.email || !formData.telefone || !formData.empresa || !formData.cargo) {
-        throw new Error('Todos os campos são obrigatórios');
-      }
-
-      console.log('Enviando dados para a função edge...');
-      
       const { data, error } = await supabase.functions.invoke('send-participant-data', {
         body: formData
       });
 
-      console.log('Resposta da função:', { data, error });
-
       if (error) {
-        console.error('Erro retornado pela função:', error);
-        throw new Error(error.message || 'Erro na função serverless');
+        console.error('Error details:', error);
+        throw error;
       }
 
-      console.log('Dados enviados com sucesso:', data);
+      console.log('Success response:', data);
 
       toast({
         title: "Dados enviados com sucesso!",
@@ -60,18 +49,11 @@ const ParticipantData = () => {
 
       // Limpar o formulário
       setFormData({ nome: '', email: '', telefone: '', empresa: '', cargo: '' });
-    } catch (error: any) {
-      console.error('Erro completo:', error);
-      
-      let errorMessage = "Ocorreu um erro ao processar sua solicitação. Tente novamente.";
-      
-      if (error.message) {
-        errorMessage = error.message;
-      }
-      
+    } catch (error) {
+      console.error('Erro ao enviar dados:', error);
       toast({
         title: "Erro ao enviar dados",
-        description: errorMessage,
+        description: "Ocorreu um erro ao processar sua solicitação. Tente novamente.",
         variant: "destructive",
       });
     } finally {
