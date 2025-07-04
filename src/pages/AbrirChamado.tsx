@@ -75,10 +75,11 @@ const AbrirChamado = () => {
         throw new Error('Status padrão não encontrado');
       }
 
-      // Criar o ticket - removendo ticket_number pois é gerado automaticamente
+      // Criar o ticket - incluindo ticket_number vazio para trigger gerar
       const { data: ticket, error: ticketError } = await supabase
         .from('tickets')
         .insert({
+          ticket_number: '', // Trigger irá gerar automaticamente
           user_name: formData.user_name,
           user_email: formData.user_email,
           user_phone: formData.user_phone,
