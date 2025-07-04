@@ -75,11 +75,17 @@ const AbrirChamado = () => {
         throw new Error('Status padrão não encontrado');
       }
 
-      // Criar o ticket
+      // Criar o ticket - removendo ticket_number pois é gerado automaticamente
       const { data: ticket, error: ticketError } = await supabase
         .from('tickets')
         .insert({
-          ...formData,
+          user_name: formData.user_name,
+          user_email: formData.user_email,
+          user_phone: formData.user_phone,
+          title: formData.title,
+          description: formData.description,
+          category_id: formData.category_id,
+          priority_id: formData.priority_id,
           status_id: statusData.id
         })
         .select()
