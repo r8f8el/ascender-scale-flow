@@ -64,7 +64,7 @@ const AbrirChamado = () => {
     setIsLoading(true);
 
     try {
-      console.log('Iniciando criação do chamado...');
+      console.log('Iniciando criação do chamado via Edge Function...');
       console.log('Dados do formulário:', formData);
 
       // Validar campos obrigatórios
@@ -73,53 +73,26 @@ const AbrirChamado = () => {
         throw new Error('Todos os campos obrigatórios devem ser preenchidos');
       }
 
-      // Buscar o status "Aberto" para definir como padrão
-      const { data: statusData, error: statusError } = await supabase
-        .from('ticket_statuses')
-        .select('id')
-        .eq('name', 'Aberto')
-        .single();
+      // Chamar a Edge Function para processar o chamado
+      const { data, error } = await supabase.functions.invoke('process-ticket', {
+        body: formData
+      });
 
-      if (statusError || !statusData) {
-        console.error('Erro ao buscar status:', statusError);
-        throw new Error('Status padrão não encontrado');
+      if (error) {
+        console.error('Erro da Edge Function:', error);
+        throw new Error(error.message || 'Erro ao processar chamado');
       }
 
-      console.log('Status encontrado:', statusData);
-
-      // Preparar dados para inserção
-      const ticketData = {
-        user_name: formData.user_name.trim(),
-        user_email: formData.user_email.trim().toLowerCase(),
-        user_phone: formData.user_phone.trim(),
-        title: formData.title.trim(),
-        description: formData.description.trim(),
-        category_id: formData.category_id,
-        priority_id: formData.priority_id,
-        status_id: statusData.id,
-        ticket_number: '', // Será gerado automaticamente pelo trigger
-        user_id: null // Usuário não autenticado
-      };
-
-      console.log('Dados para inserção:', ticketData);
-
-      // Criar o ticket
-      const { data: ticket, error: ticketError } = await supabase
-        .from('tickets')
-        .insert(ticketData)
-        .select()
-        .single();
-
-      if (ticketError) {
-        console.error('Erro ao criar ticket:', ticketError);
-        throw ticketError;
+      if (!data.success) {
+        console.error('Resposta de erro da Edge Function:', data);
+        throw new Error(data.error || 'Erro desconhecido ao processar chamado');
       }
 
-      console.log('Ticket criado com sucesso:', ticket);
+      console.log('Chamado processado com sucesso:', data);
 
       toast({
         title: "Chamado criado com sucesso!",
-        description: `Seu chamado foi aberto com o número ${ticket.ticket_number}. Você receberá atualizações por email.`,
+        description: `Seu chamado foi aberto com o número ${data.ticket.ticket_number}. Você receberá um email de confirmação em breve.`,
       });
 
       // Limpar formulário
