@@ -95,7 +95,7 @@ const ClientLogin = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="rafael.gontijo@ascalate.com.br"
+                  placeholder="cliente@portobello.com.br"
                   className="mt-1"
                 />
               </div>
@@ -131,6 +131,16 @@ const ClientLogin = () => {
             </Button>
           </div>
         </form>
+        
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-600 mb-2">
+            <strong>Credenciais de teste:</strong>
+          </p>
+          <div className="text-xs text-gray-500 space-y-1">
+            <p>Portobello: cliente@portobello.com.br / portobello123</p>
+            <p>J.Assy: cliente@jassy.com.br / jassy123</p>
+          </div>
+        </div>
         
         <p className="mt-4 text-center text-sm text-gray-600">
           Em caso de dificuldades no acesso, entre em contato com nossa equipe pelo email:

@@ -37,6 +37,8 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   
   // Check for existing session and set up auth state listener
   useEffect(() => {
+    console.log('AuthProvider: Setting up auth listener...');
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -45,6 +47,7 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          console.log('User found in session, fetching client profile...');
           // Fetch client profile from database
           const { data: clientProfile, error } = await supabase
             .from('client_profiles')
@@ -52,12 +55,15 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
             .eq('id', session.user.id)
             .single();
           
+          console.log('Client profile query result:', { clientProfile, error });
+          
           if (clientProfile && !error) {
             const client = {
               id: clientProfile.id,
               name: clientProfile.name,
               email: clientProfile.email
             };
+            console.log('Setting client:', client);
             setClient(client);
             setIsAuthenticated(true);
             localStorage.setItem('ascalate_client', JSON.stringify(client));
@@ -68,6 +74,7 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
             localStorage.removeItem('ascalate_client');
           }
         } else {
+          console.log('No user in session, clearing state...');
           setClient(null);
           setIsAuthenticated(false);
           localStorage.removeItem('ascalate_client');
@@ -82,6 +89,7 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
+        console.log('Found existing session, fetching client profile...');
         // Fetch client profile from database
         const { data: clientProfile, error } = await supabase
           .from('client_profiles')
@@ -89,12 +97,15 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
           .eq('id', session.user.id)
           .single();
         
+        console.log('Existing session client profile result:', { clientProfile, error });
+        
         if (clientProfile && !error) {
           const client = {
             id: clientProfile.id,
             name: clientProfile.name,
             email: clientProfile.email
           };
+          console.log('Setting client from existing session:', client);
           setClient(client);
           setIsAuthenticated(true);
           localStorage.setItem('ascalate_client', JSON.stringify(client));
@@ -107,17 +118,22 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      console.log('Login attempt for:', email);
+      
       // Sign in with Supabase directly
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email,
         password: password
       });
 
+      console.log('Supabase login response:', { data, error });
+
       if (error) {
         console.error('Supabase login error:', error);
         return false;
       }
 
+      console.log('Login successful, user:', data.user);
       // The auth state change will handle setting the client data
       return true;
     } catch (error) {
@@ -128,6 +144,7 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   
   const logout = async () => {
     try {
+      console.log('Logging out...');
       await supabase.auth.signOut();
       // The auth state change will handle clearing the state
     } catch (error) {
