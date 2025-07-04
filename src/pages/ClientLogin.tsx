@@ -18,8 +18,8 @@ const ClientLogin = () => {
   // Redirecionar se já estiver autenticado
   useEffect(() => {
     if (isAuthenticated) {
-      console.log('Usuário já autenticado, redirecionando...');
-      navigate('/cliente/chamados');
+      console.log('🔄 Usuário já autenticado, redirecionando...');
+      navigate('/cliente/chamados', { replace: true });
     }
   }, [isAuthenticated, navigate]);
 
@@ -38,33 +38,39 @@ const ClientLogin = () => {
     setIsLoading(true);
     
     try {
-      console.log('Tentando fazer login com:', email);
+      console.log('🚀 Iniciando processo de login com:', email);
       const success = await login(email, password);
       
       if (success) {
-        console.log('Login bem-sucedido, redirecionando...');
+        console.log('✅ Login bem-sucedido!');
         toast({
           title: "Login realizado com sucesso",
           description: "Bem-vindo à Área do Cliente Ascalate."
         });
         // O redirecionamento será feito pelo useEffect quando isAuthenticated for true
       } else {
+        console.log('❌ Login falhou');
         toast({
           title: "Falha no login",
-          description: "Email ou senha inválidos.",
+          description: "Email ou senha inválidos. Verifique suas credenciais.",
           variant: "destructive"
         });
       }
     } catch (error) {
-      console.error('Erro durante o login:', error);
+      console.error('💥 Erro durante o login:', error);
       toast({
         title: "Erro",
-        description: "Ocorreu um erro ao realizar o login. Tente novamente mais tarde.",
+        description: "Ocorreu um erro ao realizar o login. Tente novamente.",
         variant: "destructive"
       });
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleTestLogin = (testEmail: string, testPassword: string) => {
+    setEmail(testEmail);
+    setPassword(testPassword);
   };
 
   return (
@@ -95,7 +101,7 @@ const ClientLogin = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="cliente@portobello.com.br"
+                  placeholder="Digite seu email"
                   className="mt-1"
                 />
               </div>
@@ -114,7 +120,7 @@ const ClientLogin = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="Digite sua senha"
                   className="mt-1"
                 />
               </div>
@@ -132,13 +138,37 @@ const ClientLogin = () => {
           </div>
         </form>
         
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600 mb-2">
-            <strong>Credenciais de teste:</strong>
-          </p>
-          <div className="text-xs text-gray-500 space-y-1">
-            <p>Portobello: cliente@portobello.com.br / portobello123</p>
-            <p>J.Assy: cliente@jassy.com.br / jassy123</p>
+        <div className="mt-6 space-y-4">
+          <div className="text-center">
+            <p className="text-sm text-gray-600 mb-3">
+              <strong>Credenciais de teste:</strong>
+            </p>
+          </div>
+          
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => handleTestLogin('cliente@portobello.com.br', 'portobello123')}
+              className="w-full text-left px-3 py-2 text-xs text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+            >
+              <strong>Portobello:</strong> cliente@portobello.com.br / portobello123
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => handleTestLogin('cliente@jassy.com.br', 'jassy123')}
+              className="w-full text-left px-3 py-2 text-xs text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+            >
+              <strong>J.Assy:</strong> cliente@jassy.com.br / jassy123
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => handleTestLogin('teste@ascalate.com.br', 'teste123')}
+              className="w-full text-left px-3 py-2 text-xs text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+            >
+              <strong>Teste:</strong> teste@ascalate.com.br / teste123
+            </button>
           </div>
         </div>
         

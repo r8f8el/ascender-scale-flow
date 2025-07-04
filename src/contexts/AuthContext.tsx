@@ -35,92 +35,101 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   
-  // Check for existing session and set up auth state listener
   useEffect(() => {
-    console.log('AuthProvider: Setting up auth listener...');
+    console.log('🔧 AuthProvider: Iniciando configuração do listener de auth...');
     
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session);
+        console.log('🔄 Auth state mudou:', event, session);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          console.log('User found in session, checking user type...');
+          console.log('👤 Usuário encontrado na sessão:', session.user.email);
+          console.log('🆔 User ID:', session.user.id);
           
-          // Check if user is admin first
-          const { data: adminProfile, error: adminError } = await supabase
-            .from('admin_profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          console.log('Admin profile check:', { adminProfile, adminError });
-          
-          if (adminProfile && !adminError) {
-            // User is admin, don't authenticate as client
-            console.log('User is admin, not setting client state');
-            setClient(null);
-            setIsAuthenticated(false);
-            return;
-          }
-          
-          // Check for client profile
-          const { data: clientProfile, error: clientError } = await supabase
-            .from('client_profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          console.log('Client profile query result:', { clientProfile, clientError });
-          
-          if (clientProfile && !clientError) {
-            const client = {
-              id: clientProfile.id,
-              name: clientProfile.name,
-              email: clientProfile.email
-            };
-            console.log('Setting client:', client);
-            setClient(client);
-            setIsAuthenticated(true);
-            localStorage.setItem('ascalate_client', JSON.stringify(client));
-          } else {
-            console.error('No client profile found for user:', session.user.id);
-            // Create client profile if it doesn't exist
-            const { data: newProfile, error: createError } = await supabase
+          try {
+            // Verificar se é admin primeiro
+            console.log('🔍 Verificando se é admin...');
+            const { data: adminProfile, error: adminError } = await supabase
+              .from('admin_profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .maybeSingle();
+            
+            console.log('👔 Resultado verificação admin:', { adminProfile, adminError });
+            
+            if (adminProfile && !adminError) {
+              console.log('⚠️ Usuário é admin, não definindo como cliente');
+              setClient(null);
+              setIsAuthenticated(false);
+              return;
+            }
+            
+            // Verificar perfil de cliente
+            console.log('👥 Verificando perfil de cliente...');
+            const { data: clientProfile, error: clientError } = await supabase
               .from('client_profiles')
-              .insert({
-                id: session.user.id,
-                name: session.user.email?.split('@')[0] || 'Cliente',
-                email: session.user.email || '',
-                company: session.user.email?.includes('portobello') ? 'Portobello' : 
-                        session.user.email?.includes('jassy') ? 'J.Assy' : null
-              })
-              .select()
-              .single();
+              .select('*')
+              .eq('id', session.user.id)
+              .maybeSingle();
             
-            console.log('Created client profile:', { newProfile, createError });
+            console.log('📋 Resultado perfil cliente:', { clientProfile, clientError });
             
-            if (newProfile && !createError) {
+            if (clientProfile && !clientError) {
               const client = {
-                id: newProfile.id,
-                name: newProfile.name,
-                email: newProfile.email
+                id: clientProfile.id,
+                name: clientProfile.name,
+                email: clientProfile.email
               };
-              console.log('Setting newly created client:', client);
+              console.log('✅ Cliente encontrado, definindo estado:', client);
               setClient(client);
               setIsAuthenticated(true);
               localStorage.setItem('ascalate_client', JSON.stringify(client));
             } else {
-              console.error('Failed to create client profile:', createError);
-              setClient(null);
-              setIsAuthenticated(false);
-              localStorage.removeItem('ascalate_client');
+              console.log('🔨 Perfil de cliente não encontrado, criando...');
+              
+              // Tentar criar perfil de cliente
+              const { data: newProfile, error: createError } = await supabase
+                .from('client_profiles')
+                .insert({
+                  id: session.user.id,
+                  name: session.user.email?.split('@')[0] || 'Cliente',
+                  email: session.user.email || '',
+                  company: session.user.email?.includes('portobello') ? 'Portobello' : 
+                          session.user.email?.includes('jassy') ? 'J.Assy' : 
+                          session.user.email?.includes('@ascalate') ? 'Ascalate' : null
+                })
+                .select()
+                .single();
+              
+              console.log('🆕 Resultado criação perfil:', { newProfile, createError });
+              
+              if (newProfile && !createError) {
+                const client = {
+                  id: newProfile.id,
+                  name: newProfile.name,
+                  email: newProfile.email
+                };
+                console.log('✅ Perfil criado com sucesso:', client);
+                setClient(client);
+                setIsAuthenticated(true);
+                localStorage.setItem('ascalate_client', JSON.stringify(client));
+              } else {
+                console.error('❌ Falha ao criar perfil de cliente:', createError);
+                setClient(null);
+                setIsAuthenticated(false);
+                localStorage.removeItem('ascalate_client');
+              }
             }
+          } catch (error) {
+            console.error('💥 Erro durante verificação de perfis:', error);
+            setClient(null);
+            setIsAuthenticated(false);
+            localStorage.removeItem('ascalate_client');
           }
         } else {
-          console.log('No user in session, clearing state...');
+          console.log('🚪 Sem usuário na sessão, limpando estado...');
           setClient(null);
           setIsAuthenticated(false);
           localStorage.removeItem('ascalate_client');
@@ -128,52 +137,62 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
       }
     );
 
-    // THEN check for existing session
+    // Verificar sessão existente
     supabase.auth.getSession().then(async ({ data: { session } }) => {
-      console.log('Existing session:', session);
+      console.log('📱 Sessão existente encontrada:', !!session);
       if (session?.user) {
-        // This will trigger the auth state change handler above
-        console.log('Found existing session, auth state change will handle it');
+        console.log('👤 Usuário na sessão existente:', session.user.email);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('🧹 Limpando subscription do auth listener');
+      subscription.unsubscribe();
+    };
   }, []);
   
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      console.log('Login attempt for:', email);
+      console.log('🔐 Tentativa de login para:', email);
+      console.log('🔑 Senha fornecida:', password ? `${password.length} caracteres` : 'vazia');
       
-      // Sign in with Supabase directly
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
+        email: email.trim(),
         password: password
       });
 
-      console.log('Supabase login response:', { data, error });
+      console.log('📡 Resposta do Supabase login:', { 
+        user: data.user?.email, 
+        session: !!data.session,
+        error: error 
+      });
 
       if (error) {
-        console.error('Supabase login error:', error);
+        console.error('❌ Erro no login Supabase:', error.message);
         return false;
       }
 
-      console.log('Login successful, user:', data.user);
-      // The auth state change will handle setting the client data
-      return true;
+      if (data.user) {
+        console.log('✅ Login bem-sucedido para:', data.user.email);
+        // O auth state change vai lidar com o resto
+        return true;
+      }
+
+      console.warn('⚠️ Login sem erro mas sem usuário retornado');
+      return false;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('💥 Erro durante tentativa de login:', error);
       return false;
     }
   };
   
   const logout = async () => {
     try {
-      console.log('Logging out...');
+      console.log('🚪 Fazendo logout...');
       await supabase.auth.signOut();
-      // The auth state change will handle clearing the state
     } catch (error) {
-      console.error('Logout error:', error);
-      // Fallback to manual cleanup
+      console.error('❌ Erro durante logout:', error);
+      // Fallback para limpeza manual
       setClient(null);
       setUser(null);
       setSession(null);
