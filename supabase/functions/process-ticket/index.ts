@@ -18,7 +18,6 @@ interface TicketRequest {
   description: string;
   category_id: string;
   priority_id: string;
-  user_id?: string; // ID do usuário logado (opcional)
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -86,7 +85,7 @@ const handler = async (req: Request): Promise<Response> => {
       priority_id: ticketData.priority_id,
       status_id: statusData.id,
       ticket_number: '', // Será gerado automaticamente pelo trigger
-      user_id: ticketData.user_id || null // Associar ao usuário logado se disponível
+      user_id: null // Usuário não autenticado
     };
 
     console.log('Dados preparados para inserção:', newTicket);
@@ -148,7 +147,7 @@ const handler = async (req: Request): Promise<Response> => {
       // Não falha o processo se o email não for enviado
     }
 
-    // 2. Notificação para os Administradores (INCLUINDO NOME DO USUÁRIO)
+    // 2. Notificação para os Administradores
     try {
       console.log('Enviando notificação para administradores...');
       
@@ -170,8 +169,7 @@ const handler = async (req: Request): Promise<Response> => {
             <div style="background-color: #fef2f2; padding: 20px; border-left: 4px solid #dc2626; margin: 20px 0;">
               <h3 style="color: #dc2626; margin-top: 0;">Detalhes:</h3>
               <p><strong>Nº do Ticket:</strong> ${ticket.ticket_number}</p>
-              <p><strong>Enviado por:</strong> ${ticketData.user_name}</p>
-              <p><strong>Email do Cliente:</strong> ${ticketData.user_email}</p>
+              <p><strong>Cliente:</strong> ${ticketData.user_name} (${ticketData.user_email})</p>
               <p><strong>Telefone:</strong> ${ticketData.user_phone}</p>
               <p><strong>Prioridade:</strong> ${priorityName}</p>
               <p><strong>Categoria:</strong> ${categoryName}</p>

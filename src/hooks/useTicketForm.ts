@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface FormData {
   user_name: string;
@@ -31,7 +30,6 @@ export const useTicketForm = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [priorities, setPriorities] = useState<any[]>([]);
   const { toast } = useToast();
-  const { client, user } = useAuth();
 
   const loadFormData = async () => {
     try {
@@ -42,15 +40,6 @@ export const useTicketForm = () => {
 
       if (categoriesRes.data) setCategories(categoriesRes.data);
       if (prioritiesRes.data) setPriorities(prioritiesRes.data);
-
-      // Pre-fill user data if logged in
-      if (client) {
-        setFormData(prev => ({
-          ...prev,
-          user_name: client.name,
-          user_email: client.email
-        }));
-      }
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     }
@@ -78,7 +67,6 @@ export const useTicketForm = () => {
     try {
       console.log('Iniciando criação do chamado via Edge Function...');
       console.log('Dados do formulário:', formData);
-      console.log('Usuário logado:', user);
 
       // Validar campos obrigatórios
       if (!formData.user_name || !formData.user_email || !formData.user_phone || 
@@ -86,15 +74,9 @@ export const useTicketForm = () => {
         throw new Error('Todos os campos obrigatórios devem ser preenchidos');
       }
 
-      // Preparar dados do chamado incluindo o user_id se logado
-      const ticketData = {
-        ...formData,
-        user_id: user?.id || null // Associar ao usuário logado se disponível
-      };
-
       // Chamar a Edge Function para processar o chamado
       const { data, error } = await supabase.functions.invoke('process-ticket', {
-        body: ticketData
+        body: formData
       });
 
       if (error) {
@@ -117,15 +99,6 @@ export const useTicketForm = () => {
       // Limpar formulário
       setFormData(initialFormData);
       setFile(null);
-
-      // Se o usuário estiver logado, pré-preencher os dados novamente
-      if (client) {
-        setFormData(prev => ({
-          ...prev,
-          user_name: client.name,
-          user_email: client.email
-        }));
-      }
 
     } catch (error: any) {
       console.error('Erro completo ao criar chamado:', error);

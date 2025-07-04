@@ -21,21 +21,18 @@ interface Ticket {
 }
 
 const ClientTickets = () => {
-  const { client, user } = useAuth();
+  const { client } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (client && user) {
+    if (client) {
       loadTickets();
     }
-  }, [client, user]);
+  }, [client]);
 
   const loadTickets = async () => {
     try {
-      console.log('Carregando chamados para:', client?.email, user?.id);
-      
-      // Buscar chamados associados ao usuário logado (por user_id ou user_email)
       const { data, error } = await supabase
         .from('tickets')
         .select(`
@@ -44,15 +41,10 @@ const ClientTickets = () => {
           ticket_priorities(name, color),
           ticket_statuses(name, color, is_closed)
         `)
-        .or(`user_id.eq.${user?.id},user_email.eq.${client?.email}`)
+        .eq('user_email', client?.email)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Erro ao carregar chamados:', error);
-        throw error;
-      }
-      
-      console.log('Chamados encontrados:', data);
+      if (error) throw error;
       setTickets(data || []);
     } catch (error) {
       console.error('Erro ao carregar chamados:', error);

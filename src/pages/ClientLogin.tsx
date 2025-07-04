@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Logo } from '../components/Logo';
 import { Input } from '@/components/ui/input';
@@ -13,14 +13,7 @@ const ClientLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { login, isAuthenticated } = useAuth();
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      console.log('🔄 Usuário autenticado, redirecionando...');
-      navigate('/cliente/chamados', { replace: true });
-    }
-  }, [isAuthenticated, navigate]);
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +30,6 @@ const ClientLogin = () => {
     setIsLoading(true);
     
     try {
-      console.log('🚀 Iniciando login...');
       const success = await login(email, password);
       
       if (success) {
@@ -45,29 +37,23 @@ const ClientLogin = () => {
           title: "Login realizado com sucesso",
           description: "Bem-vindo à Área do Cliente Ascalate."
         });
+        navigate('/cliente');
       } else {
         toast({
           title: "Falha no login",
-          description: "Email ou senha inválidos. Verifique suas credenciais.",
+          description: "Email ou senha inválidos.",
           variant: "destructive"
         });
       }
     } catch (error) {
-      console.error('💥 Erro durante o login:', error);
       toast({
         title: "Erro",
-        description: "Ocorreu um erro ao realizar o login. Tente novamente.",
+        description: "Ocorreu um erro ao realizar o login. Tente novamente mais tarde.",
         variant: "destructive"
       });
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleTestLogin = (testEmail: string, testPassword: string) => {
-    console.log('🧪 Usando credenciais de teste:', testEmail);
-    setEmail(testEmail);
-    setPassword(testPassword);
   };
 
   return (
@@ -98,7 +84,7 @@ const ClientLogin = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Digite seu email"
+                  placeholder="rafael.gontijo@ascalate.com.br"
                   className="mt-1"
                 />
               </div>
@@ -117,7 +103,7 @@ const ClientLogin = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Digite sua senha"
+                  placeholder="••••••••"
                   className="mt-1"
                 />
               </div>
@@ -134,40 +120,6 @@ const ClientLogin = () => {
             </Button>
           </div>
         </form>
-        
-        <div className="mt-6 space-y-4">
-          <div className="text-center">
-            <p className="text-sm text-gray-600 mb-3">
-              <strong>Credenciais de teste:</strong>
-            </p>
-          </div>
-          
-          <div className="space-y-2">
-            <button
-              type="button"
-              onClick={() => handleTestLogin('cliente@portobello.com.br', 'portobello123')}
-              className="w-full text-left px-3 py-2 text-xs text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
-            >
-              <strong>Portobello:</strong> cliente@portobello.com.br / portobello123
-            </button>
-            
-            <button
-              type="button"
-              onClick={() => handleTestLogin('cliente@jassy.com.br', 'jassy123')}
-              className="w-full text-left px-3 py-2 text-xs text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
-            >
-              <strong>J.Assy:</strong> cliente@jassy.com.br / jassy123
-            </button>
-            
-            <button
-              type="button"
-              onClick={() => handleTestLogin('teste@ascalate.com.br', 'teste123')}
-              className="w-full text-left px-3 py-2 text-xs text-gray-600 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
-            >
-              <strong>Teste:</strong> teste@ascalate.com.br / teste123
-            </button>
-          </div>
-        </div>
         
         <p className="mt-4 text-center text-sm text-gray-600">
           Em caso de dificuldades no acesso, entre em contato com nossa equipe pelo email:
