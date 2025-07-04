@@ -8,8 +8,12 @@ import { TicketDetailsForm } from '@/components/ticket/TicketDetailsForm';
 import { CategoryPriorityForm } from '@/components/ticket/CategoryPriorityForm';
 import { FileUploadForm } from '@/components/ticket/FileUploadForm';
 import { useTicketForm } from '@/hooks/useTicketForm';
+import { useAuth } from '@/contexts/AuthContext';
+import { ArrowLeft } from 'lucide-react';
+import { Link, Navigate } from 'react-router-dom';
 
 const AbrirChamado = () => {
+  const { isAuthenticated, loading } = useAuth();
   const {
     formData,
     file,
@@ -27,9 +31,32 @@ const AbrirChamado = () => {
     loadFormData();
   }, []);
 
+  // Show loading while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Carregando...</div>
+      </div>
+    );
+  }
+
+  // Redirect to login if not authenticated
+  if (!isAuthenticated) {
+    return <Navigate to="/cliente/login" replace />;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
       <div className="container mx-auto px-4 py-8">
+        <div className="mb-6">
+          <Link to="/cliente">
+            <Button variant="outline" className="mb-4">
+              <ArrowLeft size={16} className="mr-2" />
+              Voltar à Área do Cliente
+            </Button>
+          </Link>
+        </div>
+
         <TicketFormHeader />
 
         <div className="max-w-2xl mx-auto">

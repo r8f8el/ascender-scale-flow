@@ -21,19 +21,21 @@ interface Ticket {
 }
 
 const ClientTickets = () => {
-  const { client } = useAuth();
+  const { client, user } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (client) {
+    if (client || user) {
       loadTickets();
     }
-  }, [client]);
+  }, [client, user]);
 
   const loadTickets = async () => {
     try {
-      const { data, error } = await supabase
+      console.log('Carregando tickets para:', { client, user });
+      
+      let query = supabase
         .from('tickets')
         .select(`
           *,
@@ -41,10 +43,25 @@ const ClientTickets = () => {
           ticket_priorities(name, color),
           ticket_statuses(name, color, is_closed)
         `)
-        .eq('user_email', client?.email)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      // Filter by user_id if we have a Supabase user, or by email if we have a client
+      if (user?.id) {
+        query = query.eq('user_id', user.id);
+      } else if (client?.email) {
+        query = query.eq('user_email', client.email);
+      } else if (user?.email) {
+        query = query.eq('user_email', user.email);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Erro ao carregar chamados:', error);
+        throw error;
+      }
+      
+      console.log('Tickets carregados:', data);
       setTickets(data || []);
     } catch (error) {
       console.error('Erro ao carregar chamados:', error);

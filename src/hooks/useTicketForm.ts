@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface FormData {
   user_name: string;
@@ -24,6 +25,7 @@ const initialFormData: FormData = {
 };
 
 export const useTicketForm = () => {
+  const { user, client } = useAuth();
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -40,6 +42,21 @@ export const useTicketForm = () => {
 
       if (categoriesRes.data) setCategories(categoriesRes.data);
       if (prioritiesRes.data) setPriorities(prioritiesRes.data);
+
+      // Pre-fill form with user data if available
+      if (client) {
+        setFormData(prev => ({
+          ...prev,
+          user_name: client.name || '',
+          user_email: client.email || '',
+        }));
+      } else if (user) {
+        setFormData(prev => ({
+          ...prev,
+          user_name: user.user_metadata?.name || user.email?.split('@')[0] || '',
+          user_email: user.email || '',
+        }));
+      }
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     }
@@ -65,7 +82,9 @@ export const useTicketForm = () => {
     setIsLoading(true);
 
     try {
-      console.log('Iniciando criação do chamado via Edge Function...');
+      console.log('Iniciando criação do chamado...');
+      console.log('Usuário logado:', user);
+      console.log('Cliente:', client);
       console.log('Dados do formulário:', formData);
 
       // Validar campos obrigatórios
@@ -74,9 +93,17 @@ export const useTicketForm = () => {
         throw new Error('Todos os campos obrigatórios devem ser preenchidos');
       }
 
+      // Preparar dados do ticket com informações do usuário logado
+      const ticketData = {
+        ...formData,
+        user_id: user?.id || null, // Associar ao usuário do Supabase se disponível
+      };
+
+      console.log('Dados do ticket preparados:', ticketData);
+
       // Chamar a Edge Function para processar o chamado
       const { data, error } = await supabase.functions.invoke('process-ticket', {
-        body: formData
+        body: ticketData
       });
 
       if (error) {
@@ -99,6 +126,21 @@ export const useTicketForm = () => {
       // Limpar formulário
       setFormData(initialFormData);
       setFile(null);
+
+      // Recarregar dados do usuário se necessário
+      if (client) {
+        setFormData(prev => ({
+          ...prev,
+          user_name: client.name || '',
+          user_email: client.email || '',
+        }));
+      } else if (user) {
+        setFormData(prev => ({
+          ...prev,
+          user_name: user.user_metadata?.name || user.email?.split('@')[0] || '',
+          user_email: user.email || '',
+        }));
+      }
 
     } catch (error: any) {
       console.error('Erro completo ao criar chamado:', error);
