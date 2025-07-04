@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Logo } from '../components/Logo';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,15 @@ const ClientLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
+
+  // Redirecionar se já estiver autenticado
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log('Usuário já autenticado, redirecionando...');
+      navigate('/cliente/chamados');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,14 +38,16 @@ const ClientLogin = () => {
     setIsLoading(true);
     
     try {
+      console.log('Tentando fazer login com:', email);
       const success = await login(email, password);
       
       if (success) {
+        console.log('Login bem-sucedido, redirecionando...');
         toast({
           title: "Login realizado com sucesso",
           description: "Bem-vindo à Área do Cliente Ascalate."
         });
-        navigate('/cliente');
+        // O redirecionamento será feito pelo useEffect quando isAuthenticated for true
       } else {
         toast({
           title: "Falha no login",
@@ -46,6 +56,7 @@ const ClientLogin = () => {
         });
       }
     } catch (error) {
+      console.error('Erro durante o login:', error);
       toast({
         title: "Erro",
         description: "Ocorreu um erro ao realizar o login. Tente novamente mais tarde.",
