@@ -2,14 +2,18 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { TicketFormHeader } from '@/components/ticket/TicketFormHeader';
 import { PersonalInfoForm } from '@/components/ticket/PersonalInfoForm';
 import { TicketDetailsForm } from '@/components/ticket/TicketDetailsForm';
 import { CategoryPriorityForm } from '@/components/ticket/CategoryPriorityForm';
 import { FileUploadForm } from '@/components/ticket/FileUploadForm';
 import { useTicketForm } from '@/hooks/useTicketForm';
+import { useAuth } from '@/contexts/AuthContext';
 
 const AbrirChamado = () => {
+  const { isAuthenticated } = useAuth();
   const {
     formData,
     file,
@@ -30,6 +34,18 @@ const AbrirChamado = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
       <div className="container mx-auto px-4 py-8">
+        {/* Botão Voltar à Área do Cliente - só aparece se usuário estiver logado */}
+        {isAuthenticated && (
+          <div className="mb-6">
+            <Link to="/cliente/chamados">
+              <Button variant="outline" className="flex items-center gap-2">
+                <ArrowLeft size={16} />
+                Voltar à Área do Cliente
+              </Button>
+            </Link>
+          </div>
+        )}
+
         <TicketFormHeader />
 
         <div className="max-w-2xl mx-auto">
