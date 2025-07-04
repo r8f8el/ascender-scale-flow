@@ -84,7 +84,7 @@ const ClientLogin = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="rafael.gontijo@ascalate.com.br"
+                  placeholder="cliente@portobello.com.br"
                   className="mt-1"
                 />
               </div>
@@ -120,6 +120,12 @@ const ClientLogin = () => {
             </Button>
           </div>
         </form>
+        
+        <div className="mt-4 text-center text-sm text-gray-600">
+          <p>Usuários de teste:</p>
+          <p>cliente@portobello.com.br / portobello123</p>
+          <p>cliente@jassy.com.br / jassy123</p>
+        </div>
         
         <p className="mt-4 text-center text-sm text-gray-600">
           Em caso de dificuldades no acesso, entre em contato com nossa equipe pelo email:
