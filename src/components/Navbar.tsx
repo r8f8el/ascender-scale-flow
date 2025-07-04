@@ -1,93 +1,170 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Logo } from './Logo';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Button } from "@/components/ui/button"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu } from 'lucide-react';
 
 const Navbar = () => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const location = useLocation();
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const getLinkClasses = (path: string) => {
+    return `text-gray-700 hover:text-[#f07c00] px-3 py-2 text-sm font-medium transition-colors rounded-md ${location.pathname === path ? 'bg-gray-100 text-[#f07c00]' : ''}`;
+  };
+
+  const getMobileLinkClasses = (path: string) => {
+    return `text-gray-700 hover:text-[#f07c00] block px-3 py-2 text-base font-medium transition-colors rounded-md ${location.pathname === path ? 'bg-gray-100 text-[#f07c00]' : ''}`;
+  };
+
   return (
-    <nav className="fixed w-full z-50 bg-white bg-opacity-90 backdrop-blur-sm shadow-sm">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <div className="flex items-center">
-          <Link to="/" className="flex items-center">
-            <Logo className="h-10 w-auto" />
-          </Link>
+    <nav className="bg-white shadow-lg sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          <div className="flex items-center">
+            <Link to="/" className="flex-shrink-0">
+              <Logo className="h-10 w-auto" />
+            </Link>
+          </div>
+
+          {/* Desktop Menu */}
+          <div className="hidden md:flex items-center space-x-8">
+            <Link to="/" className={getLinkClasses('/')}>
+              Início
+            </Link>
+            <a href="#services" className="text-gray-700 hover:text-[#f07c00] px-3 py-2 text-sm font-medium transition-colors">
+              Serviços
+            </a>
+            <a href="#about" className="text-gray-700 hover:text-[#f07c00] px-3 py-2 text-sm font-medium transition-colors">
+              Sobre
+            </a>
+            <Link to="/abrir-chamado" className={getLinkClasses('/abrir-chamado')}>
+              Suporte
+            </Link>
+            <a href="#contact" className="text-gray-700 hover:text-[#f07c00] px-3 py-2 text-sm font-medium transition-colors">
+              Contato
+            </a>
+            <Link 
+              to="/cliente/login" 
+              className="bg-[#f07c00] hover:bg-[#e56b00] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+            >
+              Área do Cliente
+            </Link>
+          </div>
+
+          {/* Mobile menu button */}
+          <div className="md:hidden flex items-center">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={toggleMobileMenu}>
+                  <Menu className="h-5 w-5 text-gray-700 hover:text-[#f07c00]" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="bottom">
+                <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
+                  <Link 
+                    to="/" 
+                    className={getMobileLinkClasses('/')}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Início
+                  </Link>
+                  <a 
+                    href="#services" 
+                    className="text-gray-700 hover:text-[#f07c00] block px-3 py-2 text-base font-medium transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Serviços
+                  </a>
+                  <a 
+                    href="#about" 
+                    className="text-gray-700 hover:text-[#f07c00] block px-3 py-2 text-base font-medium transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Sobre
+                  </a>
+                  <Link 
+                    to="/abrir-chamado" 
+                    className={getMobileLinkClasses('/abrir-chamado')}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Suporte
+                  </Link>
+                  <a 
+                    href="#contact" 
+                    className="text-gray-700 hover:text-[#f07c00] block px-3 py-2 text-base font-medium transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Contato
+                  </a>
+                  <Link 
+                    to="/cliente/login" 
+                    className="bg-[#f07c00] hover:bg-[#e56b00] text-white block px-3 py-2 text-base font-medium transition-colors rounded-md"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Área do Cliente
+                  </Link>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
-        
-        <div className="hidden md:flex items-center space-x-8">
-          <NavLink href="#services">O que entregamos</NavLink>
-          <NavLink href="#partner">Sócio</NavLink>
-          <NavLink href="#mission">Missão, Visão e Valores</NavLink>
-          <NavLink href="#clients">Clientes</NavLink>
-          <NavLink href="#contact">Contato</NavLink>
-          <a 
-            href="https://ascalate.com.br/participante-dados"
-            className="text-gray-800 hover:text-ascalate-blue font-medium transition-colors duration-300 relative after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-0.5 after:bottom-0 after:left-0 after:bg-ascalate-blue after:origin-bottom-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-bottom-left"
-          >
-            Fórum FP&A
-          </a>
-          <Link 
-            to="/cliente/login"
-            className="text-white bg-[#0056b3] hover:bg-[#003d7f] px-4 py-2 rounded-md transition-colors duration-300"
-          >
-            Área do Cliente
-          </Link>
-        </div>
-        
-        <div className="md:hidden">
-          <Sheet>
-            <SheetTrigger asChild>
-              <button className="p-2 text-ascalate-blue">
-                <Menu size={24} />
-              </button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[80%]">
-              <div className="flex flex-col space-y-4 mt-8">
-                <MobileNavLink href="#services">O que entregamos</MobileNavLink>
-                <MobileNavLink href="#partner">Sócio</MobileNavLink>
-                <MobileNavLink href="#mission">Missão, Visão e Valores</MobileNavLink>
-                <MobileNavLink href="#clients">Clientes</MobileNavLink>
-                <MobileNavLink href="#contact">Contato</MobileNavLink>
-                <a 
-                  href="https://ascalate.com.br/participante-dados"
-                  className="text-gray-800 hover:text-ascalate-blue font-medium transition-colors duration-300 py-2 block"
-                >
-                  Fórum FP&A
-                </a>
-                <Link 
-                  to="/cliente/login"
-                  className="text-white bg-[#0056b3] hover:bg-[#003d7f] px-4 py-2 rounded-md transition-colors duration-300 text-center"
-                >
-                  Área do Cliente
-                </Link>
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
+
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden">
+            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
+              <Link 
+                to="/" 
+                className={getMobileLinkClasses('/')}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Início
+              </Link>
+              <a 
+                href="#services" 
+                className="text-gray-700 hover:text-[#f07c00] block px-3 py-2 text-base font-medium transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Serviços
+              </a>
+              <a 
+                href="#about" 
+                className="text-gray-700 hover:text-[#f07c00] block px-3 py-2 text-base font-medium transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Sobre
+              </a>
+              <Link 
+                to="/abrir-chamado" 
+                className={getMobileLinkClasses('/abrir-chamado')}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Suporte
+              </Link>
+              <a 
+                href="#contact" 
+                className="text-gray-700 hover:text-[#f07c00] block px-3 py-2 text-base font-medium transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Contato
+              </a>
+              <Link 
+                to="/cliente/login" 
+                className="bg-[#f07c00] hover:bg-[#e56b00] text-white block px-3 py-2 text-base font-medium transition-colors rounded-md"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Área do Cliente
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
     </nav>
-  );
-};
-
-const NavLink = ({ href, children }: { href: string, children: React.ReactNode }) => {
-  return (
-    <a 
-      href={href} 
-      className="text-gray-800 hover:text-ascalate-blue font-medium transition-colors duration-300 relative after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-0.5 after:bottom-0 after:left-0 after:bg-ascalate-blue after:origin-bottom-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-bottom-left"
-    >
-      {children}
-    </a>
-  );
-};
-
-const MobileNavLink = ({ href, children }: { href: string, children: React.ReactNode }) => {
-  return (
-    <a 
-      href={href} 
-      className="text-gray-800 hover:text-ascalate-blue font-medium transition-colors duration-300 py-2 block"
-    >
-      {children}
-    </a>
   );
 };
 

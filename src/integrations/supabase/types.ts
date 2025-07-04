@@ -63,11 +63,259 @@ export type Database = {
         }
         Relationships: []
       }
+      ticket_attachments: {
+        Row: {
+          content_type: string | null
+          created_at: string | null
+          file_path: string
+          file_size: number | null
+          filename: string
+          id: string
+          ticket_id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          content_type?: string | null
+          created_at?: string | null
+          file_path: string
+          file_size?: number | null
+          filename: string
+          id?: string
+          ticket_id: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          content_type?: string | null
+          created_at?: string | null
+          file_path?: string
+          file_size?: number | null
+          filename?: string
+          id?: string
+          ticket_id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_attachments_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_categories: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      ticket_priorities: {
+        Row: {
+          color: string
+          created_at: string | null
+          id: string
+          level: number
+          name: string
+        }
+        Insert: {
+          color: string
+          created_at?: string | null
+          id?: string
+          level: number
+          name: string
+        }
+        Update: {
+          color?: string
+          created_at?: string | null
+          id?: string
+          level?: number
+          name?: string
+        }
+        Relationships: []
+      }
+      ticket_responses: {
+        Row: {
+          admin_id: string | null
+          created_at: string | null
+          id: string
+          is_internal_note: boolean | null
+          message: string
+          ticket_id: string
+          user_id: string | null
+        }
+        Insert: {
+          admin_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_internal_note?: boolean | null
+          message: string
+          ticket_id: string
+          user_id?: string | null
+        }
+        Update: {
+          admin_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_internal_note?: boolean | null
+          message?: string
+          ticket_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_responses_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "admin_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_responses_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_statuses: {
+        Row: {
+          color: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_closed: boolean | null
+          name: string
+        }
+        Insert: {
+          color: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_closed?: boolean | null
+          name: string
+        }
+        Update: {
+          color?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_closed?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
+      tickets: {
+        Row: {
+          assigned_to: string | null
+          category_id: string
+          closed_at: string | null
+          created_at: string | null
+          description: string
+          id: string
+          priority_id: string
+          resolved_at: string | null
+          status_id: string
+          ticket_number: string
+          title: string
+          updated_at: string | null
+          user_email: string
+          user_id: string | null
+          user_name: string
+          user_phone: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          category_id: string
+          closed_at?: string | null
+          created_at?: string | null
+          description: string
+          id?: string
+          priority_id: string
+          resolved_at?: string | null
+          status_id: string
+          ticket_number: string
+          title: string
+          updated_at?: string | null
+          user_email: string
+          user_id?: string | null
+          user_name: string
+          user_phone: string
+        }
+        Update: {
+          assigned_to?: string | null
+          category_id?: string
+          closed_at?: string | null
+          created_at?: string | null
+          description?: string
+          id?: string
+          priority_id?: string
+          resolved_at?: string | null
+          status_id?: string
+          ticket_number?: string
+          title?: string
+          updated_at?: string | null
+          user_email?: string
+          user_id?: string | null
+          user_name?: string
+          user_phone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tickets_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "admin_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_priority_id_fkey"
+            columns: ["priority_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_priorities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_status_id_fkey"
+            columns: ["status_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_statuses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      generate_ticket_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       is_admin_user: {
         Args: Record<PropertyKey, never>
         Returns: boolean
