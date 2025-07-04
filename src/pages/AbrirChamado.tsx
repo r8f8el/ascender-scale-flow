@@ -64,35 +64,58 @@ const AbrirChamado = () => {
     setIsLoading(true);
 
     try {
+      console.log('Iniciando criação do chamado...');
+      console.log('Dados do formulário:', formData);
+
+      // Validar campos obrigatórios
+      if (!formData.user_name || !formData.user_email || !formData.user_phone || 
+          !formData.title || !formData.description || !formData.category_id || !formData.priority_id) {
+        throw new Error('Todos os campos obrigatórios devem ser preenchidos');
+      }
+
       // Buscar o status "Aberto" para definir como padrão
-      const { data: statusData } = await supabase
+      const { data: statusData, error: statusError } = await supabase
         .from('ticket_statuses')
         .select('id')
         .eq('name', 'Aberto')
         .single();
 
-      if (!statusData) {
+      if (statusError || !statusData) {
+        console.error('Erro ao buscar status:', statusError);
         throw new Error('Status padrão não encontrado');
       }
 
-      // Criar o ticket - incluindo ticket_number vazio para trigger gerar
+      console.log('Status encontrado:', statusData);
+
+      // Preparar dados para inserção
+      const ticketData = {
+        user_name: formData.user_name.trim(),
+        user_email: formData.user_email.trim().toLowerCase(),
+        user_phone: formData.user_phone.trim(),
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        category_id: formData.category_id,
+        priority_id: formData.priority_id,
+        status_id: statusData.id,
+        ticket_number: '', // Será gerado automaticamente pelo trigger
+        user_id: null // Usuário não autenticado
+      };
+
+      console.log('Dados para inserção:', ticketData);
+
+      // Criar o ticket
       const { data: ticket, error: ticketError } = await supabase
         .from('tickets')
-        .insert({
-          ticket_number: '', // Trigger irá gerar automaticamente
-          user_name: formData.user_name,
-          user_email: formData.user_email,
-          user_phone: formData.user_phone,
-          title: formData.title,
-          description: formData.description,
-          category_id: formData.category_id,
-          priority_id: formData.priority_id,
-          status_id: statusData.id
-        })
+        .insert(ticketData)
         .select()
         .single();
 
-      if (ticketError) throw ticketError;
+      if (ticketError) {
+        console.error('Erro ao criar ticket:', ticketError);
+        throw ticketError;
+      }
+
+      console.log('Ticket criado com sucesso:', ticket);
 
       toast({
         title: "Chamado criado com sucesso!",
@@ -112,10 +135,10 @@ const AbrirChamado = () => {
       setFile(null);
 
     } catch (error: any) {
-      console.error('Erro ao criar chamado:', error);
+      console.error('Erro completo ao criar chamado:', error);
       toast({
         title: "Erro ao criar chamado",
-        description: error.message || "Ocorreu um erro ao processar sua solicitação.",
+        description: error.message || "Ocorreu um erro ao processar sua solicitação. Tente novamente.",
         variant: "destructive",
       });
     } finally {
