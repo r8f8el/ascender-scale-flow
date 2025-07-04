@@ -31,7 +31,7 @@ const AuthContext = createContext<AuthContextType>({
 
 export const useAuth = () => useContext(AuthContext);
 
-// Mock clients database - in a real app, this would be fetched from a server
+// Mock clients database
 const mockClients = [
   { id: '1', name: 'Portobello', email: 'cliente@portobello.com.br', password: 'portobello123' },
   { id: '2', name: 'J.Assy', email: 'cliente@jassy.com.br', password: 'jassy123' },
@@ -45,15 +45,60 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    // Set up auth state listener FIRST
+    let mounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        // Check for existing session
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+
+        if (currentSession?.user) {
+          console.log('Found existing Supabase session:', currentSession.user.email);
+          setSession(currentSession);
+          setUser(currentSession.user);
+          
+          // Try to match with mock client
+          const foundClient = mockClients.find(
+            c => c.email.toLowerCase() === currentSession.user.email?.toLowerCase()
+          );
+          
+          if (foundClient) {
+            const { password: _, ...clientWithoutPassword } = foundClient;
+            setClient(clientWithoutPassword);
+            setIsAuthenticated(true);
+          }
+        } else {
+          // Check localStorage for mock client session
+          const storedClient = localStorage.getItem('ascalate_client');
+          if (storedClient) {
+            console.log('Found stored client session');
+            const parsedClient = JSON.parse(storedClient);
+            setClient(parsedClient);
+            setIsAuthenticated(true);
+          }
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session);
+        if (!mounted) return;
+        
+        console.log('Auth state changed:', event, session?.user?.email);
+        
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Try to find client in mock data based on email
           const foundClient = mockClients.find(
             c => c.email.toLowerCase() === session.user.email?.toLowerCase()
           );
@@ -74,41 +119,18 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session check:', session);
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        const foundClient = mockClients.find(
-          c => c.email.toLowerCase() === session.user.email?.toLowerCase()
-        );
-        
-        if (foundClient) {
-          const { password: _, ...clientWithoutPassword } = foundClient;
-          setClient(clientWithoutPassword);
-          setIsAuthenticated(true);
-          localStorage.setItem('ascalate_client', JSON.stringify(clientWithoutPassword));
-        }
-      } else {
-        // Check localStorage for stored client info
-        const storedClient = localStorage.getItem('ascalate_client');
-        if (storedClient) {
-          const parsedClient = JSON.parse(storedClient);
-          setClient(parsedClient);
-          setIsAuthenticated(true);
-        }
-      }
-      
-      setLoading(false);
-    });
+    initializeAuth();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
   
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
+      setLoading(true);
+      
       // First try Supabase auth
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -116,7 +138,7 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
       });
 
       if (data.user && !error) {
-        // User authenticated with Supabase
+        console.log('Supabase login successful');
         return true;
       }
 
@@ -126,16 +148,20 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
       );
       
       if (foundClient) {
+        console.log('Mock client login successful');
         const { password: _, ...clientWithoutPassword } = foundClient;
         setClient(clientWithoutPassword);
         setIsAuthenticated(true);
+        setLoading(false);
         localStorage.setItem('ascalate_client', JSON.stringify(clientWithoutPassword));
         return true;
       }
       
+      setLoading(false);
       return false;
     } catch (error) {
       console.error('Login error:', error);
+      setLoading(false);
       return false;
     }
   };

@@ -13,7 +13,13 @@ const ClientLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
+
+  // Redirect if already authenticated
+  if (isAuthenticated) {
+    navigate('/cliente');
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,9 +128,14 @@ const ClientLogin = () => {
         </form>
         
         <div className="mt-4 text-center text-sm text-gray-600">
-          <p>Usuários de teste:</p>
-          <p>cliente@portobello.com.br / portobello123</p>
-          <p>cliente@jassy.com.br / jassy123</p>
+          <p className="font-medium mb-2">Usuários de teste:</p>
+          <div className="bg-gray-100 rounded-lg p-3 space-y-1">
+            <p><strong>Email:</strong> cliente@portobello.com.br</p>
+            <p><strong>Senha:</strong> portobello123</p>
+            <hr className="my-2" />
+            <p><strong>Email:</strong> cliente@jassy.com.br</p>
+            <p><strong>Senha:</strong> jassy123</p>
+          </div>
         </div>
         
         <p className="mt-4 text-center text-sm text-gray-600">
