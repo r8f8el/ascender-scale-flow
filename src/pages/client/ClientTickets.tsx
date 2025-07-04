@@ -24,17 +24,35 @@ const ClientTickets = () => {
   const { client, user } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (client || user) {
-      loadTickets();
-    }
+    loadTickets();
   }, [client, user]);
 
   const loadTickets = async () => {
     try {
       console.log('Carregando tickets para:', { client, user });
+      setIsLoading(true);
+      setError(null);
       
+      // Se não há cliente nem usuário, não carrega nada
+      if (!client && !user) {
+        console.log('Nenhum usuário logado encontrado');
+        setTickets([]);
+        return;
+      }
+
+      const userEmail = client?.email || user?.email;
+      
+      if (!userEmail) {
+        console.log('Email do usuário não encontrado');
+        setTickets([]);
+        return;
+      }
+
+      console.log('Buscando tickets para email:', userEmail);
+
       let query = supabase
         .from('tickets')
         .select(`
@@ -43,28 +61,23 @@ const ClientTickets = () => {
           ticket_priorities(name, color),
           ticket_statuses(name, color, is_closed)
         `)
+        .eq('user_email', userEmail)
         .order('created_at', { ascending: false });
-
-      // Filter by user_id if we have a Supabase user, or by email if we have a client
-      if (user?.id) {
-        query = query.eq('user_id', user.id);
-      } else if (client?.email) {
-        query = query.eq('user_email', client.email);
-      } else if (user?.email) {
-        query = query.eq('user_email', user.email);
-      }
 
       const { data, error } = await query;
 
       if (error) {
         console.error('Erro ao carregar chamados:', error);
-        throw error;
+        setError('Erro ao carregar chamados: ' + error.message);
+        return;
       }
       
       console.log('Tickets carregados:', data);
       setTickets(data || []);
+      
     } catch (error) {
-      console.error('Erro ao carregar chamados:', error);
+      console.error('Erro inesperado ao carregar chamados:', error);
+      setError('Erro inesperado ao carregar chamados');
     } finally {
       setIsLoading(false);
     }
@@ -84,6 +97,14 @@ const ClientTickets = () => {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="text-lg">Carregando seus chamados...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-lg text-red-600">{error}</div>
       </div>
     );
   }
