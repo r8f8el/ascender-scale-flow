@@ -29,12 +29,6 @@ const AuthContext = createContext<AuthContextType>({
 
 export const useAuth = () => useContext(AuthContext);
 
-// Mock clients database - in a real app, this would be fetched from a server
-const mockClients = [
-  { id: '1', name: 'Portobello', email: 'cliente@portobello.com.br', password: 'portobello123' },
-  { id: '2', name: 'J.Assy', email: 'cliente@jassy.com.br', password: 'jassy123' },
-];
-
 const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [client, setClient] = useState<Client | null>(null);
@@ -45,22 +39,33 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log('Auth state changed:', event, session);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Find matching client based on email
-          const foundClient = mockClients.find(
-            c => c.email.toLowerCase() === session.user.email?.toLowerCase()
-          );
+          // Fetch client profile from database
+          const { data: clientProfile, error } = await supabase
+            .from('client_profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
           
-          if (foundClient) {
-            const { password: _, ...clientWithoutPassword } = foundClient;
-            setClient(clientWithoutPassword);
+          if (clientProfile && !error) {
+            const client = {
+              id: clientProfile.id,
+              name: clientProfile.name,
+              email: clientProfile.email
+            };
+            setClient(client);
             setIsAuthenticated(true);
-            localStorage.setItem('ascalate_client', JSON.stringify(clientWithoutPassword));
+            localStorage.setItem('ascalate_client', JSON.stringify(client));
+          } else {
+            console.error('Error fetching client profile:', error);
+            setClient(null);
+            setIsAuthenticated(false);
+            localStorage.removeItem('ascalate_client');
           }
         } else {
           setClient(null);
@@ -71,21 +76,28 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       console.log('Existing session:', session);
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        const foundClient = mockClients.find(
-          c => c.email.toLowerCase() === session.user.email?.toLowerCase()
-        );
+        // Fetch client profile from database
+        const { data: clientProfile, error } = await supabase
+          .from('client_profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
         
-        if (foundClient) {
-          const { password: _, ...clientWithoutPassword } = foundClient;
-          setClient(clientWithoutPassword);
+        if (clientProfile && !error) {
+          const client = {
+            id: clientProfile.id,
+            name: clientProfile.name,
+            email: clientProfile.email
+          };
+          setClient(client);
           setIsAuthenticated(true);
-          localStorage.setItem('ascalate_client', JSON.stringify(clientWithoutPassword));
+          localStorage.setItem('ascalate_client', JSON.stringify(client));
         }
       }
     });
@@ -95,16 +107,7 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      // Check against mock clients first
-      const foundClient = mockClients.find(
-        (c) => c.email.toLowerCase() === email.toLowerCase() && c.password === password
-      );
-      
-      if (!foundClient) {
-        return false;
-      }
-
-      // Sign in with Supabase to create session
+      // Sign in with Supabase directly
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email,
         password: password
