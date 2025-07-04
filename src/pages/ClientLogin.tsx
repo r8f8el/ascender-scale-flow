@@ -15,10 +15,9 @@ const ClientLogin = () => {
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAuth();
 
-  // Redirecionar se já estiver autenticado
   useEffect(() => {
     if (isAuthenticated) {
-      console.log('🔄 Usuário já autenticado, redirecionando...');
+      console.log('🔄 Usuário autenticado, redirecionando...');
       navigate('/cliente/chamados', { replace: true });
     }
   }, [isAuthenticated, navigate]);
@@ -38,18 +37,15 @@ const ClientLogin = () => {
     setIsLoading(true);
     
     try {
-      console.log('🚀 Iniciando processo de login com:', email);
+      console.log('🚀 Iniciando login...');
       const success = await login(email, password);
       
       if (success) {
-        console.log('✅ Login bem-sucedido!');
         toast({
           title: "Login realizado com sucesso",
           description: "Bem-vindo à Área do Cliente Ascalate."
         });
-        // O redirecionamento será feito pelo useEffect quando isAuthenticated for true
       } else {
-        console.log('❌ Login falhou');
         toast({
           title: "Falha no login",
           description: "Email ou senha inválidos. Verifique suas credenciais.",
@@ -69,6 +65,7 @@ const ClientLogin = () => {
   };
 
   const handleTestLogin = (testEmail: string, testPassword: string) => {
+    console.log('🧪 Usando credenciais de teste:', testEmail);
     setEmail(testEmail);
     setPassword(testPassword);
   };

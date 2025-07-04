@@ -36,152 +36,92 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   
   useEffect(() => {
-    console.log('🔧 AuthProvider: Iniciando configuração do listener de auth...');
+    console.log('🔧 AuthProvider: Configurando listener de auth...');
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('🔄 Auth state mudou:', event, session);
+        console.log('🔄 Auth state mudou:', event);
+        console.log('📱 Session:', session ? 'presente' : 'ausente');
+        
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          console.log('👤 Usuário encontrado na sessão:', session.user.email);
-          console.log('🆔 User ID:', session.user.id);
+          console.log('👤 Usuário logado:', session.user.email);
           
           try {
-            // Verificar se é admin primeiro
-            console.log('🔍 Verificando se é admin...');
-            const { data: adminProfile, error: adminError } = await supabase
-              .from('admin_profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .maybeSingle();
-            
-            console.log('👔 Resultado verificação admin:', { adminProfile, adminError });
-            
-            if (adminProfile && !adminError) {
-              console.log('⚠️ Usuário é admin, não definindo como cliente');
-              setClient(null);
-              setIsAuthenticated(false);
-              return;
-            }
-            
-            // Verificar perfil de cliente
-            console.log('👥 Verificando perfil de cliente...');
-            const { data: clientProfile, error: clientError } = await supabase
+            // Buscar perfil de cliente
+            const { data: clientProfile, error } = await supabase
               .from('client_profiles')
               .select('*')
               .eq('id', session.user.id)
-              .maybeSingle();
+              .single();
             
-            console.log('📋 Resultado perfil cliente:', { clientProfile, clientError });
-            
-            if (clientProfile && !clientError) {
+            if (clientProfile && !error) {
               const client = {
                 id: clientProfile.id,
                 name: clientProfile.name,
                 email: clientProfile.email
               };
-              console.log('✅ Cliente encontrado, definindo estado:', client);
+              console.log('✅ Cliente encontrado:', client.name);
               setClient(client);
               setIsAuthenticated(true);
-              localStorage.setItem('ascalate_client', JSON.stringify(client));
             } else {
-              console.log('🔨 Perfil de cliente não encontrado, criando...');
-              
-              // Tentar criar perfil de cliente
-              const { data: newProfile, error: createError } = await supabase
-                .from('client_profiles')
-                .insert({
-                  id: session.user.id,
-                  name: session.user.email?.split('@')[0] || 'Cliente',
-                  email: session.user.email || '',
-                  company: session.user.email?.includes('portobello') ? 'Portobello' : 
-                          session.user.email?.includes('jassy') ? 'J.Assy' : 
-                          session.user.email?.includes('@ascalate') ? 'Ascalate' : null
-                })
-                .select()
-                .single();
-              
-              console.log('🆕 Resultado criação perfil:', { newProfile, createError });
-              
-              if (newProfile && !createError) {
-                const client = {
-                  id: newProfile.id,
-                  name: newProfile.name,
-                  email: newProfile.email
-                };
-                console.log('✅ Perfil criado com sucesso:', client);
-                setClient(client);
-                setIsAuthenticated(true);
-                localStorage.setItem('ascalate_client', JSON.stringify(client));
-              } else {
-                console.error('❌ Falha ao criar perfil de cliente:', createError);
-                setClient(null);
-                setIsAuthenticated(false);
-                localStorage.removeItem('ascalate_client');
-              }
+              console.log('❌ Perfil de cliente não encontrado');
+              setClient(null);
+              setIsAuthenticated(false);
             }
           } catch (error) {
-            console.error('💥 Erro durante verificação de perfis:', error);
+            console.error('💥 Erro ao buscar perfil:', error);
             setClient(null);
             setIsAuthenticated(false);
-            localStorage.removeItem('ascalate_client');
           }
         } else {
-          console.log('🚪 Sem usuário na sessão, limpando estado...');
+          console.log('🚪 Usuário deslogado');
           setClient(null);
           setIsAuthenticated(false);
-          localStorage.removeItem('ascalate_client');
         }
       }
     );
 
     // Verificar sessão existente
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      console.log('📱 Sessão existente encontrada:', !!session);
-      if (session?.user) {
-        console.log('👤 Usuário na sessão existente:', session.user.email);
-      }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('📱 Sessão inicial:', session ? 'encontrada' : 'não encontrada');
     });
 
     return () => {
-      console.log('🧹 Limpando subscription do auth listener');
+      console.log('🧹 Limpando subscription');
       subscription.unsubscribe();
     };
   }, []);
   
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      console.log('🔐 Tentativa de login para:', email);
-      console.log('🔑 Senha fornecida:', password ? `${password.length} caracteres` : 'vazia');
+      console.log('🔐 Tentativa de login:', email);
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password
       });
 
-      console.log('📡 Resposta do Supabase login:', { 
-        user: data.user?.email, 
-        session: !!data.session,
-        error: error 
+      console.log('📡 Resposta do login:', { 
+        success: !!data.user, 
+        error: error?.message 
       });
 
       if (error) {
-        console.error('❌ Erro no login Supabase:', error.message);
+        console.error('❌ Erro no login:', error.message);
         return false;
       }
 
       if (data.user) {
-        console.log('✅ Login bem-sucedido para:', data.user.email);
-        // O auth state change vai lidar com o resto
+        console.log('✅ Login bem-sucedido!');
         return true;
       }
 
-      console.warn('⚠️ Login sem erro mas sem usuário retornado');
       return false;
     } catch (error) {
-      console.error('💥 Erro durante tentativa de login:', error);
+      console.error('💥 Erro durante login:', error);
       return false;
     }
   };
@@ -192,12 +132,6 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
       await supabase.auth.signOut();
     } catch (error) {
       console.error('❌ Erro durante logout:', error);
-      // Fallback para limpeza manual
-      setClient(null);
-      setUser(null);
-      setSession(null);
-      setIsAuthenticated(false);
-      localStorage.removeItem('ascalate_client');
     }
   };
   
