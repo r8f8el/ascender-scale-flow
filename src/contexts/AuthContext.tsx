@@ -47,17 +47,35 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          console.log('User found in session, fetching client profile...');
-          // Fetch client profile from database
-          const { data: clientProfile, error } = await supabase
+          console.log('User found in session, checking user type...');
+          
+          // Check if user is admin first
+          const { data: adminProfile, error: adminError } = await supabase
+            .from('admin_profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          console.log('Admin profile check:', { adminProfile, adminError });
+          
+          if (adminProfile && !adminError) {
+            // User is admin, don't authenticate as client
+            console.log('User is admin, not setting client state');
+            setClient(null);
+            setIsAuthenticated(false);
+            return;
+          }
+          
+          // Check for client profile
+          const { data: clientProfile, error: clientError } = await supabase
             .from('client_profiles')
             .select('*')
             .eq('id', session.user.id)
             .single();
           
-          console.log('Client profile query result:', { clientProfile, error });
+          console.log('Client profile query result:', { clientProfile, clientError });
           
-          if (clientProfile && !error) {
+          if (clientProfile && !clientError) {
             const client = {
               id: clientProfile.id,
               name: clientProfile.name,
@@ -68,10 +86,38 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
             setIsAuthenticated(true);
             localStorage.setItem('ascalate_client', JSON.stringify(client));
           } else {
-            console.error('Error fetching client profile:', error);
-            setClient(null);
-            setIsAuthenticated(false);
-            localStorage.removeItem('ascalate_client');
+            console.error('No client profile found for user:', session.user.id);
+            // Create client profile if it doesn't exist
+            const { data: newProfile, error: createError } = await supabase
+              .from('client_profiles')
+              .insert({
+                id: session.user.id,
+                name: session.user.email?.split('@')[0] || 'Cliente',
+                email: session.user.email || '',
+                company: session.user.email?.includes('portobello') ? 'Portobello' : 
+                        session.user.email?.includes('jassy') ? 'J.Assy' : null
+              })
+              .select()
+              .single();
+            
+            console.log('Created client profile:', { newProfile, createError });
+            
+            if (newProfile && !createError) {
+              const client = {
+                id: newProfile.id,
+                name: newProfile.name,
+                email: newProfile.email
+              };
+              console.log('Setting newly created client:', client);
+              setClient(client);
+              setIsAuthenticated(true);
+              localStorage.setItem('ascalate_client', JSON.stringify(client));
+            } else {
+              console.error('Failed to create client profile:', createError);
+              setClient(null);
+              setIsAuthenticated(false);
+              localStorage.removeItem('ascalate_client');
+            }
           }
         } else {
           console.log('No user in session, clearing state...');
@@ -85,31 +131,9 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
     // THEN check for existing session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       console.log('Existing session:', session);
-      setSession(session);
-      setUser(session?.user ?? null);
-      
       if (session?.user) {
-        console.log('Found existing session, fetching client profile...');
-        // Fetch client profile from database
-        const { data: clientProfile, error } = await supabase
-          .from('client_profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-        
-        console.log('Existing session client profile result:', { clientProfile, error });
-        
-        if (clientProfile && !error) {
-          const client = {
-            id: clientProfile.id,
-            name: clientProfile.name,
-            email: clientProfile.email
-          };
-          console.log('Setting client from existing session:', client);
-          setClient(client);
-          setIsAuthenticated(true);
-          localStorage.setItem('ascalate_client', JSON.stringify(client));
-        }
+        // This will trigger the auth state change handler above
+        console.log('Found existing session, auth state change will handle it');
       }
     });
 
