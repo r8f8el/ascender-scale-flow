@@ -71,7 +71,7 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         if (!mounted) return;
         
         console.log('Auth state changed:', event, session?.user?.email);
@@ -81,7 +81,12 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
         
         if (session?.user) {
           setIsAuthenticated(true);
-          await loadClientProfile(session.user);
+          // Use setTimeout to defer the profile loading to avoid blocking the auth callback
+          setTimeout(() => {
+            if (mounted) {
+              loadClientProfile(session.user);
+            }
+          }, 0);
         } else {
           setIsAuthenticated(false);
           setClient(null);
