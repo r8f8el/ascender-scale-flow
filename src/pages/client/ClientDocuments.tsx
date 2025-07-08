@@ -332,10 +332,17 @@ const ClientDocuments = () => {
                   onClick={() => setSelectedCategory(category.id)}
                 >
                   <CardContent className="p-8 text-center">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center group-hover:from-primary/20 group-hover:to-primary/10 transition-all duration-300">
+                    <div 
+                      className="w-20 h-20 mx-auto mb-4 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-lg"
+                      style={{
+                        background: `linear-gradient(135deg, ${category.color}15, ${category.color}05)`,
+                        border: `2px solid ${category.color}20`
+                      }}
+                    >
                       <IconComponent 
-                        size={32} 
-                        className="text-primary group-hover:scale-110 transition-transform duration-300"
+                        size={36} 
+                        style={{ color: category.color }}
+                        className="drop-shadow-sm group-hover:scale-110 transition-transform duration-300"
                       />
                     </div>
                     <h3 className="font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
@@ -367,14 +374,21 @@ const ClientDocuments = () => {
                 Voltar para todas as categorias
               </Button>
               
-              <div className="flex items-center gap-3 mb-6">
-                {(() => {
-                  const IconComponent = getIconByName(category.icon);
-                  return <IconComponent size={32} style={{ color: category.color }} />;
-                })()}
+              <div className="flex items-center gap-4 mb-6">
+                <div 
+                  className="w-16 h-16 rounded-xl flex items-center justify-center shadow-lg"
+                  style={{
+                    background: `linear-gradient(135deg, ${category.color}, ${category.color}CC)`,
+                  }}
+                >
+                  {(() => {
+                    const IconComponent = getIconByName(category.icon);
+                    return <IconComponent size={28} className="text-white drop-shadow-sm" />;
+                  })()}
+                </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-800">{category.name}</h2>
-                  <p className="text-gray-600">{category.description}</p>
+                  <h2 className="text-2xl font-bold text-foreground">{category.name}</h2>
+                  <p className="text-muted-foreground">{category.description}</p>
                 </div>
               </div>
             </div>
@@ -382,8 +396,14 @@ const ClientDocuments = () => {
             {getDocumentsByCategory(category.id).length === 0 ? (
               <Card className="border-dashed border-2 border-muted-foreground/20">
                 <CardContent className="text-center py-16">
-                  <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-muted/50 to-muted/20 flex items-center justify-center">
-                    <Folder size={40} className="text-muted-foreground" />
+                  <div 
+                    className="w-24 h-24 mx-auto mb-6 rounded-2xl flex items-center justify-center shadow-inner"
+                    style={{
+                      background: `linear-gradient(135deg, ${category.color}08, ${category.color}03)`,
+                      border: `2px dashed ${category.color}30`
+                    }}
+                  >
+                    <Folder size={40} style={{ color: `${category.color}80` }} />
                   </div>
                   <h3 className="text-xl font-semibold text-foreground mb-3">
                     Nenhum documento encontrado
@@ -409,8 +429,14 @@ const ClientDocuments = () => {
                   >
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between mb-4">
-                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center group-hover:from-primary/20 group-hover:to-primary/10 transition-all duration-300">
-                          <FileText size={20} className="text-primary" />
+                        <div 
+                          className="w-14 h-14 rounded-xl flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-md"
+                          style={{
+                            background: `linear-gradient(135deg, ${document.document_categories?.color || '#3B82F6'}20, ${document.document_categories?.color || '#3B82F6'}10)`,
+                            border: `1px solid ${document.document_categories?.color || '#3B82F6'}30`
+                          }}
+                        >
+                          <FileText size={22} style={{ color: document.document_categories?.color || '#3B82F6' }} className="drop-shadow-sm" />
                         </div>
                         <div className="flex gap-1">
                           <Button 
