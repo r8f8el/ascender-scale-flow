@@ -41,6 +41,7 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   
   useEffect(() => {
     let mounted = true;
+    let profileLoaded = false;
 
     const initializeAuth = async () => {
       try {
@@ -57,8 +58,11 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
           setUser(currentSession.user);
           setIsAuthenticated(true);
           
-          // Try to load client profile
-          await loadClientProfile(currentSession.user);
+          // Load client profile only once
+          if (!profileLoaded) {
+            profileLoaded = true;
+            await loadClientProfile(currentSession.user);
+          }
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
@@ -81,15 +85,19 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
         
         if (session?.user) {
           setIsAuthenticated(true);
-          // Use setTimeout to defer the profile loading to avoid blocking the auth callback
-          setTimeout(() => {
-            if (mounted) {
-              loadClientProfile(session.user);
-            }
-          }, 0);
+          // Load profile only if not already loaded and avoid infinite loops
+          if (!profileLoaded && event === 'SIGNED_IN') {
+            profileLoaded = true;
+            setTimeout(() => {
+              if (mounted) {
+                loadClientProfile(session.user);
+              }
+            }, 100);
+          }
         } else {
           setIsAuthenticated(false);
           setClient(null);
+          profileLoaded = false;
         }
         
         setLoading(false);

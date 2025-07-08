@@ -57,7 +57,7 @@ const ClientSchedule = () => {
     if (user) {
       loadSchedules();
     }
-  }, []);
+  }, [user]);
 
   const loadSchedules = async () => {
     try {

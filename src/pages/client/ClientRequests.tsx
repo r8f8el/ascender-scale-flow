@@ -31,7 +31,7 @@ const ClientRequests = () => {
     if (user) {
       loadRequests();
     }
-  }, []);
+  }, [user]);
 
   const loadRequests = async () => {
     try {

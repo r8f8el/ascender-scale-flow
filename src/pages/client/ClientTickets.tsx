@@ -30,7 +30,7 @@ const ClientTickets = () => {
     if (client || user) {
       loadTickets();
     }
-  }, []);
+  }, [client, user]);
 
   const loadTickets = async () => {
     try {
