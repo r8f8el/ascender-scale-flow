@@ -36,7 +36,6 @@ export const TicketChat: React.FC<TicketChatProps> = ({ ticketId, isTicketClosed
   };
 
   useEffect(() => {
-    console.log('TicketChat useEffect executado:', { ticketId, client, user });
     if (ticketId) {
       loadMessages();
       setupRealtimeSubscription();
@@ -44,7 +43,6 @@ export const TicketChat: React.FC<TicketChatProps> = ({ ticketId, isTicketClosed
 
     return () => {
       if (channelRef.current) {
-        console.log('Removendo canal de realtime:', channelRef.current);
         supabase.removeChannel(channelRef.current);
       }
     };
@@ -56,7 +54,6 @@ export const TicketChat: React.FC<TicketChatProps> = ({ ticketId, isTicketClosed
 
   const loadMessages = async () => {
     try {
-      console.log('Carregando mensagens para ticket:', ticketId);
       const { data, error } = await supabase
         .from('ticket_responses')
         .select(`
@@ -67,11 +64,7 @@ export const TicketChat: React.FC<TicketChatProps> = ({ ticketId, isTicketClosed
         .eq('is_internal_note', false)
         .order('created_at', { ascending: true });
 
-      if (error) {
-        console.error('Erro na query:', error);
-        throw error;
-      }
-      console.log('Mensagens carregadas:', data);
+      if (error) throw error;
       setMessages(data || []);
     } catch (error) {
       console.error('Erro ao carregar mensagens:', error);
@@ -79,7 +72,6 @@ export const TicketChat: React.FC<TicketChatProps> = ({ ticketId, isTicketClosed
   };
 
   const setupRealtimeSubscription = () => {
-    console.log('Configurando subscription realtime para ticket:', ticketId);
     channelRef.current = supabase
       .channel(`ticket_chat_${ticketId}`)
       .on(
@@ -96,33 +88,14 @@ export const TicketChat: React.FC<TicketChatProps> = ({ ticketId, isTicketClosed
           loadMessages();
         }
       )
-      .subscribe((status) => {
-        console.log('Status da subscription:', status);
-      });
+      .subscribe();
   };
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || isSending || isTicketClosed) return;
 
-    console.log('Enviando mensagem:', { 
-      ticketId, 
-      message: newMessage.trim(), 
-      userId: client?.id || user?.id 
-    });
-
     setIsSending(true);
     try {
-      // Verificar primeiro se o usuário tem acesso ao ticket
-      const { data: ticketData, error: ticketError } = await supabase
-        .from('tickets')
-        .select('id')
-        .eq('id', ticketId)
-        .single();
-
-      if (ticketError || !ticketData) {
-        throw new Error('Ticket não encontrado ou sem permissão');
-      }
-
       const { error } = await supabase
         .from('ticket_responses')
         .insert({
@@ -132,12 +105,8 @@ export const TicketChat: React.FC<TicketChatProps> = ({ ticketId, isTicketClosed
           is_internal_note: false
         });
 
-      if (error) {
-        console.error('Erro ao inserir mensagem:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      console.log('Mensagem enviada com sucesso');
       setNewMessage('');
       toast({
         title: "Mensagem enviada",
