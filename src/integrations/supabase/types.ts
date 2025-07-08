@@ -134,6 +134,51 @@ export type Database = {
         }
         Relationships: []
       }
+      schedules: {
+        Row: {
+          client_name: string
+          created_at: string
+          description: string
+          end_date: string
+          id: string
+          phase: string
+          project_title: string
+          responsible: string
+          start_date: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_name: string
+          created_at?: string
+          description: string
+          end_date: string
+          id?: string
+          phase: string
+          project_title: string
+          responsible: string
+          start_date: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_name?: string
+          created_at?: string
+          description?: string
+          end_date?: string
+          id?: string
+          phase?: string
+          project_title?: string
+          responsible?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ticket_attachments: {
         Row: {
           content_type: string | null
