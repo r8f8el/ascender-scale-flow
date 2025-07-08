@@ -62,8 +62,8 @@ const ClientArea = () => {
                       <MobileNavLink to="/cliente" icon={<File size={20} />}>
                         Área do Cliente
                       </MobileNavLink>
-                      <MobileNavLink to="/cliente/solicitacoes" icon={<MessageSquare size={20} />}>
-                        Solicitações
+                      <MobileNavLink to="/cliente/chamados" icon={<MessageSquare size={20} />}>
+                        Chamados
                       </MobileNavLink>
                       <MobileNavLink to="/cliente/cronograma" icon={<Calendar size={20} />}>
                         Cronograma
@@ -100,9 +100,6 @@ const ClientArea = () => {
             </NavLink>
             <NavLink to="/cliente/chamados" icon={<MessageSquare size={20} />}>
               Chamados
-            </NavLink>
-            <NavLink to="/cliente/solicitacoes" icon={<MessageSquare size={20} />}>
-              Solicitações
             </NavLink>
             <NavLink to="/cliente/cronograma" icon={<Calendar size={20} />}>
               Cronograma
