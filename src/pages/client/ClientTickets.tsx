@@ -27,8 +27,10 @@ const ClientTickets = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadTickets();
-  }, [client, user]);
+    if (client || user) {
+      loadTickets();
+    }
+  }, []);
 
   const loadTickets = async () => {
     try {

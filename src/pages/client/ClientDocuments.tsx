@@ -28,7 +28,7 @@ const ClientDocuments = () => {
     if (user) {
       loadDocuments();
     }
-  }, [user]);
+  }, []);
 
   const loadDocuments = async () => {
     try {
