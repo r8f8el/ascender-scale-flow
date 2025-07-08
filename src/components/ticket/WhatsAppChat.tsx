@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Avatar, AvatarContent, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Send, Phone, Video, MoreVertical, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
@@ -160,10 +160,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ ticketId, ticketTitle, onBa
             <ArrowLeft size={20} />
           </Button>
           <Avatar className="w-10 h-10">
-            <AvatarContent className="bg-green-500 text-white">
-              <span className="text-sm font-medium">SP</span>
-            </AvatarContent>
-            <AvatarFallback>SP</AvatarFallback>
+            <AvatarFallback className="bg-green-500 text-white text-sm font-medium">SP</AvatarFallback>
           </Avatar>
           <div>
             <h3 className="font-semibold text-sm">Suporte Técnico</h3>
@@ -184,7 +181,9 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ ticketId, ticketTitle, onBa
       </div>
 
       {/* Área de mensagens */}
-      <div className="flex-1 h-[480px] overflow-y-auto p-4 space-y-3 bg-[url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="chat-bg" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="%23ffffff" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23chat-bg)"/></svg>')] bg-green-50 dark:bg-green-950">
+      <div className="flex-1 h-[480px] overflow-y-auto p-4 space-y-3 bg-green-50 dark:bg-green-950 relative">
+        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[length:20px_20px]"></div>
+        <div className="relative z-10">
         {messages.length === 0 ? (
           <div className="text-center text-muted-foreground py-8">
             <p>Nenhuma mensagem ainda</p>
@@ -228,6 +227,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ ticketId, ticketTitle, onBa
           })
         )}
         <div ref={messagesEndRef} />
+        </div>
       </div>
 
       {/* Input de mensagem */}
