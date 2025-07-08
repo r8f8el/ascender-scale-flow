@@ -1,9 +1,70 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, FileUp, Calendar, MessageSquare } from 'lucide-react';
+import { Users, FileUp, Calendar, MessageSquare, CheckCircle, Clock, AlertCircle, TrendingUp } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const AdminDashboard = () => {
+  const [stats, setStats] = useState({
+    clients: 0,
+    projects: 0,
+    tasks: 0,
+    tickets: 0,
+    collaborators: 0,
+    pendingTasks: 0,
+    completedProjects: 0,
+    overdueTasks: 0
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  const loadStats = async () => {
+    try {
+      // Carregar estatísticas em paralelo
+      const [
+        clientsData,
+        projectsData,
+        tasksData,
+        ticketsData,
+        collaboratorsData,
+        pendingTasksData,
+        completedProjectsData,
+        overdueTasksData
+      ] = await Promise.all([
+        supabase.from('client_profiles').select('id', { count: 'exact' }),
+        supabase.from('projects').select('id', { count: 'exact' }),
+        supabase.from('tasks').select('id', { count: 'exact' }),
+        supabase.from('tickets').select('id', { count: 'exact' }),
+        supabase.from('collaborators').select('id', { count: 'exact' }).eq('is_active', true),
+        supabase.from('tasks').select('id', { count: 'exact' }).eq('status', 'pending'),
+        supabase.from('projects').select('id', { count: 'exact' }).eq('status', 'completed'),
+        supabase.from('tasks').select('id', { count: 'exact' }).lt('due_date', new Date().toISOString().split('T')[0]).neq('status', 'completed')
+      ]);
+
+      setStats({
+        clients: clientsData.count || 0,
+        projects: projectsData.count || 0,
+        tasks: tasksData.count || 0,
+        tickets: ticketsData.count || 0,
+        collaborators: collaboratorsData.count || 0,
+        pendingTasks: pendingTasksData.count || 0,
+        completedProjects: completedProjectsData.count || 0,
+        overdueTasks: overdueTasksData.count || 0
+      });
+    } catch (error) {
+      console.error('Erro ao carregar estatísticas:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-64">Carregando dashboard...</div>;
+  }
+
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-medium">Visão Geral</h2>
@@ -11,27 +72,54 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard 
           title="Clientes" 
-          value="12"
-          description="3 novos este mês" 
+          value={stats.clients.toString()}
+          description={`${stats.clients} clientes ativos`}
           icon={<Users className="h-8 w-8 text-blue-500" />} 
         />
         <StatsCard 
-          title="Arquivos" 
-          value="156"
-          description="25 uploads recentes" 
+          title="Projetos" 
+          value={stats.projects.toString()}
+          description={`${stats.completedProjects} concluídos`}
           icon={<FileUp className="h-8 w-8 text-green-500" />} 
         />
         <StatsCard 
-          title="Cronogramas" 
-          value="8"
-          description="2 atualizados hoje" 
-          icon={<Calendar className="h-8 w-8 text-purple-500" />} 
+          title="Tarefas" 
+          value={stats.tasks.toString()}
+          description={`${stats.pendingTasks} pendentes`}
+          icon={<MessageSquare className="h-8 w-8 text-purple-500" />} 
         />
         <StatsCard 
-          title="Solicitações" 
-          value="15"
-          description="5 aguardando resposta" 
+          title="Chamados" 
+          value={stats.tickets.toString()}
+          description="Sistema de suporte" 
           icon={<MessageSquare className="h-8 w-8 text-amber-500" />} 
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatsCard 
+          title="Colaboradores" 
+          value={stats.collaborators.toString()}
+          description="Equipe ativa"
+          icon={<Users className="h-8 w-8 text-indigo-500" />} 
+        />
+        <StatsCard 
+          title="Tarefas Atrasadas" 
+          value={stats.overdueTasks.toString()}
+          description="Precisam atenção"
+          icon={<AlertCircle className="h-8 w-8 text-red-500" />} 
+        />
+        <StatsCard 
+          title="Projetos Concluídos" 
+          value={stats.completedProjects.toString()}
+          description="Este período"
+          icon={<CheckCircle className="h-8 w-8 text-green-600" />} 
+        />
+        <StatsCard 
+          title="Taxa de Conclusão" 
+          value={stats.projects > 0 ? Math.round((stats.completedProjects / stats.projects) * 100) + '%' : '0%'}
+          description="Projetos finalizados"
+          icon={<TrendingUp className="h-8 w-8 text-emerald-500" />} 
         />
       </div>
       

@@ -27,6 +27,9 @@ import AdminArea from "./pages/AdminArea";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminUnauthorized from "./pages/AdminUnauthorized";
 import ClientesAdmin from "./pages/admin/ClientesAdmin";
+import ProjectsAdmin from "./pages/admin/ProjectsAdmin";
+import CollaboratorsAdmin from "./pages/admin/CollaboratorsAdmin";
+import TasksAdmin from "./pages/admin/TasksAdmin";
 import ArquivosAdmin from "./pages/admin/ArquivosAdmin";
 import CronogramasAdmin from "./pages/admin/CronogramasAdmin";
 import SolicitacoesAdmin from "./pages/admin/SolicitacoesAdmin";
@@ -70,9 +73,12 @@ function App() {
                   <Route path="/admin" element={<AdminProtectedRoute><AdminArea /></AdminProtectedRoute>}>
                     <Route index element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
                     <Route path="clientes" element={<AdminProtectedRoute><ClientesAdmin /></AdminProtectedRoute>} />
+                    <Route path="projetos" element={<AdminProtectedRoute><ProjectsAdmin /></AdminProtectedRoute>} />
+                    <Route path="colaboradores" element={<AdminProtectedRoute><CollaboratorsAdmin /></AdminProtectedRoute>} />
+                    <Route path="tarefas" element={<AdminProtectedRoute><TasksAdmin /></AdminProtectedRoute>} />
+                    <Route path="chamados" element={<AdminProtectedRoute><SolicitacoesAdmin /></AdminProtectedRoute>} />
                     <Route path="arquivos" element={<AdminProtectedRoute><ArquivosAdmin /></AdminProtectedRoute>} />
                     <Route path="cronogramas" element={<AdminProtectedRoute><CronogramasAdmin /></AdminProtectedRoute>} />
-                    <Route path="solicitacoes" element={<AdminProtectedRoute><SolicitacoesAdmin /></AdminProtectedRoute>} />
                     <Route path="mensagens" element={<AdminProtectedRoute><MensagensAdmin /></AdminProtectedRoute>} />
                     <Route path="logs" element={<AdminProtectedRoute><LogsAdmin /></AdminProtectedRoute>} />
                     <Route path="configuracoes" element={<AdminProtectedRoute><ConfiguracoesAdmin /></AdminProtectedRoute>} />

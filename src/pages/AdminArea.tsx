@@ -41,9 +41,12 @@ const AdminArea = () => {
     const path = location.pathname;
     if (path === '/admin') setPageTitle('Dashboard');
     else if (path.includes('/admin/clientes')) setPageTitle('Gestão de Clientes');
+    else if (path.includes('/admin/projetos')) setPageTitle('Gestão de Projetos');
+    else if (path.includes('/admin/colaboradores')) setPageTitle('Gestão de Colaboradores');
+    else if (path.includes('/admin/tarefas')) setPageTitle('Gestão de Tarefas');
+    else if (path.includes('/admin/chamados')) setPageTitle('Gestão de Chamados');
     else if (path.includes('/admin/arquivos')) setPageTitle('Gerenciamento de Arquivos');
     else if (path.includes('/admin/cronogramas')) setPageTitle('Cronogramas');
-    else if (path.includes('/admin/solicitacoes')) setPageTitle('Solicitações');
     else if (path.includes('/admin/mensagens')) setPageTitle('Mensagens Automáticas');
     else if (path.includes('/admin/logs')) setPageTitle('Logs de Acesso');
     else if (path.includes('/admin/configuracoes')) setPageTitle('Configurações');
@@ -104,14 +107,23 @@ const AdminArea = () => {
                       <MobileNavLink to="/admin/clientes" icon={<Users size={20} />}>
                         Clientes
                       </MobileNavLink>
+                      <MobileNavLink to="/admin/projetos" icon={<FileUp size={20} />}>
+                        Projetos
+                      </MobileNavLink>
+                      <MobileNavLink to="/admin/colaboradores" icon={<Users size={20} />}>
+                        Colaboradores
+                      </MobileNavLink>
+                      <MobileNavLink to="/admin/tarefas" icon={<MessageSquare size={20} />}>
+                        Tarefas
+                      </MobileNavLink>
+                      <MobileNavLink to="/admin/chamados" icon={<MessageSquare size={20} />}>
+                        Chamados
+                      </MobileNavLink>
                       <MobileNavLink to="/admin/arquivos" icon={<FileUp size={20} />}>
                         Arquivos
                       </MobileNavLink>
                       <MobileNavLink to="/admin/cronogramas" icon={<Calendar size={20} />}>
                         Cronogramas
-                      </MobileNavLink>
-                      <MobileNavLink to="/admin/solicitacoes" icon={<MessageSquare size={20} />}>
-                        Solicitações
                       </MobileNavLink>
                       <MobileNavLink to="/admin/mensagens" icon={<Bell size={20} />}>
                         Mensagens
@@ -155,14 +167,23 @@ const AdminArea = () => {
             <NavLink to="/admin/clientes" icon={<Users size={20} />}>
               Gestão de Clientes
             </NavLink>
+            <NavLink to="/admin/projetos" icon={<FileUp size={20} />}>
+              Projetos
+            </NavLink>
+            <NavLink to="/admin/colaboradores" icon={<Users size={20} />}>
+              Colaboradores
+            </NavLink>
+            <NavLink to="/admin/tarefas" icon={<MessageSquare size={20} />}>
+              Tarefas
+            </NavLink>
+            <NavLink to="/admin/chamados" icon={<MessageSquare size={20} />}>
+              Chamados
+            </NavLink>
             <NavLink to="/admin/arquivos" icon={<FileUp size={20} />}>
               Arquivos
             </NavLink>
             <NavLink to="/admin/cronogramas" icon={<Calendar size={20} />}>
               Cronogramas
-            </NavLink>
-            <NavLink to="/admin/solicitacoes" icon={<MessageSquare size={20} />}>
-              Solicitações
             </NavLink>
             <NavLink to="/admin/mensagens" icon={<Bell size={20} />}>
               Mensagens Automáticas
