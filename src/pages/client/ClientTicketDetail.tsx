@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Send, User, Clock, CheckCircle2 } from 'lucide-react';
+import { TicketChat } from '@/components/ticket/TicketChat';
 
 interface TicketDetail {
   id: string;
@@ -247,10 +248,21 @@ const ClientTicketDetail = () => {
         </CardContent>
       </Card>
 
-      {/* Histórico de Conversas */}
+      {/* Chat em Tempo Real */}
+      <div className="mb-6">
+        <TicketChat 
+          ticketId={ticket.id} 
+          isTicketClosed={ticket.ticket_statuses.is_closed} 
+        />
+      </div>
+
+      {/* Histórico de Conversas (Legacy) */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Histórico de Conversas</CardTitle>
+          <CardDescription>
+            Mensagens anteriores (para referência)
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -278,36 +290,6 @@ const ClientTicketDetail = () => {
           </div>
         </CardContent>
       </Card>
-
-      {/* Nova Mensagem */}
-      {!ticket.ticket_statuses.is_closed && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Enviar Nova Mensagem</CardTitle>
-            <CardDescription>
-              Adicione informações adicionais ou responda à nossa equipe
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <Textarea
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Digite sua mensagem aqui..."
-                rows={4}
-              />
-              <Button 
-                onClick={handleSendMessage}
-                disabled={!newMessage.trim() || isSending}
-                className="bg-[#f07c00] hover:bg-[#e56b00]"
-              >
-                <Send size={16} className="mr-2" />
-                {isSending ? 'Enviando...' : 'Enviar Mensagem'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

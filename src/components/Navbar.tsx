@@ -50,7 +50,7 @@ const Navbar = () => {
             </a>
             <Link 
               to="/cliente/login" 
-              className="bg-[#f07c00] hover:bg-[#e56b00] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              className="bg-blue hover:bg-blue/90 text-blue-foreground px-4 py-2 rounded-md text-sm font-medium transition-colors"
             >
               Área do Cliente
             </Link>
@@ -103,7 +103,7 @@ const Navbar = () => {
                   </a>
                   <Link 
                     to="/cliente/login" 
-                    className="bg-[#f07c00] hover:bg-[#e56b00] text-white block px-3 py-2 text-base font-medium transition-colors rounded-md"
+                    className="bg-blue hover:bg-blue/90 text-blue-foreground block px-3 py-2 text-base font-medium transition-colors rounded-md"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Área do Cliente
@@ -155,7 +155,7 @@ const Navbar = () => {
               </a>
               <Link 
                 to="/cliente/login" 
-                className="bg-[#f07c00] hover:bg-[#e56b00] text-white block px-3 py-2 text-base font-medium transition-colors rounded-md"
+                className="bg-blue hover:bg-blue/90 text-blue-foreground block px-3 py-2 text-base font-medium transition-colors rounded-md"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Área do Cliente

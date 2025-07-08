@@ -25,10 +25,9 @@ export default {
 				ring: 'hsl(var(--ring))',
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
-				ascalate: {
-					blue: '#0048ff',
-					darkblue: '#11008f',
-					black: '#000000',
+				blue: {
+					DEFAULT: 'hsl(var(--blue))',
+					foreground: 'hsl(var(--blue-foreground))'
 				},
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
