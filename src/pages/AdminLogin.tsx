@@ -126,11 +126,8 @@ const AdminLogin = () => {
           </div>
 
           <div className="mt-4 text-center text-sm text-gray-600">
-            <p>Emails de teste: </p>
-            <p>daniel@ascalate.com.br</p>
-            <p>rafael.gontijo@ascalate.com.br</p>
-            <p>artur.servian@ascalate.com.br</p>
-            <p>Senha padrão: admin123</p>
+            <p>Entre com suas credenciais de administrador.</p>
+            <p>Apenas usuários com email @ascalate.com.br podem acessar.</p>
           </div>
         </form>
         
