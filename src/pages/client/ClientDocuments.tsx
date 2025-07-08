@@ -1,165 +1,314 @@
-
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Folder, File, Download, FileSearch } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { File, Download, FileSearch, Upload, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
 
-// Mock folder and file structure
-const mockFolders = {
-  'Documentos Gerais': [
-    { name: 'Apresentação Institucional.pdf', lastModified: '2023-09-15' },
-    { name: 'Resumo de Serviços.docx', lastModified: '2023-10-20' },
-  ],
-  'Contratos e Aditivos': [
-    { name: 'Contrato de Prestação de Serviços.pdf', lastModified: '2023-08-01' },
-    { name: 'Aditivo 01 - Ampliação de Escopo.pdf', lastModified: '2023-11-10' },
-  ],
-  'Relatórios Financeiros': [
-    { name: 'Análise Financeira Q3-2023.xlsx', lastModified: '2023-10-05' },
-    { name: 'Projeção Anual 2024.pdf', lastModified: '2023-12-01' },
-    { name: 'Relatório de Desempenho.pdf', lastModified: '2023-12-15' },
-  ],
-  'Propostas e Planejamentos': [
-    { name: 'Planejamento Estratégico 2024.pptx', lastModified: '2023-11-25' },
-  ],
-  'Apresentações e Reuniões': [
-    { name: 'Apresentação Resultados Q4.pptx', lastModified: '2023-12-20' },
-    { name: 'Ata de Reunião - Dez 2023.pdf', lastModified: '2023-12-21' },
-  ],
-  'Documentos Legais': [
-    { name: 'Certificado de Compliance 2023.pdf', lastModified: '2023-07-30' },
-  ],
-  'Outros Documentos': [],
-};
+interface Document {
+  id: string;
+  filename: string;
+  file_path: string;
+  file_size: number | null;
+  content_type: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 const ClientDocuments = () => {
-  const { client } = useAuth();
-  const [currentFolder, setCurrentFolder] = useState<string | null>(null);
+  const { user, client } = useAuth();
+  const { toast } = useToast();
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
 
-  const handleFolderClick = (folder: string) => {
-    setCurrentFolder(folder);
-    setSearchQuery('');
-  };
+  useEffect(() => {
+    if (user) {
+      loadDocuments();
+    }
+  }, [user]);
 
-  const handleBackClick = () => {
-    setCurrentFolder(null);
-    setSearchQuery('');
-  };
+  const loadDocuments = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('documents')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-  const handleDownload = (fileName: string) => {
-    // In a real app, this would trigger a download
-    alert(`Download iniciado: ${fileName}`);
-  };
-
-  const filterFiles = () => {
-    if (!searchQuery) return mockFolders;
-    
-    const results: Record<string, Array<{name: string, lastModified: string}>> = {};
-    
-    Object.entries(mockFolders).forEach(([folder, files]) => {
-      const matchingFiles = files.filter(file => 
-        file.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      
-      if (matchingFiles.length > 0) {
-        results[folder] = matchingFiles;
+      if (error) {
+        console.error('Erro ao carregar documentos:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar documentos",
+          variant: "destructive"
+        });
+        return;
       }
-    });
-    
-    return results;
+
+      setDocuments(data || []);
+    } catch (error) {
+      console.error('Erro inesperado:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const filteredContent = filterFiles();
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    setIsUploading(true);
+    try {
+      // Upload para o storage
+      const filePath = `${user.id}/${Date.now()}-${file.name}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Criar registro na tabela documents
+      const { error: dbError } = await supabase
+        .from('documents')
+        .insert({
+          user_id: user.id,
+          filename: file.name,
+          file_path: filePath,
+          file_size: file.size,
+          content_type: file.type
+        });
+
+      if (dbError) {
+        throw dbError;
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Documento enviado com sucesso"
+      });
+
+      // Recarregar documentos
+      loadDocuments();
+      
+      // Reset do input
+      event.target.value = '';
+    } catch (error) {
+      console.error('Erro no upload:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao enviar documento",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDownload = async (doc: Document) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('documents')
+        .download(doc.file_path);
+
+      if (error) {
+        throw error;
+      }
+
+      // Criar URL para download
+      const url = URL.createObjectURL(data);
+      const a = window.document.createElement('a');
+      a.href = url;
+      a.download = doc.filename;
+      window.document.body.appendChild(a);
+      a.click();
+      window.document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Erro no download:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao baixar documento",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDelete = async (doc: Document) => {
+    if (!confirm('Tem certeza que deseja excluir este documento?')) {
+      return;
+    }
+
+    try {
+      // Deletar do storage
+      const { error: storageError } = await supabase.storage
+        .from('documents')
+        .remove([doc.file_path]);
+
+      if (storageError) {
+        console.error('Erro ao deletar do storage:', storageError);
+      }
+
+      // Deletar do banco
+      const { error: dbError } = await supabase
+        .from('documents')
+        .delete()
+        .eq('id', doc.id);
+
+      if (dbError) {
+        throw dbError;
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Documento excluído com sucesso"
+      });
+
+      // Recarregar documentos
+      loadDocuments();
+    } catch (error) {
+      console.error('Erro ao excluir:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir documento",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const filteredDocuments = documents.filter(doc =>
+    doc.filename.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-lg">Carregando documentos...</div>
+      </div>
+    );
+  }
 
   return (
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">
-            {currentFolder 
-              ? `${currentFolder} - ${client?.name}`
-              : `Documentos - ${client?.name}`}
+            Documentos - {client?.name || user?.email}
           </h1>
           <p className="text-gray-600 mt-1">
-            {currentFolder 
-              ? 'Visualize e baixe os arquivos disponíveis nesta pasta'
-              : 'Acesse os documentos organizados por categoria'}
+            Gerencie seus documentos e arquivos
           </p>
         </div>
         
-        <div className="w-full sm:w-64">
+        <div className="flex gap-4 items-center">
           <div className="relative">
             <FileSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={18} />
-            <input
+            <Input
               type="text"
               placeholder="Buscar documentos..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 border rounded-md w-full"
+              className="pl-10 w-64"
             />
+          </div>
+          
+          <div className="relative">
+            <Input
+              type="file"
+              onChange={handleFileUpload}
+              disabled={isUploading}
+              className="hidden"
+              id="file-upload"
+            />
+            <Button
+              asChild
+              disabled={isUploading}
+              className="bg-[#f07c00] hover:bg-[#e56b00]"
+            >
+              <label htmlFor="file-upload" className="cursor-pointer">
+                <Upload size={18} className="mr-2" />
+                {isUploading ? 'Enviando...' : 'Upload'}
+              </label>
+            </Button>
           </div>
         </div>
       </div>
       
-      {currentFolder ? (
-        <>
-          <Button 
-            variant="outline" 
-            onClick={handleBackClick}
-            className="mb-4"
-          >
-            ← Voltar para pastas
-          </Button>
-          
-          <div className="bg-white rounded-lg border">
-            {filteredContent[currentFolder]?.length > 0 ? (
-              <div className="divide-y">
-                {filteredContent[currentFolder].map((file, index) => (
-                  <div key={index} className="flex justify-between items-center p-4 hover:bg-gray-50">
-                    <div className="flex items-center gap-3">
-                      <File size={20} className="text-blue-600" />
-                      <div>
-                        <p className="font-medium">{file.name}</p>
-                        <p className="text-sm text-gray-500">Atualizado em: {file.lastModified}</p>
-                      </div>
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="flex items-center gap-1"
-                      onClick={() => handleDownload(file.name)}
-                    >
-                      <Download size={16} />
-                      <span>Baixar</span>
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-500">Nenhum arquivo encontrado nesta pasta.</p>
-              </div>
-            )}
-          </div>
-        </>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Object.keys(filteredContent).map((folder) => (
-            <div
-              key={folder}
-              className="bg-white p-4 rounded-lg border cursor-pointer hover:border-blue-500 hover:shadow-md transition-all"
-              onClick={() => handleFolderClick(folder)}
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <Folder size={24} className="text-blue-600" />
-                <h3 className="font-medium">{folder}</h3>
-              </div>
-              <p className="text-sm text-gray-500">
-                {filteredContent[folder].length} arquivo(s)
-              </p>
+      {filteredDocuments.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-lg border">
+          <File size={48} className="mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Nenhum documento encontrado
+          </h3>
+          <p className="text-gray-500 mb-4">
+            {searchQuery ? 'Nenhum documento corresponde à sua busca.' : 'Você ainda não enviou nenhum documento.'}
+          </p>
+          {!searchQuery && (
+            <div className="relative inline-block">
+              <Input
+                type="file"
+                onChange={handleFileUpload}
+                disabled={isUploading}
+                className="hidden"
+                id="file-upload-empty"
+              />
+              <Button
+                asChild
+                disabled={isUploading}
+                className="bg-[#f07c00] hover:bg-[#e56b00]"
+              >
+                <label htmlFor="file-upload-empty" className="cursor-pointer">
+                  <Upload size={18} className="mr-2" />
+                  Enviar Primeiro Documento
+                </label>
+              </Button>
             </div>
-          ))}
+          )}
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg border">
+          <div className="divide-y">
+            {filteredDocuments.map((doc) => (
+              <div key={doc.id} className="flex justify-between items-center p-4 hover:bg-gray-50">
+                <div className="flex items-center gap-3">
+                  <File size={20} className="text-blue-600" />
+                  <div>
+                    <p className="font-medium">{doc.filename}</p>
+                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                      <span>Enviado em: {new Date(doc.created_at).toLocaleDateString('pt-BR')}</span>
+                      {doc.file_size && (
+                        <span>{(doc.file_size / (1024 * 1024)).toFixed(2)} MB</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="flex items-center gap-1"
+                    onClick={() => handleDownload(doc)}
+                  >
+                    <Download size={16} />
+                    <span>Baixar</span>
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="flex items-center gap-1 text-red-600 hover:text-red-700"
+                    onClick={() => handleDelete(doc)}
+                  >
+                    <Trash2 size={16} />
+                    <span>Excluir</span>
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
