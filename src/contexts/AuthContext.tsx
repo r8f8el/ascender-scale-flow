@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
@@ -15,6 +14,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   login: (email: string, password: string) => Promise<boolean>;
+  signup: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   loading: boolean;
 }
@@ -25,17 +25,12 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
   login: async () => false,
+  signup: async () => ({ success: false }),
   logout: () => {},
   loading: true,
 });
 
 export const useAuth = () => useContext(AuthContext);
-
-// Mock clients database
-const mockClients = [
-  { id: '1', name: 'Portobello', email: 'cliente@portobello.com.br', password: 'portobello123' },
-  { id: '2', name: 'J.Assy', email: 'cliente@jassy.com.br', password: 'jassy123' },
-];
 
 const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -49,35 +44,21 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
 
     const initializeAuth = async () => {
       try {
-        // Check for existing session
+        setLoading(true);
+        
+        // Get current session
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         
         if (!mounted) return;
 
         if (currentSession?.user) {
-          console.log('Found existing Supabase session:', currentSession.user.email);
+          console.log('Found existing session:', currentSession.user.email);
           setSession(currentSession);
           setUser(currentSession.user);
+          setIsAuthenticated(true);
           
-          // Try to match with mock client
-          const foundClient = mockClients.find(
-            c => c.email.toLowerCase() === currentSession.user.email?.toLowerCase()
-          );
-          
-          if (foundClient) {
-            const { password: _, ...clientWithoutPassword } = foundClient;
-            setClient(clientWithoutPassword);
-            setIsAuthenticated(true);
-          }
-        } else {
-          // Check localStorage for mock client session
-          const storedClient = localStorage.getItem('ascalate_client');
-          if (storedClient) {
-            console.log('Found stored client session');
-            const parsedClient = JSON.parse(storedClient);
-            setClient(parsedClient);
-            setIsAuthenticated(true);
-          }
+          // Try to load client profile
+          await loadClientProfile(currentSession.user);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
@@ -99,20 +80,11 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          const foundClient = mockClients.find(
-            c => c.email.toLowerCase() === session.user.email?.toLowerCase()
-          );
-          
-          if (foundClient) {
-            const { password: _, ...clientWithoutPassword } = foundClient;
-            setClient(clientWithoutPassword);
-            setIsAuthenticated(true);
-            localStorage.setItem('ascalate_client', JSON.stringify(clientWithoutPassword));
-          }
+          setIsAuthenticated(true);
+          await loadClientProfile(session.user);
         } else {
-          setClient(null);
           setIsAuthenticated(false);
-          localStorage.removeItem('ascalate_client');
+          setClient(null);
         }
         
         setLoading(false);
@@ -126,43 +98,91 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
       subscription.unsubscribe();
     };
   }, []);
+
+  const loadClientProfile = async (user: User) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('client_profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error loading client profile:', error);
+        return;
+      }
+
+      if (profile) {
+        setClient({
+          id: profile.id,
+          name: profile.name,
+          email: profile.email
+        });
+      }
+    } catch (error) {
+      console.error('Error loading client profile:', error);
+    }
+  };
   
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setLoading(true);
       
-      // First try Supabase auth
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (data.user && !error) {
-        console.log('Supabase login successful');
-        return true;
+      if (error) {
+        console.error('Login error:', error);
+        return false;
       }
 
-      // If Supabase auth fails, try mock clients
-      const foundClient = mockClients.find(
-        (c) => c.email.toLowerCase() === email.toLowerCase() && c.password === password
-      );
-      
-      if (foundClient) {
-        console.log('Mock client login successful');
-        const { password: _, ...clientWithoutPassword } = foundClient;
-        setClient(clientWithoutPassword);
-        setIsAuthenticated(true);
-        setLoading(false);
-        localStorage.setItem('ascalate_client', JSON.stringify(clientWithoutPassword));
+      if (data.user) {
+        console.log('Login successful');
         return true;
       }
       
-      setLoading(false);
       return false;
     } catch (error) {
       console.error('Login error:', error);
-      setLoading(false);
       return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signup = async (email: string, password: string, name: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/cliente`,
+          data: {
+            name: name
+          }
+        }
+      });
+
+      if (error) {
+        console.error('Signup error:', error);
+        return { success: false, error: error.message };
+      }
+
+      if (data.user) {
+        console.log('Signup successful:', data.user.email);
+        return { success: true };
+      }
+      
+      return { success: false, error: 'Erro inesperado' };
+    } catch (error) {
+      console.error('Signup error:', error);
+      return { success: false, error: 'Erro inesperado' };
+    } finally {
+      setLoading(false);
     }
   };
   
@@ -177,7 +197,6 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
     setUser(null);
     setSession(null);
     setIsAuthenticated(false);
-    localStorage.removeItem('ascalate_client');
   };
   
   return (
@@ -186,7 +205,8 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
       client, 
       user, 
       session, 
-      login, 
+      login,
+      signup,
       logout, 
       loading 
     }}>
