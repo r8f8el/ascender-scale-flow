@@ -59,8 +59,8 @@ const ClientArea = () => {
                     </div>
                     
                     <nav className="flex flex-col gap-4">
-                      <MobileNavLink to="/cliente/documentos" icon={<File size={20} />}>
-                        Documentos
+                      <MobileNavLink to="/cliente" icon={<File size={20} />}>
+                        Área do Cliente
                       </MobileNavLink>
                       <MobileNavLink to="/cliente/solicitacoes" icon={<MessageSquare size={20} />}>
                         Solicitações
@@ -95,8 +95,8 @@ const ClientArea = () => {
             <h3 className="font-medium text-gray-500 uppercase text-xs tracking-wider mb-4">
               Menu
             </h3>
-            <NavLink to="/cliente/documentos" icon={<File size={20} />}>
-              Documentos
+            <NavLink to="/cliente" icon={<File size={20} />}>
+              Área do Cliente
             </NavLink>
             <NavLink to="/cliente/chamados" icon={<MessageSquare size={20} />}>
               Chamados

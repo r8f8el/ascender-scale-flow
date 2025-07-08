@@ -229,15 +229,17 @@ const ClientDocuments = () => {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Documentos</h1>
-          <p className="text-gray-600 mt-1">Gerencie seus documentos por categoria</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            Área do Cliente
+          </h1>
+          <p className="text-muted-foreground mt-2">Gerencie seus documentos de forma organizada</p>
         </div>
         
         <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-blue hover:bg-blue/90">
+            <Button className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-lg">
               <Upload size={18} className="mr-2" />
               Enviar Documento
             </Button>
@@ -292,46 +294,58 @@ const ClientDocuments = () => {
       </div>
 
       <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-5 mb-6">
-          <TabsTrigger value="all" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 mb-8 bg-card/50 backdrop-blur-sm">
+          <TabsTrigger value="all" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <Folder size={16} />
-            Todos
+            <span className="hidden sm:inline">Todos</span>
           </TabsTrigger>
-          {categories.slice(0, 4).map((category) => {
+          {categories.map((category) => {
             const IconComponent = getIconByName(category.icon);
             const documentsCount = getDocumentsByCategory(category.id).length;
             return (
-              <TabsTrigger key={category.id} value={category.id} className="flex items-center gap-2">
+              <TabsTrigger 
+                key={category.id} 
+                value={category.id} 
+                className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
                 <IconComponent size={16} style={{ color: category.color }} />
                 <span className="hidden sm:inline">{category.name}</span>
-                <Badge variant="secondary" className="ml-1">
-                  {documentsCount}
-                </Badge>
+                {documentsCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 text-xs">
+                    {documentsCount}
+                  </Badge>
+                )}
               </TabsTrigger>
             );
           })}
         </TabsList>
 
         <TabsContent value="all">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
             {categories.map((category) => {
               const IconComponent = getIconByName(category.icon);
               const documentsCount = getDocumentsByCategory(category.id).length;
               return (
                 <Card 
                   key={category.id} 
-                  className="cursor-pointer hover:shadow-md transition-shadow"
+                  className="group cursor-pointer hover:shadow-xl transition-all duration-300 border-border/50 hover:border-primary/20 hover:scale-105 bg-gradient-to-br from-card to-card/50 backdrop-blur-sm"
                   onClick={() => setSelectedCategory(category.id)}
                 >
-                  <CardContent className="p-6 text-center">
-                    <IconComponent 
-                      size={48} 
-                      className="mx-auto mb-3" 
-                      style={{ color: category.color }} 
-                    />
-                    <h3 className="font-semibold text-gray-800 mb-1">{category.name}</h3>
-                    <p className="text-sm text-gray-600 mb-2">{category.description}</p>
-                    <Badge variant="secondary">
+                  <CardContent className="p-8 text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center group-hover:from-primary/20 group-hover:to-primary/10 transition-all duration-300">
+                      <IconComponent 
+                        size={32} 
+                        className="text-primary group-hover:scale-110 transition-transform duration-300"
+                      />
+                    </div>
+                    <h3 className="font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
+                      {category.name}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{category.description}</p>
+                    <Badge 
+                      variant="secondary" 
+                      className="bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300"
+                    >
                       {documentsCount} {documentsCount === 1 ? 'documento' : 'documentos'}
                     </Badge>
                   </CardContent>
@@ -366,43 +380,69 @@ const ClientDocuments = () => {
             </div>
 
             {getDocumentsByCategory(category.id).length === 0 ? (
-              <Card>
-                <CardContent className="text-center py-12">
-                  <Folder size={48} className="mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Nenhum documento nesta categoria
+              <Card className="border-dashed border-2 border-muted-foreground/20">
+                <CardContent className="text-center py-16">
+                  <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-muted/50 to-muted/20 flex items-center justify-center">
+                    <Folder size={40} className="text-muted-foreground" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-foreground mb-3">
+                    Nenhum documento encontrado
                   </h3>
-                  <p className="text-gray-500 mb-4">
-                    Faça upload do primeiro documento para {category.name.toLowerCase()}.
+                  <p className="text-muted-foreground mb-6 max-w-sm mx-auto">
+                    Comece enviando o primeiro documento para a categoria {category.name.toLowerCase()}.
                   </p>
-                  <Button onClick={() => setIsUploadDialogOpen(true)}>
+                  <Button 
+                    onClick={() => setIsUploadDialogOpen(true)}
+                    className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                  >
                     <Upload size={16} className="mr-2" />
                     Enviar Documento
                   </Button>
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {getDocumentsByCategory(category.id).map((document) => (
-                  <Card key={document.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <FileText size={24} className="text-blue-600 flex-shrink-0" />
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="ghost" onClick={() => handleView(document)}>
-                            <Eye size={16} />
+                  <Card 
+                    key={document.id} 
+                    className="group hover:shadow-xl transition-all duration-300 border-border/50 hover:border-primary/20 bg-gradient-to-br from-card to-card/50 backdrop-blur-sm"
+                  >
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center group-hover:from-primary/20 group-hover:to-primary/10 transition-all duration-300">
+                          <FileText size={20} className="text-primary" />
+                        </div>
+                        <div className="flex gap-1">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            onClick={() => handleView(document)}
+                            className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/10"
+                          >
+                            <Eye size={14} />
                           </Button>
-                          <Button size="sm" variant="ghost" onClick={() => handleDownload(document)}>
-                            <Download size={16} />
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            onClick={() => handleDownload(document)}
+                            className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/10"
+                          >
+                            <Download size={14} />
                           </Button>
                         </div>
                       </div>
-                      <h3 className="font-medium text-gray-800 mb-2 line-clamp-2">
+                      <h3 className="font-semibold text-foreground mb-3 line-clamp-2 group-hover:text-primary transition-colors">
                         {document.filename}
                       </h3>
-                      <div className="text-sm text-gray-500 space-y-1">
-                        <p>{formatFileSize(document.file_size)}</p>
-                        <p>{new Date(document.created_at).toLocaleDateString('pt-BR')}</p>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <p className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-primary/60"></span>
+                          {formatFileSize(document.file_size)}
+                        </p>
+                        <p className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-muted-foreground/60"></span>
+                          {new Date(document.created_at).toLocaleDateString('pt-BR')}
+                        </p>
                       </div>
                     </CardContent>
                   </Card>

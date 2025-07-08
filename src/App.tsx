@@ -54,7 +54,6 @@ function App() {
                   <Route path="/cliente/login" element={<ClientLogin />} />
                   <Route path="/cliente" element={<ProtectedRoute><ClientArea /></ProtectedRoute>}>
                     <Route index element={<ProtectedRoute><ClientDocuments /></ProtectedRoute>} />
-                    <Route path="documentos" element={<ProtectedRoute><ClientDocuments /></ProtectedRoute>} />
                     <Route path="solicitacoes" element={<ProtectedRoute><ClientRequests /></ProtectedRoute>} />
                     <Route path="cronograma" element={<ProtectedRoute><ClientSchedule /></ProtectedRoute>} />
                     <Route path="contato" element={<ProtectedRoute><ClientContact /></ProtectedRoute>} />
