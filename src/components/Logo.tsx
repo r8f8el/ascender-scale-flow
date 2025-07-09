@@ -8,7 +8,6 @@ export const Logo: React.FC<{className?: string}> = ({ className = "" }) => {
       alt="Ascalate Logo" 
       className={className}
       loading="eager"
-      fetchPriority="high"
       data-clonable="true"
     />
   );
