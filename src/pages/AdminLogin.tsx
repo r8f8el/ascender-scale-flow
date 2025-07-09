@@ -6,12 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Shield } from 'lucide-react';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { adminLogin } = useAdminAuth();
@@ -42,7 +44,7 @@ const AdminLogin = () => {
       } else {
         toast({
           title: "Falha no login",
-          description: "Email ou senha inválidos.",
+          description: "Email ou senha inválidos. Verifique suas credenciais ou redefina sua senha.",
           variant: "destructive"
         });
       }
@@ -55,6 +57,57 @@ const AdminLogin = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!email) {
+      toast({
+        title: "Email necessário",
+        description: "Por favor, informe seu email para redefinir a senha.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!email.endsWith('@ascalate.com.br')) {
+      toast({
+        title: "Email inválido",
+        description: "Apenas emails @ascalate.com.br são permitidos.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsResettingPassword(true);
+    
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/admin/login`
+      });
+
+      if (error) {
+        console.error('Password reset error:', error);
+        toast({
+          title: "Erro ao redefinir senha",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Email enviado",
+          description: "Verifique sua caixa de entrada para redefinir sua senha."
+        });
+      }
+    } catch (error) {
+      console.error('Error during password reset:', error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao enviar o email. Tente novamente mais tarde.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsResettingPassword(false);
     }
   };
 
@@ -115,13 +168,23 @@ const AdminLogin = () => {
             </div>
           </div>
           
-          <div>
+          <div className="space-y-3">
             <Button
               type="submit"
               className="w-full bg-[#0056b3] hover:bg-[#003d7f]"
               disabled={isLoading}
             >
               {isLoading ? "Entrando..." : "Entrar"}
+            </Button>
+            
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={handlePasswordReset}
+              disabled={isResettingPassword}
+            >
+              {isResettingPassword ? "Enviando..." : "Esqueci minha senha"}
             </Button>
           </div>
 
