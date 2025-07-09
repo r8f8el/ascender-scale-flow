@@ -45,6 +45,7 @@ const AdminArea = () => {
     else if (path.includes('/admin/colaboradores')) setPageTitle('Gestão de Colaboradores');
     else if (path.includes('/admin/tarefas')) setPageTitle('Gestão de Tarefas');
     else if (path.includes('/admin/chamados')) setPageTitle('Gestão de Chamados');
+    else if (path.includes('/admin/meus-chamados')) setPageTitle('Meus Chamados');
     else if (path.includes('/admin/arquivos')) setPageTitle('Gerenciamento de Arquivos');
     else if (path.includes('/admin/cronogramas')) setPageTitle('Cronogramas');
     else if (path.includes('/admin/mensagens')) setPageTitle('Mensagens Automáticas');
@@ -117,7 +118,10 @@ const AdminArea = () => {
                         Tarefas
                       </MobileNavLink>
                       <MobileNavLink to="/admin/chamados" icon={<MessageSquare size={20} />}>
-                        Chamados
+                        Todos os Chamados
+                      </MobileNavLink>
+                      <MobileNavLink to="/admin/meus-chamados" icon={<User size={20} />}>
+                        Meus Chamados
                       </MobileNavLink>
                       <MobileNavLink to="/admin/arquivos" icon={<FileUp size={20} />}>
                         Arquivos
@@ -177,7 +181,10 @@ const AdminArea = () => {
               Tarefas
             </NavLink>
             <NavLink to="/admin/chamados" icon={<MessageSquare size={20} />}>
-              Chamados
+              Todos os Chamados
+            </NavLink>
+            <NavLink to="/admin/meus-chamados" icon={<User size={20} />}>
+              Meus Chamados
             </NavLink>
             <NavLink to="/admin/arquivos" icon={<FileUp size={20} />}>
               Arquivos

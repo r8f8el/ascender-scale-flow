@@ -33,11 +33,12 @@ import CollaboratorsAdmin from "./pages/admin/CollaboratorsAdmin";
 import TasksAdmin from "./pages/admin/TasksAdmin";
 import ArquivosAdmin from "./pages/admin/ArquivosAdmin";
 import CronogramasAdmin from "./pages/admin/CronogramasAdmin";
-import SolicitacoesAdmin from "./pages/admin/SolicitacoesAdmin";
+import TicketsAdmin from "./pages/admin/TicketsAdmin";
 import MensagensAdmin from "./pages/admin/MensagensAdmin";
 import LogsAdmin from "./pages/admin/LogsAdmin";
 import ConfiguracoesAdmin from "./pages/admin/ConfiguracoesAdmin";
 import OneDriveIntegration from "./pages/admin/OneDriveIntegration";
+import MyTickets from "./pages/admin/MyTickets";
 
 const queryClient = new QueryClient();
 
@@ -78,13 +79,14 @@ function App() {
                     <Route path="projetos" element={<AdminProtectedRoute><ProjectsAdmin /></AdminProtectedRoute>} />
                     <Route path="colaboradores" element={<AdminProtectedRoute><CollaboratorsAdmin /></AdminProtectedRoute>} />
                     <Route path="tarefas" element={<AdminProtectedRoute><TasksAdmin /></AdminProtectedRoute>} />
-                    <Route path="chamados" element={<AdminProtectedRoute><SolicitacoesAdmin /></AdminProtectedRoute>} />
+                    <Route path="chamados" element={<AdminProtectedRoute><TicketsAdmin /></AdminProtectedRoute>} />
                     <Route path="arquivos" element={<AdminProtectedRoute><ArquivosAdmin /></AdminProtectedRoute>} />
                     <Route path="cronogramas" element={<AdminProtectedRoute><CronogramasAdmin /></AdminProtectedRoute>} />
                     <Route path="mensagens" element={<AdminProtectedRoute><MensagensAdmin /></AdminProtectedRoute>} />
                     <Route path="logs" element={<AdminProtectedRoute><LogsAdmin /></AdminProtectedRoute>} />
                     <Route path="configuracoes" element={<AdminProtectedRoute><ConfiguracoesAdmin /></AdminProtectedRoute>} />
                     <Route path="onedrive" element={<AdminProtectedRoute><OneDriveIntegration /></AdminProtectedRoute>} />
+                    <Route path="meus-chamados" element={<AdminProtectedRoute><MyTickets /></AdminProtectedRoute>} />
                   </Route>
                   
                   {/* Catch-all route */}
