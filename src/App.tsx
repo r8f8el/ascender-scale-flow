@@ -23,6 +23,7 @@ import ClientTicketDetail from './pages/client/ClientTicketDetail';
 import AdminAuthProvider from "./contexts/AdminAuthContext";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
 import AdminLogin from "./pages/AdminLogin";
+import AdminRegister from "./pages/AdminRegister";
 import AdminArea from "./pages/AdminArea";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminUnauthorized from "./pages/AdminUnauthorized";
@@ -69,6 +70,7 @@ function App() {
                   
                   {/* Admin routes */}
                   <Route path="/admin/login" element={<AdminLogin />} />
+                  <Route path="/admin/register" element={<AdminRegister />} />
                   <Route path="/admin/unauthorized" element={<AdminUnauthorized />} />
                   <Route path="/admin" element={<AdminProtectedRoute><AdminArea /></AdminProtectedRoute>}>
                     <Route index element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />

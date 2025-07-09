@@ -128,6 +128,12 @@ const AdminLogin = () => {
           <div className="mt-4 text-center text-sm text-gray-600">
             <p>Entre com suas credenciais de administrador.</p>
             <p>Apenas usuários com email @ascalate.com.br podem acessar.</p>
+            <p className="mt-2">
+              Não tem uma conta? 
+              <a href="/admin/register" className="text-blue-600 hover:text-blue-500 ml-1">
+                Cadastre-se aqui
+              </a>
+            </p>
           </div>
         </form>
         
