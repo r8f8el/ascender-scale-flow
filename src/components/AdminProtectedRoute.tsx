@@ -16,26 +16,16 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
   const { isAdminAuthenticated, admin, loading } = useAdminAuth();
   const { toast } = useToast();
 
-  // Show loading while checking authentication
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <div className="text-lg text-gray-600">Carregando...</div>
-        </div>
-      </div>
-    );
-  }
-  
+  // Always call useEffect first - hooks must be called in consistent order
   useEffect(() => {
-    if (!isAdminAuthenticated) {
+    if (!loading && !isAdminAuthenticated) {
       toast({
         title: "Acesso Negado",
         description: "Você precisa estar autenticado para acessar esta área.",
         variant: "destructive"
       });
     } else if (
+      !loading &&
       requiredRole && 
       admin && 
       admin.role !== requiredRole && 
@@ -47,7 +37,19 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
         variant: "destructive"
       });
     }
-  }, [isAdminAuthenticated, admin, requiredRole, toast]);
+  }, [isAdminAuthenticated, admin, requiredRole, toast, loading]);
+
+  // Show loading while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="text-lg text-gray-600">Carregando...</div>
+        </div>
+      </div>
+    );
+  }
 
   // Verificação real de autenticação
   if (!isAdminAuthenticated) {
