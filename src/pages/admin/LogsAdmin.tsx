@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Download, Filter, Shield, User, Calendar, Clock, FileUp, Settings, Mail, AlertCircle, Circle } from 'lucide-react';
@@ -32,94 +33,23 @@ import {
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 
-// Dados de exemplo para os logs
-const logsIniciais = [
-  {
-    id: '1',
-    usuario: 'Amanda Silva',
-    tipo: 'login',
-    ip: '189.54.220.165',
-    data: '14/05/2025',
-    hora: '09:23:45',
-    detalhes: 'Login bem-sucedido no painel administrativo',
-    nivel: 'info'
-  },
-  {
-    id: '2',
-    usuario: 'Ricardo Mendes',
-    tipo: 'arquivo',
-    ip: '201.17.123.45',
-    data: '14/05/2025',
-    hora: '10:15:22',
-    detalhes: 'Upload de arquivo "Relatório Q1 2025.pdf" para o cliente Portobello',
-    nivel: 'info'
-  },
-  {
-    id: '3',
-    usuario: 'Sistema Automático',
-    tipo: 'email',
-    ip: '172.16.254.1',
-    data: '14/05/2025',
-    hora: '11:30:15',
-    detalhes: 'Envio de e-mail automático para cliente J.Assy sobre novo documento disponível',
-    nivel: 'info'
-  },
-  {
-    id: '4',
-    usuario: 'Admin Ascalate',
-    tipo: 'configuracao',
-    ip: '189.54.220.170',
-    data: '13/05/2025',
-    hora: '16:42:11',
-    detalhes: 'Alteração nas configurações de segurança do sistema',
-    nivel: 'warning'
-  },
-  {
-    id: '5',
-    usuario: 'Cliente Portobello',
-    tipo: 'login',
-    ip: '200.155.87.90',
-    data: '13/05/2025',
-    hora: '14:25:33',
-    detalhes: 'Múltiplas tentativas de login falhas. Conta temporariamente bloqueada.',
-    nivel: 'alert'
-  },
-  {
-    id: '6',
-    usuario: 'Carla Santos',
-    tipo: 'cliente',
-    ip: '189.54.220.168',
-    data: '12/05/2025',
-    hora: '11:05:22',
-    detalhes: 'Criação de novo cliente "Ermenegildo Zegna" no sistema',
-    nivel: 'info'
-  },
-  {
-    id: '7',
-    usuario: 'Sistema',
-    tipo: 'backup',
-    ip: '172.16.254.1',
-    data: '12/05/2025',
-    hora: '03:00:00',
-    detalhes: 'Backup diário do sistema realizado com sucesso',
-    nivel: 'info'
-  },
-  {
-    id: '8',
-    usuario: 'Sistema',
-    tipo: 'erro',
-    ip: '172.16.254.1',
-    data: '11/05/2025',
-    hora: '22:15:47',
-    detalhes: 'Erro ao processar solicitação #458. Falha na conexão com o servidor de e-mail.',
-    nivel: 'error'
-  },
-];
+interface SystemLog {
+  id: string;
+  user_name: string;
+  type: string;
+  ip_address: string;
+  action: string;
+  details: string | null;
+  level: string;
+  created_at: string;
+}
 
 const LogsAdmin = () => {
-  const [logs, setLogs] = useState(logsIniciais);
+  const { toast } = useToast();
+  const [logs, setLogs] = useState<SystemLog[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [termoBusca, setTermoBusca] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('');
   const [filtroNivel, setFiltroNivel] = useState('');
@@ -127,41 +57,66 @@ const LogsAdmin = () => {
   const [dataInicio, setDataInicio] = useState<Date | undefined>(undefined);
   const [dataFim, setDataFim] = useState<Date | undefined>(undefined);
 
+  useEffect(() => {
+    loadLogs();
+  }, []);
+
+  const loadLogs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('system_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1000); // Limitar a 1000 logs mais recentes
+
+      if (error) throw error;
+      setLogs(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar logs:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar logs do sistema.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Listas únicas para os filtros
-  const tiposUnicos = Array.from(new Set(logs.map(log => log.tipo))).map(tipo => ({
+  const tiposUnicos = Array.from(new Set(logs.map(log => log.type))).map(tipo => ({
     valor: tipo,
     nome: getTipoNome(tipo)
   }));
 
-  const niveisUnicos = Array.from(new Set(logs.map(log => log.nivel))).map(nivel => ({
+  const niveisUnicos = Array.from(new Set(logs.map(log => log.level))).map(nivel => ({
     valor: nivel,
     nome: getNivelNome(nivel)
   }));
 
-  const usuariosUnicos = Array.from(new Set(logs.map(log => log.usuario))).map(usuario => ({
+  const usuariosUnicos = Array.from(new Set(logs.map(log => log.user_name))).map(usuario => ({
     valor: usuario
   }));
 
   // Filtragem dos logs
   const logsFiltrados = logs.filter(log => {
-    const correspondeAoTermo = log.detalhes.toLowerCase().includes(termoBusca.toLowerCase()) ||
-                              log.usuario.toLowerCase().includes(termoBusca.toLowerCase()) ||
-                              log.ip.toLowerCase().includes(termoBusca.toLowerCase());
+    const correspondeAoTermo = (log.details && log.details.toLowerCase().includes(termoBusca.toLowerCase())) ||
+                              log.user_name.toLowerCase().includes(termoBusca.toLowerCase()) ||
+                              log.ip_address.toLowerCase().includes(termoBusca.toLowerCase()) ||
+                              log.action.toLowerCase().includes(termoBusca.toLowerCase());
     
-    const correspondeAoTipo = filtroTipo ? log.tipo === filtroTipo : true;
-    const correspondeAoNivel = filtroNivel ? log.nivel === filtroNivel : true;
-    const correspondeAoUsuario = filtroUsuario ? log.usuario === filtroUsuario : true;
+    const correspondeAoTipo = filtroTipo ? log.type === filtroTipo : true;
+    const correspondeAoNivel = filtroNivel ? log.level === filtroNivel : true;
+    const correspondeAoUsuario = filtroUsuario ? log.user_name === filtroUsuario : true;
     
     // Filtrar por data
     let correspondeAData = true;
     if (dataInicio) {
-      const dataParts = log.data.split('/');
-      const logDate = new Date(parseInt(dataParts[2]), parseInt(dataParts[1]) - 1, parseInt(dataParts[0]));
+      const logDate = new Date(log.created_at);
       correspondeAData = correspondeAData && logDate >= dataInicio;
     }
     if (dataFim) {
-      const dataParts = log.data.split('/');
-      const logDate = new Date(parseInt(dataParts[2]), parseInt(dataParts[1]) - 1, parseInt(dataParts[0]));
+      const logDate = new Date(log.created_at);
       correspondeAData = correspondeAData && logDate <= dataFim;
     }
     
@@ -174,15 +129,16 @@ const LogsAdmin = () => {
 
   const exportarCSV = () => {
     // Criar cabeçalho do CSV
-    let csv = 'ID,Usuário,Tipo,IP,Data,Hora,Detalhes,Nível\n';
+    let csv = 'ID,Usuário,Tipo,IP,Ação,Detalhes,Nível,Data\n';
     
     // Adicionar dados
     logsFiltrados.forEach(log => {
-      csv += `${log.id},${log.usuario},"${log.tipo}",${log.ip},${log.data},${log.hora},"${log.detalhes}",${log.nivel}\n`;
+      const data = new Date(log.created_at).toLocaleString('pt-BR');
+      csv += `${log.id},"${log.user_name}","${log.type}","${log.ip_address}","${log.action}","${log.details || ''}","${log.level}","${data}"\n`;
     });
     
     // Criar blob e download
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.setAttribute('hidden', '');
@@ -192,18 +148,24 @@ const LogsAdmin = () => {
     a.click();
     document.body.removeChild(a);
     
-    toast.success('Logs exportados com sucesso');
+    toast({
+      title: "Sucesso",
+      description: "Logs exportados com sucesso!"
+    });
   };
 
   function getTipoNome(tipo: string): string {
     switch (tipo) {
       case 'login': return 'Login';
-      case 'arquivo': return 'Arquivo';
+      case 'logout': return 'Logout';
+      case 'file': return 'Arquivo';
       case 'email': return 'E-mail';
-      case 'configuracao': return 'Configuração';
-      case 'cliente': return 'Cliente';
+      case 'config': return 'Configuração';
+      case 'client': return 'Cliente';
       case 'backup': return 'Backup';
-      case 'erro': return 'Erro';
+      case 'error': return 'Erro';
+      case 'ticket': return 'Chamado';
+      case 'document': return 'Documento';
       default: return tipo.charAt(0).toUpperCase() + tipo.slice(1);
     }
   }
@@ -220,13 +182,16 @@ const LogsAdmin = () => {
 
   function getTipoIcone(tipo: string) {
     switch (tipo) {
-      case 'login': return <Shield className="h-4 w-4 text-blue-500" />;
-      case 'arquivo': return <FileUp className="h-4 w-4 text-green-500" />;
+      case 'login': 
+      case 'logout': return <Shield className="h-4 w-4 text-blue-500" />;
+      case 'file': return <FileUp className="h-4 w-4 text-green-500" />;
       case 'email': return <Mail className="h-4 w-4 text-purple-500" />;
-      case 'configuracao': return <Settings className="h-4 w-4 text-amber-500" />;
-      case 'cliente': return <User className="h-4 w-4 text-indigo-500" />;
+      case 'config': return <Settings className="h-4 w-4 text-amber-500" />;
+      case 'client': return <User className="h-4 w-4 text-indigo-500" />;
       case 'backup': return <Download className="h-4 w-4 text-teal-500" />;
-      case 'erro': return <AlertCircle className="h-4 w-4 text-red-500" />;
+      case 'error': return <AlertCircle className="h-4 w-4 text-red-500" />;
+      case 'ticket': return <Calendar className="h-4 w-4 text-orange-500" />;
+      case 'document': return <FileUp className="h-4 w-4 text-cyan-500" />;
       default: return <Circle className="h-4 w-4 text-gray-500" />;
     }
   }
@@ -250,10 +215,14 @@ const LogsAdmin = () => {
     setDataFim(undefined);
   };
 
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-64">Carregando logs...</div>;
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-medium">Logs de Acesso e Sistema</h2>
+        <h2 className="text-2xl font-bold">Logs de Acesso e Sistema</h2>
         
         <Button onClick={exportarCSV}>
           <Download className="mr-2 h-4 w-4" />
@@ -377,6 +346,7 @@ const LogsAdmin = () => {
                 <TableHead>Tipo</TableHead>
                 <TableHead>Data/Hora</TableHead>
                 <TableHead>IP</TableHead>
+                <TableHead>Ação</TableHead>
                 <TableHead>Detalhes</TableHead>
                 <TableHead>Nível</TableHead>
               </TableRow>
@@ -385,33 +355,34 @@ const LogsAdmin = () => {
               {logsFiltrados.length > 0 ? (
                 logsFiltrados.map((log) => (
                   <TableRow key={log.id}>
-                    <TableCell className="font-medium">{log.usuario}</TableCell>
+                    <TableCell className="font-medium">{log.user_name}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5">
-                        {getTipoIcone(log.tipo)}
-                        <span>{getTipoNome(log.tipo)}</span>
+                        {getTipoIcone(log.type)}
+                        <span>{getTipoNome(log.type)}</span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span>{log.data}</span>
-                        <span className="text-xs text-gray-500">{log.hora}</span>
+                        <span>{new Date(log.created_at).toLocaleDateString('pt-BR')}</span>
+                        <span className="text-xs text-gray-500">{new Date(log.created_at).toLocaleTimeString('pt-BR')}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="font-mono text-xs">{log.ip}</TableCell>
-                    <TableCell className="max-w-md truncate" title={log.detalhes}>
-                      {log.detalhes}
+                    <TableCell className="font-mono text-xs">{log.ip_address}</TableCell>
+                    <TableCell>{log.action}</TableCell>
+                    <TableCell className="max-w-md truncate" title={log.details || ''}>
+                      {log.details || '-'}
                     </TableCell>
                     <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs ${getNivelClasse(log.nivel)}`}>
-                        {getNivelNome(log.nivel)}
+                      <span className={`px-2 py-1 rounded-full text-xs ${getNivelClasse(log.level)}`}>
+                        {getNivelNome(log.level)}
                       </span>
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                     Nenhum log encontrado com os filtros selecionados
                   </TableCell>
                 </TableRow>

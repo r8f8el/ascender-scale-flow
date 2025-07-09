@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Filter, Upload, Download, Trash, FolderPlus, FileText } from 'lucide-react';
@@ -29,136 +30,252 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 
-// Dados de exemplo para os arquivos
-const arquivosIniciais = [
-  { 
-    id: '1', 
-    nome: 'Relatório Q1 2025.pdf', 
-    tipo: 'PDF', 
-    cliente: 'Portobello', 
-    pasta: 'Relatórios',
-    responsavel: 'Amanda Silva',
-    tamanho: '2.4 MB',
-    dataUpload: '10/05/2025'
-  },
-  { 
-    id: '2', 
-    nome: 'Contrato de Prestação de Serviços.docx', 
-    tipo: 'DOCX', 
-    cliente: 'J.Assy', 
-    pasta: 'Contratos',
-    responsavel: 'Ricardo Mendes',
-    tamanho: '1.8 MB',
-    dataUpload: '08/05/2025'
-  },
-  { 
-    id: '3', 
-    nome: 'Análise Financeira 2025.xlsx', 
-    tipo: 'XLSX', 
-    cliente: 'Portobello', 
-    pasta: 'Financeiro',
-    responsavel: 'Carla Santos',
-    tamanho: '3.5 MB',
-    dataUpload: '05/05/2025'
-  },
-  { 
-    id: '4', 
-    nome: 'Apresentação Inicial.pptx', 
-    tipo: 'PPTX', 
-    cliente: 'J.Assy', 
-    pasta: 'Apresentações',
-    responsavel: 'Amanda Silva',
-    tamanho: '5.7 MB',
-    dataUpload: '01/05/2025'
-  },
-];
+interface Arquivo {
+  id: string;
+  filename: string;
+  file_path: string;
+  file_size: number | null;
+  content_type: string | null;
+  user_id: string;
+  category_id: string | null;
+  created_at: string;
+  updated_at: string;
+  document_categories?: {
+    name: string;
+    color: string | null;
+  };
+}
 
-// Lista de clientes para o dropdown
-const clientes = [
-  { id: '1', nome: 'Portobello' },
-  { id: '2', nome: 'J.Assy' },
-  { id: '3', nome: 'Ermenegildo Zegna' },
-];
+interface Cliente {
+  id: string;
+  name: string;
+  company: string | null;
+}
 
-// Lista de pastas para o dropdown
-const pastas = [
-  { id: '1', nome: 'Relatórios' },
-  { id: '2', nome: 'Contratos' },
-  { id: '3', nome: 'Financeiro' },
-  { id: '4', nome: 'Apresentações' },
-  { id: '5', nome: 'Outros' },
-];
+interface Categoria {
+  id: string;
+  name: string;
+  color: string | null;
+}
 
 const ArquivosAdmin = () => {
-  const [arquivos, setArquivos] = useState(arquivosIniciais);
+  const { toast } = useToast();
+  const [arquivos, setArquivos] = useState<Arquivo[]>([]);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [termoBusca, setTermoBusca] = useState('');
   const [filtroCliente, setFiltroCliente] = useState('');
-  const [filtroPasta, setFiltroPasta] = useState('');
+  const [filtroCategoria, setFiltroCategoria] = useState('');
   const [dialogAberto, setDialogAberto] = useState(false);
   const [nomeNovoArquivo, setNomeNovoArquivo] = useState('');
   const [clienteSelecionado, setClienteSelecionado] = useState('');
-  const [pastaSelecionada, setPastaSelecionada] = useState('');
+  const [categoriaSelecionada, setCategoriaSelecionada] = useState('');
   const [arquivoSelecionado, setArquivoSelecionado] = useState<File | null>(null);
   const [tabAtual, setTabAtual] = useState('todos');
 
+  useEffect(() => {
+    loadArquivos();
+    loadClientes();
+    loadCategorias();
+  }, []);
+
+  const loadArquivos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('documents')
+        .select(`
+          *,
+          document_categories(name, color)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setArquivos(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar arquivos:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar arquivos.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadClientes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('client_profiles')
+        .select('id, name, company')
+        .order('name');
+
+      if (error) throw error;
+      setClientes(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar clientes:', error);
+    }
+  };
+
+  const loadCategorias = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('document_categories')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+      setCategorias(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar categorias:', error);
+    }
+  };
+
   // Filtragem dos arquivos
   const arquivosFiltrados = arquivos.filter(arquivo => {
-    const correspondeAoTermo = arquivo.nome.toLowerCase().includes(termoBusca.toLowerCase()) ||
-                              arquivo.tipo.toLowerCase().includes(termoBusca.toLowerCase()) ||
-                              arquivo.cliente.toLowerCase().includes(termoBusca.toLowerCase()) ||
-                              arquivo.pasta.toLowerCase().includes(termoBusca.toLowerCase());
+    const correspondeAoTermo = arquivo.filename.toLowerCase().includes(termoBusca.toLowerCase()) ||
+                              (arquivo.content_type && arquivo.content_type.toLowerCase().includes(termoBusca.toLowerCase())) ||
+                              (arquivo.document_categories?.name && arquivo.document_categories.name.toLowerCase().includes(termoBusca.toLowerCase()));
                           
-    const correspondeAoCliente = filtroCliente ? arquivo.cliente === filtroCliente : true;
-    const correspondeAPasta = filtroPasta ? arquivo.pasta === filtroPasta : true;
+    const correspondeAoCliente = filtroCliente ? arquivo.user_id === filtroCliente : true;
+    const correspondeACategoria = filtroCategoria ? arquivo.category_id === filtroCategoria : true;
     
     if (tabAtual === 'todos') {
-      return correspondeAoTermo && correspondeAoCliente && correspondeAPasta;
+      return correspondeAoTermo && correspondeAoCliente && correspondeACategoria;
     } else {
-      return correspondeAoTermo && correspondeAoCliente && correspondeAPasta && 
-             arquivo.tipo.toLowerCase() === tabAtual;
+      // Filtrar por tipo de arquivo baseado na extensão
+      const extensao = arquivo.filename.split('.').pop()?.toLowerCase() || '';
+      return correspondeAoTermo && correspondeAoCliente && correspondeACategoria && 
+             extensao === tabAtual;
     }
   });
 
-  const handleUpload = () => {
-    if (!nomeNovoArquivo || !clienteSelecionado || !pastaSelecionada || !arquivoSelecionado) {
-      toast.error('Por favor, preencha todos os campos e selecione um arquivo');
+  const handleUpload = async () => {
+    if (!nomeNovoArquivo || !clienteSelecionado || !categoriaSelecionada || !arquivoSelecionado) {
+      toast({
+        title: "Erro",
+        description: "Por favor, preencha todos os campos e selecione um arquivo",
+        variant: "destructive"
+      });
       return;
     }
     
-    // Simular upload
-    const extension = arquivoSelecionado.name.split('.').pop()?.toUpperCase() || '';
-    const clienteNome = clientes.find(c => c.id === clienteSelecionado)?.nome || '';
-    const pastaNome = pastas.find(p => p.id === pastaSelecionada)?.nome || '';
-    
-    const novoArquivo = {
-      id: Date.now().toString(),
-      nome: nomeNovoArquivo.includes('.') ? nomeNovoArquivo : `${nomeNovoArquivo}.${extension.toLowerCase()}`,
-      tipo: extension,
-      cliente: clienteNome,
-      pasta: pastaNome,
-      responsavel: 'Admin Ascalate', // Usuário logado
-      tamanho: `${(arquivoSelecionado.size / (1024 * 1024)).toFixed(1)} MB`,
-      dataUpload: new Date().toLocaleDateString('pt-BR')
-    };
-    
-    setArquivos([...arquivos, novoArquivo]);
-    toast.success('Arquivo enviado com sucesso!');
-    
-    // Limpar formulário
-    setNomeNovoArquivo('');
-    setClienteSelecionado('');
-    setPastaSelecionada('');
-    setArquivoSelecionado(null);
-    setDialogAberto(false);
+    try {
+      // Upload do arquivo para o storage
+      const fileExt = arquivoSelecionado.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `documents/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(filePath, arquivoSelecionado);
+
+      if (uploadError) throw uploadError;
+
+      // Inserir registro no banco
+      const { error: dbError } = await supabase
+        .from('documents')
+        .insert([{
+          filename: nomeNovoArquivo.includes('.') ? nomeNovoArquivo : `${nomeNovoArquivo}.${fileExt}`,
+          file_path: filePath,
+          file_size: arquivoSelecionado.size,
+          content_type: arquivoSelecionado.type,
+          user_id: clienteSelecionado,
+          category_id: categoriaSelecionada
+        }]);
+
+      if (dbError) throw dbError;
+
+      toast({
+        title: "Sucesso",
+        description: "Arquivo enviado com sucesso!"
+      });
+      
+      // Limpar formulário
+      setNomeNovoArquivo('');
+      setClienteSelecionado('');
+      setCategoriaSelecionada('');
+      setArquivoSelecionado(null);
+      setDialogAberto(false);
+      
+      loadArquivos();
+    } catch (error: any) {
+      console.error('Erro ao fazer upload:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao enviar arquivo.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleExcluirArquivo = (id: string) => {
+  const handleExcluirArquivo = async (arquivo: Arquivo) => {
     if (window.confirm('Tem certeza que deseja excluir este arquivo?')) {
-      const arquivosAtualizados = arquivos.filter(arquivo => arquivo.id !== id);
-      setArquivos(arquivosAtualizados);
-      toast.success('Arquivo excluído com sucesso');
+      try {
+        // Deletar arquivo do storage
+        const { error: storageError } = await supabase.storage
+          .from('documents')
+          .remove([arquivo.file_path]);
+
+        if (storageError) throw storageError;
+
+        // Deletar registro do banco
+        const { error: dbError } = await supabase
+          .from('documents')
+          .delete()
+          .eq('id', arquivo.id);
+
+        if (dbError) throw dbError;
+
+        toast({
+          title: "Sucesso",
+          description: "Arquivo excluído com sucesso!"
+        });
+        
+        loadArquivos();
+      } catch (error: any) {
+        console.error('Erro ao excluir arquivo:', error);
+        toast({
+          title: "Erro",
+          description: error.message || "Erro ao excluir arquivo.",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  const handleDownload = async (arquivo: Arquivo) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('documents')
+        .download(arquivo.file_path);
+
+      if (error) throw error;
+
+      // Criar URL para download
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = arquivo.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Sucesso",
+        description: "Download iniciado!"
+      });
+    } catch (error: any) {
+      console.error('Erro ao fazer download:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao fazer download do arquivo.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -174,6 +291,15 @@ const ArquivosAdmin = () => {
     }
   };
 
+  const formatFileSize = (bytes: number | null) => {
+    if (!bytes) return 'N/A';
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   // Tipos de arquivos para as abas
   const tiposDeArquivo = [
     { valor: 'todos', texto: 'Todos' },
@@ -183,10 +309,14 @@ const ArquivosAdmin = () => {
     { valor: 'pptx', texto: 'PowerPoint' },
   ];
 
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-64">Carregando arquivos...</div>;
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-medium">Gerenciamento de Arquivos</h2>
+        <h2 className="text-2xl font-bold">Gerenciamento de Arquivos</h2>
         
         <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
           <DialogTrigger asChild>
@@ -214,7 +344,7 @@ const ArquivosAdmin = () => {
                   />
                   {arquivoSelecionado && (
                     <p className="text-xs text-gray-500">
-                      {arquivoSelecionado.name} ({(arquivoSelecionado.size / 1024).toFixed(1)} KB)
+                      {arquivoSelecionado.name} ({formatFileSize(arquivoSelecionado.size)})
                     </p>
                   )}
                 </div>
@@ -238,7 +368,7 @@ const ArquivosAdmin = () => {
                     <SelectContent>
                       {clientes.map(cliente => (
                         <SelectItem key={cliente.id} value={cliente.id}>
-                          {cliente.nome}
+                          {cliente.name} {cliente.company && `- ${cliente.company}`}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -246,15 +376,15 @@ const ArquivosAdmin = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <label htmlFor="pasta" className="text-sm font-medium">Pasta*</label>
-                  <Select value={pastaSelecionada} onValueChange={setPastaSelecionada}>
+                  <label htmlFor="categoria" className="text-sm font-medium">Categoria*</label>
+                  <Select value={categoriaSelecionada} onValueChange={setCategoriaSelecionada}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma pasta" />
+                      <SelectValue placeholder="Selecione uma categoria" />
                     </SelectTrigger>
                     <SelectContent>
-                      {pastas.map(pasta => (
-                        <SelectItem key={pasta.id} value={pasta.id}>
-                          {pasta.nome}
+                      {categorias.map(categoria => (
+                        <SelectItem key={categoria.id} value={categoria.id}>
+                          {categoria.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -294,24 +424,24 @@ const ArquivosAdmin = () => {
               <SelectValue placeholder="Filtrar por cliente" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem key="todos" value="todos">Todos os clientes</SelectItem>
+              <SelectItem value="">Todos os clientes</SelectItem>
               {clientes.map(cliente => (
-                <SelectItem key={cliente.id} value={cliente.nome}>
-                  {cliente.nome}
+                <SelectItem key={cliente.id} value={cliente.id}>
+                  {cliente.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           
-          <Select value={filtroPasta} onValueChange={setFiltroPasta}>
+          <Select value={filtroCategoria} onValueChange={setFiltroCategoria}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filtrar por pasta" />
+              <SelectValue placeholder="Filtrar por categoria" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem key="todas" value="todas">Todas as pastas</SelectItem>
-              {pastas.map(pasta => (
-                <SelectItem key={pasta.id} value={pasta.nome}>
-                  {pasta.nome}
+              <SelectItem value="">Todas as categorias</SelectItem>
+              {categorias.map(categoria => (
+                <SelectItem key={categoria.id} value={categoria.id}>
+                  {categoria.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -331,39 +461,45 @@ const ArquivosAdmin = () => {
       
       <Card>
         <Table>
-          <TableCaption>Total de {arquivos.length} arquivos encontrados</TableCaption>
+          <TableCaption>Total de {arquivosFiltrados.length} arquivos encontrados</TableCaption>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[30%]">Nome</TableHead>
-              <TableHead>Cliente</TableHead>
-              <TableHead>Pasta</TableHead>
-              <TableHead>Responsável</TableHead>
+              <TableHead>Categoria</TableHead>
+              <TableHead>Tamanho</TableHead>
               <TableHead>Data</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {arquivos.length > 0 ? (
-              arquivos.map((arquivo) => (
+            {arquivosFiltrados.length > 0 ? (
+              arquivosFiltrados.map((arquivo) => (
                 <TableRow key={arquivo.id}>
                   <TableCell className="font-medium flex items-center gap-2">
                     <FileText className="h-4 w-4" />
-                    <span className="truncate max-w-[250px]" title={arquivo.nome}>
-                      {arquivo.nome}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      ({arquivo.tamanho})
+                    <span className="truncate max-w-[250px]" title={arquivo.filename}>
+                      {arquivo.filename}
                     </span>
                   </TableCell>
-                  <TableCell>{arquivo.cliente}</TableCell>
-                  <TableCell>{arquivo.pasta}</TableCell>
-                  <TableCell>{arquivo.responsavel}</TableCell>
-                  <TableCell>{arquivo.dataUpload}</TableCell>
+                  <TableCell>
+                    <span 
+                      className="px-2 py-1 rounded-full text-xs"
+                      style={{ 
+                        backgroundColor: arquivo.document_categories?.color || '#e5e7eb',
+                        color: '#374151'
+                      }}
+                    >
+                      {arquivo.document_categories?.name || 'Sem categoria'}
+                    </span>
+                  </TableCell>
+                  <TableCell>{formatFileSize(arquivo.file_size)}</TableCell>
+                  <TableCell>{new Date(arquivo.created_at).toLocaleDateString('pt-BR')}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
                       <Button 
                         variant="ghost" 
                         size="icon"
+                        onClick={() => handleDownload(arquivo)}
                         title="Download"
                       >
                         <Download className="h-4 w-4" />
@@ -372,7 +508,7 @@ const ArquivosAdmin = () => {
                       <Button 
                         variant="ghost" 
                         size="icon"
-                        onClick={() => handleExcluirArquivo(arquivo.id)}
+                        onClick={() => handleExcluirArquivo(arquivo)}
                         title="Excluir"
                       >
                         <Trash className="h-4 w-4 text-red-500" />
@@ -383,7 +519,7 @@ const ArquivosAdmin = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={5} className="text-center py-8 text-gray-500">
                   Nenhum arquivo encontrado
                 </TableCell>
               </TableRow>

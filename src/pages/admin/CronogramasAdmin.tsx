@@ -1,5 +1,5 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Calendar, Plus, Edit, Trash, CheckCircle, Clock, AlertCircle } from 'lucide-react';
@@ -21,115 +21,152 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 
-// Lista de clientes para o dropdown
-const clientes = [
-  { id: '1', nome: 'Portobello' },
-  { id: '2', nome: 'J.Assy' },
-  { id: '3', nome: 'Ermenegildo Zegna' },
-];
+interface Cliente {
+  id: string;
+  name: string;
+  company: string | null;
+}
 
-// Dados de exemplo para cronogramas
-const cronogramasIniciais = [
-  {
-    id: '1',
-    cliente: 'Portobello',
-    titulo: 'Implementação de Novo Sistema',
-    etapas: [
-      { id: '101', descricao: 'Levantamento de Requisitos', dataInicio: '01/05/2025', dataFim: '10/05/2025', status: 'concluido' },
-      { id: '102', descricao: 'Análise e Planejamento', dataInicio: '11/05/2025', dataFim: '20/05/2025', status: 'em-andamento' },
-      { id: '103', descricao: 'Desenvolvimento', dataInicio: '21/05/2025', dataFim: '10/06/2025', status: 'pendente' },
-      { id: '104', descricao: 'Testes e Validação', dataInicio: '11/06/2025', dataFim: '20/06/2025', status: 'pendente' },
-      { id: '105', descricao: 'Deploy e Go-Live', dataInicio: '21/06/2025', dataFim: '30/06/2025', status: 'pendente' },
-    ],
-    publicado: true,
-    ultimaAtualizacao: '10/05/2025',
-  },
-  {
-    id: '2',
-    cliente: 'J.Assy',
-    titulo: 'Consultoria Financeira',
-    etapas: [
-      { id: '201', descricao: 'Diagnóstico Inicial', dataInicio: '05/05/2025', dataFim: '15/05/2025', status: 'concluido' },
-      { id: '202', descricao: 'Análise de Processos', dataInicio: '16/05/2025', dataFim: '30/05/2025', status: 'pendente' },
-      { id: '203', descricao: 'Recomendações', dataInicio: '01/06/2025', dataFim: '10/06/2025', status: 'pendente' },
-      { id: '204', descricao: 'Implementação', dataInicio: '11/06/2025', dataFim: '25/06/2025', status: 'pendente' },
-    ],
-    publicado: false,
-    ultimaAtualizacao: '05/05/2025',
-  }
-];
+interface Cronograma {
+  id: string;
+  title: string;
+  published: boolean;
+  created_at: string;
+  updated_at: string;
+  client_profiles?: Cliente;
+  schedule_phases?: Etapa[];
+}
+
+interface Etapa {
+  id: string;
+  description: string;
+  start_date: string;
+  end_date: string;
+  status: string;
+  phase_order: number;
+}
 
 const CronogramasAdmin = () => {
-  const [cronogramas, setCronogramas] = useState(cronogramasIniciais);
+  const { toast } = useToast();
+  const [cronogramas, setCronogramas] = useState<Cronograma[]>([]);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [termoBusca, setTermoBusca] = useState('');
   const [filtroCliente, setFiltroCliente] = useState('');
   const [dialogAberto, setDialogAberto] = useState(false);
-  const [cronogramaSelecionado, setCronogramaSelecionado] = useState<any | null>(null);
+  const [cronogramaSelecionado, setCronogramaSelecionado] = useState<Cronograma | null>(null);
   const [novoCronograma, setNovoCronograma] = useState({
-    cliente: '',
-    titulo: '',
+    client_id: '',
+    title: '',
     etapas: [{
       id: Date.now().toString(),
-      descricao: '',
-      dataInicio: '',
-      dataFim: '',
-      status: 'pendente'
+      description: '',
+      start_date: '',
+      end_date: '',
+      status: 'pending'
     }]
   });
   const [tabAtual, setTabAtual] = useState('todos');
-  const [etapasEditadas, setEtapasEditadas] = useState<any[]>([]);
+
+  useEffect(() => {
+    loadCronogramas();
+    loadClientes();
+  }, []);
+
+  const loadCronogramas = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('project_schedules')
+        .select(`
+          *,
+          client_profiles(id, name, company),
+          schedule_phases(*)
+        `)
+        .order('updated_at', { ascending: false });
+
+      if (error) throw error;
+      setCronogramas(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar cronogramas:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar cronogramas.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadClientes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('client_profiles')
+        .select('id, name, company')
+        .order('name');
+
+      if (error) throw error;
+      setClientes(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar clientes:', error);
+    }
+  };
 
   // Filtragem dos cronogramas
   const cronogramasFiltrados = cronogramas.filter(cronograma => {
-    const correspondeAoTermo = cronograma.titulo.toLowerCase().includes(termoBusca.toLowerCase()) ||
-                              cronograma.cliente.toLowerCase().includes(termoBusca.toLowerCase());
-    const correspondeAoCliente = filtroCliente ? cronograma.cliente === filtroCliente : true;
+    const correspondeAoTermo = cronograma.title.toLowerCase().includes(termoBusca.toLowerCase()) ||
+                              (cronograma.client_profiles?.name && cronograma.client_profiles.name.toLowerCase().includes(termoBusca.toLowerCase()));
+    const correspondeAoCliente = filtroCliente ? cronograma.client_profiles?.id === filtroCliente : true;
     
     if (tabAtual === 'todos') {
       return correspondeAoTermo && correspondeAoCliente;
     } else if (tabAtual === 'publicados') {
-      return correspondeAoTermo && correspondeAoCliente && cronograma.publicado;
+      return correspondeAoTermo && correspondeAoCliente && cronograma.published;
     } else {
-      return correspondeAoTermo && correspondeAoCliente && !cronograma.publicado;
+      return correspondeAoTermo && correspondeAoCliente && !cronograma.published;
     }
   });
 
   const resetarFormulario = () => {
     setNovoCronograma({
-      cliente: '',
-      titulo: '',
+      client_id: '',
+      title: '',
       etapas: [{
         id: Date.now().toString(),
-        descricao: '',
-        dataInicio: '',
-        dataFim: '',
-        status: 'pendente'
+        description: '',
+        start_date: '',
+        end_date: '',
+        status: 'pending'
       }]
     });
     setCronogramaSelecionado(null);
-    setEtapasEditadas([]);
   };
 
-  const abrirEdicao = (cronograma: any) => {
+  const abrirEdicao = (cronograma: Cronograma) => {
     setCronogramaSelecionado(cronograma);
     setNovoCronograma({
-      cliente: cronograma.cliente,
-      titulo: cronograma.titulo,
-      etapas: [...cronograma.etapas]
+      client_id: cronograma.client_profiles?.id || '',
+      title: cronograma.title,
+      etapas: cronograma.schedule_phases?.map(fase => ({
+        id: fase.id,
+        description: fase.description,
+        start_date: fase.start_date,
+        end_date: fase.end_date,
+        status: fase.status
+      })) || []
     });
-    setEtapasEditadas([...cronograma.etapas]);
     setDialogAberto(true);
   };
 
   const adicionarEtapa = () => {
     const novasEtapas = [...novoCronograma.etapas, {
       id: Date.now().toString(),
-      descricao: '',
-      dataInicio: '',
-      dataFim: '',
-      status: 'pendente'
+      description: '',
+      start_date: '',
+      end_date: '',
+      status: 'pending'
     }];
     setNovoCronograma({...novoCronograma, etapas: novasEtapas});
   };
@@ -146,91 +183,203 @@ const CronogramasAdmin = () => {
     setNovoCronograma({...novoCronograma, etapas: novasEtapas});
   };
 
-  const salvarCronograma = () => {
-    if (!novoCronograma.cliente || !novoCronograma.titulo) {
-      toast.error('Por favor, preencha todos os campos obrigatórios');
+  const salvarCronograma = async () => {
+    if (!novoCronograma.client_id || !novoCronograma.title) {
+      toast({
+        title: "Erro",
+        description: "Por favor, preencha todos os campos obrigatórios",
+        variant: "destructive"
+      });
       return;
     }
 
     // Validar cada etapa
     for (const etapa of novoCronograma.etapas) {
-      if (!etapa.descricao || !etapa.dataInicio || !etapa.dataFim) {
-        toast.error('Por favor, preencha todas as informações das etapas');
+      if (!etapa.description || !etapa.start_date || !etapa.end_date) {
+        toast({
+          title: "Erro",
+          description: "Por favor, preencha todas as informações das etapas",
+          variant: "destructive"
+        });
         return;
       }
     }
 
-    const hoje = new Date().toLocaleDateString('pt-BR');
+    try {
+      if (cronogramaSelecionado) {
+        // Editar cronograma existente
+        const { error: scheduleError } = await supabase
+          .from('project_schedules')
+          .update({
+            client_id: novoCronograma.client_id,
+            title: novoCronograma.title
+          })
+          .eq('id', cronogramaSelecionado.id);
 
-    if (cronogramaSelecionado) {
-      // Editar cronograma existente
-      const cronogramasAtualizados = cronogramas.map(cron => 
-        cron.id === cronogramaSelecionado.id 
-          ? {
-              ...cron,
-              cliente: novoCronograma.cliente,
-              titulo: novoCronograma.titulo,
-              etapas: novoCronograma.etapas,
-              ultimaAtualizacao: hoje
-            } 
-          : cron
-      );
-      setCronogramas(cronogramasAtualizados);
-      toast.success('Cronograma atualizado com sucesso');
-    } else {
-      // Adicionar novo cronograma
-      const novoCronogramaCompleto = {
-        id: Date.now().toString(),
-        cliente: novoCronograma.cliente,
-        titulo: novoCronograma.titulo,
-        etapas: novoCronograma.etapas,
-        publicado: false,
-        ultimaAtualizacao: hoje
-      };
-      setCronogramas([...cronogramas, novoCronogramaCompleto]);
-      toast.success('Cronograma criado com sucesso');
+        if (scheduleError) throw scheduleError;
+
+        // Deletar etapas antigas
+        const { error: deleteError } = await supabase
+          .from('schedule_phases')
+          .delete()
+          .eq('schedule_id', cronogramaSelecionado.id);
+
+        if (deleteError) throw deleteError;
+
+        // Inserir novas etapas
+        const etapasData = novoCronograma.etapas.map((etapa, index) => ({
+          schedule_id: cronogramaSelecionado.id,
+          description: etapa.description,
+          start_date: etapa.start_date,
+          end_date: etapa.end_date,
+          status: etapa.status,
+          phase_order: index + 1
+        }));
+
+        const { error: phasesError } = await supabase
+          .from('schedule_phases')
+          .insert(etapasData);
+
+        if (phasesError) throw phasesError;
+
+        toast({
+          title: "Sucesso",
+          description: "Cronograma atualizado com sucesso!"
+        });
+      } else {
+        // Adicionar novo cronograma
+        const { data: scheduleData, error: scheduleError } = await supabase
+          .from('project_schedules')
+          .insert([{
+            client_id: novoCronograma.client_id,
+            title: novoCronograma.title,
+            published: false
+          }])
+          .select()
+          .single();
+
+        if (scheduleError) throw scheduleError;
+
+        // Inserir etapas
+        const etapasData = novoCronograma.etapas.map((etapa, index) => ({
+          schedule_id: scheduleData.id,
+          description: etapa.description,
+          start_date: etapa.start_date,
+          end_date: etapa.end_date,
+          status: etapa.status,
+          phase_order: index + 1
+        }));
+
+        const { error: phasesError } = await supabase
+          .from('schedule_phases')
+          .insert(etapasData);
+
+        if (phasesError) throw phasesError;
+
+        toast({
+          title: "Sucesso",
+          description: "Cronograma criado com sucesso!"
+        });
+      }
+      
+      setDialogAberto(false);
+      resetarFormulario();
+      loadCronogramas();
+    } catch (error: any) {
+      console.error('Erro ao salvar cronograma:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao salvar cronograma.",
+        variant: "destructive"
+      });
     }
-    
-    setDialogAberto(false);
-    resetarFormulario();
   };
 
-  const excluirCronograma = (id: string) => {
+  const excluirCronograma = async (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir este cronograma?')) {
-      const cronogramasAtualizados = cronogramas.filter(cron => cron.id !== id);
-      setCronogramas(cronogramasAtualizados);
-      toast.success('Cronograma excluído com sucesso');
+      try {
+        const { error } = await supabase
+          .from('project_schedules')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw error;
+        
+        toast({
+          title: "Sucesso",
+          description: "Cronograma excluído com sucesso!"
+        });
+        
+        loadCronogramas();
+      } catch (error: any) {
+        console.error('Erro ao excluir cronograma:', error);
+        toast({
+          title: "Erro",
+          description: error.message || "Erro ao excluir cronograma.",
+          variant: "destructive"
+        });
+      }
     }
   };
 
-  const alterarStatusPublicacao = (id: string, novoStatus: boolean) => {
-    const cronogramasAtualizados = cronogramas.map(cron => 
-      cron.id === id ? {...cron, publicado: novoStatus} : cron
-    );
-    setCronogramas(cronogramasAtualizados);
-    toast.success(`Cronograma ${novoStatus ? 'publicado' : 'despublicado'} com sucesso`);
+  const alterarStatusPublicacao = async (id: string, novoStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('project_schedules')
+        .update({ published: novoStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Sucesso",
+        description: `Cronograma ${novoStatus ? 'publicado' : 'despublicado'} com sucesso!`
+      });
+      
+      loadCronogramas();
+    } catch (error: any) {
+      console.error('Erro ao alterar status:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao alterar status da publicação.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const alterarStatusEtapa = (cronogramaId: string, etapaId: string, novoStatus: string) => {
-    const cronogramasAtualizados = cronogramas.map(cron => 
-      cron.id === cronogramaId 
-        ? {
-            ...cron,
-            etapas: cron.etapas.map(etapa => 
-              etapa.id === etapaId ? {...etapa, status: novoStatus} : etapa
-            ),
-            ultimaAtualizacao: new Date().toLocaleDateString('pt-BR')
-          } 
-        : cron
-    );
-    setCronogramas(cronogramasAtualizados);
-    toast.success('Status da etapa atualizado');
+  const alterarStatusEtapa = async (cronogramaId: string, etapaId: string, novoStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('schedule_phases')
+        .update({ status: novoStatus })
+        .eq('id', etapaId);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Sucesso",
+        description: "Status da etapa atualizado!"
+      });
+      
+      loadCronogramas();
+    } catch (error: any) {
+      console.error('Erro ao alterar status da etapa:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao alterar status da etapa.",
+        variant: "destructive"
+      });
+    }
   };
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-64">Carregando cronogramas...</div>;
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-medium">Edição e Publicação de Cronogramas</h2>
+        <h2 className="text-2xl font-bold">Edição e Publicação de Cronogramas</h2>
         
         <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
           <DialogTrigger asChild>
@@ -256,16 +405,16 @@ const CronogramasAdmin = () => {
                 <div className="space-y-2">
                   <label htmlFor="cliente" className="text-sm font-medium">Cliente*</label>
                   <Select 
-                    value={novoCronograma.cliente} 
-                    onValueChange={(value) => setNovoCronograma({...novoCronograma, cliente: value})}
+                    value={novoCronograma.client_id} 
+                    onValueChange={(value) => setNovoCronograma({...novoCronograma, client_id: value})}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione um cliente" />
                     </SelectTrigger>
                     <SelectContent>
                       {clientes.map(cliente => (
-                        <SelectItem key={cliente.id} value={cliente.nome}>
-                          {cliente.nome}
+                        <SelectItem key={cliente.id} value={cliente.id}>
+                          {cliente.name} {cliente.company && `- ${cliente.company}`}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -276,8 +425,8 @@ const CronogramasAdmin = () => {
                   <label htmlFor="titulo" className="text-sm font-medium">Título do Cronograma*</label>
                   <Input
                     id="titulo"
-                    value={novoCronograma.titulo}
-                    onChange={(e) => setNovoCronograma({...novoCronograma, titulo: e.target.value})}
+                    value={novoCronograma.title}
+                    onChange={(e) => setNovoCronograma({...novoCronograma, title: e.target.value})}
                     placeholder="Ex: Implementação de Sistema"
                   />
                 </div>
@@ -297,8 +446,8 @@ const CronogramasAdmin = () => {
                         <div className="space-y-2">
                           <label className="text-xs font-medium">Descrição*</label>
                           <Input
-                            value={etapa.descricao}
-                            onChange={(e) => atualizarEtapa(index, 'descricao', e.target.value)}
+                            value={etapa.description}
+                            onChange={(e) => atualizarEtapa(index, 'description', e.target.value)}
                             placeholder="Ex: Levantamento de Requisitos"
                           />
                         </div>
@@ -314,9 +463,9 @@ const CronogramasAdmin = () => {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="pendente">Pendente</SelectItem>
-                                <SelectItem value="em-andamento">Em Andamento</SelectItem>
-                                <SelectItem value="concluido">Concluído</SelectItem>
+                                <SelectItem value="pending">Pendente</SelectItem>
+                                <SelectItem value="in_progress">Em Andamento</SelectItem>
+                                <SelectItem value="completed">Concluído</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -338,8 +487,8 @@ const CronogramasAdmin = () => {
                           <label className="text-xs font-medium">Data Início*</label>
                           <Input
                             type="date"
-                            value={etapa.dataInicio}
-                            onChange={(e) => atualizarEtapa(index, 'dataInicio', e.target.value)}
+                            value={etapa.start_date}
+                            onChange={(e) => atualizarEtapa(index, 'start_date', e.target.value)}
                           />
                         </div>
                         
@@ -347,8 +496,8 @@ const CronogramasAdmin = () => {
                           <label className="text-xs font-medium">Data Fim*</label>
                           <Input
                             type="date"
-                            value={etapa.dataFim}
-                            onChange={(e) => atualizarEtapa(index, 'dataFim', e.target.value)}
+                            value={etapa.end_date}
+                            onChange={(e) => atualizarEtapa(index, 'end_date', e.target.value)}
                           />
                         </div>
                       </div>
@@ -391,8 +540,8 @@ const CronogramasAdmin = () => {
             <SelectContent>
               <SelectItem value="">Todos os clientes</SelectItem>
               {clientes.map(cliente => (
-                <SelectItem key={cliente.id} value={cliente.nome}>
-                  {cliente.nome}
+                <SelectItem key={cliente.id} value={cliente.id}>
+                  {cliente.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -414,18 +563,19 @@ const CronogramasAdmin = () => {
             <Card key={cronograma.id} className="overflow-hidden">
               <div className="bg-gray-50 p-4 flex justify-between items-center border-b">
                 <div>
-                  <h3 className="text-lg font-medium">{cronograma.titulo}</h3>
+                  <h3 className="text-lg font-medium">{cronograma.title}</h3>
                   <p className="text-sm text-gray-500">
-                    Cliente: {cronograma.cliente} | Atualizado em: {cronograma.ultimaAtualizacao}
+                    Cliente: {cronograma.client_profiles?.name || 'N/A'} | 
+                    Atualizado em: {new Date(cronograma.updated_at).toLocaleDateString('pt-BR')}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button 
-                    variant={cronograma.publicado ? "outline" : "default"}
+                    variant={cronograma.published ? "outline" : "default"}
                     size="sm"
-                    onClick={() => alterarStatusPublicacao(cronograma.id, !cronograma.publicado)}
+                    onClick={() => alterarStatusPublicacao(cronograma.id, !cronograma.published)}
                   >
-                    {cronograma.publicado ? 'Despublicar' : 'Publicar'}
+                    {cronograma.published ? 'Despublicar' : 'Publicar'}
                   </Button>
                   <Button 
                     variant="ghost" 
@@ -445,32 +595,32 @@ const CronogramasAdmin = () => {
               </div>
               <CardContent className="p-4">
                 <ul className="space-y-3">
-                  {cronograma.etapas.map((etapa) => (
-                    <li key={etapa.id} className="flex items-start gap-3 p-2 hover:bg-gray-50 rounded-md">
-                      <div className="mt-1">
-                        {etapa.status === 'concluido' && <CheckCircle className="h-5 w-5 text-green-500" />}
-                        {etapa.status === 'em-andamento' && <Clock className="h-5 w-5 text-amber-500" />}
-                        {etapa.status === 'pendente' && <AlertCircle className="h-5 w-5 text-gray-400" />}
+                  {cronograma.schedule_phases?.map((etapa) => (
+                    <li key={etapa.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <div className="flex items-center gap-3">
+                        {etapa.status === 'completed' && <CheckCircle className="h-4 w-4 text-green-500" />}
+                        {etapa.status === 'in_progress' && <Clock className="h-4 w-4 text-blue-500" />}
+                        {etapa.status === 'pending' && <AlertCircle className="h-4 w-4 text-gray-500" />}
+                        <span className="text-sm">{etapa.description}</span>
                       </div>
-                      <div className="flex-1">
-                        <p className="font-medium">{etapa.descricao}</p>
-                        <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
-                          <span>{etapa.dataInicio} - {etapa.dataFim}</span>
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500">
+                          {new Date(etapa.start_date).toLocaleDateString('pt-BR')} - {new Date(etapa.end_date).toLocaleDateString('pt-BR')}
+                        </span>
+                        <Select
+                          value={etapa.status}
+                          onValueChange={(value) => alterarStatusEtapa(cronograma.id, etapa.id, value)}
+                        >
+                          <SelectTrigger className="w-24 h-6 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pendente</SelectItem>
+                            <SelectItem value="in_progress">Em Andamento</SelectItem>
+                            <SelectItem value="completed">Concluído</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
-                      <Select
-                        value={etapa.status}
-                        onValueChange={(value) => alterarStatusEtapa(cronograma.id, etapa.id, value)}
-                      >
-                        <SelectTrigger className="w-[140px] h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pendente">Pendente</SelectItem>
-                          <SelectItem value="em-andamento">Em Andamento</SelectItem>
-                          <SelectItem value="concluido">Concluído</SelectItem>
-                        </SelectContent>
-                      </Select>
                     </li>
                   ))}
                 </ul>
@@ -478,13 +628,15 @@ const CronogramasAdmin = () => {
             </Card>
           ))
         ) : (
-          <div className="col-span-full flex flex-col items-center justify-center py-12 text-gray-500">
-            <Calendar className="h-12 w-12 mb-4 text-gray-400" />
-            <h3 className="text-lg font-medium">Nenhum cronograma encontrado</h3>
-            <p className="text-sm mt-2">
-              Crie um novo cronograma ou altere seus filtros de busca.
-            </p>
-          </div>
+          <Card className="col-span-full">
+            <CardContent className="flex flex-col items-center justify-center py-16">
+              <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">Nenhum cronograma encontrado</h3>
+              <p className="text-muted-foreground text-center">
+                Comece criando seu primeiro cronograma clicando no botão "Novo Cronograma"
+              </p>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>

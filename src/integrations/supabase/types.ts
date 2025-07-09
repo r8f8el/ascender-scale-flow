@@ -41,6 +41,36 @@ export type Database = {
         }
         Relationships: []
       }
+      automatic_messages: {
+        Row: {
+          body: string
+          created_at: string
+          enabled: boolean
+          id: string
+          subject: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          subject: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          subject?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       client_profiles: {
         Row: {
           company: string | null
@@ -211,6 +241,41 @@ export type Database = {
         }
         Relationships: []
       }
+      project_schedules: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          id: string
+          published: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          published?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          published?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_schedules_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           budget: number | null
@@ -307,6 +372,50 @@ export type Database = {
         }
         Relationships: []
       }
+      schedule_phases: {
+        Row: {
+          created_at: string
+          description: string
+          end_date: string
+          id: string
+          phase_order: number
+          schedule_id: string
+          start_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          end_date: string
+          id?: string
+          phase_order?: number
+          schedule_id: string
+          start_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          end_date?: string
+          id?: string
+          phase_order?: number
+          schedule_id?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_phases_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "project_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schedules: {
         Row: {
           client_name: string
@@ -349,6 +458,39 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      system_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: string | null
+          id: string
+          ip_address: string
+          level: string
+          type: string
+          user_name: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          ip_address: string
+          level?: string
+          type: string
+          user_name: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          ip_address?: string
+          level?: string
+          type?: string
+          user_name?: string
         }
         Relationships: []
       }
@@ -694,6 +836,17 @@ export type Database = {
       is_super_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      log_system_action: {
+        Args: {
+          p_user_name: string
+          p_type: string
+          p_ip_address: string
+          p_action: string
+          p_details?: string
+          p_level?: string
+        }
+        Returns: string
       }
     }
     Enums: {

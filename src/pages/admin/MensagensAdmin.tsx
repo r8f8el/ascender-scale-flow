@@ -1,5 +1,5 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,49 +14,54 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 
-// Dados de exemplo para as mensagens automáticas
-const mensagensIniciais = [
-  {
-    id: '1',
-    tipo: 'solicitacao',
-    assunto: 'Confirmação de Solicitação',
-    corpo: 'Prezado(a) [CLIENTE],\n\nRecebemos sua solicitação sobre "[ASSUNTO]" e ela está sendo analisada pela nossa equipe.\n\nVocê será notificado assim que tivermos uma resposta.\n\nAtenciosamente,\nEquipe Ascalate',
-    habilitado: true
-  },
-  {
-    id: '2',
-    tipo: 'documento',
-    assunto: 'Novo Documento Disponível',
-    corpo: 'Prezado(a) [CLIENTE],\n\nUm novo documento "[DOCUMENTO]" foi adicionado ao seu portal de cliente.\n\nAcesse a área de documentos para visualizá-lo.\n\nAtenciosamente,\nEquipe Ascalate',
-    habilitado: true
-  },
-  {
-    id: '3',
-    tipo: 'reuniao',
-    assunto: 'Lembrete de Reunião',
-    corpo: 'Prezado(a) [CLIENTE],\n\nEste é um lembrete sobre nossa reunião marcada para [DATA] às [HORA].\n\nAssunto: [ASSUNTO]\n\nAguardamos sua presença.\n\nAtenciosamente,\nEquipe Ascalate',
-    habilitado: false
-  },
-  {
-    id: '4',
-    tipo: 'entrega',
-    assunto: 'Lembrete de Entrega',
-    corpo: 'Prezado(a) [CLIENTE],\n\nEste é um lembrete sobre a entrega do documento "[DOCUMENTO]" programada para [DATA].\n\nPor favor, confirme o recebimento assim que disponível.\n\nAtenciosamente,\nEquipe Ascalate',
-    habilitado: true
-  },
-];
+interface MensagemAutomatica {
+  id: string;
+  type: string;
+  subject: string;
+  body: string;
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
 const MensagensAdmin = () => {
-  const [mensagens, setMensagens] = useState(mensagensIniciais);
+  const { toast } = useToast();
+  const [mensagens, setMensagens] = useState<MensagemAutomatica[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [mensagemEmEdicao, setMensagemEmEdicao] = useState<string | null>(null);
   const [formValues, setFormValues] = useState({
-    tipo: '',
-    assunto: '',
-    corpo: '',
-    habilitado: true
+    type: '',
+    subject: '',
+    body: '',
+    enabled: true
   });
+
+  useEffect(() => {
+    loadMensagens();
+  }, []);
+
+  const loadMensagens = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('automatic_messages')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setMensagens(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar mensagens:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar mensagens automáticas.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormValues({
@@ -65,105 +70,183 @@ const MensagensAdmin = () => {
     });
   };
 
-  const iniciarEdicao = (mensagem: any) => {
+  const iniciarEdicao = (mensagem: MensagemAutomatica) => {
     setMensagemEmEdicao(mensagem.id);
     setFormValues({
-      tipo: mensagem.tipo,
-      assunto: mensagem.assunto,
-      corpo: mensagem.corpo,
-      habilitado: mensagem.habilitado
+      type: mensagem.type,
+      subject: mensagem.subject,
+      body: mensagem.body,
+      enabled: mensagem.enabled
     });
   };
 
   const cancelarEdicao = () => {
     setMensagemEmEdicao(null);
     setFormValues({
-      tipo: '',
-      assunto: '',
-      corpo: '',
-      habilitado: true
+      type: '',
+      subject: '',
+      body: '',
+      enabled: true
     });
   };
 
-  const salvarEdicao = (id: string) => {
-    if (!formValues.assunto || !formValues.corpo) {
-      toast.error('Por favor, preencha todos os campos obrigatórios');
+  const salvarEdicao = async (id: string) => {
+    if (!formValues.subject || !formValues.body) {
+      toast({
+        title: "Erro",
+        description: "Por favor, preencha todos os campos obrigatórios",
+        variant: "destructive"
+      });
       return;
     }
     
-    const mensagensAtualizadas = mensagens.map(msg => 
-      msg.id === id 
-        ? {...msg, ...formValues} 
-        : msg
-    );
-    setMensagens(mensagensAtualizadas);
-    setMensagemEmEdicao(null);
-    toast.success('Mensagem atualizada com sucesso');
+    try {
+      const { error } = await supabase
+        .from('automatic_messages')
+        .update({
+          subject: formValues.subject,
+          body: formValues.body,
+          enabled: formValues.enabled
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      setMensagemEmEdicao(null);
+      toast({
+        title: "Sucesso",
+        description: "Mensagem atualizada com sucesso!"
+      });
+      
+      loadMensagens();
+    } catch (error: any) {
+      console.error('Erro ao salvar mensagem:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao atualizar mensagem.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const alterarStatus = (id: string, novoStatus: boolean) => {
-    const mensagensAtualizadas = mensagens.map(msg => 
-      msg.id === id 
-        ? {...msg, habilitado: novoStatus} 
-        : msg
-    );
-    setMensagens(mensagensAtualizadas);
-    toast.success(`Mensagem ${novoStatus ? 'ativada' : 'desativada'} com sucesso`);
+  const alterarStatus = async (id: string, novoStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('automatic_messages')
+        .update({ enabled: novoStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Sucesso",
+        description: `Mensagem ${novoStatus ? 'ativada' : 'desativada'} com sucesso!`
+      });
+      
+      loadMensagens();
+    } catch (error: any) {
+      console.error('Erro ao alterar status:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao alterar status da mensagem.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const excluirMensagem = (id: string) => {
+  const excluirMensagem = async (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir esta mensagem automática?')) {
-      const mensagensAtualizadas = mensagens.filter(msg => msg.id !== id);
-      setMensagens(mensagensAtualizadas);
-      
-      if (mensagemEmEdicao === id) {
-        cancelarEdicao();
+      try {
+        const { error } = await supabase
+          .from('automatic_messages')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw error;
+        
+        if (mensagemEmEdicao === id) {
+          cancelarEdicao();
+        }
+        
+        toast({
+          title: "Sucesso",
+          description: "Mensagem excluída com sucesso!"
+        });
+        
+        loadMensagens();
+      } catch (error: any) {
+        console.error('Erro ao excluir mensagem:', error);
+        toast({
+          title: "Erro",
+          description: error.message || "Erro ao excluir mensagem.",
+          variant: "destructive"
+        });
       }
-      
-      toast.success('Mensagem excluída com sucesso');
     }
   };
 
-  const adicionarNovaMensagem = () => {
-    if (!formValues.tipo || !formValues.assunto || !formValues.corpo) {
-      toast.error('Por favor, preencha todos os campos obrigatórios');
+  const adicionarNovaMensagem = async () => {
+    if (!formValues.type || !formValues.subject || !formValues.body) {
+      toast({
+        title: "Erro",
+        description: "Por favor, preencha todos os campos obrigatórios",
+        variant: "destructive"
+      });
       return;
     }
     
-    const novaMensagem = {
-      id: Date.now().toString(),
-      ...formValues
-    };
-    
-    setMensagens([...mensagens, novaMensagem]);
-    cancelarEdicao();
-    toast.success('Nova mensagem automática adicionada com sucesso');
+    try {
+      const { error } = await supabase
+        .from('automatic_messages')
+        .insert([formValues]);
+
+      if (error) throw error;
+      
+      cancelarEdicao();
+      toast({
+        title: "Sucesso",
+        description: "Nova mensagem automática adicionada com sucesso!"
+      });
+      
+      loadMensagens();
+    } catch (error: any) {
+      console.error('Erro ao adicionar mensagem:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao adicionar mensagem.",
+        variant: "destructive"
+      });
+    }
   };
 
   const getIconeParaTipo = (tipo: string) => {
     switch (tipo) {
-      case 'solicitacao': return <Bell className="h-5 w-5 text-blue-500" />;
-      case 'documento': return <Mail className="h-5 w-5 text-green-500" />;
-      case 'reuniao': return <Calendar className="h-5 w-5 text-purple-500" />;
-      case 'entrega': return <AlertTriangle className="h-5 w-5 text-amber-500" />;
+      case 'ticket': return <Bell className="h-5 w-5 text-blue-500" />;
+      case 'document': return <Mail className="h-5 w-5 text-green-500" />;
+      case 'meeting': return <Calendar className="h-5 w-5 text-purple-500" />;
+      case 'delivery': return <AlertTriangle className="h-5 w-5 text-amber-500" />;
       default: return <Mail className="h-5 w-5 text-gray-500" />;
     }
   };
 
   const getNomeTipo = (tipo: string) => {
     switch (tipo) {
-      case 'solicitacao': return 'Confirmação de Solicitação';
-      case 'documento': return 'Novo Documento';
-      case 'reuniao': return 'Lembrete de Reunião';
-      case 'entrega': return 'Lembrete de Entrega';
+      case 'ticket': return 'Confirmação de Chamado';
+      case 'document': return 'Novo Documento';
+      case 'meeting': return 'Lembrete de Reunião';
+      case 'delivery': return 'Lembrete de Entrega';
       default: return 'Outro';
     }
   };
 
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-64">Carregando mensagens...</div>;
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-medium">Mensagens Automáticas</h2>
+        <h2 className="text-2xl font-bold">Mensagens Automáticas</h2>
         
         <Button onClick={() => setMensagemEmEdicao('novo')}>
           Nova Mensagem
@@ -180,39 +263,39 @@ const MensagensAdmin = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="tipo">Tipo de Mensagem*</Label>
+              <Label htmlFor="type">Tipo de Mensagem*</Label>
               <Select 
-                value={formValues.tipo} 
-                onValueChange={(value) => handleInputChange('tipo', value)}
+                value={formValues.type} 
+                onValueChange={(value) => handleInputChange('type', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o tipo de mensagem" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="solicitacao">Confirmação de Solicitação</SelectItem>
-                  <SelectItem value="documento">Novo Documento</SelectItem>
-                  <SelectItem value="reuniao">Lembrete de Reunião</SelectItem>
-                  <SelectItem value="entrega">Lembrete de Entrega</SelectItem>
+                  <SelectItem value="ticket">Confirmação de Chamado</SelectItem>
+                  <SelectItem value="document">Novo Documento</SelectItem>
+                  <SelectItem value="meeting">Lembrete de Reunião</SelectItem>
+                  <SelectItem value="delivery">Lembrete de Entrega</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="assunto">Assunto do E-mail*</Label>
+              <Label htmlFor="subject">Assunto do E-mail*</Label>
               <Input
-                id="assunto"
-                value={formValues.assunto}
-                onChange={(e) => handleInputChange('assunto', e.target.value)}
-                placeholder="Ex: Confirmação de Solicitação"
+                id="subject"
+                value={formValues.subject}
+                onChange={(e) => handleInputChange('subject', e.target.value)}
+                placeholder="Ex: Confirmação de Chamado"
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="corpo">Conteúdo da Mensagem*</Label>
+              <Label htmlFor="body">Conteúdo da Mensagem*</Label>
               <Textarea
-                id="corpo"
-                value={formValues.corpo}
-                onChange={(e) => handleInputChange('corpo', e.target.value)}
+                id="body"
+                value={formValues.body}
+                onChange={(e) => handleInputChange('body', e.target.value)}
                 placeholder="Digite o conteúdo da mensagem..."
                 className="min-h-[150px]"
               />
@@ -223,11 +306,11 @@ const MensagensAdmin = () => {
             
             <div className="flex items-center space-x-2">
               <Switch
-                id="habilitado"
-                checked={formValues.habilitado}
-                onCheckedChange={(checked) => handleInputChange('habilitado', checked)}
+                id="enabled"
+                checked={formValues.enabled}
+                onCheckedChange={(checked) => handleInputChange('enabled', checked)}
               />
-              <Label htmlFor="habilitado">Habilitar envio automático por e-mail</Label>
+              <Label htmlFor="enabled">Habilitar envio automático por e-mail</Label>
             </div>
           </CardContent>
           <CardFooter className="flex justify-end gap-2">
@@ -248,21 +331,21 @@ const MensagensAdmin = () => {
             <CardHeader className="bg-gray-50 p-4 pb-2">
               <div className="flex justify-between items-start">
                 <div className="flex items-start gap-3">
-                  {getIconeParaTipo(mensagem.tipo)}
+                  {getIconeParaTipo(mensagem.type)}
                   <div>
-                    <CardTitle>{mensagem.assunto}</CardTitle>
-                    <CardDescription>{getNomeTipo(mensagem.tipo)}</CardDescription>
+                    <CardTitle>{mensagem.subject}</CardTitle>
+                    <CardDescription>{getNomeTipo(mensagem.type)}</CardDescription>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-2">
                     <Switch
                       id={`status-${mensagem.id}`}
-                      checked={mensagem.habilitado}
+                      checked={mensagem.enabled}
                       onCheckedChange={(checked) => alterarStatus(mensagem.id, checked)}
                     />
                     <Label htmlFor={`status-${mensagem.id}`} className="text-xs">
-                      {mensagem.habilitado ? 'Ativo' : 'Inativo'}
+                      {mensagem.enabled ? 'Ativo' : 'Inativo'}
                     </Label>
                   </div>
                   <Button 
@@ -286,20 +369,20 @@ const MensagensAdmin = () => {
             {mensagemEmEdicao === mensagem.id ? (
               <CardContent className="p-4 space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor={`assunto-${mensagem.id}`}>Assunto do E-mail*</Label>
+                  <Label htmlFor={`subject-${mensagem.id}`}>Assunto do E-mail*</Label>
                   <Input
-                    id={`assunto-${mensagem.id}`}
-                    value={formValues.assunto}
-                    onChange={(e) => handleInputChange('assunto', e.target.value)}
+                    id={`subject-${mensagem.id}`}
+                    value={formValues.subject}
+                    onChange={(e) => handleInputChange('subject', e.target.value)}
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor={`corpo-${mensagem.id}`}>Conteúdo da Mensagem*</Label>
+                  <Label htmlFor={`body-${mensagem.id}`}>Conteúdo da Mensagem*</Label>
                   <Textarea
-                    id={`corpo-${mensagem.id}`}
-                    value={formValues.corpo}
-                    onChange={(e) => handleInputChange('corpo', e.target.value)}
+                    id={`body-${mensagem.id}`}
+                    value={formValues.body}
+                    onChange={(e) => handleInputChange('body', e.target.value)}
                     className="min-h-[150px]"
                   />
                   <p className="text-xs text-gray-500">
@@ -321,7 +404,7 @@ const MensagensAdmin = () => {
               <CardContent className="p-4">
                 <div className="bg-gray-50 p-3 rounded-md">
                   <pre className="text-sm whitespace-pre-wrap font-sans">
-                    {mensagem.corpo}
+                    {mensagem.body}
                   </pre>
                 </div>
               </CardContent>
@@ -329,6 +412,18 @@ const MensagensAdmin = () => {
           </Card>
         ))}
       </div>
+
+      {mensagens.length === 0 && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <Mail className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">Nenhuma mensagem encontrada</h3>
+            <p className="text-muted-foreground text-center">
+              Comece criando sua primeira mensagem automática clicando no botão "Nova Mensagem"
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

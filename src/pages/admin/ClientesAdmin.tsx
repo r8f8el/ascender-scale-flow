@@ -1,5 +1,5 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Table,
   TableBody,
@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, Edit, Trash, Shield, Key } from 'lucide-react';
+import { Search, Plus, Edit, Trash, Key } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import {
   Dialog,
@@ -22,110 +22,198 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 
-// Dados de exemplo para clientes
-const clientesIniciais = [
-  { id: '1', nome: 'Portobello', cnpj: '05.454.666/0001-09', email: 'contato@portobello.com.br', status: 'ativo' },
-  { id: '2', nome: 'J.Assy', cnpj: '09.123.456/0001-21', email: 'financeiro@jassy.com.br', status: 'ativo' },
-  { id: '3', nome: 'Ermenegildo Zegna', cnpj: '12.987.654/0001-87', email: 'contato@zegna.com.br', status: 'inativo' },
-];
+interface Cliente {
+  id: string;
+  name: string;
+  email: string;
+  company: string | null;
+  created_at: string;
+}
 
 const ClientesAdmin = () => {
-  const [clientes, setClientes] = useState(clientesIniciais);
+  const { toast } = useToast();
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [termoBusca, setTermoBusca] = useState('');
   const [novoCliente, setNovoCliente] = useState({
-    nome: '',
-    cnpj: '',
+    name: '',
+    company: '',
     email: '',
-    senha: ''
+    password: ''
   });
-  const [clienteParaEditar, setClienteParaEditar] = useState<null | any>(null);
+  const [clienteParaEditar, setClienteParaEditar] = useState<Cliente | null>(null);
   const [dialogAberto, setDialogAberto] = useState(false);
   const [modoEdicao, setModoEdicao] = useState(false);
 
+  useEffect(() => {
+    loadClientes();
+  }, []);
+
+  const loadClientes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('client_profiles')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+      setClientes(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar clientes:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar clientes.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Filtra clientes baseado no termo de busca
   const clientesFiltrados = clientes.filter(cliente => 
-    cliente.nome.toLowerCase().includes(termoBusca.toLowerCase()) ||
-    cliente.cnpj.includes(termoBusca) ||
-    cliente.email.toLowerCase().includes(termoBusca.toLowerCase())
+    cliente.name.toLowerCase().includes(termoBusca.toLowerCase()) ||
+    cliente.email.toLowerCase().includes(termoBusca.toLowerCase()) ||
+    (cliente.company && cliente.company.toLowerCase().includes(termoBusca.toLowerCase()))
   );
 
   const resetarFormulario = () => {
-    setNovoCliente({ nome: '', cnpj: '', email: '', senha: '' });
+    setNovoCliente({ name: '', company: '', email: '', password: '' });
     setClienteParaEditar(null);
     setModoEdicao(false);
   };
 
-  const handleAdicionarCliente = () => {
-    if (!novoCliente.nome || !novoCliente.cnpj || !novoCliente.email || (!modoEdicao && !novoCliente.senha)) {
-      toast.error('Por favor, preencha todos os campos obrigatórios');
+  const handleAdicionarCliente = async () => {
+    if (!novoCliente.name || !novoCliente.email || (!modoEdicao && !novoCliente.password)) {
+      toast({
+        title: "Erro",
+        description: "Por favor, preencha todos os campos obrigatórios",
+        variant: "destructive"
+      });
       return;
     }
     
-    if (modoEdicao && clienteParaEditar) {
-      // Atualizar cliente existente
-      const clientesAtualizados = clientes.map(cliente => 
-        cliente.id === clienteParaEditar.id 
-          ? { ...cliente, nome: novoCliente.nome, cnpj: novoCliente.cnpj, email: novoCliente.email } 
-          : cliente
-      );
-      setClientes(clientesAtualizados);
-      toast.success(`Cliente ${novoCliente.nome} atualizado com sucesso`);
-    } else {
-      // Adicionar novo cliente
-      const novoClienteCompleto = {
-        id: Date.now().toString(),
-        nome: novoCliente.nome,
-        cnpj: novoCliente.cnpj,
-        email: novoCliente.email,
-        status: 'ativo'
-      };
-      setClientes([...clientes, novoClienteCompleto]);
-      toast.success(`Cliente ${novoCliente.nome} adicionado com sucesso`);
+    try {
+      if (modoEdicao && clienteParaEditar) {
+        // Atualizar cliente existente
+        const { error } = await supabase
+          .from('client_profiles')
+          .update({
+            name: novoCliente.name,
+            company: novoCliente.company || null,
+            email: novoCliente.email
+          })
+          .eq('id', clienteParaEditar.id);
+
+        if (error) throw error;
+        
+        toast({
+          title: "Sucesso",
+          description: `Cliente ${novoCliente.name} atualizado com sucesso!`
+        });
+      } else {
+        // Criar novo usuário no Auth
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: novoCliente.email,
+          password: novoCliente.password,
+          options: {
+            data: {
+              name: novoCliente.name,
+              company: novoCliente.company
+            }
+          }
+        });
+
+        if (authError) throw authError;
+        
+        toast({
+          title: "Sucesso",
+          description: `Cliente ${novoCliente.name} adicionado com sucesso!`
+        });
+      }
+      
+      setDialogAberto(false);
+      resetarFormulario();
+      loadClientes();
+    } catch (error: any) {
+      console.error('Erro ao salvar cliente:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao salvar cliente.",
+        variant: "destructive"
+      });
     }
-    
-    setDialogAberto(false);
-    resetarFormulario();
   };
 
-  const handleEditarCliente = (cliente: any) => {
+  const handleEditarCliente = (cliente: Cliente) => {
     setNovoCliente({
-      nome: cliente.nome,
-      cnpj: cliente.cnpj,
+      name: cliente.name,
+      company: cliente.company || '',
       email: cliente.email,
-      senha: ''
+      password: ''
     });
     setClienteParaEditar(cliente);
     setModoEdicao(true);
     setDialogAberto(true);
   };
 
-  const handleAlterarStatus = (id: string, novoStatus: string) => {
-    const clientesAtualizados = clientes.map(cliente => 
-      cliente.id === id ? { ...cliente, status: novoStatus } : cliente
-    );
-    setClientes(clientesAtualizados);
-    toast.success(`Status do cliente atualizado para ${novoStatus}`);
-  };
-
-  const handleResetarSenha = (cliente: any) => {
-    // Simulando reset de senha
-    toast.success(`E-mail de redefinição de senha enviado para ${cliente.email}`);
-  };
-
-  const handleExcluirCliente = (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este cliente?')) {
-      const clientesAtualizados = clientes.filter(cliente => cliente.id !== id);
-      setClientes(clientesAtualizados);
-      toast.success('Cliente excluído com sucesso');
+  const handleResetarSenha = async (cliente: Cliente) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(cliente.email);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Sucesso",
+        description: `E-mail de redefinição de senha enviado para ${cliente.email}`
+      });
+    } catch (error: any) {
+      console.error('Erro ao resetar senha:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao enviar e-mail de redefinição.",
+        variant: "destructive"
+      });
     }
   };
+
+  const handleExcluirCliente = async (id: string) => {
+    if (window.confirm('Tem certeza que deseja excluir este cliente?')) {
+      try {
+        const { error } = await supabase
+          .from('client_profiles')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw error;
+        
+        toast({
+          title: "Sucesso",
+          description: "Cliente excluído com sucesso"
+        });
+        
+        loadClientes();
+      } catch (error: any) {
+        console.error('Erro ao excluir cliente:', error);
+        toast({
+          title: "Erro",
+          description: error.message || "Erro ao excluir cliente.",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-64">Carregando clientes...</div>;
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-medium">Gestão de Clientes</h2>
+        <h2 className="text-2xl font-bold">Gestão de Clientes</h2>
         
         <div className="flex items-center gap-4">
           <div className="relative">
@@ -164,22 +252,22 @@ const ClientesAdmin = () => {
               <div className="space-y-4 py-4">
                 <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-2">
-                    <label htmlFor="nome" className="text-sm font-medium">Nome da Empresa*</label>
+                    <label htmlFor="name" className="text-sm font-medium">Nome*</label>
                     <Input
-                      id="nome"
-                      value={novoCliente.nome}
-                      onChange={(e) => setNovoCliente({...novoCliente, nome: e.target.value})}
-                      placeholder="Nome da empresa"
+                      id="name"
+                      value={novoCliente.name}
+                      onChange={(e) => setNovoCliente({...novoCliente, name: e.target.value})}
+                      placeholder="Nome do cliente"
                     />
                   </div>
                   
                   <div className="space-y-2">
-                    <label htmlFor="cnpj" className="text-sm font-medium">CNPJ*</label>
+                    <label htmlFor="company" className="text-sm font-medium">Empresa</label>
                     <Input
-                      id="cnpj"
-                      value={novoCliente.cnpj}
-                      onChange={(e) => setNovoCliente({...novoCliente, cnpj: e.target.value})}
-                      placeholder="00.000.000/0000-00"
+                      id="company"
+                      value={novoCliente.company}
+                      onChange={(e) => setNovoCliente({...novoCliente, company: e.target.value})}
+                      placeholder="Nome da empresa"
                     />
                   </div>
                   
@@ -196,12 +284,12 @@ const ClientesAdmin = () => {
                   
                   {!modoEdicao && (
                     <div className="space-y-2">
-                      <label htmlFor="senha" className="text-sm font-medium">Senha Inicial*</label>
+                      <label htmlFor="password" className="text-sm font-medium">Senha Inicial*</label>
                       <Input
-                        id="senha"
+                        id="password"
                         type="password"
-                        value={novoCliente.senha}
-                        onChange={(e) => setNovoCliente({...novoCliente, senha: e.target.value})}
+                        value={novoCliente.password}
+                        onChange={(e) => setNovoCliente({...novoCliente, password: e.target.value})}
                         placeholder="********"
                       />
                     </div>
@@ -224,13 +312,13 @@ const ClientesAdmin = () => {
       
       <Card>
         <Table>
-          <TableCaption>Lista de clientes cadastrados</TableCaption>
+          <TableCaption>Lista de {clientes.length} clientes cadastrados</TableCaption>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[250px]">Nome</TableHead>
-              <TableHead>CNPJ</TableHead>
+              <TableHead>Empresa</TableHead>
               <TableHead>E-mail</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>Data de Cadastro</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -238,20 +326,10 @@ const ClientesAdmin = () => {
             {clientesFiltrados.length > 0 ? (
               clientesFiltrados.map((cliente) => (
                 <TableRow key={cliente.id}>
-                  <TableCell className="font-medium">{cliente.nome}</TableCell>
-                  <TableCell>{cliente.cnpj}</TableCell>
+                  <TableCell className="font-medium">{cliente.name}</TableCell>
+                  <TableCell>{cliente.company || '-'}</TableCell>
                   <TableCell>{cliente.email}</TableCell>
-                  <TableCell>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs ${
-                        cliente.status === 'ativo'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {cliente.status === 'ativo' ? 'Ativo' : 'Inativo'}
-                    </span>
-                  </TableCell>
+                  <TableCell>{new Date(cliente.created_at).toLocaleDateString('pt-BR')}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
                       <Button 
@@ -261,18 +339,6 @@ const ClientesAdmin = () => {
                         title="Editar"
                       >
                         <Edit className="h-4 w-4" />
-                      </Button>
-                      
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => handleAlterarStatus(
-                          cliente.id, 
-                          cliente.status === 'ativo' ? 'inativo' : 'ativo'
-                        )}
-                        title={cliente.status === 'ativo' ? 'Desativar' : 'Ativar'}
-                      >
-                        <Shield className="h-4 w-4" />
                       </Button>
                       
                       <Button 
