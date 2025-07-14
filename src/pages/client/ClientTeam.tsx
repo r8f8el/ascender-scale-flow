@@ -65,26 +65,59 @@ const ClientTeam = () => {
     try {
       setIsLoading(true);
       
-      // For now, show only the primary contact (current user) since team invitations 
-      // need proper email integration
-      const currentUserTeam = [{
-        id: '1',
+      // Fetch team members from company_teams table
+      const { data: teamData, error } = await supabase
+        .from('company_teams')
+        .select(`
+          id,
+          member_id,
+          role,
+          status,
+          invited_at,
+          client_profiles!inner(
+            name,
+            email
+          )
+        `)
+        .eq('company_id', client?.id);
+
+      if (error) throw error;
+
+      // Add primary contact (current user) to the list
+      const teamWithPrimary = [
+        {
+          id: 'primary',
+          member_id: user?.id || '',
+          role: 'admin',
+          status: 'active',
+          invited_at: new Date().toISOString(),
+          user_email: client?.email || '',
+          user_name: client?.name || ''
+        },
+        ...(teamData || []).map((member: any) => ({
+          id: member.id,
+          member_id: member.member_id,
+          role: member.role,
+          status: member.status,
+          invited_at: member.invited_at,
+          user_email: member.client_profiles?.email || '',
+          user_name: member.client_profiles?.name || ''
+        }))
+      ];
+
+      setTeamMembers(teamWithPrimary);
+    } catch (error) {
+      console.error('Error fetching team members:', error);
+      // Show primary contact only if there's an error
+      setTeamMembers([{
+        id: 'primary',
         member_id: user?.id || '',
         role: 'admin',
         status: 'active',
         invited_at: new Date().toISOString(),
         user_email: client?.email || '',
         user_name: client?.name || ''
-      }];
-
-      setTeamMembers(currentUserTeam);
-    } catch (error) {
-      console.error('Error fetching team members:', error);
-      toast({
-        title: "Erro",
-        description: "Erro inesperado ao carregar a equipe.",
-        variant: "destructive"
-      });
+      }]);
     } finally {
       setIsLoading(false);
     }
@@ -93,10 +126,10 @@ const ClientTeam = () => {
   const handleInviteMember = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!inviteEmail) {
+    if (!inviteEmail || !inviteEmail.includes('@')) {
       toast({
-        title: "Email obrigatório",
-        description: "Por favor, insira o email do membro a ser convidado.",
+        title: "Email inválido",
+        description: "Por favor, insira um email válido.",
         variant: "destructive"
       });
       return;
@@ -114,23 +147,28 @@ const ClientTeam = () => {
     setIsInviting(true);
 
     try {
-      // For MVP, we'll create a simple invitation record and show success message
-      // Full email integration would require additional setup
-      
+      // Call the Supabase invite function
+      const { data, error } = await supabase.rpc('invite_team_member', {
+        p_email: inviteEmail,
+        p_company_id: client.id
+      });
+
+      if (error) throw error;
+
       toast({
-        title: "Funcionalidade em desenvolvimento",
-        description: `O convite para ${inviteEmail} será implementado na próxima versão. Por enquanto, você pode compartilhar o link de cadastro diretamente.`,
-        variant: "default"
+        title: "Convite enviado!",
+        description: `Convite enviado para ${inviteEmail}. O membro receberá instruções para acessar a plataforma.`
       });
 
       setInviteEmail('');
       setIsDialogOpen(false);
+      fetchTeamMembers();
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error inviting member:', error);
       toast({
-        title: "Erro",
-        description: "Erro inesperado ao enviar convite.",
+        title: "Erro ao enviar convite",
+        description: error.message || "Verifique se você é o contato principal da empresa e tente novamente.",
         variant: "destructive"
       });
     } finally {

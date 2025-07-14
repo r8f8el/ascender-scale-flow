@@ -5,7 +5,7 @@ import { Logo } from '../components/Logo';
 import { useAuth } from '../contexts/AuthContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Menu, File, MessageSquare, Calendar, Mail, LogOut, User } from 'lucide-react';
+import { Menu, File, MessageSquare, Calendar, Mail, LogOut, User, Users } from 'lucide-react';
 
 const ClientArea = () => {
   const { client, logout } = useAuth();
@@ -60,7 +60,10 @@ const ClientArea = () => {
                     
                     <nav className="flex flex-col gap-4">
                       <MobileNavLink to="/cliente" icon={<File size={20} />}>
-                        Área do Cliente
+                        Dashboard
+                      </MobileNavLink>
+                      <MobileNavLink to="/cliente/equipe" icon={<Users size={20} />}>
+                        Equipe
                       </MobileNavLink>
                       <MobileNavLink to="/cliente/chamados" icon={<MessageSquare size={20} />}>
                         Chamados
@@ -96,7 +99,10 @@ const ClientArea = () => {
               Menu
             </h3>
             <NavLink to="/cliente" icon={<File size={20} />}>
-              Área do Cliente
+              Dashboard
+            </NavLink>
+            <NavLink to="/cliente/equipe" icon={<Users size={20} />}>
+              Equipe
             </NavLink>
             <NavLink to="/cliente/chamados" icon={<MessageSquare size={20} />}>
               Chamados

@@ -29,6 +29,7 @@ interface Cliente {
   name: string;
   email: string;
   company: string | null;
+  cnpj: string | null;
   created_at: string;
 }
 
@@ -55,7 +56,7 @@ const ClientesAdmin = () => {
     try {
       const { data, error } = await supabase
         .from('client_profiles')
-        .select('*')
+        .select('id, name, email, company, cnpj, created_at')
         .order('name');
 
       if (error) throw error;
@@ -315,8 +316,9 @@ const ClientesAdmin = () => {
           <TableCaption>Lista de {clientes.length} clientes cadastrados</TableCaption>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[250px]">Nome</TableHead>
+              <TableHead className="w-[200px]">Nome</TableHead>
               <TableHead>Empresa</TableHead>
+              <TableHead>CNPJ</TableHead>
               <TableHead>E-mail</TableHead>
               <TableHead>Data de Cadastro</TableHead>
               <TableHead className="text-right">Ações</TableHead>
@@ -328,6 +330,7 @@ const ClientesAdmin = () => {
                 <TableRow key={cliente.id}>
                   <TableCell className="font-medium">{cliente.name}</TableCell>
                   <TableCell>{cliente.company || '-'}</TableCell>
+                  <TableCell>{cliente.cnpj || '-'}</TableCell>
                   <TableCell>{cliente.email}</TableCell>
                   <TableCell>{new Date(cliente.created_at).toLocaleDateString('pt-BR')}</TableCell>
                   <TableCell className="text-right">
@@ -364,7 +367,7 @@ const ClientesAdmin = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                   Nenhum cliente encontrado
                 </TableCell>
               </TableRow>
