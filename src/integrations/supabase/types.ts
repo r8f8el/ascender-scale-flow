@@ -147,6 +147,7 @@ export type Database = {
           id: string
           invited_at: string | null
           invited_by: string | null
+          invited_email: string | null
           member_id: string
           role: string
           status: string
@@ -158,6 +159,7 @@ export type Database = {
           id?: string
           invited_at?: string | null
           invited_by?: string | null
+          invited_email?: string | null
           member_id: string
           role?: string
           status?: string
@@ -169,6 +171,7 @@ export type Database = {
           id?: string
           invited_at?: string | null
           invited_by?: string | null
+          invited_email?: string | null
           member_id?: string
           role?: string
           status?: string
