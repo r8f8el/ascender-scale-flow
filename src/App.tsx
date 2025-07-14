@@ -18,6 +18,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AbrirChamado from './pages/AbrirChamado';
 import ClientTickets from './pages/client/ClientTickets';
 import ClientTicketDetail from './pages/client/ClientTicketDetail';
+import ClientTeam from './pages/client/ClientTeam';
 
 // Admin imports
 import AdminAuthProvider from "./contexts/AdminAuthContext";
@@ -59,6 +60,7 @@ function App() {
                   <Route path="/cliente/login" element={<ClientLogin />} />
                   <Route path="/cliente" element={<ProtectedRoute><ClientArea /></ProtectedRoute>}>
                     <Route index element={<ProtectedRoute><ClientDocuments /></ProtectedRoute>} />
+                    <Route path="equipe" element={<ProtectedRoute><ClientTeam /></ProtectedRoute>} />
                     <Route path="solicitacoes" element={<ProtectedRoute><ClientRequests /></ProtectedRoute>} />
                     <Route path="cronograma" element={<ProtectedRoute><ClientSchedule /></ProtectedRoute>} />
                     <Route path="contato" element={<ProtectedRoute><ClientContact /></ProtectedRoute>} />

@@ -1,0 +1,400 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { 
+  Users, 
+  UserPlus, 
+  Mail, 
+  Calendar,
+  Shield,
+  Trash2,
+  Send,
+  Clock
+} from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+
+interface TeamMember {
+  id: string;
+  member_id: string;
+  role: string;
+  status: string;
+  invited_at: string;
+  user_email?: string;
+  user_name?: string;
+}
+
+const ClientTeam = () => {
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isInviting, setIsInviting] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { toast } = useToast();
+  const { client, user } = useAuth();
+
+  useEffect(() => {
+    if (client?.id) {
+      fetchTeamMembers();
+    }
+  }, [client?.id]);
+
+  const fetchTeamMembers = async () => {
+    try {
+      setIsLoading(true);
+      
+      // For now, show only the primary contact (current user) since team invitations 
+      // need proper email integration
+      const currentUserTeam = [{
+        id: '1',
+        member_id: user?.id || '',
+        role: 'admin',
+        status: 'active',
+        invited_at: new Date().toISOString(),
+        user_email: client?.email || '',
+        user_name: client?.name || ''
+      }];
+
+      setTeamMembers(currentUserTeam);
+    } catch (error) {
+      console.error('Error fetching team members:', error);
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao carregar a equipe.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleInviteMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!inviteEmail) {
+      toast({
+        title: "Email obrigatório",
+        description: "Por favor, insira o email do membro a ser convidado.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!client?.id) {
+      toast({
+        title: "Erro",
+        description: "Informações da empresa não encontradas.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsInviting(true);
+
+    try {
+      // For MVP, we'll create a simple invitation record and show success message
+      // Full email integration would require additional setup
+      
+      toast({
+        title: "Funcionalidade em desenvolvimento",
+        description: `O convite para ${inviteEmail} será implementado na próxima versão. Por enquanto, você pode compartilhar o link de cadastro diretamente.`,
+        variant: "default"
+      });
+
+      setInviteEmail('');
+      setIsDialogOpen(false);
+
+    } catch (error) {
+      console.error('Error inviting member:', error);
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao enviar convite.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    try {
+      const { error } = await supabase
+        .from('company_teams')
+        .delete()
+        .eq('id', memberId);
+
+      if (error) {
+        console.error('Error removing member:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível remover o membro da equipe.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Membro removido",
+        description: "Membro removido da equipe com sucesso."
+      });
+
+      fetchTeamMembers();
+    } catch (error) {
+      console.error('Error removing member:', error);
+      toast({
+        title: "Erro",
+        description: "Erro inesperado ao remover membro.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'active':
+        return <Badge variant="default" className="bg-green-100 text-green-800">Ativo</Badge>;
+      case 'pending':
+        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Pendente</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const getRoleBadge = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return <Badge variant="destructive">Administrador</Badge>;
+      case 'member':
+        return <Badge variant="outline">Membro</Badge>;
+      default:
+        return <Badge variant="outline">{role}</Badge>;
+    }
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <Users className="h-8 w-8 text-primary" />
+          <div>
+            <h1 className="text-2xl font-bold">Gerenciar Equipe</h1>
+            <p className="text-muted-foreground">
+              Convide e gerencie membros da sua equipe
+            </p>
+          </div>
+        </div>
+
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="flex items-center space-x-2">
+              <UserPlus className="h-4 w-4" />
+              <span>Convidar Membro</span>
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Convidar Novo Membro</DialogTitle>
+              <DialogDescription>
+                Digite o email da pessoa que você deseja convidar para sua equipe.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleInviteMember} className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="invite-email" className="text-sm font-medium">
+                  Email do convidado
+                </label>
+                <Input
+                  id="invite-email"
+                  type="email"
+                  placeholder="funcionario@empresa.com"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="flex justify-end space-x-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={isInviting}>
+                  {isInviting ? (
+                    <>
+                      <Send className="h-4 w-4 mr-2 animate-spin" />
+                      Enviando...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Enviar Convite
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Team Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-3">
+              <Users className="h-8 w-8 text-blue-500" />
+              <div>
+                <p className="text-sm text-muted-foreground">Total de Membros</p>
+                <p className="text-2xl font-bold">
+                  {teamMembers.filter(m => m.status === 'active').length}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-3">
+              <Clock className="h-8 w-8 text-yellow-500" />
+              <div>
+                <p className="text-sm text-muted-foreground">Convites Pendentes</p>
+                <p className="text-2xl font-bold">
+                  {teamMembers.filter(m => m.status === 'pending').length}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-3">
+              <Shield className="h-8 w-8 text-green-500" />
+              <div>
+                <p className="text-sm text-muted-foreground">Administradores</p>
+                <p className="text-2xl font-bold">
+                  {teamMembers.filter(m => m.role === 'admin' && m.status === 'active').length}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Team Members List */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Membros da Equipe</CardTitle>
+          <CardDescription>
+            Lista de todos os membros da sua equipe
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">Carregando membros da equipe...</p>
+            </div>
+          ) : teamMembers.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground mb-4">
+                Nenhum membro na equipe ainda
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Comece convidando o primeiro membro da sua equipe
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {teamMembers.map((member) => (
+                <div
+                  key={member.id}
+                  className="flex items-center justify-between p-4 border rounded-lg"
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center">
+                      <Mail className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <div className="font-medium">
+                        {member.user_name || 'Nome não disponível'}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {member.user_email || 'Email não disponível'}
+                      </div>
+                      <div className="flex items-center space-x-2 mt-1">
+                        {getStatusBadge(member.status)}
+                        {getRoleBadge(member.role)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <div className="text-right text-sm text-muted-foreground">
+                      <p>Convidado em</p>
+                      <p>{new Date(member.invited_at).toLocaleDateString('pt-BR')}</p>
+                    </div>
+                    
+                    {member.status === 'pending' && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Remover Convite</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Tem certeza que deseja remover este convite? O usuário não poderá mais aceitar o convite.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleRemoveMember(member.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Remover
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default ClientTeam;

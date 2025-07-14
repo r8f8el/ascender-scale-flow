@@ -14,7 +14,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   login: (email: string, password: string) => Promise<boolean>;
-  signup: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
+  signup: (email: string, password: string, name: string, companyData?: { company: string; cnpj: string }) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   loading: boolean;
 }
@@ -165,7 +165,7 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
     }
   };
 
-  const signup = async (email: string, password: string, name: string): Promise<{ success: boolean; error?: string }> => {
+  const signup = async (email: string, password: string, name: string, companyData?: { company: string; cnpj: string }): Promise<{ success: boolean; error?: string }> => {
     try {
       setLoading(true);
       
@@ -175,7 +175,9 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
         options: {
           emailRedirectTo: `${window.location.origin}/cliente`,
           data: {
-            name: name
+            name: name,
+            company: companyData?.company,
+            cnpj: companyData?.cnpj
           }
         }
       });

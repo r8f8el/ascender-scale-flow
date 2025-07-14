@@ -73,26 +73,32 @@ export type Database = {
       }
       client_profiles: {
         Row: {
+          cnpj: string | null
           company: string | null
           created_at: string
           email: string
           id: string
+          is_primary_contact: boolean | null
           name: string
           updated_at: string
         }
         Insert: {
+          cnpj?: string | null
           company?: string | null
           created_at?: string
           email: string
           id: string
+          is_primary_contact?: boolean | null
           name: string
           updated_at?: string
         }
         Update: {
+          cnpj?: string | null
           company?: string | null
           created_at?: string
           email?: string
           id?: string
+          is_primary_contact?: boolean | null
           name?: string
           updated_at?: string
         }
@@ -133,6 +139,57 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      company_teams: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          invited_at: string | null
+          invited_by: string | null
+          member_id: string
+          role: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          member_id: string
+          role?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          member_id?: string
+          role?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_teams_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_teams_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       document_categories: {
         Row: {
@@ -819,6 +876,10 @@ export type Database = {
       }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      invite_team_member: {
+        Args: { p_email: string; p_company_id: string }
         Returns: string
       }
       is_admin_user: {

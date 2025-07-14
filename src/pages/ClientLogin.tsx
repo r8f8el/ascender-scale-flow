@@ -6,19 +6,26 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Building2 } from 'lucide-react';
+import { formatCNPJ, validateCNPJ, cleanCNPJ } from '@/lib/cnpj-validator';
 
 const ClientLogin = () => {
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  
+  // Company registration fields
+  const [companyName, setCompanyName] = useState('');
+  const [cnpj, setCnpj] = useState('');
+  const [primaryContactName, setPrimaryContactName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
-  const [signupName, setSignupName] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [cnpjError, setCnpjError] = useState('');
   const { toast } = useToast();
   const navigate = useNavigate();
   const { login, signup, isAuthenticated } = useAuth();
@@ -70,13 +77,30 @@ const ClientLogin = () => {
     }
   };
 
-  const handleSignup = async (e: React.FormEvent) => {
+  const handleCNPJChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCNPJ(e.target.value);
+    setCnpj(formatted);
+    setCnpjError('');
+  };
+
+  const handleCompanySignup = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!signupEmail || !signupPassword || !signupName || !confirmPassword) {
+    if (!companyName || !cnpj || !primaryContactName || !signupEmail || !signupPassword || !confirmPassword) {
       toast({
         title: "Campos vazios",
         description: "Por favor, preencha todos os campos.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate CNPJ
+    if (!validateCNPJ(cnpj)) {
+      setCnpjError('CNPJ inválido');
+      toast({
+        title: "CNPJ inválido",
+        description: "Por favor, verifique o CNPJ informado.",
         variant: "destructive"
       });
       return;
@@ -103,22 +127,27 @@ const ClientLogin = () => {
     setIsLoading(true);
     
     try {
-      const result = await signup(signupEmail, signupPassword, signupName);
+      const result = await signup(signupEmail, signupPassword, primaryContactName, {
+        company: companyName,
+        cnpj: cleanCNPJ(cnpj)
+      });
       
       if (result.success) {
         toast({
           title: "Cadastro realizado com sucesso",
-          description: "Verifique seu email para confirmar a conta."
+          description: "Verifique seu email para confirmar a conta da empresa."
         });
         // Reset form
+        setCompanyName('');
+        setCnpj('');
+        setPrimaryContactName('');
         setSignupEmail('');
         setSignupPassword('');
-        setSignupName('');
         setConfirmPassword('');
       } else {
         toast({
           title: "Falha no cadastro",
-          description: result.error || "Erro ao criar conta.",
+          description: result.error || "Erro ao criar conta da empresa.",
           variant: "destructive"
         });
       }
@@ -218,21 +247,68 @@ const ClientLogin = () => {
           </TabsContent>
           
           <TabsContent value="signup">
-            <form className="mt-8 space-y-6" onSubmit={handleSignup}>
+            <form className="mt-8 space-y-6" onSubmit={handleCompanySignup}>
+              <div className="text-center mb-6">
+                <Building2 className="mx-auto h-8 w-8 text-[#0056b3] mb-2" />
+                <h3 className="text-lg font-semibold text-gray-900">Cadastro de Empresa</h3>
+                <p className="text-sm text-gray-600">Registre sua empresa na plataforma Ascalate</p>
+              </div>
+              
               <div className="space-y-4 rounded-md shadow-sm">
                 <div>
-                  <label htmlFor="signup-name" className="block text-sm font-medium text-gray-700">
-                    Nome completo
+                  <label htmlFor="company-name" className="block text-sm font-medium text-gray-700">
+                    Nome da Empresa *
                   </label>
                   <div className="mt-1">
                     <Input
-                      id="signup-name"
-                      name="name"
+                      id="company-name"
+                      name="companyName"
+                      type="text"
+                      autoComplete="organization"
+                      required
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      placeholder="Nome da sua empresa"
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label htmlFor="cnpj" className="block text-sm font-medium text-gray-700">
+                    CNPJ *
+                  </label>
+                  <div className="mt-1">
+                    <Input
+                      id="cnpj"
+                      name="cnpj"
+                      type="text"
+                      required
+                      value={cnpj}
+                      onChange={handleCNPJChange}
+                      placeholder="XX.XXX.XXX/XXXX-XX"
+                      className={`mt-1 ${cnpjError ? 'border-red-500' : ''}`}
+                      maxLength={18}
+                    />
+                    {cnpjError && (
+                      <p className="text-xs text-red-600 mt-1">{cnpjError}</p>
+                    )}
+                  </div>
+                </div>
+                
+                <div>
+                  <label htmlFor="primary-contact" className="block text-sm font-medium text-gray-700">
+                    Nome do Contato Principal *
+                  </label>
+                  <div className="mt-1">
+                    <Input
+                      id="primary-contact"
+                      name="primaryContact"
                       type="text"
                       autoComplete="name"
                       required
-                      value={signupName}
-                      onChange={(e) => setSignupName(e.target.value)}
+                      value={primaryContactName}
+                      onChange={(e) => setPrimaryContactName(e.target.value)}
                       placeholder="Seu nome completo"
                       className="mt-1"
                     />
@@ -241,7 +317,7 @@ const ClientLogin = () => {
                 
                 <div>
                   <label htmlFor="signup-email" className="block text-sm font-medium text-gray-700">
-                    Email
+                    Email de Login *
                   </label>
                   <div className="mt-1">
                     <Input
@@ -252,15 +328,16 @@ const ClientLogin = () => {
                       required
                       value={signupEmail}
                       onChange={(e) => setSignupEmail(e.target.value)}
-                      placeholder="seu@email.com"
+                      placeholder="email@empresa.com"
                       className="mt-1"
                     />
                   </div>
+                  <p className="text-xs text-gray-500 mt-1">Este será o email principal para acesso à plataforma</p>
                 </div>
                 
                 <div>
                   <label htmlFor="signup-password" className="block text-sm font-medium text-gray-700">
-                    Senha
+                    Senha *
                   </label>
                   <div className="mt-1 relative">
                     <Input
@@ -291,7 +368,7 @@ const ClientLogin = () => {
                 
                 <div>
                   <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700">
-                    Confirmar senha
+                    Confirmar Senha *
                   </label>
                   <div className="mt-1 relative">
                     <Input
@@ -326,8 +403,15 @@ const ClientLogin = () => {
                   className="w-full bg-[#0056b3] hover:bg-[#003d7f]"
                   disabled={isLoading}
                 >
-                  {isLoading ? "Criando conta..." : "Criar conta"}
+                  {isLoading ? "Criando conta da empresa..." : "Criar Conta da Empresa"}
                 </Button>
+              </div>
+              
+              <div className="text-xs text-gray-500 text-center">
+                <p>* Campos obrigatórios</p>
+                <p className="mt-1">
+                  Após o cadastro, você poderá convidar membros da sua equipe para acessar a plataforma.
+                </p>
               </div>
             </form>
           </TabsContent>
