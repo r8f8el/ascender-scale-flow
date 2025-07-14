@@ -19,6 +19,7 @@ import AbrirChamado from './pages/AbrirChamado';
 import ClientTickets from './pages/client/ClientTickets';
 import ClientTicketDetail from './pages/client/ClientTicketDetail';
 import ClientTeam from './pages/client/ClientTeam';
+import AcceptInvitation from './pages/AcceptInvitation';
 
 // Admin imports
 import AdminAuthProvider from "./contexts/AdminAuthContext";
@@ -55,6 +56,7 @@ function App() {
                   {/* Public routes */}
                   <Route path="/" element={<Index />} />
                   <Route path="/participante-dados" element={<ParticipantData />} />
+                  <Route path="/convite/:invitationId" element={<AcceptInvitation />} />
                   
                   {/* Client routes */}
                   <Route path="/cliente/login" element={<ClientLogin />} />

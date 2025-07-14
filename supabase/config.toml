@@ -1,5 +1,5 @@
 
-project_id = "f5582538-1cf2-4ae8-93b5-ae9ad7b4a9bf"
+project_id = "klcfzhpttcsjuynumzgi"
 
 [api]
 enabled = true
@@ -64,4 +64,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.get-tickets]
+verify_jwt = false
+
+[functions.send-invitation-email]
 verify_jwt = false
