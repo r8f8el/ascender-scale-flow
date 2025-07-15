@@ -5,6 +5,8 @@ import { Users, FileUp, Calendar, MessageSquare, CheckCircle, Clock, AlertCircle
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { Link } from 'react-router-dom';
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 interface RecentActivity {
   id: string;
@@ -38,6 +40,11 @@ const AdminDashboard = () => {
   });
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [upcomingTasks, setUpcomingTasks] = useState<UpcomingTask[]>([]);
+  const [chartData, setChartData] = useState({
+    ticketsByStatus: [],
+    projectsByStatus: [],
+    tasksByCollaborator: []
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -49,7 +56,8 @@ const AdminDashboard = () => {
     await Promise.all([
       loadStats(),
       loadRecentActivity(),
-      loadUpcomingTasks()
+      loadUpcomingTasks(),
+      loadChartData()
     ]);
     setIsLoading(false);
   };
@@ -210,6 +218,88 @@ const AdminDashboard = () => {
     }
   };
 
+  const loadChartData = async () => {
+    try {
+      // Tickets por status
+      const { data: ticketStatuses } = await supabase
+        .from('tickets')
+        .select(`
+          status_id,
+          ticket_statuses(name, color)
+        `);
+
+      const ticketCounts = ticketStatuses?.reduce((acc: any, ticket: any) => {
+        const statusName = ticket.ticket_statuses?.name || 'Outros';
+        const color = ticket.ticket_statuses?.color || '#8884d8';
+        acc[statusName] = (acc[statusName] || 0) + 1;
+        if (!acc.colors) acc.colors = {};
+        acc.colors[statusName] = color;
+        return acc;
+      }, {});
+
+      const ticketsByStatus = Object.entries(ticketCounts || {})
+        .filter(([key]) => key !== 'colors')
+        .map(([name, value]) => ({
+          name,
+          value,
+          color: ticketCounts.colors[name]
+        }));
+
+      // Projetos por status
+      const { data: projects } = await supabase
+        .from('projects')
+        .select('status');
+
+      const projectCounts = projects?.reduce((acc: any, project) => {
+        acc[project.status] = (acc[project.status] || 0) + 1;
+        return acc;
+      }, {});
+
+      const projectsByStatus = Object.entries(projectCounts || {}).map(([name, value]) => ({
+        name: name === 'planning' ? 'Planejamento' : 
+              name === 'in_progress' ? 'Em Progresso' : 
+              name === 'completed' ? 'Concluído' : 
+              name === 'cancelled' ? 'Cancelado' : name,
+        value
+      }));
+
+      // Tarefas por colaborador
+      const { data: tasks } = await supabase
+        .from('tasks')
+        .select(`
+          status,
+          collaborators!tasks_assigned_to_fkey(name)
+        `)
+        .not('assigned_to', 'is', null);
+
+      const taskCounts = tasks?.reduce((acc: any, task) => {
+        const collaboratorName = task.collaborators?.name || 'Não atribuído';
+        if (!acc[collaboratorName]) {
+          acc[collaboratorName] = { pending: 0, completed: 0, in_progress: 0 };
+        }
+        if (task.status === 'pending') acc[collaboratorName].pending++;
+        else if (task.status === 'completed') acc[collaboratorName].completed++;
+        else if (task.status === 'in_progress') acc[collaboratorName].in_progress++;
+        return acc;
+      }, {});
+
+      const tasksByCollaborator = Object.entries(taskCounts || {}).map(([name, counts]: [string, any]) => ({
+        name,
+        pendentes: counts.pending,
+        concluidas: counts.completed,
+        em_progresso: counts.in_progress
+      }));
+
+      setChartData({
+        ticketsByStatus,
+        projectsByStatus,
+        tasksByCollaborator
+      });
+    } catch (error) {
+      console.error('Erro ao carregar dados dos gráficos:', error);
+    }
+  };
+
   if (isLoading) {
     return <div className="flex justify-center items-center h-64">Carregando dashboard...</div>;
   }
@@ -223,25 +313,29 @@ const AdminDashboard = () => {
           title="Clientes" 
           value={stats.clients.toString()}
           description={`${stats.clients} clientes ativos`}
-          icon={<Users className="h-8 w-8 text-blue-500" />} 
+          icon={<Users className="h-8 w-8 text-blue-500" />}
+          link="/admin/clientes"
         />
         <StatsCard 
           title="Projetos" 
           value={stats.projects.toString()}
           description={`${stats.completedProjects} concluídos`}
-          icon={<FileUp className="h-8 w-8 text-green-500" />} 
+          icon={<FileUp className="h-8 w-8 text-green-500" />}
+          link="/admin/projetos"
         />
         <StatsCard 
           title="Tarefas" 
           value={stats.tasks.toString()}
           description={`${stats.pendingTasks} pendentes`}
-          icon={<MessageSquare className="h-8 w-8 text-purple-500" />} 
+          icon={<MessageSquare className="h-8 w-8 text-purple-500" />}
+          link="/admin/tarefas"
         />
         <StatsCard 
           title="Chamados" 
           value={stats.tickets.toString()}
           description="Sistema de suporte" 
-          icon={<MessageSquare className="h-8 w-8 text-amber-500" />} 
+          icon={<MessageSquare className="h-8 w-8 text-amber-500" />}
+          link="/admin/chamados"
         />
       </div>
 
@@ -250,28 +344,113 @@ const AdminDashboard = () => {
           title="Colaboradores" 
           value={stats.collaborators.toString()}
           description="Equipe ativa"
-          icon={<Users className="h-8 w-8 text-indigo-500" />} 
+          icon={<Users className="h-8 w-8 text-indigo-500" />}
+          link="/admin/colaboradores"
         />
         <StatsCard 
           title="Tarefas Atrasadas" 
           value={stats.overdueTasks.toString()}
           description="Precisam atenção"
-          icon={<AlertCircle className="h-8 w-8 text-red-500" />} 
+          icon={<AlertCircle className="h-8 w-8 text-red-500" />}
+          link="/admin/tarefas"
         />
         <StatsCard 
           title="Projetos Concluídos" 
           value={stats.completedProjects.toString()}
           description="Este período"
-          icon={<CheckCircle className="h-8 w-8 text-green-600" />} 
+          icon={<CheckCircle className="h-8 w-8 text-green-600" />}
+          link="/admin/projetos"
         />
         <StatsCard 
           title="Taxa de Conclusão" 
           value={stats.projects > 0 ? Math.round((stats.completedProjects / stats.projects) * 100) + '%' : '0%'}
           description="Projetos finalizados"
-          icon={<TrendingUp className="h-8 w-8 text-emerald-500" />} 
+          icon={<TrendingUp className="h-8 w-8 text-emerald-500" />}
+          link="/admin/projetos"
         />
       </div>
       
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6 mt-6 md:mt-8">
+        {/* Gráfico de Chamados por Status */}
+        <Card className="min-h-[400px]">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Ticket className="h-5 w-5" />
+              Chamados por Status
+            </CardTitle>
+            <CardDescription>Distribuição atual dos chamados</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={chartData.ticketsByStatus}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {chartData.ticketsByStatus.map((entry: any, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Gráfico de Projetos por Status */}
+        <Card className="min-h-[400px]">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileUp className="h-5 w-5" />
+              Projetos por Status
+            </CardTitle>
+            <CardDescription>Status dos projetos em andamento</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={chartData.projectsByStatus}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="value" fill="#8884d8" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Gráfico de Tarefas por Colaborador */}
+        <Card className="min-h-[400px]">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Tarefas por Colaborador
+            </CardTitle>
+            <CardDescription>Distribuição de trabalho da equipe</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={chartData.tasksByCollaborator}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="pendentes" stackId="a" fill="#fbbf24" />
+                <Bar dataKey="em_progresso" stackId="a" fill="#3b82f6" />
+                <Bar dataKey="concluidas" stackId="a" fill="#10b981" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6 mt-6 md:mt-8">
         <Card className="min-h-[400px]">
           <CardHeader>
@@ -340,27 +519,43 @@ const AdminDashboard = () => {
   );
 };
 
-const StatsCard = ({ title, value, description, icon }: { 
+const StatsCard = ({ title, value, description, icon, link }: { 
   title: string;
   value: string;
   description: string;
   icon: React.ReactNode;
-}) => (
-  <Card className="hover:shadow-md transition-shadow">
-    <CardContent className="p-4 md:p-6">
-      <div className="flex items-center justify-between">
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-muted-foreground truncate">{title}</p>
-          <p className="text-2xl md:text-3xl font-bold mt-1">{value}</p>
-          <p className="text-xs text-muted-foreground mt-1 truncate">{description}</p>
-        </div>
-        <div className="flex-shrink-0 ml-4">
-          {icon}
-        </div>
-      </div>
-    </CardContent>
-  </Card>
-);
+  link?: string;
+}) => {
+  const CardWrapper = ({ children }: { children: React.ReactNode }) => {
+    if (link) {
+      return (
+        <Link to={link} className="block">
+          {children}
+        </Link>
+      );
+    }
+    return <>{children}</>;
+  };
+
+  return (
+    <CardWrapper>
+      <Card className="hover:shadow-md transition-shadow cursor-pointer">
+        <CardContent className="p-4 md:p-6">
+          <div className="flex items-center justify-between">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-muted-foreground truncate">{title}</p>
+              <p className="text-2xl md:text-3xl font-bold mt-1">{value}</p>
+              <p className="text-xs text-muted-foreground mt-1 truncate">{description}</p>
+            </div>
+            <div className="flex-shrink-0 ml-4">
+              {icon}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </CardWrapper>
+  );
+};
 
 const ActivityItem = ({ type, description, time, user, client }: {
   type: 'ticket' | 'document' | 'project' | 'schedule' | 'message';

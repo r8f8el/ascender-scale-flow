@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Send, User, Headphones } from 'lucide-react';
+import { Send, User, Headphones, Paperclip, Download, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface ChatMessage {
@@ -15,6 +15,13 @@ interface ChatMessage {
   admin_id: string | null;
   user_id: string | null;
   admin_profiles?: { name: string };
+  attachments?: Array<{
+    id: string;
+    filename: string;
+    file_path: string;
+    content_type: string;
+    file_size: number;
+  }>;
 }
 
 interface TicketChatProps {
@@ -28,8 +35,10 @@ export const TicketChat: React.FC<TicketChatProps> = ({ ticketId, isTicketClosed
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [attachments, setAttachments] = useState<File[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -58,14 +67,27 @@ export const TicketChat: React.FC<TicketChatProps> = ({ ticketId, isTicketClosed
         .from('ticket_responses')
         .select(`
           *,
-          admin_profiles(name)
+          admin_profiles(name),
+          ticket_attachments(
+            id,
+            filename,
+            file_path,
+            content_type,
+            file_size
+          )
         `)
         .eq('ticket_id', ticketId)
         .eq('is_internal_note', false)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setMessages(data || []);
+      
+      const formattedMessages = (data || []).map(msg => ({
+        ...msg,
+        attachments: msg.ticket_attachments || []
+      }));
+      
+      setMessages(formattedMessages);
     } catch (error) {
       console.error('Erro ao carregar mensagens:', error);
     }
@@ -91,23 +113,73 @@ export const TicketChat: React.FC<TicketChatProps> = ({ ticketId, isTicketClosed
       .subscribe();
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      setAttachments(prev => [...prev, ...newFiles]);
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || isSending || isTicketClosed) return;
+    if ((!newMessage.trim() && attachments.length === 0) || isSending || isTicketClosed) return;
 
     setIsSending(true);
     try {
-      const { error } = await supabase
+      // Primeiro, inserir a mensagem
+      const { data: responseData, error: responseError } = await supabase
         .from('ticket_responses')
         .insert({
           ticket_id: ticketId,
-          message: newMessage.trim(),
+          message: newMessage.trim() || 'Anexo enviado',
           user_id: client?.id || user?.id || null,
           is_internal_note: false
-        });
+        })
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (responseError) throw responseError;
+
+      // Se há anexos, fazer upload e salvar no banco
+      if (attachments.length > 0) {
+        for (const file of attachments) {
+          const fileExtension = file.name.split('.').pop();
+          const fileName = `${crypto.randomUUID()}.${fileExtension}`;
+          const filePath = `chat_attachments/${ticketId}/${fileName}`;
+
+          // Upload do arquivo
+          const { error: uploadError } = await supabase.storage
+            .from('ticket-attachments')
+            .upload(filePath, file);
+
+          if (uploadError) throw uploadError;
+
+          // Salvar metadata do anexo
+          const { error: attachmentError } = await supabase
+            .from('ticket_attachments')
+            .insert({
+              ticket_id: ticketId,
+              response_id: responseData.id,
+              filename: file.name,
+              file_path: filePath,
+              content_type: file.type,
+              file_size: file.size,
+              uploaded_by: client?.id || user?.id || null
+            });
+
+          if (attachmentError) throw attachmentError;
+        }
+      }
 
       setNewMessage('');
+      setAttachments([]);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      
       toast({
         title: "Mensagem enviada",
         description: "Sua mensagem foi enviada com sucesso.",
@@ -121,6 +193,32 @@ export const TicketChat: React.FC<TicketChatProps> = ({ ticketId, isTicketClosed
       });
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const downloadAttachment = async (filePath: string, filename: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('ticket-attachments')
+        .download(filePath);
+
+      if (error) throw error;
+
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Erro ao baixar anexo:', error);
+      toast({
+        title: "Erro ao baixar anexo",
+        description: "Não foi possível baixar o arquivo.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -191,6 +289,30 @@ export const TicketChat: React.FC<TicketChatProps> = ({ ticketId, isTicketClosed
                     </span>
                   </div>
                   <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+                  
+                  {/* Attachments */}
+                  {message.attachments && message.attachments.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {message.attachments.map((attachment) => (
+                        <div 
+                          key={attachment.id}
+                          className="flex items-center gap-2 p-2 rounded border bg-background/50"
+                        >
+                          <Paperclip size={14} />
+                          <span className="text-xs flex-1 truncate">{attachment.filename}</span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0"
+                            onClick={() => downloadAttachment(attachment.file_path, attachment.filename)}
+                          >
+                            <Download size={12} />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
                   <p className={`text-xs mt-2 ${
                     isMyMessage(message) 
                       ? 'text-blue-foreground/70' 
@@ -205,24 +327,64 @@ export const TicketChat: React.FC<TicketChatProps> = ({ ticketId, isTicketClosed
           <div ref={messagesEndRef} />
         </div>
 
+        {/* Attachments Preview */}
+        {attachments.length > 0 && (
+          <div className="space-y-2 mb-2">
+            {attachments.map((file, index) => (
+              <div key={index} className="flex items-center gap-2 p-2 rounded border bg-muted/50">
+                <Paperclip size={14} />
+                <span className="text-xs flex-1 truncate">
+                  {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 w-6 p-0"
+                  onClick={() => removeAttachment(index)}
+                >
+                  <X size={12} />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Input Area */}
         {!isTicketClosed && (
-          <div className="flex gap-2">
-            <Input
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Digite sua mensagem..."
-              disabled={isSending}
-              className="flex-1"
-            />
-            <Button
-              onClick={handleSendMessage}
-              disabled={!newMessage.trim() || isSending}
-              size="sm"
-            >
-              <Send size={16} />
-            </Button>
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <Input
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Digite sua mensagem..."
+                disabled={isSending}
+                className="flex-1"
+              />
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                onChange={handleFileChange}
+                className="hidden"
+                accept="image/*,.pdf,.doc,.docx,.txt"
+              />
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isSending}
+                size="sm"
+                variant="outline"
+              >
+                <Paperclip size={16} />
+              </Button>
+              <Button
+                onClick={handleSendMessage}
+                disabled={(!newMessage.trim() && attachments.length === 0) || isSending}
+                size="sm"
+              >
+                <Send size={16} />
+              </Button>
+            </div>
           </div>
         )}
       </CardContent>
