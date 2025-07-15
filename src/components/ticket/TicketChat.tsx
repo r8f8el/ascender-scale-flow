@@ -275,8 +275,8 @@ export const TicketChat: React.FC<TicketChatProps> = ({ ticketId, isTicketClosed
                 <div
                   className={`max-w-[70%] p-3 rounded-lg ${
                     isMyMessage(message)
-                      ? 'bg-blue text-blue-foreground'
-                      : 'bg-muted'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-muted-foreground'
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-1">
@@ -315,7 +315,7 @@ export const TicketChat: React.FC<TicketChatProps> = ({ ticketId, isTicketClosed
                   
                   <p className={`text-xs mt-2 ${
                     isMyMessage(message) 
-                      ? 'text-blue-foreground/70' 
+                      ? 'text-primary-foreground/70' 
                       : 'text-muted-foreground'
                   }`}>
                     {formatMessageTime(message.created_at)}
