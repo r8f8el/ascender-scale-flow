@@ -67,14 +67,7 @@ export const TicketChat: React.FC<TicketChatProps> = ({ ticketId, isTicketClosed
         .from('ticket_responses')
         .select(`
           *,
-          admin_profiles(name),
-          ticket_attachments(
-            id,
-            filename,
-            file_path,
-            content_type,
-            file_size
-          )
+          admin_profiles(name)
         `)
         .eq('ticket_id', ticketId)
         .eq('is_internal_note', false)
@@ -82,12 +75,19 @@ export const TicketChat: React.FC<TicketChatProps> = ({ ticketId, isTicketClosed
 
       if (error) throw error;
       
-      const formattedMessages = (data || []).map(msg => ({
-        ...msg,
-        attachments: msg.ticket_attachments || []
+      // Criar mensagens simples sem anexos por enquanto
+      const simpleMessages: ChatMessage[] = (data || []).map(msg => ({
+        id: msg.id,
+        message: msg.message,
+        created_at: msg.created_at,
+        is_internal_note: msg.is_internal_note,
+        admin_id: msg.admin_id,
+        user_id: msg.user_id,
+        admin_profiles: msg.admin_profiles,
+        attachments: []
       }));
       
-      setMessages(formattedMessages);
+      setMessages(simpleMessages);
     } catch (error) {
       console.error('Erro ao carregar mensagens:', error);
     }
