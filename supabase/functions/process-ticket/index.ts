@@ -42,8 +42,42 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Capturar e validar dados do formulário
-    const ticketData: TicketRequest = await req.json();
+    // Verificar se é FormData (com arquivos) ou JSON
+    let ticketData: TicketRequest;
+    let attachments: File[] = [];
+
+    const contentType = req.headers.get("content-type") || "";
+    
+    if (contentType.includes("multipart/form-data")) {
+      console.log("Processando FormData com arquivos...");
+      const formData = await req.formData();
+      
+      // Extrair dados do ticket
+      ticketData = {
+        user_name: formData.get("user_name") as string,
+        user_email: formData.get("user_email") as string,
+        user_phone: formData.get("user_phone") as string,
+        title: formData.get("title") as string,
+        description: formData.get("description") as string,
+        category_id: formData.get("category_id") as string,
+        priority_id: formData.get("priority_id") as string,
+      };
+      
+      // Extrair arquivos
+      const fileCount = parseInt(formData.get("file_count") as string || "0");
+      for (let i = 0; i < fileCount; i++) {
+        const file = formData.get(`file_${i}`) as File;
+        if (file) {
+          attachments.push(file);
+        }
+      }
+      
+      console.log(`Encontrados ${attachments.length} arquivos anexos`);
+    } else {
+      console.log("Processando dados JSON...");
+      ticketData = await req.json();
+    }
+    
     console.log("Dados recebidos:", ticketData);
 
     // Validação básica
@@ -103,6 +137,63 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log('Ticket criado com sucesso:', ticket);
+
+    // Upload de arquivos anexos se existirem
+    const uploadedAttachments: any[] = [];
+    if (attachments.length > 0) {
+      console.log(`Fazendo upload de ${attachments.length} arquivos...`);
+      
+      for (let i = 0; i < attachments.length; i++) {
+        const file = attachments[i];
+        const fileExtension = file.name.split('.').pop() || 'bin';
+        const fileName = `${crypto.randomUUID()}.${fileExtension}`;
+        const filePath = `${ticket.id}/${fileName}`;
+        
+        try {
+          // Converter File para ArrayBuffer
+          const fileBuffer = await file.arrayBuffer();
+          
+          // Upload para Storage
+          const { error: uploadError } = await supabase.storage
+            .from('ticket-attachments')
+            .upload(filePath, fileBuffer, {
+              contentType: file.type || 'application/octet-stream',
+              cacheControl: '3600',
+              upsert: false
+            });
+
+          if (uploadError) {
+            console.error(`Erro ao fazer upload do arquivo ${file.name}:`, uploadError);
+            continue;
+          }
+
+          // Salvar metadados na tabela ticket_attachments
+          const { data: attachmentData, error: attachmentError } = await supabase
+            .from('ticket_attachments')
+            .insert({
+              ticket_id: ticket.id,
+              filename: file.name,
+              file_path: filePath,
+              file_size: file.size,
+              content_type: file.type || 'application/octet-stream',
+              uploaded_by: null
+            })
+            .select()
+            .single();
+
+          if (attachmentError) {
+            console.error(`Erro ao salvar metadados do arquivo ${file.name}:`, attachmentError);
+          } else {
+            uploadedAttachments.push(attachmentData);
+            console.log(`Arquivo ${file.name} enviado com sucesso`);
+          }
+        } catch (error) {
+          console.error(`Erro ao processar arquivo ${file.name}:`, error);
+        }
+      }
+      
+      console.log(`Upload concluído. ${uploadedAttachments.length} arquivos enviados com sucesso.`);
+    }
 
     // SISTEMA DE NOTIFICAÇÕES POR EMAIL
 

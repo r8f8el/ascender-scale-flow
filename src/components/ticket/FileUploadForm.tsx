@@ -4,21 +4,22 @@ import { Label } from '@/components/ui/label';
 import { Paperclip } from 'lucide-react';
 
 interface FileUploadFormProps {
-  file: File | null;
+  files: File[];
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export const FileUploadForm: React.FC<FileUploadFormProps> = ({
-  file,
+  files,
   onFileChange
 }) => {
   return (
     <div>
-      <Label htmlFor="file">Anexar Arquivos (opcional)</Label>
+      <Label htmlFor="files">Anexar Arquivos (opcional)</Label>
       <div className="mt-1">
         <input
           type="file"
-          id="file"
+          id="files"
+          multiple
           onChange={onFileChange}
           className="block w-full text-sm text-gray-500
             file:mr-4 file:py-2 file:px-4 file:rounded-md
@@ -27,11 +28,15 @@ export const FileUploadForm: React.FC<FileUploadFormProps> = ({
             hover:file:bg-blue-100"
         />
       </div>
-      {file && (
-        <p className="text-sm text-gray-500 mt-2 flex items-center">
-          <Paperclip size={16} className="mr-1" />
-          {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
-        </p>
+      {files.length > 0 && (
+        <div className="mt-2 space-y-1">
+          {files.map((file, index) => (
+            <p key={index} className="text-sm text-gray-500 flex items-center">
+              <Paperclip size={16} className="mr-1" />
+              {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+            </p>
+          ))}
+        </div>
       )}
     </div>
   );

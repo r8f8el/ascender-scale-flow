@@ -27,7 +27,7 @@ const initialFormData: FormData = {
 export const useTicketForm = () => {
   const { user, client } = useAuth();
   const [formData, setFormData] = useState<FormData>(initialFormData);
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
   const [priorities, setPriorities] = useState<any[]>([]);
@@ -72,8 +72,8 @@ export const useTicketForm = () => {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setFile(e.target.files[0]);
+    if (e.target.files) {
+      setFiles(Array.from(e.target.files));
     }
   };
 
@@ -101,9 +101,36 @@ export const useTicketForm = () => {
 
       console.log('Dados do ticket preparados:', ticketData);
 
+      // Preparar dados para envio
+      let requestBody;
+      let requestOptions: any = {};
+
+      if (files.length > 0) {
+        // Se há arquivos, usar FormData
+        const formData = new FormData();
+        
+        // Adicionar dados do ticket
+        Object.entries(ticketData).forEach(([key, value]) => {
+          if (value !== null && value !== undefined) {
+            formData.append(key, String(value));
+          }
+        });
+        
+        // Adicionar arquivos
+        files.forEach((file, index) => {
+          formData.append(`file_${index}`, file);
+        });
+        formData.append('file_count', files.length.toString());
+        
+        requestBody = formData;
+      } else {
+        // Se não há arquivos, usar JSON
+        requestBody = ticketData;
+      }
+
       // Chamar a Edge Function para processar o chamado
       const { data, error } = await supabase.functions.invoke('process-ticket', {
-        body: ticketData
+        body: requestBody
       });
 
       if (error) {
@@ -125,7 +152,7 @@ export const useTicketForm = () => {
 
       // Limpar formulário
       setFormData(initialFormData);
-      setFile(null);
+      setFiles([]);
 
       // Recarregar dados do usuário se necessário
       if (client) {
@@ -156,7 +183,7 @@ export const useTicketForm = () => {
 
   return {
     formData,
-    file,
+    files,
     isLoading,
     categories,
     priorities,

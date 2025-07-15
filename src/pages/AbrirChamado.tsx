@@ -16,7 +16,7 @@ const AbrirChamado = () => {
   const { isAuthenticated, loading } = useAuth();
   const {
     formData,
-    file,
+    files,
     isLoading,
     categories,
     priorities,
@@ -86,7 +86,7 @@ const AbrirChamado = () => {
                 />
 
                 <FileUploadForm 
-                  file={file}
+                  files={files}
                   onFileChange={handleFileChange}
                 />
 
