@@ -632,6 +632,7 @@ export type Database = {
           file_size: number | null
           filename: string
           id: string
+          response_id: string | null
           ticket_id: string
           uploaded_by: string | null
         }
@@ -642,6 +643,7 @@ export type Database = {
           file_size?: number | null
           filename: string
           id?: string
+          response_id?: string | null
           ticket_id: string
           uploaded_by?: string | null
         }
@@ -652,10 +654,18 @@ export type Database = {
           file_size?: number | null
           filename?: string
           id?: string
+          response_id?: string | null
           ticket_id?: string
           uploaded_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ticket_attachments_response_id_fkey"
+            columns: ["response_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_responses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ticket_attachments_ticket_id_fkey"
             columns: ["ticket_id"]

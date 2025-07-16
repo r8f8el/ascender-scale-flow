@@ -1,27 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Send, User, Headphones, Paperclip, Download, X } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Send, Paperclip, Download, X } from 'lucide-react';
 
 interface ChatMessage {
   id: string;
   message: string;
   created_at: string;
-  is_internal_note: boolean;
-  admin_id: string | null;
   user_id: string | null;
-  admin_profiles?: { name: string };
-  attachments?: Array<{
+  admin_id: string | null;
+  sender_name: string;
+  attachments: {
     id: string;
     filename: string;
     file_path: string;
-    content_type: string;
-    file_size: number;
-  }>;
+    content_type: string | null;
+    file_size: number | null;
+  }[];
 }
 
 interface TicketChatProps {
@@ -30,14 +28,16 @@ interface TicketChatProps {
 }
 
 export const TicketChat: React.FC<TicketChatProps> = ({ ticketId, isTicketClosed }) => {
-  const { client, user } = useAuth();
+  const { user, client } = useAuth();
   const { toast } = useToast();
+  
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [attachments, setAttachments] = useState<File[]>([]);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const channelRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
@@ -45,16 +45,8 @@ export const TicketChat: React.FC<TicketChatProps> = ({ ticketId, isTicketClosed
   };
 
   useEffect(() => {
-    if (ticketId) {
-      loadMessages();
-      setupRealtimeSubscription();
-    }
-
-    return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-      }
-    };
+    loadMessages();
+    setupRealtimeSubscription();
   }, [ticketId]);
 
   useEffect(() => {
@@ -62,55 +54,71 @@ export const TicketChat: React.FC<TicketChatProps> = ({ ticketId, isTicketClosed
   }, [messages]);
 
   const loadMessages = async () => {
+    setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('ticket_responses')
         .select(`
           *,
-          admin_profiles(name)
+          admin_profiles (
+            name
+          ),
+          ticket_attachments (
+            id,
+            filename,
+            file_path,
+            content_type,
+            file_size
+          )
         `)
         .eq('ticket_id', ticketId)
         .eq('is_internal_note', false)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
-      
-      // Criar mensagens simples sem anexos por enquanto
-      const simpleMessages: ChatMessage[] = (data || []).map(msg => ({
+      if (error) {
+        console.error('Erro ao carregar mensagens:', error);
+        throw error;
+      }
+
+      const mappedMessages: ChatMessage[] = (data || []).map(msg => ({
         id: msg.id,
         message: msg.message,
         created_at: msg.created_at,
-        is_internal_note: msg.is_internal_note,
-        admin_id: msg.admin_id,
         user_id: msg.user_id,
-        admin_profiles: msg.admin_profiles,
-        attachments: []
+        admin_id: msg.admin_id,
+        sender_name: msg.admin_id 
+          ? msg.admin_profiles?.name || 'Admin'
+          : (client?.name || user?.user_metadata?.name || 'Você'),
+        attachments: msg.ticket_attachments || []
       }));
-      
-      setMessages(simpleMessages);
+
+      setMessages(mappedMessages);
     } catch (error) {
       console.error('Erro ao carregar mensagens:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const setupRealtimeSubscription = () => {
-    channelRef.current = supabase
-      .channel(`ticket_chat_${ticketId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
+    const channel = supabase
+      .channel(`ticket_responses_${ticketId}`)
+      .on('postgres_changes', 
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
           table: 'ticket_responses',
           filter: `ticket_id=eq.${ticketId}`
-        },
-        (payload) => {
-          console.log('Nova mensagem recebida:', payload);
-          // Recarregar mensagens para obter dados completos
+        }, 
+        () => {
           loadMessages();
         }
       )
       .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -230,164 +238,194 @@ export const TicketChat: React.FC<TicketChatProps> = ({ ticketId, isTicketClosed
   };
 
   const formatMessageTime = (timestamp: string) => {
-    return new Date(timestamp).toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 3600);
+
+    if (diffInHours < 24) {
+      return date.toLocaleTimeString('pt-BR', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+    } else {
+      return date.toLocaleDateString('pt-BR', { 
+        day: '2-digit', 
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
   };
 
   const isMyMessage = (message: ChatMessage) => {
-    return message.user_id === (client?.id || user?.id);
+    return message.user_id === (client?.id || user?.id) && !message.admin_id;
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-sm text-muted-foreground">Carregando mensagens...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <Card className="h-96 flex flex-col">
-      <CardHeader className="flex-shrink-0 pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Headphones size={20} />
-          Chat em Tempo Real
-        </CardTitle>
-        {isTicketClosed && (
-          <p className="text-sm text-muted-foreground">
-            Chat desabilitado - Chamado foi fechado
-          </p>
-        )}
-      </CardHeader>
-      
-      <CardContent className="flex-1 flex flex-col p-4 pt-0">
-        {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto mb-4 space-y-3 min-h-0">
-          {messages.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
-              <p>Nenhuma mensagem ainda. Inicie a conversa!</p>
-            </div>
-          ) : (
-            messages.map((message) => (
+    <div className="flex flex-col h-[600px] bg-background border rounded-lg">
+      {/* Header do chat */}
+      <div className="p-4 border-b border-border bg-muted/30">
+        <h3 className="font-semibold">Chat do Chamado</h3>
+        <p className="text-sm text-muted-foreground">
+          Converse com nossa equipe de suporte
+        </p>
+      </div>
+
+      {/* Área de mensagens */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.length === 0 ? (
+          <div className="text-center text-muted-foreground">
+            <p>Nenhuma mensagem ainda.</p>
+            <p className="text-sm">Envie uma mensagem para iniciar a conversa.</p>
+          </div>
+        ) : (
+          messages.map((message) => (
+            <div
+              key={message.id}
+              className={`flex ${isMyMessage(message) ? 'justify-end' : 'justify-start'}`}
+            >
               <div
-                key={message.id}
-                className={`flex ${
-                  isMyMessage(message) ? 'justify-end' : 'justify-start'
+                className={`max-w-[70%] p-3 rounded-lg ${
+                  isMyMessage(message)
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-muted-foreground'
                 }`}
               >
-                <div
-                  className={`max-w-[70%] p-3 rounded-lg ${
-                    isMyMessage(message)
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-muted-foreground'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <User size={14} />
-                    <span className="font-medium text-sm">
-                      {isMyMessage(message) 
-                        ? 'Você' 
-                        : message.admin_profiles?.name || 'Suporte'
-                      }
-                    </span>
-                  </div>
-                  <p className="text-sm whitespace-pre-wrap">{message.message}</p>
-                  
-                  {/* Attachments */}
-                  {message.attachments && message.attachments.length > 0 && (
-                    <div className="mt-2 space-y-1">
-                      {message.attachments.map((attachment) => (
-                        <div 
-                          key={attachment.id}
-                          className="flex items-center gap-2 p-2 rounded border bg-background/50"
-                        >
-                          <Paperclip size={14} />
-                          <span className="text-xs flex-1 truncate">{attachment.filename}</span>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 w-6 p-0"
-                            onClick={() => downloadAttachment(attachment.file_path, attachment.filename)}
-                          >
-                            <Download size={12} />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  <p className={`text-xs mt-2 ${
-                    isMyMessage(message) 
-                      ? 'text-primary-foreground/70' 
-                      : 'text-muted-foreground'
-                  }`}>
-                    {formatMessageTime(message.created_at)}
-                  </p>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-medium">
+                    {message.sender_name}
+                  </span>
                 </div>
+                
+                <p className="break-words">{message.message}</p>
+                
+                {/* Exibir anexos */}
+                {message.attachments && message.attachments.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {message.attachments.map((attachment) => (
+                      <div
+                        key={attachment.id}
+                        className={`flex items-center gap-2 p-2 rounded border cursor-pointer hover:bg-opacity-80 ${
+                          isMyMessage(message)
+                            ? 'bg-primary-foreground/10 border-primary-foreground/20'
+                            : 'bg-muted border-muted-foreground/20'
+                        }`}
+                        onClick={() => downloadAttachment(attachment.file_path, attachment.filename)}
+                      >
+                        <Paperclip className="h-4 w-4" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{attachment.filename}</p>
+                          {attachment.file_size && (
+                            <p className="text-xs opacity-70">
+                              {(attachment.file_size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          )}
+                        </div>
+                        <Download className="h-4 w-4" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                <p className={`text-xs mt-2 ${
+                  isMyMessage(message) 
+                    ? 'text-primary-foreground/70' 
+                    : 'text-muted-foreground'
+                }`}>
+                  {formatMessageTime(message.created_at)}
+                </p>
               </div>
-            ))
-          )}
-          <div ref={messagesEndRef} />
+            </div>
+          ))
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input de mensagem */}
+      <div className="p-4 border-t border-border">
+        <div className="flex gap-2">
+          <Textarea
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Digite sua mensagem..."
+            className="flex-1 min-h-[40px] max-h-32 resize-none"
+            disabled={isTicketClosed || isSending}
+          />
+          <div className="flex flex-col gap-2">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              multiple
+              className="hidden"
+              disabled={isTicketClosed}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isTicketClosed}
+              className="h-10 w-10"
+            >
+              <Paperclip className="h-4 w-4" />
+            </Button>
+            <Button
+              onClick={handleSendMessage}
+              disabled={(!newMessage.trim() && attachments.length === 0) || isSending || isTicketClosed}
+              className="h-10 w-10"
+              size="icon"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
-        {/* Attachments Preview */}
+        {/* Preview dos anexos */}
         {attachments.length > 0 && (
-          <div className="space-y-2 mb-2">
+          <div className="mt-3 space-y-2">
+            <p className="text-sm font-medium">Anexos selecionados:</p>
             {attachments.map((file, index) => (
-              <div key={index} className="flex items-center gap-2 p-2 rounded border bg-muted/50">
-                <Paperclip size={14} />
-                <span className="text-xs flex-1 truncate">
-                  {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                </span>
+              <div key={index} className="flex items-center justify-between p-2 bg-muted rounded-md">
+                <div className="flex items-center gap-2">
+                  <Paperclip className="h-4 w-4" />
+                  <span className="text-sm">{file.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                  </span>
+                </div>
                 <Button
-                  size="sm"
+                  type="button"
                   variant="ghost"
-                  className="h-6 w-6 p-0"
+                  size="sm"
                   onClick={() => removeAttachment(index)}
+                  className="h-6 w-6 p-0"
                 >
-                  <X size={12} />
+                  <X className="h-3 w-3" />
                 </Button>
               </div>
             ))}
           </div>
         )}
 
-        {/* Input Area */}
-        {!isTicketClosed && (
-          <div className="space-y-2">
-            <div className="flex gap-2">
-              <Input
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Digite sua mensagem..."
-                disabled={isSending}
-                className="flex-1"
-              />
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                onChange={handleFileChange}
-                className="hidden"
-                accept="image/*,.pdf,.doc,.docx,.txt"
-              />
-              <Button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isSending}
-                size="sm"
-                variant="outline"
-              >
-                <Paperclip size={16} />
-              </Button>
-              <Button
-                onClick={handleSendMessage}
-                disabled={(!newMessage.trim() && attachments.length === 0) || isSending}
-                size="sm"
-              >
-                <Send size={16} />
-              </Button>
-            </div>
-          </div>
+        {isTicketClosed && (
+          <p className="text-sm text-muted-foreground mt-2">
+            Este chamado foi fechado e não aceita mais mensagens.
+          </p>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
