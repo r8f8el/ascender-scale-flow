@@ -17,7 +17,8 @@ import {
   User,
   Shield,
   Database,
-  Cloud
+  Cloud,
+  Activity
 } from 'lucide-react';
 
 const AdminArea = () => {
@@ -50,6 +51,7 @@ const AdminArea = () => {
     else if (path.includes('/admin/cronogramas')) setPageTitle('Cronogramas');
     else if (path.includes('/admin/mensagens')) setPageTitle('Mensagens Automáticas');
     else if (path.includes('/admin/logs')) setPageTitle('Logs de Acesso');
+    else if (path.includes('/admin/activity-logs')) setPageTitle('Logs de Atividade');
     else if (path.includes('/admin/configuracoes')) setPageTitle('Configurações');
     else if (path.includes('/admin/onedrive')) setPageTitle('Integração OneDrive/SharePoint');
     else setPageTitle('Painel Administrativo');
@@ -135,6 +137,9 @@ const AdminArea = () => {
                       <MobileNavLink to="/admin/logs" icon={<Shield size={20} />}>
                         Logs de Acesso
                       </MobileNavLink>
+                      <MobileNavLink to="/admin/activity-logs" icon={<Activity size={20} />}>
+                        Logs de Atividade
+                      </MobileNavLink>
                       <MobileNavLink to="/admin/onedrive" icon={<Cloud size={20} />}>
                         OneDrive/SharePoint
                       </MobileNavLink>
@@ -197,6 +202,9 @@ const AdminArea = () => {
             </NavLink>
             <NavLink to="/admin/logs" icon={<Shield size={20} />}>
               Logs de Acesso
+            </NavLink>
+            <NavLink to="/admin/activity-logs" icon={<Activity size={20} />}>
+              Logs de Atividade
             </NavLink>
             <NavLink to="/admin/onedrive" icon={<Cloud size={20} />}>
               OneDrive/SharePoint

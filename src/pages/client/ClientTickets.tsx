@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useActivityLogger } from '@/hooks/useActivityLogger';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +23,7 @@ interface Ticket {
 
 const ClientTickets = () => {
   const { client, user } = useAuth();
+  const { logPageAccess, logUserAction } = useActivityLogger();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,6 +31,7 @@ const ClientTickets = () => {
   useEffect(() => {
     if (client || user) {
       loadTickets();
+      logPageAccess('Lista de Chamados');
     }
   }, [client, user]);
 

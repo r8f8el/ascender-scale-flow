@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useActivityLogger } from '@/hooks/useActivityLogger';
 import { 
   Users, 
   UserPlus, 
@@ -54,10 +55,12 @@ const ClientTeam = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
   const { client, user } = useAuth();
+  const { logPageAccess, logUserAction, logDataOperation } = useActivityLogger();
 
   useEffect(() => {
     if (client?.id) {
       fetchTeamMembers();
+      logPageAccess('Gestão de Equipe');
     }
   }, [client?.id]);
 
@@ -96,7 +99,7 @@ const ClientTeam = () => {
         },
         ...(teamData || []).map((member: any) => ({
           id: member.id,
-          member_id: member.member_id,
+          member_id: member.member_id || '',
           role: member.role,
           status: member.status,
           invited_at: member.invited_at,
@@ -374,18 +377,18 @@ const ClientTeam = () => {
                   key={member.id}
                   className="flex items-center justify-between p-4 border rounded-lg"
                 >
-                  <div className="flex items-center space-x-4">
-                    <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center">
+                   <div className="flex items-center space-x-4 flex-1 min-w-0">
+                    <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
                       <Mail className="h-5 w-5 text-primary" />
                     </div>
-                    <div>
-                      <div className="font-medium">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">
                         {member.user_name || 'Nome não disponível'}
                       </div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm text-muted-foreground truncate">
                         {member.user_email || 'Email não disponível'}
                       </div>
-                      <div className="flex items-center space-x-2 mt-1">
+                      <div className="flex items-center space-x-2 mt-1 flex-wrap">
                         {getStatusBadge(member.status)}
                         {getRoleBadge(member.role)}
                       </div>

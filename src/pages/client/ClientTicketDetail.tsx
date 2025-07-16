@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useActivityLogger } from '@/hooks/useActivityLogger';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +42,7 @@ const ClientTicketDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { client } = useAuth();
+  const { logPageAccess, logUserAction } = useActivityLogger();
   const { toast } = useToast();
   
   const [ticket, setTicket] = useState<TicketDetail | null>(null);
@@ -53,6 +55,7 @@ const ClientTicketDetail = () => {
     if (id && client) {
       loadTicketDetail();
       loadResponses();
+      logPageAccess(`Detalhes do Chamado #${id}`);
     }
   }, [id, client]);
 

@@ -38,6 +38,7 @@ import CronogramasAdmin from "./pages/admin/CronogramasAdmin";
 import TicketsAdmin from "./pages/admin/TicketsAdmin";
 import MensagensAdmin from "./pages/admin/MensagensAdmin";
 import LogsAdmin from "./pages/admin/LogsAdmin";
+import ActivityLogsAdmin from "./pages/admin/ActivityLogsAdmin";
 import ConfiguracoesAdmin from "./pages/admin/ConfiguracoesAdmin";
 import OneDriveIntegration from "./pages/admin/OneDriveIntegration";
 import MyTickets from "./pages/admin/MyTickets";
@@ -88,6 +89,7 @@ function App() {
                     <Route path="cronogramas" element={<AdminProtectedRoute><CronogramasAdmin /></AdminProtectedRoute>} />
                     <Route path="mensagens" element={<AdminProtectedRoute><MensagensAdmin /></AdminProtectedRoute>} />
                     <Route path="logs" element={<AdminProtectedRoute><LogsAdmin /></AdminProtectedRoute>} />
+                    <Route path="activity-logs" element={<AdminProtectedRoute><ActivityLogsAdmin /></AdminProtectedRoute>} />
                     <Route path="configuracoes" element={<AdminProtectedRoute><ConfiguracoesAdmin /></AdminProtectedRoute>} />
                     <Route path="onedrive" element={<AdminProtectedRoute><OneDriveIntegration /></AdminProtectedRoute>} />
                     <Route path="meus-chamados" element={<AdminProtectedRoute><MyTickets /></AdminProtectedRoute>} />
