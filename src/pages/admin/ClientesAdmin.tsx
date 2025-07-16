@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useActivityLogger } from '@/hooks/useActivityLogger';
 import {
   Table,
   TableBody,
@@ -35,6 +36,7 @@ interface Cliente {
 
 const ClientesAdmin = () => {
   const { toast } = useToast();
+  const { logUserAction, logDataOperation } = useActivityLogger();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [termoBusca, setTermoBusca] = useState('');
@@ -50,6 +52,7 @@ const ClientesAdmin = () => {
 
   useEffect(() => {
     loadClientes();
+    logUserAction('access_clients_admin', 'Admin acessou gestão de clientes');
   }, []);
 
   const loadClientes = async () => {
@@ -114,6 +117,8 @@ const ClientesAdmin = () => {
           title: "Sucesso",
           description: `Cliente ${novoCliente.name} atualizado com sucesso!`
         });
+
+        logDataOperation('update', 'client', `Cliente atualizado: ${novoCliente.name} (${novoCliente.email})`);
       } else {
         // Criar novo usuário no Auth
         const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -151,6 +156,8 @@ const ClientesAdmin = () => {
           title: "Sucesso",
           description: `Cliente ${novoCliente.name} adicionado com sucesso!`
         });
+
+        logDataOperation('create', 'client', `Novo cliente criado: ${novoCliente.name} (${novoCliente.email})`);
       }
       
       setDialogAberto(false);
@@ -188,6 +195,8 @@ const ClientesAdmin = () => {
         title: "Sucesso",
         description: `E-mail de redefinição de senha enviado para ${cliente.email}`
       });
+
+      logUserAction('reset_client_password', `Senha resetada para cliente: ${cliente.name} (${cliente.email})`);
     } catch (error: any) {
       console.error('Erro ao resetar senha:', error);
       toast({
@@ -216,6 +225,8 @@ const ClientesAdmin = () => {
           title: "Sucesso",
           description: "Cliente excluído com sucesso"
         });
+
+        logDataOperation('delete', 'client', `Cliente excluído: ${id}`);
         
         loadClientes();
       } catch (error: any) {
