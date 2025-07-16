@@ -6,10 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Eye, Calendar, DollarSign, Users, CheckCircle } from 'lucide-react';
+import { useActivityLogger } from '@/hooks/useActivityLogger';
+import { Plus, Edit, Eye, Calendar, DollarSign, Users, CheckCircle, BarChart3, Trash2, Search } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import ProjectDashboard from '@/components/projects/ProjectDashboard';
+import ProjectDetail from '@/components/projects/ProjectDetail';
 
 interface Project {
   id: string;
@@ -36,11 +40,15 @@ interface Client {
 
 const ProjectsAdmin = () => {
   const { toast } = useToast();
+  const { logUserAction, logDataOperation } = useActivityLogger();
   const [projects, setProjects] = useState<Project[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [selectedProject, setSelectedProject] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -57,6 +65,7 @@ const ProjectsAdmin = () => {
   useEffect(() => {
     loadProjects();
     loadClients();
+    logUserAction('access_projects_admin', 'Admin acessou gestão de projetos');
   }, []);
 
   const loadProjects = async () => {
@@ -120,6 +129,8 @@ const ProjectsAdmin = () => {
           title: "Sucesso",
           description: "Projeto atualizado com sucesso!"
         });
+
+        logDataOperation('update', 'project', `Projeto atualizado: ${formData.name}`);
       } else {
         const { error } = await supabase
           .from('projects')
@@ -131,6 +142,8 @@ const ProjectsAdmin = () => {
           title: "Sucesso",
           description: "Projeto criado com sucesso!"
         });
+
+        logDataOperation('create', 'project', `Novo projeto criado: ${formData.name}`);
       }
 
       setIsDialogOpen(false);
@@ -171,7 +184,53 @@ const ProjectsAdmin = () => {
       progress: project.progress
     });
     setIsDialogOpen(true);
+    logUserAction('edit_project', `Iniciou edição do projeto: ${project.name}`);
   };
+
+  const handleDelete = async (projectId: string, projectName: string) => {
+    if (!confirm('Tem certeza que deseja excluir este projeto? Esta ação não pode ser desfeita.')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectId);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Sucesso",
+        description: "Projeto excluído com sucesso!"
+      });
+
+      logDataOperation('delete', 'project', `Projeto excluído: ${projectName}`);
+      loadProjects();
+    } catch (error) {
+      console.error('Erro ao excluir projeto:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir projeto.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleViewDetails = (projectId: string) => {
+    setSelectedProject(projectId);
+    logUserAction('view_project_detail', `Visualizou detalhes do projeto: ${projectId}`);
+  };
+
+  const filteredProjects = projects.filter(project => {
+    const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         project.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         project.client_profiles?.name.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -196,13 +255,38 @@ const ProjectsAdmin = () => {
     return <div className="flex justify-center items-center h-64">Carregando projetos...</div>;
   }
 
+  // Se um projeto está selecionado, mostrar detalhes
+  if (selectedProject) {
+    const project = projects.find(p => p.id === selectedProject);
+    if (project) {
+      return (
+        <ProjectDetail
+          projectId={selectedProject}
+          onBack={() => setSelectedProject(null)}
+          onEdit={handleEdit}
+        />
+      );
+    }
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">Gestão de Projetos</h2>
-          <p className="text-muted-foreground">Gerencie todos os projetos da empresa</p>
-        </div>
+      <Tabs defaultValue="projects" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="projects">Projetos</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="dashboard">
+          <ProjectDashboard />
+        </TabsContent>
+
+        <TabsContent value="projects" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-2xl font-bold">Gestão de Projetos</h2>
+              <p className="text-muted-foreground">Gerencie todos os projetos da empresa</p>
+            </div>
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -357,8 +441,35 @@ const ProjectsAdmin = () => {
         </Dialog>
       </div>
 
+      {/* Filtros e Busca */}
+      <div className="flex gap-4 items-center">
+        <div className="flex-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Buscar projetos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Filtrar por status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os Status</SelectItem>
+            <SelectItem value="planning">Planejamento</SelectItem>
+            <SelectItem value="in_progress">Em Progresso</SelectItem>
+            <SelectItem value="completed">Concluído</SelectItem>
+            <SelectItem value="on_hold">Em Espera</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {projects.map((project) => (
+        {filteredProjects.map((project) => (
           <Card key={project.id} className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex justify-between items-start">
@@ -368,13 +479,32 @@ const ProjectsAdmin = () => {
                     {project.client_profiles ? `${project.client_profiles.name} - ${project.client_profiles.company}` : 'Sem cliente'}
                   </CardDescription>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleEdit(project)}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleViewDetails(project.id)}
+                    title="Ver detalhes"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleEdit(project)}
+                    title="Editar"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(project.id, project.name)}
+                    title="Excluir"
+                  >
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -436,6 +566,18 @@ const ProjectsAdmin = () => {
         ))}
       </div>
 
+      {filteredProjects.length === 0 && projects.length > 0 && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <Search className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">Nenhum projeto encontrado</h3>
+            <p className="text-muted-foreground text-center">
+              Tente ajustar os filtros de busca ou criar um novo projeto
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {projects.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
@@ -447,6 +589,8 @@ const ProjectsAdmin = () => {
           </CardContent>
         </Card>
       )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
