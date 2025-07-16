@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import { useActivityLogger } from '@/hooks/useActivityLogger';
-import { Plus, Edit, Eye, Calendar, DollarSign, Users, CheckCircle, BarChart3, Trash2, Search } from 'lucide-react';
+import { useOptimizedQuery } from '@/hooks/useOptimizedQuery';
+import { Plus, Edit, Eye, Calendar, DollarSign, Users, CheckCircle, BarChart3, Trash2, Search, RefreshCw } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import ProjectDashboard from '@/components/projects/ProjectDashboard';
@@ -41,9 +42,6 @@ interface Client {
 const ProjectsAdmin = () => {
   const { toast } = useToast();
   const { logUserAction, logDataOperation } = useActivityLogger();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
@@ -62,14 +60,10 @@ const ProjectsAdmin = () => {
     progress: 0
   });
 
-  useEffect(() => {
-    loadProjects();
-    loadClients();
-    logUserAction('access_projects_admin', 'Admin acessou gestão de projetos');
-  }, []);
-
-  const loadProjects = async () => {
-    try {
+  // Optimized data fetching with cache
+  const projectsQuery = useOptimizedQuery(
+    'projects-with-clients',
+    async () => {
       const { data, error } = await supabase
         .from('projects')
         .select(`
@@ -79,34 +73,42 @@ const ProjectsAdmin = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setProjects(data || []);
-    } catch (error) {
-      console.error('Erro ao carregar projetos:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar projetos.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
+      return data || [];
+    },
+    {
+      staleTime: 30000, // 30 seconds
+      cacheTime: 300000, // 5 minutes
+      refetchOnWindowFocus: false
     }
-  };
+  );
 
-  const loadClients = async () => {
-    try {
+  const clientsQuery = useOptimizedQuery(
+    'clients',
+    async () => {
       const { data, error } = await supabase
         .from('client_profiles')
         .select('id, name, company')
         .order('name');
 
       if (error) throw error;
-      setClients(data || []);
-    } catch (error) {
-      console.error('Erro ao carregar clientes:', error);
+      return data || [];
+    },
+    {
+      staleTime: 60000, // 1 minute
+      cacheTime: 600000 // 10 minutes
     }
-  };
+  );
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Memoized data
+  const projects = useMemo(() => projectsQuery.data || [], [projectsQuery.data]);
+  const clients = useMemo(() => clientsQuery.data || [], [clientsQuery.data]);
+  const isLoading = projectsQuery.isLoading || clientsQuery.isLoading;
+
+  useEffect(() => {
+    logUserAction('access_projects_admin', 'Admin acessou gestão de projetos');
+  }, [logUserAction]);
+
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
@@ -159,7 +161,10 @@ const ProjectsAdmin = () => {
         budget: '',
         progress: 0
       });
-      loadProjects();
+      
+      // Invalidate cache and refetch
+      projectsQuery.invalidateQuery();
+      projectsQuery.refetch();
     } catch (error) {
       console.error('Erro ao salvar projeto:', error);
       toast({
@@ -168,9 +173,9 @@ const ProjectsAdmin = () => {
         variant: "destructive"
       });
     }
-  };
+  }, [formData, editingProject, toast, logDataOperation, projectsQuery]);
 
-  const handleEdit = (project: Project) => {
+  const handleEdit = useCallback((project: Project) => {
     setEditingProject(project);
     setFormData({
       name: project.name,
@@ -185,9 +190,9 @@ const ProjectsAdmin = () => {
     });
     setIsDialogOpen(true);
     logUserAction('edit_project', `Iniciou edição do projeto: ${project.name}`);
-  };
+  }, [logUserAction]);
 
-  const handleDelete = async (projectId: string, projectName: string) => {
+  const handleDelete = useCallback(async (projectId: string, projectName: string) => {
     if (!confirm('Tem certeza que deseja excluir este projeto? Esta ação não pode ser desfeita.')) {
       return;
     }
@@ -206,7 +211,10 @@ const ProjectsAdmin = () => {
       });
 
       logDataOperation('delete', 'project', `Projeto excluído: ${projectName}`);
-      loadProjects();
+      
+      // Invalidate cache and refetch
+      projectsQuery.invalidateQuery();
+      projectsQuery.refetch();
     } catch (error) {
       console.error('Erro ao excluir projeto:', error);
       toast({
@@ -215,22 +223,30 @@ const ProjectsAdmin = () => {
         variant: "destructive"
       });
     }
-  };
+  }, [toast, logDataOperation, projectsQuery]);
 
-  const handleViewDetails = (projectId: string) => {
+  const handleViewDetails = useCallback((projectId: string) => {
     setSelectedProject(projectId);
     logUserAction('view_project_detail', `Visualizou detalhes do projeto: ${projectId}`);
-  };
+  }, [logUserAction]);
 
-  const filteredProjects = projects.filter(project => {
-    const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.client_profiles?.name.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
+  const handleRefresh = useCallback(() => {
+    projectsQuery.refetch();
+    clientsQuery.refetch();
+  }, [projectsQuery, clientsQuery]);
+
+  // Memoized filtered projects to prevent unnecessary recalculations
+  const filteredProjects = useMemo(() => {
+    return projects.filter(project => {
+      const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           project.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           project.client_profiles?.name.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    });
+  }, [projects, searchTerm, statusFilter]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -285,10 +301,28 @@ const ProjectsAdmin = () => {
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-bold">Gestão de Projetos</h2>
-              <p className="text-muted-foreground">Gerencie todos os projetos da empresa</p>
+              <p className="text-muted-foreground">
+                Gerencie todos os projetos da empresa
+                {projectsQuery.isRefetching && (
+                  <span className="ml-2 text-xs text-blue-600">Atualizando...</span>
+                )}
+              </p>
             </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={projectsQuery.isRefetching}
+                className="gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${projectsQuery.isRefetching ? 'animate-spin' : ''}`} />
+                Atualizar
+              </Button>
+            </div>
+          </div>
         
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => {
               setEditingProject(null);
@@ -438,8 +472,7 @@ const ProjectsAdmin = () => {
               </div>
             </form>
           </DialogContent>
-        </Dialog>
-      </div>
+          </Dialog>
 
       {/* Filtros e Busca */}
       <div className="flex gap-4 items-center">

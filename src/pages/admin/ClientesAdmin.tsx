@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useActivityLogger } from '@/hooks/useActivityLogger';
+import { useOptimizedQuery } from '@/hooks/useOptimizedQuery';
 import {
   Table,
   TableBody,
@@ -12,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, Edit, Trash, Key } from 'lucide-react';
+import { Search, Plus, Edit, Trash, Key, RefreshCw } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import {
   Dialog,
@@ -37,8 +38,6 @@ interface Cliente {
 const ClientesAdmin = () => {
   const { toast } = useToast();
   const { logUserAction, logDataOperation } = useActivityLogger();
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [termoBusca, setTermoBusca] = useState('');
   const [novoCliente, setNovoCliente] = useState({
     name: '',
@@ -50,38 +49,41 @@ const ClientesAdmin = () => {
   const [dialogAberto, setDialogAberto] = useState(false);
   const [modoEdicao, setModoEdicao] = useState(false);
 
-  useEffect(() => {
-    loadClientes();
-    logUserAction('access_clients_admin', 'Admin acessou gestão de clientes');
-  }, []);
-
-  const loadClientes = async () => {
-    try {
+  // Optimized data fetching with cache
+  const clientesQuery = useOptimizedQuery(
+    'clients-admin',
+    async () => {
       const { data, error } = await supabase
         .from('client_profiles')
         .select('id, name, email, company, cnpj, created_at')
         .order('name');
 
       if (error) throw error;
-      setClientes(data || []);
-    } catch (error) {
-      console.error('Erro ao carregar clientes:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar clientes.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
+      return data || [];
+    },
+    {
+      staleTime: 30000, // 30 seconds
+      cacheTime: 300000, // 5 minutes
+      refetchOnWindowFocus: false
     }
-  };
-
-  // Filtra clientes baseado no termo de busca
-  const clientesFiltrados = clientes.filter(cliente => 
-    cliente.name.toLowerCase().includes(termoBusca.toLowerCase()) ||
-    cliente.email.toLowerCase().includes(termoBusca.toLowerCase()) ||
-    (cliente.company && cliente.company.toLowerCase().includes(termoBusca.toLowerCase()))
   );
+
+  // Memoized data
+  const clientes = useMemo(() => clientesQuery.data || [], [clientesQuery.data]);
+  const isLoading = clientesQuery.isLoading;
+
+  useEffect(() => {
+    logUserAction('access_clients_admin', 'Admin acessou gestão de clientes');
+  }, [logUserAction]);
+
+  // Memoized filtered clients
+  const clientesFiltrados = useMemo(() => {
+    return clientes.filter(cliente => 
+      cliente.name.toLowerCase().includes(termoBusca.toLowerCase()) ||
+      cliente.email.toLowerCase().includes(termoBusca.toLowerCase()) ||
+      (cliente.company && cliente.company.toLowerCase().includes(termoBusca.toLowerCase()))
+    );
+  }, [clientes, termoBusca]);
 
   const resetarFormulario = () => {
     setNovoCliente({ name: '', company: '', email: '', password: '' });
@@ -162,7 +164,10 @@ const ClientesAdmin = () => {
       
       setDialogAberto(false);
       resetarFormulario();
-      loadClientes();
+      
+      // Invalidate cache and refetch
+      clientesQuery.invalidateQuery();
+      clientesQuery.refetch();
     } catch (error: any) {
       console.error('Erro ao salvar cliente:', error);
       toast({
@@ -228,7 +233,9 @@ const ClientesAdmin = () => {
 
         logDataOperation('delete', 'client', `Cliente excluído: ${id}`);
         
-        loadClientes();
+        // Invalidate cache and refetch
+        clientesQuery.invalidateQuery();
+        clientesQuery.refetch();
       } catch (error: any) {
         console.error('Erro ao excluir cliente:', error);
         toast({
@@ -244,12 +251,35 @@ const ClientesAdmin = () => {
     return <div className="flex justify-center items-center h-64">Carregando clientes...</div>;
   }
 
+  const handleRefresh = useCallback(() => {
+    clientesQuery.refetch();
+  }, [clientesQuery]);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Gestão de Clientes</h2>
+        <div>
+          <h2 className="text-2xl font-bold">Gestão de Clientes</h2>
+          <p className="text-muted-foreground">
+            Gerencie todos os clientes da empresa
+            {clientesQuery.isRefetching && (
+              <span className="ml-2 text-xs text-blue-600">Atualizando...</span>
+            )}
+          </p>
+        </div>
         
         <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={clientesQuery.isRefetching}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${clientesQuery.isRefetching ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
+          
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
             <Input

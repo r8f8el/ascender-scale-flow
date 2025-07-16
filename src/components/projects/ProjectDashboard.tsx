@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useActivityLogger } from '@/hooks/useActivityLogger';
+import { useOptimizedQuery } from '@/hooks/useOptimizedQuery';
 import {
   BarChart,
   Bar,
@@ -51,110 +53,118 @@ const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444'];
 
 const ProjectDashboard: React.FC = () => {
   const { logUserAction } = useActivityLogger();
-  const [stats, setStats] = useState<DashboardStats>({
-    totalProjects: 0,
-    activeProjects: 0,
-    completedProjects: 0,
-    totalBudget: 0,
-    totalTasks: 0,
-    completedTasks: 0,
-    overdueTasks: 0,
-    avgProgress: 0
-  });
-  const [statusData, setStatusData] = useState<ProjectStatus[]>([]);
-  const [priorityData, setPriorityData] = useState<ProjectPriority[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    loadDashboardData();
-    logUserAction('access_project_dashboard', 'Admin acessou dashboard de projetos');
-  }, []);
-
-  const loadDashboardData = async () => {
-    try {
-      // Carregar estatísticas de projetos
-      const { data: projects, error: projectsError } = await supabase
+  // Optimized data fetching for dashboard
+  const projectStatsQuery = useOptimizedQuery(
+    'project-stats',
+    async () => {
+      const { data, error } = await supabase
         .from('projects')
         .select('status, priority, budget, progress');
+      if (error) throw error;
+      return data || [];
+    },
+    {
+      staleTime: 60000, // 1 minute
+      cacheTime: 300000 // 5 minutes
+    }
+  );
 
-      if (projectsError) throw projectsError;
-
-      // Carregar estatísticas de tarefas
-      const { data: tasks, error: tasksError } = await supabase
+  const taskStatsQuery = useOptimizedQuery(
+    'task-stats',
+    async () => {
+      const { data, error } = await supabase
         .from('tasks')
         .select('status, due_date');
-
-      if (tasksError) throw tasksError;
-
-      // Calcular estatísticas
-      const totalProjects = projects.length;
-      const activeProjects = projects.filter(p => p.status === 'in_progress').length;
-      const completedProjects = projects.filter(p => p.status === 'completed').length;
-      const totalBudget = projects.reduce((sum, p) => sum + (p.budget || 0), 0);
-      const avgProgress = projects.length > 0 
-        ? projects.reduce((sum, p) => sum + p.progress, 0) / projects.length 
-        : 0;
-
-      const totalTasks = tasks.length;
-      const completedTasks = tasks.filter(t => t.status === 'completed').length;
-      const overdueTasks = tasks.filter(t => 
-        t.due_date && new Date(t.due_date) < new Date() && t.status !== 'completed'
-      ).length;
-
-      setStats({
-        totalProjects,
-        activeProjects,
-        completedProjects,
-        totalBudget,
-        totalTasks,
-        completedTasks,
-        overdueTasks,
-        avgProgress
-      });
-
-      // Dados para gráficos
-      const statusCounts = projects.reduce((acc, project) => {
-        acc[project.status] = (acc[project.status] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-
-      const statusLabels = {
-        planning: 'Planejamento',
-        in_progress: 'Em Progresso',
-        completed: 'Concluído',
-        on_hold: 'Em Espera'
-      };
-
-      setStatusData(
-        Object.entries(statusCounts).map(([status, count]) => ({
-          status: statusLabels[status as keyof typeof statusLabels] || status,
-          count
-        }))
-      );
-
-      const priorityCounts = projects.reduce((acc, project) => {
-        acc[project.priority] = (acc[project.priority] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-
-      const priorityLabels = {
-        high: 'Alta',
-        medium: 'Média',
-        low: 'Baixa'
-      };
-
-      setPriorityData(
-        Object.entries(priorityCounts).map(([priority, count]) => ({
-          priority: priorityLabels[priority as keyof typeof priorityLabels] || priority,
-          count
-        }))
-      );
-
-    } catch (error) {
-      console.error('Erro ao carregar dados do dashboard:', error);
-    } finally {
-      setIsLoading(false);
+      if (error) throw error;
+      return data || [];
+    },
+    {
+      staleTime: 60000, // 1 minute
+      cacheTime: 300000 // 5 minutes
     }
+  );
+
+  useEffect(() => {
+    logUserAction('access_project_dashboard', 'Admin acessou dashboard de projetos');
+  }, [logUserAction]);
+
+  // Memoized calculations
+  const stats = useMemo(() => {
+    const projects = projectStatsQuery.data || [];
+    const tasks = taskStatsQuery.data || [];
+
+    const totalProjects = projects.length;
+    const activeProjects = projects.filter(p => p.status === 'in_progress').length;
+    const completedProjects = projects.filter(p => p.status === 'completed').length;
+    const totalBudget = projects.reduce((sum, p) => sum + (p.budget || 0), 0);
+    const avgProgress = projects.length > 0 
+      ? projects.reduce((sum, p) => sum + p.progress, 0) / projects.length 
+      : 0;
+
+    const totalTasks = tasks.length;
+    const completedTasks = tasks.filter(t => t.status === 'completed').length;
+    const overdueTasks = tasks.filter(t => 
+      t.due_date && new Date(t.due_date) < new Date() && t.status !== 'completed'
+    ).length;
+
+    return {
+      totalProjects,
+      activeProjects,
+      completedProjects,
+      totalBudget,
+      totalTasks,
+      completedTasks,
+      overdueTasks,
+      avgProgress
+    };
+  }, [projectStatsQuery.data, taskStatsQuery.data]);
+
+  // Memoized chart data
+  const statusData = useMemo(() => {
+    const projects = projectStatsQuery.data || [];
+    const statusCounts = projects.reduce((acc, project) => {
+      acc[project.status] = (acc[project.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const statusLabels = {
+      planning: 'Planejamento',
+      in_progress: 'Em Progresso',
+      completed: 'Concluído',
+      on_hold: 'Em Espera'
+    };
+
+    return Object.entries(statusCounts).map(([status, count]) => ({
+      status: statusLabels[status as keyof typeof statusLabels] || status,
+      count
+    }));
+  }, [projectStatsQuery.data]);
+
+  const priorityData = useMemo(() => {
+    const projects = projectStatsQuery.data || [];
+    const priorityCounts = projects.reduce((acc, project) => {
+      acc[project.priority] = (acc[project.priority] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const priorityLabels = {
+      high: 'Alta',
+      medium: 'Média',
+      low: 'Baixa'
+    };
+
+    return Object.entries(priorityCounts).map(([priority, count]) => ({
+      priority: priorityLabels[priority as keyof typeof priorityLabels] || priority,
+      count
+    }));
+  }, [projectStatsQuery.data]);
+
+  const isLoading = projectStatsQuery.isLoading || taskStatsQuery.isLoading;
+
+  const handleRefresh = () => {
+    projectStatsQuery.refetch();
+    taskStatsQuery.refetch();
   };
 
   if (isLoading) {
@@ -163,11 +173,26 @@ const ProjectDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Dashboard de Projetos</h2>
-        <p className="text-muted-foreground">
-          Visão geral dos projetos e tarefas da empresa
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Dashboard de Projetos</h2>
+          <p className="text-muted-foreground">
+            Visão geral dos projetos e tarefas da empresa
+            {(projectStatsQuery.isRefetching || taskStatsQuery.isRefetching) && (
+              <span className="ml-2 text-xs text-blue-600">Atualizando...</span>
+            )}
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={projectStatsQuery.isRefetching || taskStatsQuery.isRefetching}
+          className="gap-2"
+        >
+          <TrendingUp className={`h-4 w-4 ${(projectStatsQuery.isRefetching || taskStatsQuery.isRefetching) ? 'animate-spin' : ''}`} />
+          Atualizar
+        </Button>
       </div>
 
       {/* Cards de Estatísticas */}
