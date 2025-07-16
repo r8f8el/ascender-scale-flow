@@ -128,6 +128,24 @@ const ClientesAdmin = () => {
         });
 
         if (authError) throw authError;
+
+        // Se o usuário foi criado com sucesso, criar o perfil do cliente também
+        if (authData.user) {
+          const { error: profileError } = await supabase
+            .from('client_profiles')
+            .insert({
+              id: authData.user.id,
+              name: novoCliente.name,
+              email: novoCliente.email,
+              company: novoCliente.company || null,
+              is_primary_contact: true
+            });
+
+          if (profileError) {
+            console.warn('Perfil não criado automaticamente:', profileError);
+            // Não falha a operação pois o trigger pode ter criado
+          }
+        }
         
         toast({
           title: "Sucesso",
@@ -181,14 +199,18 @@ const ClientesAdmin = () => {
   };
 
   const handleExcluirCliente = async (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este cliente?')) {
+    if (window.confirm('Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.')) {
       try {
-        const { error } = await supabase
+        // Primeiro, deletar o perfil do cliente
+        const { error: profileError } = await supabase
           .from('client_profiles')
           .delete()
           .eq('id', id);
 
-        if (error) throw error;
+        if (profileError) throw profileError;
+
+        // Depois, tentar deletar o usuário do auth (se possível)
+        // Nota: A deleção do auth deve ser feita pelo próprio usuário ou via API admin
         
         toast({
           title: "Sucesso",
