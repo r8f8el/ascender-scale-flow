@@ -465,7 +465,7 @@ const AdminFPADataIntegration = () => {
                   <CardContent>
                     <div className="space-y-3">
                       <div className="flex justify-between items-center p-3 border rounded">
-                        <span>Receita deve ser > 0</span>
+                        <span>Receita deve ser maior que 0</span>
                         <Badge className="bg-green-100 text-green-700">Ativa</Badge>
                       </div>
                       <div className="flex justify-between items-center p-3 border rounded">
