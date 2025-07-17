@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import './App.css';
@@ -40,11 +41,6 @@ import MyTickets from './pages/admin/MyTickets';
 import ProjectsAdmin from './pages/admin/ProjectsAdmin';
 import TasksAdmin from './pages/admin/TasksAdmin';
 import OneDriveIntegration from './pages/admin/OneDriveIntegration';
-import ClientMobileMenu from './components/client/ClientMobileMenu';
-import ClientNavigation from './components/client/ClientNavigation';
-import ClientTopBar from './components/client/ClientTopBar';
-import AdminTopBar from './components/admin/AdminTopBar';
-import AdminNavigation from './components/admin/AdminNavigation';
 import TicketsAdminNew from './pages/admin/TicketsAdminNew';
 import TicketsAdminEdit from './pages/admin/TicketsAdminEdit';
 import { useAuth } from '@/contexts/AuthContext';
@@ -108,6 +104,8 @@ function App() {
             <Route path="logs" element={<LogsAdmin />} />
             <Route path="activity-logs" element={<ActivityLogsAdmin />} />
             <Route path="chamados" element={<TicketsAdmin />} />
+            <Route path="chamados-novo" element={<TicketsAdminNew />} />
+            <Route path="chamados/:ticketId/editar" element={<TicketsAdminEdit />} />
             <Route path="meus-chamados" element={<MyTickets />} />
             <Route path="projetos" element={<ProjectsAdmin />} />
             <Route path="tarefas" element={<TasksAdmin />} />
