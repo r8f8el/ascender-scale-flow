@@ -38,10 +38,12 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
   const [uploading, setUploading] = useState(false);
 
   const {
-    uploadFiles,
-    uploadProgress,
-    validateFiles,
-    clearFiles
+    uploadFile,
+    uploadMultiple,
+    deleteFile,
+    isUploading,
+    progress,
+    validateFile
   } = useUploadManager();
 
   // Carregar arquivos com cache otimizado
@@ -119,41 +121,40 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
     return 'other';
   };
 
-  const filteredFiles = files.filter(file => {
+  const filteredFiles = Array.isArray(files) ? files.filter(file => {
     const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || file.category === selectedCategory;
     const matchesType = selectedType === 'all' || getFileTypeCategory(file.type) === selectedType;
     
     return matchesSearch && matchesCategory && matchesType;
-  });
+  }) : [];
 
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || !user) return;
+    const fileList = event.target.files;
+    if (!fileList || !user) return;
 
-    const fileArray = Array.from(files);
-    const validation = validateFiles(fileArray);
+    const fileArray = Array.from(fileList);
     
-    if (!validation.isValid) {
-      toast({
-        title: "Erro de validação",
-        description: validation.errors.join('\n'),
-        variant: "destructive"
+    // Validate files individually
+    for (const file of fileArray) {
+      const isValid = validateFile(file, {
+        bucket: 'files',
+        allowedTypes: ['image/*', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+        maxSizeBytes: 10 * 1024 * 1024 // 10MB
       });
-      return;
+      
+      if (!isValid) {
+        return;
+      }
     }
 
     setUploading(true);
     try {
-      await uploadFiles(fileArray, {
+      await uploadMultiple(fileArray, {
         bucket: 'files',
         folder: user.id,
-        onProgress: (progress) => {
-          console.log(`Upload progress: ${progress}%`);
-        },
-        metadata: {
-          client_id: user.id,
-          category: 'Sem categoria'
+        onProgress: (progressValue) => {
+          console.log(`Upload progress: ${progressValue}%`);
         }
       });
 
@@ -162,7 +163,6 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
         description: "Arquivos enviados com sucesso!"
       });
       
-      clearFiles();
       refreshFiles();
     } catch (error) {
       console.error('Erro no upload:', error);
@@ -174,7 +174,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
     } finally {
       setUploading(false);
     }
-  }, [user, validateFiles, uploadFiles, clearFiles, refreshFiles, toast]);
+  }, [user, validateFile, uploadMultiple, refreshFiles, toast]);
 
   const downloadFile = async (file: FileData) => {
     try {
@@ -202,14 +202,9 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
     }
   };
 
-  const deleteFile = async (file: FileData) => {
+  const handleDeleteFile = async (file: FileData) => {
     try {
-      // Deletar do storage
-      const { error: storageError } = await supabase.storage
-        .from('files')
-        .remove([file.file_path]);
-
-      if (storageError) throw storageError;
+      await deleteFile('files', file.file_path);
 
       // Deletar do banco
       const { error: dbError } = await supabase
@@ -258,10 +253,10 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
           </Button>
           
           <Label htmlFor="file-upload" className="cursor-pointer">
-            <Button asChild disabled={uploading}>
+            <Button asChild disabled={uploading || isUploading}>
               <span>
                 <Upload className="h-4 w-4 mr-2" />
-                {uploading ? 'Enviando...' : 'Enviar Arquivos'}
+                {uploading || isUploading ? 'Enviando...' : 'Enviar Arquivos'}
               </span>
             </Button>
           </Label>
@@ -271,24 +266,24 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
             multiple
             onChange={handleFileUpload}
             className="hidden"
-            disabled={uploading}
+            disabled={uploading || isUploading}
           />
         </div>
       </div>
 
       {/* Progresso do upload */}
-      {uploadProgress > 0 && uploadProgress < 100 && (
+      {(progress > 0 && progress < 100) && (
         <Card>
           <CardContent className="pt-6">
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Enviando arquivos...</span>
-                <span>{uploadProgress}%</span>
+                <span>{progress}%</span>
               </div>
               <div className="w-full bg-secondary rounded-full h-2">
                 <div
                   className="bg-primary h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${uploadProgress}%` }}
+                  style={{ width: `${progress}%` }}
                 />
               </div>
             </div>
@@ -420,7 +415,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => deleteFile(file)}>
+                          <AlertDialogAction onClick={() => handleDeleteFile(file)}>
                             Excluir
                           </AlertDialogAction>
                         </AlertDialogFooter>

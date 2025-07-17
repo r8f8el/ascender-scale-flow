@@ -68,7 +68,14 @@ export const useChat = (isAdmin = false) => {
         .order('created_at', { ascending: true });
       
       if (error) throw error;
-      setMessages(data || []);
+      
+      // Type assertion to ensure correct typing
+      const typedMessages = (data || []).map(msg => ({
+        ...msg,
+        sender_type: msg.sender_type as 'client' | 'admin'
+      }));
+      
+      setMessages(typedMessages);
       setCurrentRoom(roomId);
     } catch (error) {
       console.error('Erro ao carregar mensagens:', error);
@@ -175,9 +182,12 @@ export const useChat = (isAdmin = false) => {
       .on('postgres_changes', 
         { event: 'INSERT', schema: 'public', table: 'chat_messages' }, 
         (payload) => {
-          const newMessage = payload.new as ChatMessage;
+          const newMessage = payload.new as any;
           if (newMessage.chat_room_id === currentRoom) {
-            setMessages(prev => [...prev, newMessage]);
+            setMessages(prev => [...prev, {
+              ...newMessage,
+              sender_type: newMessage.sender_type as 'client' | 'admin'
+            }]);
           }
           loadChatRooms(); // Atualizar lista de salas
         }
