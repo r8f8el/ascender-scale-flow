@@ -30,6 +30,7 @@ interface FileManagerProps {
 }
 
 export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => {
+  // All hooks must be called unconditionally at the top
   const { user } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
@@ -89,23 +90,23 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
     { value: 'other', label: 'Outros' }
   ];
 
-  const getFileIcon = (type: string | null) => {
+  const getFileIcon = useCallback((type: string | null) => {
     if (!type) return <File className="h-4 w-4" />;
     
     if (type.includes('image')) return <Image className="h-4 w-4" />;
     if (type.includes('pdf') || type.includes('document')) return <FileText className="h-4 w-4" />;
     return <File className="h-4 w-4" />;
-  };
+  }, []);
 
-  const formatFileSize = (bytes: number) => {
+  const formatFileSize = useCallback((bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
+  }, []);
 
-  const formatDate = (dateString: string) => {
+  const formatDate = useCallback((dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: '2-digit',
@@ -113,16 +114,16 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
       hour: '2-digit',
       minute: '2-digit'
     });
-  };
+  }, []);
 
-  const getFileTypeCategory = (mimeType: string | null) => {
+  const getFileTypeCategory = useCallback((mimeType: string | null) => {
     if (!mimeType) return 'other';
     if (mimeType.includes('image')) return 'image';
     if (mimeType.includes('pdf')) return 'pdf';
     if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) return 'spreadsheet';
     if (mimeType.includes('document') || mimeType.includes('word')) return 'document';
     return 'other';
-  };
+  }, []);
 
   const filteredFiles = files.filter(file => {
     const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -179,7 +180,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
     }
   }, [user, validateFile, uploadMultiple, filesQuery, toast]);
 
-  const downloadFile = async (file: FileData) => {
+  const downloadFile = useCallback(async (file: FileData) => {
     try {
       const { data, error } = await supabase.storage
         .from('files')
@@ -203,9 +204,9 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
         variant: "destructive"
       });
     }
-  };
+  }, [toast]);
 
-  const handleDeleteFile = async (file: FileData) => {
+  const handleDeleteFile = useCallback(async (file: FileData) => {
     try {
       await deleteFile('files', file.file_path);
 
@@ -231,7 +232,16 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
         variant: "destructive"
       });
     }
-  };
+  }, [deleteFile, toast, filesQuery]);
+
+  // Early return after all hooks have been called
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <p className="text-muted-foreground">Por favor, faça login para acessar os arquivos.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
