@@ -3,30 +3,34 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { 
-  FileText, 
-  MessageSquare, 
-  ClipboardList, 
-  Calendar, 
-  Users, 
-  Phone,
+  LayoutDashboard,
+  Users,
+  MessageSquare,
+  FileText,
+  ClipboardList,
+  Calendar,
+  Settings,
+  Activity,
   CheckCircle,
   X 
 } from 'lucide-react';
 
-interface ClientNavigationProps {
+interface AdminNavigationProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function ClientNavigation({ isOpen, onClose }: ClientNavigationProps) {
+export function AdminNavigation({ isOpen, onClose }: AdminNavigationProps) {
   const navigation = [
-    { name: 'Documentos', href: '/cliente/documentos', icon: FileText },
-    { name: 'Tickets', href: '/cliente/tickets', icon: MessageSquare },
-    { name: 'Solicitações', href: '/cliente/solicitacoes', icon: ClipboardList },
-    { name: 'Aprovações', href: '/cliente/aprovacoes', icon: CheckCircle },
-    { name: 'Cronograma', href: '/cliente/cronograma', icon: Calendar },
-    { name: 'Equipe', href: '/cliente/equipe', icon: Users },
-    { name: 'Contato', href: '/cliente/contato', icon: Phone },
+    { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+    { name: 'Tickets', href: '/admin/tickets', icon: MessageSquare },
+    { name: 'Clientes', href: '/admin/clientes', icon: Users },
+    { name: 'Arquivos', href: '/admin/arquivos', icon: FileText },
+    { name: 'Solicitações', href: '/admin/solicitacoes', icon: ClipboardList },
+    { name: 'Aprovações', href: '/admin/aprovacoes', icon: CheckCircle },
+    { name: 'Cronogramas', href: '/admin/cronogramas', icon: Calendar },
+    { name: 'Logs', href: '/admin/logs', icon: Activity },
+    { name: 'Configurações', href: '/admin/configuracoes', icon: Settings },
   ];
 
   return (
@@ -45,7 +49,7 @@ export function ClientNavigation({ isOpen, onClose }: ClientNavigationProps) {
         isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
         <div className="flex items-center justify-between p-4 lg:hidden">
-          <h2 className="text-lg font-semibold">Menu</h2>
+          <h2 className="text-lg font-semibold">Menu Admin</h2>
           <button onClick={onClose}>
             <X className="h-5 w-5" />
           </button>

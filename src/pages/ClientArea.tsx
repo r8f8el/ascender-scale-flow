@@ -1,58 +1,78 @@
+import React, { useState } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { ClientHeader } from '@/components/client/ClientHeader';
+import { ClientNavigation } from '@/components/client/ClientNavigation';
+import ClientDocuments from './client/ClientDocuments';
+import ClientTickets from './client/ClientTickets';
+import ClientTicketDetail from './client/ClientTicketDetail';
+import ClientRequests from './client/ClientRequests';
+import ClientSchedule from './client/ClientSchedule';
+import ClientTeam from './client/ClientTeam';
+import ClientContact from './client/ClientContact';
+import ClientApprovals from './client/ClientApprovals';
+import { useResponsive } from '@/hooks/useResponsive';
 
-import { Outlet, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { LogOut } from 'lucide-react';
-import { Chat } from '@/components/Chat';
-import { ClientHeader } from '../components/client/ClientHeader';
-import { ClientNavigation } from '../components/client/ClientNavigation';
-import { useResponsive } from '../hooks/useResponsive';
+export default function ClientArea() {
+  const { isAuthenticated, client, loading } = useAuth();
+  const { isMobile } = useResponsive();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-const ClientArea = () => {
-  const { client, logout } = useAuth();
-  const navigate = useNavigate();
-  const isMobile = useResponsive();
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/cliente/login" replace />;
+  }
 
   const handleLogout = () => {
-    logout();
-    navigate('/cliente/login');
+    try {
+      // Call the logout function from the AuthContext
+      // This function should handle the actual logout logic
+      // including clearing the session and user state
+      // and redirecting to the login page if necessary
+      // For example:
+      // logout();
+    } catch (error) {
+      console.error('Logout failed', error);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50">
       <ClientHeader 
-        clientName={client?.name}
+        client={client}
         isMobile={isMobile}
         onLogout={handleLogout}
       />
       
-      <div className="flex flex-1 container mx-auto">
-        {/* Sidebar (Desktop) */}
-        <aside className="hidden md:block w-64 bg-white border-r p-6">
-          <ClientNavigation />
-          
-          <div className="mt-auto pt-8">
-            <button 
-              onClick={handleLogout}
-              className="flex items-center gap-2 text-red-600 hover:text-red-700 transition-colors w-full"
-            >
-              <LogOut size={20} />
-              <span>Sair</span>
-            </button>
-          </div>
-        </aside>
+      <div className="flex">
+        <ClientNavigation 
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+        />
         
-        {/* Main Content */}
-        <main className="flex-1 p-4 md:p-8 overflow-auto">
-          <div className="bg-white rounded-lg shadow p-6">
-            <Outlet />
+        <main className="flex-1 lg:ml-64">
+          <div className="p-6">
+            <Routes>
+              <Route path="/" element={<Navigate to="/cliente/documentos" replace />} />
+              <Route path="/documentos" element={<ClientDocuments />} />
+              <Route path="/tickets" element={<ClientTickets />} />
+              <Route path="/tickets/:id" element={<ClientTicketDetail />} />
+              <Route path="/solicitacoes" element={<ClientRequests />} />
+              <Route path="/cronograma" element={<ClientSchedule />} />
+              <Route path="/equipe" element={<ClientTeam />} />
+              <Route path="/contato" element={<ClientContact />} />
+              <Route path="/aprovacoes" element={<ClientApprovals />} />
+            </Routes>
           </div>
         </main>
       </div>
-      
-      {/* Chat Component */}
-      <Chat />
     </div>
   );
-};
-
-export default ClientArea;
+}
