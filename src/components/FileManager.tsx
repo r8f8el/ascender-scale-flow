@@ -29,7 +29,7 @@ interface FileManagerProps {
 }
 
 export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => {
-  // ALL HOOKS MUST BE CALLED FIRST - NO CONDITIONAL LOGIC BEFORE THIS POINT
+  // ALL HOOKS MUST BE CALLED FIRST UNCONDITIONALLY
   const { user } = useAuth();
   const { toast } = useToast();
   const {
@@ -250,7 +250,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
     }
   }, [user, fetchFiles]);
 
-  // EARLY RETURN ONLY AFTER ALL HOOKS
+  // CONDITIONAL RENDERING ONLY AFTER ALL HOOKS ARE CALLED
   if (!user) {
     return (
       <div className="flex items-center justify-center py-8">
