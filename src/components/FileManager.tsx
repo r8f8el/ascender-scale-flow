@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,16 +29,9 @@ interface FileManagerProps {
 }
 
 export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => {
-  // All hooks must be called unconditionally at the top
+  // All hooks MUST be called unconditionally at the top level
   const { user } = useAuth();
   const { toast } = useToast();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedType, setSelectedType] = useState('all');
-  const [uploading, setUploading] = useState(false);
-  const [files, setFiles] = useState<FileData[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-
   const {
     uploadFile,
     uploadMultiple,
@@ -48,39 +41,15 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
     validateFile
   } = useUploadManager();
 
-  // Fetch files function
-  const fetchFiles = useCallback(async () => {
-    if (!user) return;
-    
-    setIsLoading(true);
-    try {
-      let query = supabase.from('files').select('*');
-      
-      if (!isAdmin) {
-        query = query.eq('client_id', user.id);
-      }
-      
-      const { data, error } = await query.order('uploaded_at', { ascending: false });
-      
-      if (error) throw error;
-      setFiles((data as FileData[]) || []);
-    } catch (error) {
-      console.error('Error fetching files:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar arquivos",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user, isAdmin, toast]);
+  // State hooks
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedType, setSelectedType] = useState('all');
+  const [uploading, setUploading] = useState(false);
+  const [files, setFiles] = useState<FileData[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Load files on component mount and when dependencies change
-  React.useEffect(() => {
-    fetchFiles();
-  }, [fetchFiles]);
-
+  // Memoized values
   const categories = useMemo(() => [
     'Sem categoria',
     'Documentos Fiscais',
@@ -98,6 +67,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
     { value: 'other', label: 'Outros' }
   ], []);
 
+  // Callback functions
   const getFileIcon = useCallback((type: string | null) => {
     if (!type) return <File className="h-4 w-4" />;
     
@@ -133,6 +103,35 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
     return 'other';
   }, []);
 
+  // Fetch files function
+  const fetchFiles = useCallback(async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    try {
+      let query = supabase.from('files').select('*');
+      
+      if (!isAdmin) {
+        query = query.eq('client_id', user.id);
+      }
+      
+      const { data, error } = await query.order('uploaded_at', { ascending: false });
+      
+      if (error) throw error;
+      setFiles((data as FileData[]) || []);
+    } catch (error) {
+      console.error('Error fetching files:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar arquivos",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, isAdmin, toast]);
+
+  // Filtered files memoization
   const filteredFiles = useMemo(() => {
     return files.filter(file => {
       const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -143,6 +142,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
     });
   }, [files, searchTerm, selectedCategory, selectedType, getFileTypeCategory]);
 
+  // File upload handler
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = event.target.files;
     if (!fileList || !user) return;
@@ -190,6 +190,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
     }
   }, [user, validateFile, uploadMultiple, fetchFiles, toast]);
 
+  // Download file handler
   const downloadFile = useCallback(async (file: FileData) => {
     try {
       const { data, error } = await supabase.storage
@@ -216,6 +217,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
     }
   }, [toast]);
 
+  // Delete file handler
   const handleDeleteFile = useCallback(async (file: FileData) => {
     try {
       await deleteFile('files', file.file_path);
@@ -244,7 +246,12 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
     }
   }, [deleteFile, toast, fetchFiles]);
 
-  // Early return after all hooks have been called
+  // Load files on component mount
+  useEffect(() => {
+    fetchFiles();
+  }, [fetchFiles]);
+
+  // Early return AFTER all hooks have been called
   if (!user) {
     return (
       <div className="flex items-center justify-center py-8">
