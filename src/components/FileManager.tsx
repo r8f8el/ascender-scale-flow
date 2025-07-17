@@ -41,7 +41,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
     validateFile
   } = useUploadManager();
 
-  // State hooks
+  // State hooks - all declared unconditionally
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
@@ -49,7 +49,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
   const [files, setFiles] = useState<FileData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Memoized values
+  // Memoized values - all declared unconditionally
   const categories = useMemo(() => [
     'Sem categoria',
     'Documentos Fiscais',
@@ -67,7 +67,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
     { value: 'other', label: 'Outros' }
   ], []);
 
-  // Callback functions
+  // Callback functions - all declared unconditionally
   const getFileIcon = useCallback((type: string | null) => {
     if (!type) return <File className="h-4 w-4" />;
     
@@ -105,7 +105,10 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
 
   // Fetch files function
   const fetchFiles = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user found, skipping file fetch');
+      return;
+    }
     
     setIsLoading(true);
     try {
@@ -246,12 +249,14 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
     }
   }, [deleteFile, toast, fetchFiles]);
 
-  // Load files on component mount
+  // Load files on component mount - effect declared unconditionally
   useEffect(() => {
-    fetchFiles();
-  }, [fetchFiles]);
+    if (user) {
+      fetchFiles();
+    }
+  }, [user, fetchFiles]);
 
-  // Early return AFTER all hooks have been called
+  // If no user, return early but AFTER all hooks have been called
   if (!user) {
     return (
       <div className="flex items-center justify-center py-8">
