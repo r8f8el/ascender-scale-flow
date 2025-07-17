@@ -29,7 +29,7 @@ interface FileManagerProps {
 }
 
 export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => {
-  // All hooks MUST be called unconditionally at the top level
+  // ALL HOOKS MUST BE CALLED FIRST - NO CONDITIONAL LOGIC BEFORE THIS POINT
   const { user } = useAuth();
   const { toast } = useToast();
   const {
@@ -41,7 +41,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
     validateFile
   } = useUploadManager();
 
-  // State hooks - all declared unconditionally
+  // ALL STATE HOOKS
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
@@ -49,7 +49,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
   const [files, setFiles] = useState<FileData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Memoized values - all declared unconditionally
+  // ALL MEMOIZED VALUES
   const categories = useMemo(() => [
     'Sem categoria',
     'Documentos Fiscais',
@@ -67,7 +67,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
     { value: 'other', label: 'Outros' }
   ], []);
 
-  // Callback functions - all declared unconditionally
+  // ALL CALLBACK FUNCTIONS
   const getFileIcon = useCallback((type: string | null) => {
     if (!type) return <File className="h-4 w-4" />;
     
@@ -103,7 +103,6 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
     return 'other';
   }, []);
 
-  // Fetch files function
   const fetchFiles = useCallback(async () => {
     if (!user) {
       console.log('No user found, skipping file fetch');
@@ -134,30 +133,17 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
     }
   }, [user, isAdmin, toast]);
 
-  // Filtered files memoization
-  const filteredFiles = useMemo(() => {
-    return files.filter(file => {
-      const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === 'all' || file.category === selectedCategory;
-      const matchesType = selectedType === 'all' || getFileTypeCategory(file.type) === selectedType;
-      
-      return matchesSearch && matchesCategory && matchesType;
-    });
-  }, [files, searchTerm, selectedCategory, selectedType, getFileTypeCategory]);
-
-  // File upload handler
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = event.target.files;
     if (!fileList || !user) return;
 
     const fileArray = Array.from(fileList);
     
-    // Validate files individually
     for (const file of fileArray) {
       const isValid = validateFile(file, {
         bucket: 'files',
         allowedTypes: ['image/*', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-        maxSizeBytes: 10 * 1024 * 1024 // 10MB
+        maxSizeBytes: 10 * 1024 * 1024
       });
       
       if (!isValid) {
@@ -193,7 +179,6 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
     }
   }, [user, validateFile, uploadMultiple, fetchFiles, toast]);
 
-  // Download file handler
   const downloadFile = useCallback(async (file: FileData) => {
     try {
       const { data, error } = await supabase.storage
@@ -220,12 +205,10 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
     }
   }, [toast]);
 
-  // Delete file handler
   const handleDeleteFile = useCallback(async (file: FileData) => {
     try {
       await deleteFile('files', file.file_path);
 
-      // Deletar do banco
       const { error: dbError } = await supabase
         .from('files')
         .delete()
@@ -249,14 +232,25 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
     }
   }, [deleteFile, toast, fetchFiles]);
 
-  // Load files on component mount - effect declared unconditionally
+  // FILTERED FILES MEMOIZATION
+  const filteredFiles = useMemo(() => {
+    return files.filter(file => {
+      const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = selectedCategory === 'all' || file.category === selectedCategory;
+      const matchesType = selectedType === 'all' || getFileTypeCategory(file.type) === selectedType;
+      
+      return matchesSearch && matchesCategory && matchesType;
+    });
+  }, [files, searchTerm, selectedCategory, selectedType, getFileTypeCategory]);
+
+  // ALL EFFECTS
   useEffect(() => {
     if (user) {
       fetchFiles();
     }
   }, [user, fetchFiles]);
 
-  // If no user, return early but AFTER all hooks have been called
+  // EARLY RETURN ONLY AFTER ALL HOOKS
   if (!user) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -267,7 +261,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
 
   return (
     <div className="space-y-6">
-      {/* Header com ações */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Gerenciamento de Arquivos</h2>
@@ -306,7 +300,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
         </div>
       </div>
 
-      {/* Progresso do upload */}
+      {/* Progress */}
       {(progress > 0 && progress < 100) && (
         <Card>
           <CardContent className="pt-6">
@@ -326,7 +320,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
         </Card>
       )}
 
-      {/* Filtros */}
+      {/* Filters */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Filtros</CardTitle>
@@ -384,7 +378,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
         </CardContent>
       </Card>
 
-      {/* Lista de arquivos */}
+      {/* Files List */}
       <Card>
         <CardHeader>
           <CardTitle>
