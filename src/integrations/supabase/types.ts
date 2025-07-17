@@ -599,6 +599,508 @@ export type Database = {
         }
         Relationships: []
       }
+      fpa_clients: {
+        Row: {
+          business_model: string | null
+          client_profile_id: string | null
+          company_name: string
+          created_at: string | null
+          current_phase: number | null
+          id: string
+          industry: string | null
+          onboarding_completed: boolean | null
+          strategic_objectives: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          business_model?: string | null
+          client_profile_id?: string | null
+          company_name: string
+          created_at?: string | null
+          current_phase?: number | null
+          id?: string
+          industry?: string | null
+          onboarding_completed?: boolean | null
+          strategic_objectives?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          business_model?: string | null
+          client_profile_id?: string | null
+          company_name?: string
+          created_at?: string | null
+          current_phase?: number | null
+          id?: string
+          industry?: string | null
+          onboarding_completed?: boolean | null
+          strategic_objectives?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fpa_clients_client_profile_id_fkey"
+            columns: ["client_profile_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fpa_communications: {
+        Row: {
+          context_id: string | null
+          context_type: string | null
+          created_at: string | null
+          fpa_client_id: string | null
+          id: string
+          is_internal: boolean | null
+          message: string
+          sender_id: string
+          sender_type: string
+        }
+        Insert: {
+          context_id?: string | null
+          context_type?: string | null
+          created_at?: string | null
+          fpa_client_id?: string | null
+          id?: string
+          is_internal?: boolean | null
+          message: string
+          sender_id: string
+          sender_type: string
+        }
+        Update: {
+          context_id?: string | null
+          context_type?: string | null
+          created_at?: string | null
+          fpa_client_id?: string | null
+          id?: string
+          is_internal?: boolean | null
+          message?: string
+          sender_id?: string
+          sender_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fpa_communications_fpa_client_id_fkey"
+            columns: ["fpa_client_id"]
+            isOneToOne: false
+            referencedRelation: "fpa_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fpa_data_uploads: {
+        Row: {
+          created_at: string | null
+          file_name: string
+          file_path: string
+          file_type: string
+          fpa_client_id: string | null
+          id: string
+          period_id: string | null
+          status: string | null
+          uploaded_by: string | null
+          validation_errors: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          file_name: string
+          file_path: string
+          file_type: string
+          fpa_client_id?: string | null
+          id?: string
+          period_id?: string | null
+          status?: string | null
+          uploaded_by?: string | null
+          validation_errors?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          file_name?: string
+          file_path?: string
+          file_type?: string
+          fpa_client_id?: string | null
+          id?: string
+          period_id?: string | null
+          status?: string | null
+          uploaded_by?: string | null
+          validation_errors?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fpa_data_uploads_fpa_client_id_fkey"
+            columns: ["fpa_client_id"]
+            isOneToOne: false
+            referencedRelation: "fpa_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fpa_data_uploads_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "fpa_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fpa_data_uploads_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fpa_driver_values: {
+        Row: {
+          created_at: string | null
+          driver_id: string | null
+          id: string
+          period_id: string | null
+          scenario_name: string | null
+          value: number
+        }
+        Insert: {
+          created_at?: string | null
+          driver_id?: string | null
+          id?: string
+          period_id?: string | null
+          scenario_name?: string | null
+          value: number
+        }
+        Update: {
+          created_at?: string | null
+          driver_id?: string | null
+          id?: string
+          period_id?: string | null
+          scenario_name?: string | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fpa_driver_values_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "fpa_drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fpa_driver_values_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "fpa_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fpa_drivers: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          driver_type: string
+          formula: string | null
+          fpa_client_id: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          unit: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          driver_type: string
+          formula?: string | null
+          fpa_client_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          unit?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          driver_type?: string
+          formula?: string | null
+          fpa_client_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fpa_drivers_fpa_client_id_fkey"
+            columns: ["fpa_client_id"]
+            isOneToOne: false
+            referencedRelation: "fpa_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fpa_financial_data: {
+        Row: {
+          cash_balance: number | null
+          cost_of_goods_sold: number | null
+          created_at: string | null
+          current_assets: number | null
+          current_liabilities: number | null
+          depreciation: number | null
+          ebit: number | null
+          ebitda: number | null
+          equity: number | null
+          financial_expenses: number | null
+          financing_cash_flow: number | null
+          fpa_client_id: string | null
+          gross_profit: number | null
+          id: string
+          investing_cash_flow: number | null
+          net_cash_flow: number | null
+          net_income: number | null
+          non_current_assets: number | null
+          non_current_liabilities: number | null
+          operating_cash_flow: number | null
+          operating_expenses: number | null
+          period_id: string | null
+          revenue: number | null
+          scenario_name: string | null
+          total_assets: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          cash_balance?: number | null
+          cost_of_goods_sold?: number | null
+          created_at?: string | null
+          current_assets?: number | null
+          current_liabilities?: number | null
+          depreciation?: number | null
+          ebit?: number | null
+          ebitda?: number | null
+          equity?: number | null
+          financial_expenses?: number | null
+          financing_cash_flow?: number | null
+          fpa_client_id?: string | null
+          gross_profit?: number | null
+          id?: string
+          investing_cash_flow?: number | null
+          net_cash_flow?: number | null
+          net_income?: number | null
+          non_current_assets?: number | null
+          non_current_liabilities?: number | null
+          operating_cash_flow?: number | null
+          operating_expenses?: number | null
+          period_id?: string | null
+          revenue?: number | null
+          scenario_name?: string | null
+          total_assets?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          cash_balance?: number | null
+          cost_of_goods_sold?: number | null
+          created_at?: string | null
+          current_assets?: number | null
+          current_liabilities?: number | null
+          depreciation?: number | null
+          ebit?: number | null
+          ebitda?: number | null
+          equity?: number | null
+          financial_expenses?: number | null
+          financing_cash_flow?: number | null
+          fpa_client_id?: string | null
+          gross_profit?: number | null
+          id?: string
+          investing_cash_flow?: number | null
+          net_cash_flow?: number | null
+          net_income?: number | null
+          non_current_assets?: number | null
+          non_current_liabilities?: number | null
+          operating_cash_flow?: number | null
+          operating_expenses?: number | null
+          period_id?: string | null
+          revenue?: number | null
+          scenario_name?: string | null
+          total_assets?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fpa_financial_data_fpa_client_id_fkey"
+            columns: ["fpa_client_id"]
+            isOneToOne: false
+            referencedRelation: "fpa_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fpa_financial_data_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "fpa_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fpa_periods: {
+        Row: {
+          created_at: string | null
+          end_date: string
+          fpa_client_id: string | null
+          id: string
+          is_actual: boolean | null
+          period_name: string
+          period_type: string
+          start_date: string
+        }
+        Insert: {
+          created_at?: string | null
+          end_date: string
+          fpa_client_id?: string | null
+          id?: string
+          is_actual?: boolean | null
+          period_name: string
+          period_type: string
+          start_date: string
+        }
+        Update: {
+          created_at?: string | null
+          end_date?: string
+          fpa_client_id?: string | null
+          id?: string
+          is_actual?: boolean | null
+          period_name?: string
+          period_type?: string
+          start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fpa_periods_fpa_client_id_fkey"
+            columns: ["fpa_client_id"]
+            isOneToOne: false
+            referencedRelation: "fpa_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fpa_reports: {
+        Row: {
+          content: Json
+          created_at: string | null
+          created_by: string | null
+          fpa_client_id: string | null
+          id: string
+          insights: string | null
+          period_covered: string
+          report_type: string
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: Json
+          created_at?: string | null
+          created_by?: string | null
+          fpa_client_id?: string | null
+          id?: string
+          insights?: string | null
+          period_covered: string
+          report_type: string
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: Json
+          created_at?: string | null
+          created_by?: string | null
+          fpa_client_id?: string | null
+          id?: string
+          insights?: string | null
+          period_covered?: string
+          report_type?: string
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fpa_reports_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fpa_reports_fpa_client_id_fkey"
+            columns: ["fpa_client_id"]
+            isOneToOne: false
+            referencedRelation: "fpa_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fpa_variance_analysis: {
+        Row: {
+          actual_value: number
+          analysis_comment: string | null
+          created_at: string | null
+          created_by: string | null
+          fpa_client_id: string | null
+          id: string
+          metric_name: string
+          period_id: string | null
+          planned_value: number
+          variance_amount: number
+          variance_percentage: number
+        }
+        Insert: {
+          actual_value: number
+          analysis_comment?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          fpa_client_id?: string | null
+          id?: string
+          metric_name: string
+          period_id?: string | null
+          planned_value: number
+          variance_amount: number
+          variance_percentage: number
+        }
+        Update: {
+          actual_value?: number
+          analysis_comment?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          fpa_client_id?: string | null
+          id?: string
+          metric_name?: string
+          period_id?: string | null
+          planned_value?: number
+          variance_amount?: number
+          variance_percentage?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fpa_variance_analysis_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fpa_variance_analysis_fpa_client_id_fkey"
+            columns: ["fpa_client_id"]
+            isOneToOne: false
+            referencedRelation: "fpa_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fpa_variance_analysis_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "fpa_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
