@@ -1,45 +1,51 @@
 
 import React from 'react';
+import { Sheet, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Menu, User, LogOut } from 'lucide-react';
+import { Menu, User } from 'lucide-react';
 import { Logo } from '../Logo';
+import { ClientMobileMenu } from './ClientMobileMenu';
 
 interface ClientHeaderProps {
   clientName?: string;
+  isMobile: boolean;
   onLogout: () => void;
-  onSidebarToggle: () => void;
 }
 
 export const ClientHeader: React.FC<ClientHeaderProps> = ({ 
   clientName, 
-  onLogout,
-  onSidebarToggle
+  isMobile, 
+  onLogout 
 }) => {
   return (
-    <header className="bg-white border-b shadow-sm fixed top-0 left-0 right-0 z-40 h-16">
-      <div className="container mx-auto px-4 h-full flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onSidebarToggle}
-            className="lg:hidden"
-          >
-            <Menu size={24} />
-          </Button>
-          <Logo className="h-8 w-auto" />
+    <header className="bg-white border-b shadow-sm">
+      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <Logo className="h-10 w-auto" />
           <span className="text-xl font-semibold hidden sm:inline">Área do Cliente</span>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="hidden md:flex items-center gap-2 text-sm text-gray-600">
-            <User size={16} />
-            <span>{clientName}</span>
+        <div className="flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <User size={16} />
+              <span>{clientName}</span>
+            </div>
           </div>
-          <Button variant="outline" size="sm" onClick={onLogout}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Sair
-          </Button>
+          
+          {isMobile && (
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu size={24} />
+                </Button>
+              </SheetTrigger>
+              <ClientMobileMenu 
+                clientName={clientName} 
+                onLogout={onLogout} 
+              />
+            </Sheet>
+          )}
         </div>
       </div>
     </header>

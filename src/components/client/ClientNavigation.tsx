@@ -1,83 +1,51 @@
 
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { cn } from '@/lib/utils';
-import { 
-  FileText, 
-  MessageSquare, 
-  ClipboardList, 
-  Calendar, 
-  Users, 
-  Phone,
-  CheckCircle,
-  X 
-} from 'lucide-react';
+import { NavLink as RouterNavLink } from 'react-router-dom';
+import { File, MessageSquare, Calendar, Mail, Users } from 'lucide-react';
 
-interface ClientNavigationProps {
-  isOpen: boolean;
-  onClose: () => void;
+interface NavLinkProps {
+  to: string;
+  children: React.ReactNode;
+  icon: React.ReactNode;
 }
 
-export function ClientNavigation({ isOpen, onClose }: ClientNavigationProps) {
-  const navigation = [
-    { name: 'Documentos', href: '/cliente/documentos', icon: FileText },
-    { name: 'Tickets', href: '/cliente/tickets', icon: MessageSquare },
-    { name: 'Solicitações', href: '/cliente/solicitacoes', icon: ClipboardList },
-    { name: 'Aprovações', href: '/cliente/aprovacoes', icon: CheckCircle },
-    { name: 'Cronograma', href: '/cliente/cronograma', icon: Calendar },
-    { name: 'Equipe', href: '/cliente/equipe', icon: Users },
-    { name: 'Contato', href: '/cliente/contato', icon: Phone },
-  ];
+const NavLink: React.FC<NavLinkProps> = ({ to, children, icon }) => (
+  <RouterNavLink
+    to={to}
+    className={({ isActive }) => 
+      `flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
+        isActive 
+          ? 'bg-blue-50 text-blue-700' 
+          : 'text-gray-700 hover:bg-gray-100'
+      }`
+    }
+  >
+    {icon}
+    <span>{children}</span>
+  </RouterNavLink>
+);
 
+export const ClientNavigation: React.FC = () => {
   return (
-    <>
-      {/* Mobile overlay */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={onClose}
-        />
-      )}
-      
-      {/* Sidebar */}
-      <aside className={cn(
-        "fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-white border-r border-gray-200 z-50 transform transition-transform duration-300 ease-in-out",
-        isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-      )}>
-        <div className="flex items-center justify-between p-4 lg:hidden">
-          <h2 className="text-lg font-semibold">Menu</h2>
-          <button onClick={onClose}>
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        
-        <nav className="px-4 pb-4">
-          <ul className="space-y-2">
-            {navigation.map((item) => {
-              const Icon = item.icon;
-              return (
-                <li key={item.name}>
-                  <NavLink
-                    to={item.href}
-                    onClick={onClose}
-                    className={({ isActive }) =>
-                      cn(
-                        "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
-                        isActive
-                          ? "bg-primary text-primary-foreground"
-                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-                      )
-                    }
-                  >
-                    <Icon className="mr-3 h-5 w-5" />
-                    {item.name}
-                  </NavLink>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-      </aside>
-    </>
+    <div className="space-y-1">
+      <h3 className="font-medium text-gray-500 uppercase text-xs tracking-wider mb-4">
+        Menu
+      </h3>
+      <NavLink to="/cliente" icon={<File size={20} />}>
+        Dashboard
+      </NavLink>
+      <NavLink to="/cliente/equipe" icon={<Users size={20} />}>
+        Equipe
+      </NavLink>
+      <NavLink to="/cliente/chamados" icon={<MessageSquare size={20} />}>
+        Chamados
+      </NavLink>
+      <NavLink to="/cliente/cronograma" icon={<Calendar size={20} />}>
+        Cronograma
+      </NavLink>
+      <NavLink to="/cliente/contato" icon={<Mail size={20} />}>
+        Contato
+      </NavLink>
+    </div>
   );
-}
+};
