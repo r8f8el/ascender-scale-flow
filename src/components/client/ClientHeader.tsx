@@ -1,23 +1,19 @@
 
 import React from 'react';
-import { Sheet, SheetTrigger, SheetContent } from '@/components/ui/sheet';
+import { Sheet, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Menu, User } from 'lucide-react';
 import { Logo } from '../Logo';
 import { ClientMobileMenu } from './ClientMobileMenu';
 
-interface Client {
-  name: string;
-}
-
 interface ClientHeaderProps {
-  client: Client | null;
+  clientName?: string;
   isMobile: boolean;
   onLogout: () => void;
 }
 
 export const ClientHeader: React.FC<ClientHeaderProps> = ({ 
-  client, 
+  clientName, 
   isMobile, 
   onLogout 
 }) => {
@@ -33,7 +29,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
           <div className="hidden md:flex items-center gap-2">
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <User size={16} />
-              <span>{client?.name}</span>
+              <span>{clientName}</span>
             </div>
           </div>
           
@@ -44,12 +40,10 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                   <Menu size={24} />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right">
-                <ClientMobileMenu 
-                  client={client} 
-                  onLogout={onLogout} 
-                />
-              </SheetContent>
+              <ClientMobileMenu 
+                clientName={clientName} 
+                onLogout={onLogout} 
+              />
             </Sheet>
           )}
         </div>
