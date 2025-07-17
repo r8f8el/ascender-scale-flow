@@ -26,8 +26,8 @@ import AdminAuthProvider from "./contexts/AdminAuthContext";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
 import AdminLogin from "./pages/AdminLogin";
 import AdminRegister from "./pages/AdminRegister";
-import AdminArea from "./pages/AdminArea";
-import AdminDashboard from "./pages/AdminDashboard";
+import AdminArea from "./pages/admin/AdminArea";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUnauthorized from "./pages/AdminUnauthorized";
 import ClientesAdmin from "./pages/admin/ClientesAdmin";
 import ProjectsAdmin from "./pages/admin/ProjectsAdmin";
@@ -42,6 +42,20 @@ import ActivityLogsAdmin from "./pages/admin/ActivityLogsAdmin";
 import ConfiguracoesAdmin from "./pages/admin/ConfiguracoesAdmin";
 import OneDriveIntegration from "./pages/admin/OneDriveIntegration";
 import MyTickets from "./pages/admin/MyTickets";
+
+// FP&A Client imports
+import ClientFPADashboard from "./pages/client/fpa/ClientFPADashboard";
+import ClientFPAData from "./pages/client/fpa/ClientFPAData";
+import ClientFPAScenarios from "./pages/client/fpa/ClientFPAScenarios";
+import ClientFPAReports from "./pages/client/fpa/ClientFPAReports";
+import ClientFPACommunication from "./pages/client/fpa/ClientFPACommunication";
+
+// FP&A Admin imports
+import AdminFPAClientManagement from "./pages/admin/fpa/AdminFPAClientManagement";
+import AdminFPADataIntegration from "./pages/admin/fpa/AdminFPADataIntegration";
+import AdminFPAModeling from "./pages/admin/fpa/AdminFPAModeling";
+import AdminFPAVarianceAnalysis from "./pages/admin/fpa/AdminFPAVarianceAnalysis";
+import AdminFPAReportBuilder from "./pages/admin/fpa/AdminFPAReportBuilder";
 
 const queryClient = new QueryClient();
 
@@ -69,6 +83,13 @@ function App() {
                     <Route path="contato" element={<ProtectedRoute><ClientContact /></ProtectedRoute>} />
                     <Route path="chamados" element={<ClientTickets />} />
                     <Route path="chamados/:id" element={<ClientTicketDetail />} />
+                    
+                    {/* FP&A Client Routes */}
+                    <Route path="fpa/dashboard" element={<ProtectedRoute><ClientFPADashboard /></ProtectedRoute>} />
+                    <Route path="fpa/dados" element={<ProtectedRoute><ClientFPAData /></ProtectedRoute>} />
+                    <Route path="fpa/cenarios" element={<ProtectedRoute><ClientFPAScenarios /></ProtectedRoute>} />
+                    <Route path="fpa/relatorios" element={<ProtectedRoute><ClientFPAReports /></ProtectedRoute>} />
+                    <Route path="fpa/comunicacao" element={<ProtectedRoute><ClientFPACommunication /></ProtectedRoute>} />
                   </Route>
                   
                   {/* Página pública de abertura de chamado */}
@@ -93,6 +114,13 @@ function App() {
                     <Route path="configuracoes" element={<AdminProtectedRoute><ConfiguracoesAdmin /></AdminProtectedRoute>} />
                     <Route path="onedrive" element={<AdminProtectedRoute><OneDriveIntegration /></AdminProtectedRoute>} />
                     <Route path="meus-chamados" element={<AdminProtectedRoute><MyTickets /></AdminProtectedRoute>} />
+                    
+                    {/* FP&A Admin Routes */}
+                    <Route path="fpa/gestao-clientes" element={<AdminProtectedRoute><AdminFPAClientManagement /></AdminProtectedRoute>} />
+                    <Route path="fpa/integracao-dados" element={<AdminProtectedRoute><AdminFPADataIntegration /></AdminProtectedRoute>} />
+                    <Route path="fpa/modelagem" element={<AdminProtectedRoute><AdminFPAModeling /></AdminProtectedRoute>} />
+                    <Route path="fpa/analise-variacao" element={<AdminProtectedRoute><AdminFPAVarianceAnalysis /></AdminProtectedRoute>} />
+                    <Route path="fpa/relatorios" element={<AdminProtectedRoute><AdminFPAReportBuilder /></AdminProtectedRoute>} />
                   </Route>
                   
                   {/* Catch-all route */}

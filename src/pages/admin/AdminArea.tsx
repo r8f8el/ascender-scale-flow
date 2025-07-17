@@ -25,7 +25,11 @@ import {
   UserCheck,
   CheckSquare,
   Ticket,
-  FileText
+  FileText,
+  TrendingUp,
+  BarChart3,
+  Target,
+  PieChart
 } from 'lucide-react';
 
 const AdminArea = () => {
@@ -61,6 +65,7 @@ const AdminArea = () => {
     else if (path.includes('/admin/activity-logs')) setPageTitle('Logs de Atividade');
     else if (path.includes('/admin/configuracoes')) setPageTitle('Configurações');
     else if (path.includes('/admin/onedrive')) setPageTitle('Integração OneDrive/SharePoint');
+    else if (path.includes('/admin/fpa')) setPageTitle('FP&A - Consultoria Financeira');
     else setPageTitle('Painel Administrativo');
   }, [location]);
 
@@ -153,6 +158,28 @@ const AdminArea = () => {
                       <MobileNavLink to="/admin/configuracoes" icon={<Settings size={20} />}>
                         Configurações
                       </MobileNavLink>
+                      
+                      {/* FP&A Section */}
+                      <div className="border-t pt-4 mt-4">
+                        <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+                          FP&A - Consultoria
+                        </h4>
+                        <MobileNavLink to="/admin/fpa/gestao-clientes" icon={<Users size={20} />}>
+                          Gestão de Clientes FP&A
+                        </MobileNavLink>
+                        <MobileNavLink to="/admin/fpa/integracao-dados" icon={<Database size={20} />}>
+                          Integração de Dados
+                        </MobileNavLink>
+                        <MobileNavLink to="/admin/fpa/modelagem" icon={<BarChart3 size={20} />}>
+                          Motor de Modelagem
+                        </MobileNavLink>
+                        <MobileNavLink to="/admin/fpa/analise-variacao" icon={<Target size={20} />}>
+                          Análise de Variação
+                        </MobileNavLink>
+                        <MobileNavLink to="/admin/fpa/relatorios" icon={<PieChart size={20} />}>
+                          Construtor de Relatórios
+                        </MobileNavLink>
+                      </div>
                     </nav>
                     
                     <button 
@@ -173,52 +200,79 @@ const AdminArea = () => {
       <div className="flex flex-1 container mx-auto">
         {/* Sidebar (Desktop) */}
         <aside className="hidden md:block w-64 bg-white border-r p-6">
-          <div className="space-y-1">
-            <h3 className="font-medium text-gray-500 uppercase text-xs tracking-wider mb-4">
-              Menu Principal
-            </h3>
-            <NavLink to="/admin" icon={<LayoutDashboard size={20} />}>
-              Dashboard
-            </NavLink>
-            <NavLink to="/admin/clientes" icon={<Users size={20} />}>
-              Gestão de Clientes
-            </NavLink>
-            <NavLink to="/admin/projetos" icon={<Briefcase size={20} />}>
-              Projetos
-            </NavLink>
-            <NavLink to="/admin/colaboradores" icon={<UserCheck size={20} />}>
-              Colaboradores
-            </NavLink>
-            <NavLink to="/admin/tarefas" icon={<CheckSquare size={20} />}>
-              Tarefas
-            </NavLink>
-            <NavLink to="/admin/chamados" icon={<Ticket size={20} />}>
-              Todos os Chamados
-            </NavLink>
-            <NavLink to="/admin/meus-chamados" icon={<User size={20} />}>
-              Meus Chamados
-            </NavLink>
-            <NavLink to="/admin/arquivos" icon={<FileText size={20} />}>
-              Arquivos
-            </NavLink>
-            <NavLink to="/admin/cronogramas" icon={<Calendar size={20} />}>
-              Cronogramas
-            </NavLink>
-            <NavLink to="/admin/mensagens" icon={<MessageSquare size={20} />}>
-              Mensagens Automáticas
-            </NavLink>
-            <NavLink to="/admin/logs" icon={<Shield size={20} />}>
-              Logs de Acesso
-            </NavLink>
-            <NavLink to="/admin/activity-logs" icon={<Activity size={20} />}>
-              Logs de Atividade
-            </NavLink>
-            <NavLink to="/admin/onedrive" icon={<Cloud size={20} />}>
-              OneDrive/SharePoint
-            </NavLink>
-            <NavLink to="/admin/configuracoes" icon={<Settings size={20} />}>
-              Configurações
-            </NavLink>
+          <div className="space-y-6">
+            <div>
+              <h3 className="font-medium text-gray-500 uppercase text-xs tracking-wider mb-4">
+                Menu Principal
+              </h3>
+              <div className="space-y-1">
+                <NavLink to="/admin" icon={<LayoutDashboard size={20} />}>
+                  Dashboard
+                </NavLink>
+                <NavLink to="/admin/clientes" icon={<Users size={20} />}>
+                  Gestão de Clientes
+                </NavLink>
+                <NavLink to="/admin/projetos" icon={<Briefcase size={20} />}>
+                  Projetos
+                </NavLink>
+                <NavLink to="/admin/colaboradores" icon={<UserCheck size={20} />}>
+                  Colaboradores
+                </NavLink>
+                <NavLink to="/admin/tarefas" icon={<CheckSquare size={20} />}>
+                  Tarefas
+                </NavLink>
+                <NavLink to="/admin/chamados" icon={<Ticket size={20} />}>
+                  Todos os Chamados
+                </NavLink>
+                <NavLink to="/admin/meus-chamados" icon={<User size={20} />}>
+                  Meus Chamados
+                </NavLink>
+                <NavLink to="/admin/arquivos" icon={<FileText size={20} />}>
+                  Arquivos
+                </NavLink>
+                <NavLink to="/admin/cronogramas" icon={<Calendar size={20} />}>
+                  Cronogramas
+                </NavLink>
+                <NavLink to="/admin/mensagens" icon={<MessageSquare size={20} />}>
+                  Mensagens Automáticas
+                </NavLink>
+                <NavLink to="/admin/logs" icon={<Shield size={20} />}>
+                  Logs de Acesso
+                </NavLink>
+                <NavLink to="/admin/activity-logs" icon={<Activity size={20} />}>
+                  Logs de Atividade
+                </NavLink>
+                <NavLink to="/admin/onedrive" icon={<Cloud size={20} />}>
+                  OneDrive/SharePoint
+                </NavLink>
+                <NavLink to="/admin/configuracoes" icon={<Settings size={20} />}>
+                  Configurações
+                </NavLink>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-medium text-gray-500 uppercase text-xs tracking-wider mb-4">
+                FP&A - Consultoria Financeira
+              </h3>
+              <div className="space-y-1">
+                <NavLink to="/admin/fpa/gestao-clientes" icon={<Users size={20} />}>
+                  Gestão de Clientes FP&A
+                </NavLink>
+                <NavLink to="/admin/fpa/integracao-dados" icon={<Database size={20} />}>
+                  Integração de Dados
+                </NavLink>
+                <NavLink to="/admin/fpa/modelagem" icon={<BarChart3 size={20} />}>
+                  Motor de Modelagem
+                </NavLink>
+                <NavLink to="/admin/fpa/analise-variacao" icon={<Target size={20} />}>
+                  Análise de Variação
+                </NavLink>
+                <NavLink to="/admin/fpa/relatorios" icon={<PieChart size={20} />}>
+                  Construtor de Relatórios
+                </NavLink>
+              </div>
+            </div>
           </div>
           
           <div className="mt-auto pt-8">
