@@ -46,14 +46,10 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
     validateFile
   } = useUploadManager();
 
-  // Carregar arquivos com cache otimizado
-  const {
-    data: files = [],
-    isLoading,
-    refetch: refreshFiles
-  } = useOptimizedQuery({
-    queryKey: ['files', isAdmin ? 'admin' : 'client'],
-    queryFn: async () => {
+  // Carregar arquivos com cache otimizado - SEMPRE chamado
+  const filesQuery = useOptimizedQuery(
+    ['files', isAdmin ? 'admin' : 'client'],
+    async () => {
       let query = supabase.from('files').select('*');
       
       if (!isAdmin && user) {
@@ -63,11 +59,17 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
       const { data, error } = await query.order('uploaded_at', { ascending: false });
       
       if (error) throw error;
-      return data as FileData[];
+      return (data as FileData[]) || [];
     },
-    staleTime: 1000 * 60 * 5, // 5 minutos
-    cacheTime: 1000 * 60 * 10 // 10 minutos
-  });
+    {
+      staleTime: 1000 * 60 * 5, // 5 minutos
+      cacheTime: 1000 * 60 * 10 // 10 minutos
+    }
+  );
+
+  // Garantir que files seja sempre um array
+  const files = Array.isArray(filesQuery.data) ? filesQuery.data : [];
+  const isLoading = filesQuery.isLoading;
 
   const categories = [
     'Sem categoria',
@@ -121,13 +123,13 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
     return 'other';
   };
 
-  const filteredFiles = Array.isArray(files) ? files.filter(file => {
+  const filteredFiles = files.filter(file => {
     const matchesSearch = file.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || file.category === selectedCategory;
     const matchesType = selectedType === 'all' || getFileTypeCategory(file.type) === selectedType;
     
     return matchesSearch && matchesCategory && matchesType;
-  }) : [];
+  });
 
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = event.target.files;
@@ -163,7 +165,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
         description: "Arquivos enviados com sucesso!"
       });
       
-      refreshFiles();
+      filesQuery.refetch();
     } catch (error) {
       console.error('Erro no upload:', error);
       toast({
@@ -174,7 +176,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
     } finally {
       setUploading(false);
     }
-  }, [user, validateFile, uploadMultiple, refreshFiles, toast]);
+  }, [user, validateFile, uploadMultiple, filesQuery, toast]);
 
   const downloadFile = async (file: FileData) => {
     try {
@@ -219,7 +221,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
         description: "Arquivo deletado com sucesso!"
       });
       
-      refreshFiles();
+      filesQuery.refetch();
     } catch (error) {
       console.error('Erro ao deletar arquivo:', error);
       toast({
@@ -243,7 +245,7 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
         
         <div className="flex gap-2">
           <Button
-            onClick={() => refreshFiles()}
+            onClick={() => filesQuery.refetch()}
             variant="outline"
             size="sm"
             disabled={isLoading}
