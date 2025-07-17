@@ -27,7 +27,7 @@ import AdminProtectedRoute from "./components/AdminProtectedRoute";
 import AdminLogin from "./pages/AdminLogin";
 import AdminRegister from "./pages/AdminRegister";
 import AdminArea from "./pages/admin/AdminArea";
-import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import AdminUnauthorized from "./pages/AdminUnauthorized";
 import ClientesAdmin from "./pages/admin/ClientesAdmin";
 import ProjectsAdmin from "./pages/admin/ProjectsAdmin";
