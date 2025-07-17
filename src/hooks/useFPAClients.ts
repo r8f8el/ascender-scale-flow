@@ -10,7 +10,7 @@ export const useFPAClients = () => {
         .from('fpa_clients')
         .select(`
           *,
-          client_profile:client_profiles(name, email, company)
+          client_profile:client_profiles(id, name, email, company)
         `)
         .order('created_at', { ascending: false });
       
@@ -28,7 +28,7 @@ export const useFPAClient = (clientId: string) => {
         .from('fpa_clients')
         .select(`
           *,
-          client_profile:client_profiles(name, email, company)
+          client_profile:client_profiles(id, name, email, company)
         `)
         .eq('id', clientId)
         .single();
