@@ -19,75 +19,45 @@ import {
   FileSpreadsheet,
   Database
 } from 'lucide-react';
+import { useFPADataUploads } from '@/hooks/useFPADataUploads';
+import { useFPAClients } from '@/hooks/useFPAClients';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ClientFPAData = () => {
   const [searchTerm, setSearchTerm] = useState('');
-
-  // Mock data for uploaded files
-  const uploadedFiles = [
-    {
-      id: 1,
-      name: "Balancete_Marco_2024.xlsx",
-      type: "Balancete",
-      period: "Março 2024",
-      status: "validated",
-      uploadDate: "2024-03-15",
-      size: "2.4 MB"
-    },
-    {
-      id: 2,
-      name: "Vendas_Q1_2024.csv",
-      type: "Vendas",
-      period: "Q1 2024",
-      status: "processing",
-      uploadDate: "2024-03-14",
-      size: "1.8 MB"
-    },
-    {
-      id: 3,
-      name: "RH_Folha_Marco.xlsx",
-      type: "Recursos Humanos",
-      period: "Março 2024",
-      status: "error",
-      uploadDate: "2024-03-13",
-      size: "890 KB"
-    },
-    {
-      id: 4,
-      name: "Fluxo_Caixa_Feb.xlsx",
-      type: "Fluxo de Caixa",
-      period: "Fevereiro 2024",
-      status: "validated",
-      uploadDate: "2024-02-28",
-      size: "1.2 MB"
-    }
-  ];
+  const { user } = useAuth();
+  
+  // Get the current user's FPA client data
+  const { data: clients = [], isLoading: clientsLoading } = useFPAClients();
+  const currentClient = clients.find(client => client.client_profile?.id === user?.id);
+  
+  const { data: uploads = [], isLoading: uploadsLoading } = useFPADataUploads(currentClient?.id);
 
   const dataRequirements = [
     {
       category: "Dados Financeiros",
       items: [
-        { name: "Balancete Mensal", required: true, uploaded: true },
-        { name: "Demonstração de Resultados", required: true, uploaded: true },
-        { name: "Fluxo de Caixa", required: true, uploaded: false },
-        { name: "Balanço Patrimonial", required: false, uploaded: true }
+        { name: "Balancete Mensal", required: true, type: "balance_sheet" },
+        { name: "Demonstração de Resultados", required: true, type: "income_statement" },
+        { name: "Fluxo de Caixa", required: true, type: "cash_flow" },
+        { name: "Balanço Patrimonial", required: false, type: "balance_sheet" }
       ]
     },
     {
       category: "Dados Operacionais",
       items: [
-        { name: "Vendas por Produto/Serviço", required: true, uploaded: true },
-        { name: "Número de Clientes", required: true, uploaded: false },
-        { name: "Dados de Produção", required: false, uploaded: false },
-        { name: "Indicadores de Marketing", required: false, uploaded: true }
+        { name: "Vendas por Produto/Serviço", required: true, type: "operational" },
+        { name: "Número de Clientes", required: true, type: "operational" },
+        { name: "Dados de Produção", required: false, type: "operational" },
+        { name: "Indicadores de Marketing", required: false, type: "operational" }
       ]
     },
     {
       category: "Recursos Humanos",
       items: [
-        { name: "Folha de Pagamento", required: true, uploaded: true },
-        { name: "Número de Funcionários", required: true, uploaded: true },
-        { name: "Custos com Benefícios", required: false, uploaded: false }
+        { name: "Folha de Pagamento", required: true, type: "operational" },
+        { name: "Número de Funcionários", required: true, type: "operational" },
+        { name: "Custos com Benefícios", required: false, type: "operational" }
       ]
     }
   ];
@@ -109,6 +79,35 @@ const ClientFPAData = () => {
       default: return <Badge variant="outline">Pendente</Badge>;
     }
   };
+
+  const filteredUploads = uploads.filter(upload => 
+    upload.file_name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  if (clientsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (!currentClient) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-12">
+          <Database className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Acesso FP&A não configurado</h1>
+          <p className="text-gray-600 mb-4">
+            Seu acesso ao módulo FP&A ainda não foi configurado pelo administrador.
+          </p>
+          <p className="text-gray-500 text-sm">
+            Entre em contato com nossa equipe para ativar este serviço.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -163,7 +162,13 @@ const ClientFPAData = () => {
                 </div>
                 <div>
                   <Label htmlFor="type">Tipo de Dados</Label>
-                  <Input id="type" placeholder="ex: Balancete" />
+                  <select className="w-full p-2 border rounded-md">
+                    <option value="">Selecione o tipo</option>
+                    <option value="balance_sheet">Balancete</option>
+                    <option value="income_statement">DRE</option>
+                    <option value="cash_flow">Fluxo de Caixa</option>
+                    <option value="operational">Operacional</option>
+                  </select>
                 </div>
                 <div>
                   <Label htmlFor="description">Descrição</Label>
@@ -193,29 +198,43 @@ const ClientFPAData = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {uploadedFiles.map((file) => (
-                  <div key={file.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      {getStatusIcon(file.status)}
-                      <div>
-                        <h4 className="font-medium text-gray-900">{file.name}</h4>
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <span>{file.type}</span>
-                          <span>{file.period}</span>
-                          <span>{file.size}</span>
+              {uploadsLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                  <p className="text-gray-500 mt-2">Carregando uploads...</p>
+                </div>
+              ) : filteredUploads.length === 0 ? (
+                <div className="text-center py-8">
+                  <FileSpreadsheet className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">Nenhum arquivo foi enviado ainda</p>
+                  <p className="text-gray-400 text-sm mt-1">
+                    {searchTerm ? 'Nenhum arquivo encontrado com esse termo' : 'Faça o primeiro upload de dados'}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredUploads.map((upload) => (
+                    <div key={upload.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        {getStatusIcon(upload.status || 'pending')}
+                        <div>
+                          <h4 className="font-medium text-gray-900">{upload.file_name}</h4>
+                          <div className="flex items-center gap-4 text-sm text-gray-600">
+                            <span>{upload.file_type}</span>
+                            <span>{new Date(upload.created_at || '').toLocaleDateString('pt-BR')}</span>
+                          </div>
                         </div>
                       </div>
+                      <div className="flex items-center gap-3">
+                        {getStatusBadge(upload.status || 'pending')}
+                        <Button variant="ghost" size="sm">
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      {getStatusBadge(file.status)}
-                      <Button variant="ghost" size="sm">
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -230,33 +249,36 @@ const ClientFPAData = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {category.items.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-3 h-3 rounded-full ${
-                            item.uploaded ? 'bg-green-500' : item.required ? 'bg-red-500' : 'bg-gray-300'
-                          }`} />
-                          <div>
-                            <span className="font-medium">{item.name}</span>
-                            {item.required && (
-                              <Badge variant="secondary" className="ml-2 text-xs">
-                                Obrigatório
-                              </Badge>
+                    {category.items.map((item, index) => {
+                      const isUploaded = uploads.some(upload => upload.file_type === item.type);
+                      return (
+                        <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-3 h-3 rounded-full ${
+                              isUploaded ? 'bg-green-500' : item.required ? 'bg-red-500' : 'bg-gray-300'
+                            }`} />
+                            <div>
+                              <span className="font-medium">{item.name}</span>
+                              {item.required && (
+                                <Badge variant="secondary" className="ml-2 text-xs">
+                                  Obrigatório
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {isUploaded ? (
+                              <Badge className="bg-green-100 text-green-700">Enviado</Badge>
+                            ) : (
+                              <Button variant="outline" size="sm">
+                                <Upload className="h-4 w-4 mr-1" />
+                                Enviar
+                              </Button>
                             )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {item.uploaded ? (
-                            <Badge className="bg-green-100 text-green-700">Enviado</Badge>
-                          ) : (
-                            <Button variant="outline" size="sm">
-                              <Upload className="h-4 w-4 mr-1" />
-                              Enviar
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
@@ -274,32 +296,44 @@ const ClientFPAData = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {['Março 2024', 'Fevereiro 2024', 'Janeiro 2024', 'Dezembro 2023'].map((period) => (
-                  <div key={period} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-center mb-3">
-                      <h4 className="font-medium text-gray-900">{period}</h4>
-                      <Badge variant="outline">
-                        {period === 'Março 2024' ? 'Atual' : 'Histórico'}
-                      </Badge>
+              {uploads.length === 0 ? (
+                <div className="text-center py-8">
+                  <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">Nenhum histórico de dados disponível</p>
+                  <p className="text-gray-400 text-sm mt-1">
+                    O histórico aparecerá aqui conforme os dados forem enviados
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {Object.entries(
+                    uploads.reduce((acc, upload) => {
+                      const date = new Date(upload.created_at || '').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+                      if (!acc[date]) acc[date] = [];
+                      acc[date].push(upload);
+                      return acc;
+                    }, {} as Record<string, typeof uploads>)
+                  ).map(([period, periodUploads]) => (
+                    <div key={period} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-center mb-3">
+                        <h4 className="font-medium text-gray-900 capitalize">{period}</h4>
+                        <Badge variant="outline">
+                          {periodUploads.length} arquivo{periodUploads.length !== 1 ? 's' : ''}
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                        {periodUploads.map((upload) => (
+                          <div key={upload.id} className="flex items-center gap-2">
+                            <FileSpreadsheet className="h-4 w-4 text-blue-500" />
+                            <span>{upload.file_type}</span>
+                            {getStatusIcon(upload.status || 'pending')}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                      <div className="flex items-center gap-2">
-                        <FileSpreadsheet className="h-4 w-4 text-green-500" />
-                        <span>Balancete</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <FileSpreadsheet className="h-4 w-4 text-green-500" />
-                        <span>Vendas</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <FileSpreadsheet className="h-4 w-4 text-green-500" />
-                        <span>RH</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
