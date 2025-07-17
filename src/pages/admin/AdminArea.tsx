@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -14,7 +15,7 @@ import ConfiguracoesAdmin from './ConfiguracoesAdmin';
 import ApprovalsAdmin from './ApprovalsAdmin';
 
 export default function AdminArea() {
-  const { isAuthenticated, admin, loading, logout } = useAdminAuth();
+  const { isAuthenticated, admin, loading, adminLogout } = useAdminAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   if (loading) {
@@ -30,7 +31,7 @@ export default function AdminArea() {
   }
 
   const handleLogout = () => {
-    logout();
+    adminLogout();
   };
 
   return (

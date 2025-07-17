@@ -4,14 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Menu, User, LogOut } from 'lucide-react';
 import { Logo } from '../Logo';
 
-interface ClientHeaderProps {
-  clientName?: string;
+interface AdminHeaderProps {
+  admin?: { name: string; email: string };
   onLogout: () => void;
   onSidebarToggle: () => void;
 }
 
-export const ClientHeader: React.FC<ClientHeaderProps> = ({ 
-  clientName, 
+export const AdminHeader: React.FC<AdminHeaderProps> = ({ 
+  admin, 
   onLogout,
   onSidebarToggle
 }) => {
@@ -28,13 +28,13 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
             <Menu size={24} />
           </Button>
           <Logo className="h-8 w-auto" />
-          <span className="text-xl font-semibold hidden sm:inline">Área do Cliente</span>
+          <span className="text-xl font-semibold hidden sm:inline">Painel Admin</span>
         </div>
 
         <div className="flex items-center gap-4">
           <div className="hidden md:flex items-center gap-2 text-sm text-gray-600">
             <User size={16} />
-            <span>{clientName}</span>
+            <span>{admin?.name}</span>
           </div>
           <Button variant="outline" size="sm" onClick={onLogout}>
             <LogOut className="h-4 w-4 mr-2" />

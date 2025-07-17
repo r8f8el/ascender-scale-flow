@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,11 +12,9 @@ import ClientSchedule from './client/ClientSchedule';
 import ClientTeam from './client/ClientTeam';
 import ClientContact from './client/ClientContact';
 import ClientApprovals from './client/ClientApprovals';
-import { useResponsive } from '@/hooks/useResponsive';
 
 export default function ClientArea() {
-  const { isAuthenticated, client, loading } = useAuth();
-  const { isMobile } = useResponsive();
+  const { isAuthenticated, client, loading, logout } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   if (loading) {
@@ -31,24 +30,15 @@ export default function ClientArea() {
   }
 
   const handleLogout = () => {
-    try {
-      // Call the logout function from the AuthContext
-      // This function should handle the actual logout logic
-      // including clearing the session and user state
-      // and redirecting to the login page if necessary
-      // For example:
-      // logout();
-    } catch (error) {
-      console.error('Logout failed', error);
-    }
+    logout();
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <ClientHeader 
-        client={client}
-        isMobile={isMobile}
+        clientName={client?.name}
         onLogout={handleLogout}
+        onSidebarToggle={() => setIsSidebarOpen(!isSidebarOpen)}
       />
       
       <div className="flex">

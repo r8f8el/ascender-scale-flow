@@ -1,15 +1,12 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
-import { ApprovalFlowType, ApprovalRequest, ApprovalStep, ApprovalHistory } from '@/types/approval';
+import { ApprovalFlowType, ApprovalRequest, ApprovalHistory } from '@/types/approval';
 
 export const useApprovalFlow = () => {
   const [flowTypes, setFlowTypes] = useState<ApprovalFlowType[]>([]);
   const [requests, setRequests] = useState<ApprovalRequest[]>([]);
-  const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
 
   const fetchFlowTypes = async () => {
     try {
@@ -23,15 +20,12 @@ export const useApprovalFlow = () => {
       setFlowTypes(data || []);
     } catch (error) {
       console.error('Error fetching flow types:', error);
-      toast.error('Erro ao carregar tipos de fluxo');
+      setFlowTypes([]);
     }
   };
 
   const fetchRequests = async () => {
-    if (!user) return;
-    
     try {
-      setLoading(true);
       const { data, error } = await supabase
         .from('approval_requests')
         .select(`
@@ -41,12 +35,30 @@ export const useApprovalFlow = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setRequests(data || []);
+      
+      // Type-safe transformation
+      const typedRequests: ApprovalRequest[] = (data || []).map(item => ({
+        id: item.id,
+        flow_type_id: item.flow_type_id,
+        title: item.title,
+        description: item.description,
+        amount: item.amount,
+        priority: (item.priority as ApprovalRequest['priority']) || 'medium',
+        status: (item.status as ApprovalRequest['status']) || 'pending',
+        current_step: item.current_step,
+        total_steps: item.total_steps,
+        requested_by_user_id: item.requested_by_user_id,
+        requested_by_name: item.requested_by_name,
+        requested_by_email: item.requested_by_email,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        flow_type: item.flow_type
+      }));
+
+      setRequests(typedRequests);
     } catch (error) {
       console.error('Error fetching requests:', error);
-      toast.error('Erro ao carregar solicitações');
-    } finally {
-      setLoading(false);
+      setRequests([]);
     }
   };
 
@@ -55,17 +67,20 @@ export const useApprovalFlow = () => {
     title: string;
     description?: string;
     amount?: number;
-    priority: 'low' | 'medium' | 'high' | 'urgent';
+    priority: ApprovalRequest['priority'];
   }) => {
-    if (!user) return null;
-
     try {
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData.user;
+      
+      if (!user) throw new Error('User not authenticated');
+
       const { data, error } = await supabase
         .from('approval_requests')
         .insert({
           ...requestData,
           requested_by_user_id: user.id,
-          requested_by_name: user.user_metadata?.name || user.email?.split('@')[0] || '',
+          requested_by_name: user.user_metadata?.name || user.email || 'Unknown',
           requested_by_email: user.email || '',
         })
         .select()
@@ -73,55 +88,57 @@ export const useApprovalFlow = () => {
 
       if (error) throw error;
       
-      toast.success('Solicitação criada com sucesso');
-      fetchRequests();
+      await fetchRequests();
       return data;
     } catch (error) {
       console.error('Error creating request:', error);
-      toast.error('Erro ao criar solicitação');
-      return null;
+      throw error;
     }
   };
 
   const updateRequestStatus = async (
     requestId: string, 
-    action: 'approved' | 'rejected',
+    action: ApprovalHistory['action'], 
     comments?: string
   ) => {
-    if (!user) return false;
-
     try {
-      // First, add to history
-      const { error: historyError } = await supabase
-        .from('approval_history')
-        .insert({
-          request_id: requestId,
-          step_order: 1, // Simplified for now
-          action,
-          approver_user_id: user.id,
-          approver_name: user.user_metadata?.name || user.email?.split('@')[0] || '',
-          approver_email: user.email || '',
-          comments,
-        });
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData.user;
+      
+      if (!user) throw new Error('User not authenticated');
 
-      if (historyError) throw historyError;
-
-      // Then update the request status
-      const newStatus = action === 'approved' ? 'approved' : 'rejected';
+      // Update request status
+      const newStatus = action === 'approved' ? 'approved' : action === 'rejected' ? 'rejected' : 'pending';
+      
       const { error: updateError } = await supabase
         .from('approval_requests')
-        .update({ status: newStatus })
+        .update({ 
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', requestId);
 
       if (updateError) throw updateError;
 
-      toast.success(`Solicitação ${action === 'approved' ? 'aprovada' : 'rejeitada'} com sucesso`);
-      fetchRequests();
-      return true;
+      // Add to history
+      const { error: historyError } = await supabase
+        .from('approval_history')
+        .insert({
+          request_id: requestId,
+          step_order: 1,
+          action,
+          approver_user_id: user.id,
+          approver_name: user.user_metadata?.name || user.email || 'Unknown',
+          approver_email: user.email || '',
+          comments
+        });
+
+      if (historyError) throw historyError;
+      
+      await fetchRequests();
     } catch (error) {
-      console.error('Error updating request:', error);
-      toast.error('Erro ao atualizar solicitação');
-      return false;
+      console.error('Error updating request status:', error);
+      throw error;
     }
   };
 
@@ -134,17 +151,36 @@ export const useApprovalFlow = () => {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      return data || [];
+      
+      // Type-safe transformation
+      const typedHistory: ApprovalHistory[] = (data || []).map(item => ({
+        id: item.id,
+        request_id: item.request_id,
+        step_order: item.step_order,
+        action: item.action as ApprovalHistory['action'],
+        approver_user_id: item.approver_user_id,
+        approver_name: item.approver_name,
+        approver_email: item.approver_email,
+        comments: item.comments,
+        created_at: item.created_at
+      }));
+
+      return typedHistory;
     } catch (error) {
       console.error('Error fetching request history:', error);
       return [];
     }
   };
 
+  const refetch = async () => {
+    setLoading(true);
+    await Promise.all([fetchFlowTypes(), fetchRequests()]);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    fetchFlowTypes();
-    fetchRequests();
-  }, [user]);
+    refetch();
+  }, []);
 
   return {
     flowTypes,
@@ -153,6 +189,6 @@ export const useApprovalFlow = () => {
     createRequest,
     updateRequestStatus,
     fetchRequestHistory,
-    refetch: fetchRequests,
+    refetch
   };
 };

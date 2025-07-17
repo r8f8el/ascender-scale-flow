@@ -8,6 +8,20 @@ export interface ApprovalFlowType {
   updated_at: string;
 }
 
+export interface ApprovalStep {
+  id: string;
+  flow_type_id: string;
+  step_order: number;
+  step_name: string;
+  approver_role?: string;
+  approver_user_id?: string;
+  approver_name?: string;
+  approver_email?: string;
+  is_required: boolean;
+  amount_threshold?: number;
+  created_at: string;
+}
+
 export interface ApprovalRequest {
   id: string;
   flow_type_id: string;
@@ -24,20 +38,6 @@ export interface ApprovalRequest {
   created_at: string;
   updated_at: string;
   flow_type?: ApprovalFlowType;
-}
-
-export interface ApprovalStep {
-  id: string;
-  flow_type_id: string;
-  step_order: number;
-  step_name: string;
-  approver_role?: string;
-  approver_user_id?: string;
-  approver_name?: string;
-  approver_email?: string;
-  is_required: boolean;
-  amount_threshold?: number;
-  created_at: string;
 }
 
 export interface ApprovalHistory {
