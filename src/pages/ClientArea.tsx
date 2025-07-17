@@ -20,7 +20,7 @@ const ClientArea = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <ClientHeader 
-        clientName={client?.name}
+        client={client}
         isMobile={isMobile}
         onLogout={handleLogout}
       />
