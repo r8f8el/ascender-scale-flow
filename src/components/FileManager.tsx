@@ -47,8 +47,9 @@ export const FileManager: React.FC<FileManagerProps> = ({ isAdmin = false }) => 
   } = useUploadManager();
 
   // Carregar arquivos com cache otimizado - SEMPRE chamado
+  const queryKey = `files-${isAdmin ? 'admin' : 'client'}`;
   const filesQuery = useOptimizedQuery(
-    ['files', isAdmin ? 'admin' : 'client'],
+    queryKey,
     async () => {
       let query = supabase.from('files').select('*');
       
