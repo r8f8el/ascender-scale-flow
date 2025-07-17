@@ -71,6 +71,71 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_messages: {
+        Row: {
+          chat_room_id: string | null
+          content: string
+          created_at: string | null
+          id: string
+          sender_id: string | null
+          sender_name: string
+          sender_type: string
+        }
+        Insert: {
+          chat_room_id?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          sender_id?: string | null
+          sender_name: string
+          sender_type: string
+        }
+        Update: {
+          chat_room_id?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          sender_id?: string | null
+          sender_name?: string
+          sender_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_chat_room_id_fkey"
+            columns: ["chat_room_id"]
+            isOneToOne: false
+            referencedRelation: "chat_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_rooms: {
+        Row: {
+          client_id: string | null
+          client_name: string
+          created_at: string | null
+          id: string
+          last_message_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          client_name: string
+          created_at?: string | null
+          id?: string
+          last_message_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          client_name?: string
+          created_at?: string | null
+          id?: string
+          last_message_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       client_profiles: {
         Row: {
           cnpj: string | null
@@ -267,6 +332,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      files: {
+        Row: {
+          category: string | null
+          client_id: string | null
+          client_name: string | null
+          file_path: string
+          id: string
+          name: string
+          size: number
+          type: string | null
+          updated_at: string | null
+          uploaded_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          category?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          file_path: string
+          id?: string
+          name: string
+          size: number
+          type?: string | null
+          updated_at?: string | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          category?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          file_path?: string
+          id?: string
+          name?: string
+          size?: number
+          type?: string | null
+          updated_at?: string | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: []
       }
       notifications: {
         Row: {
