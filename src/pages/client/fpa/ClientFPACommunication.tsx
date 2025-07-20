@@ -24,8 +24,7 @@ const ClientFPACommunication = () => {
   const { data: clients = [], isLoading: clientsLoading } = useFPAClients();
   
   const currentClient = clients.find(client => {
-    if (!client.client_profile) return false;
-    if (typeof client.client_profile !== 'object') return false;
+    if (!client.client_profile || typeof client.client_profile !== 'object') return false;
     if (!('id' in client.client_profile)) return false;
     return (client.client_profile as { id: string }).id === user?.id;
   });
