@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -11,7 +10,7 @@ export const useFPAClients = () => {
         .from('fpa_clients')
         .select(`
           *,
-          client_profile:client_profiles(id, name, email, company)
+          client_profile:client_profiles!client_profile_id(id, name, email, company)
         `)
         .order('created_at', { ascending: false });
       
@@ -34,7 +33,7 @@ export const useFPAClient = (clientId: string) => {
         .from('fpa_clients')
         .select(`
           *,
-          client_profile:client_profiles(id, name, email, company)
+          client_profile:client_profiles!client_profile_id(id, name, email, company)
         `)
         .eq('id', clientId)
         .single();
