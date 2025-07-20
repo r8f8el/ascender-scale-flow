@@ -28,12 +28,12 @@ const ClientFPAData = () => {
   
   // Get the current user's FPA client data
   const { data: clients = [], isLoading: clientsLoading } = useFPAClients();
-  const currentClient = clients.find(client => 
-    client.client_profile && 
-    typeof client.client_profile === 'object' && 
-    'id' in client.client_profile && 
-    client.client_profile.id === user?.id
-  );
+  const currentClient = clients.find(client => {
+    if (!client.client_profile || typeof client.client_profile !== 'object') {
+      return false;
+    }
+    return 'id' in client.client_profile && client.client_profile.id === user?.id;
+  });
   
   const { data: uploads = [], isLoading: uploadsLoading } = useFPADataUploads(currentClient?.id);
 

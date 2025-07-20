@@ -27,12 +27,12 @@ const ClientFPAReports = () => {
   const { data: reports = [], isLoading } = useClientFPAReports();
   const { data: clients = [] } = useFPAClients();
   
-  const currentClient = clients.find(client => 
-    client.client_profile && 
-    typeof client.client_profile === 'object' && 
-    'id' in client.client_profile && 
-    client.client_profile.id === user?.id
-  );
+  const currentClient = clients.find(client => {
+    if (!client.client_profile || typeof client.client_profile !== 'object') {
+      return false;
+    }
+    return 'id' in client.client_profile && client.client_profile.id === user?.id;
+  });
 
   const filteredReports = reports.filter(report => {
     const matchesSearch = report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
