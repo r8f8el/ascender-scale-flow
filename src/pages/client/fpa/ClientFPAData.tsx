@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,7 +28,12 @@ const ClientFPAData = () => {
   
   // Get the current user's FPA client data
   const { data: clients = [], isLoading: clientsLoading } = useFPAClients();
-  const currentClient = clients.find(client => client.client_profile?.id === user?.id);
+  const currentClient = clients.find(client => 
+    client.client_profile && 
+    typeof client.client_profile === 'object' && 
+    'id' in client.client_profile && 
+    client.client_profile.id === user?.id
+  );
   
   const { data: uploads = [], isLoading: uploadsLoading } = useFPADataUploads(currentClient?.id);
 

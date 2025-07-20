@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,7 +27,12 @@ const ClientFPAReports = () => {
   const { data: reports = [], isLoading } = useClientFPAReports();
   const { data: clients = [] } = useFPAClients();
   
-  const currentClient = clients.find(client => client.client_profile?.id === user?.id);
+  const currentClient = clients.find(client => 
+    client.client_profile && 
+    typeof client.client_profile === 'object' && 
+    'id' in client.client_profile && 
+    client.client_profile.id === user?.id
+  );
 
   const filteredReports = reports.filter(report => {
     const matchesSearch = report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -234,7 +238,6 @@ const ClientFPAReports = () => {
           )}
         </TabsContent>
 
-        {/* Outras tabs seguem o mesmo padrão */}
         <TabsContent value="financial_summary">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {filteredReports.filter(r => r.report_type === 'financial_summary').map((report) => (

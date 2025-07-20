@@ -39,9 +39,15 @@ export const useCreateFPAPeriod = () => {
       period_name?: string;
       is_actual?: boolean;
     }) => {
+      // Gerar period_name se não fornecido
+      const finalPeriodData = {
+        ...periodData,
+        period_name: periodData.period_name || generatePeriodName(periodData.start_date, periodData.period_type)
+      };
+
       const { data, error } = await supabase
         .from('fpa_periods')
-        .insert(periodData)
+        .insert(finalPeriodData)
         .select()
         .single();
       
@@ -89,4 +95,23 @@ export const useUpdateFPAPeriod = () => {
       toast.error('Erro ao atualizar período');
     }
   });
+};
+
+// Função auxiliar para gerar nome do período
+const generatePeriodName = (startDate: string, periodType: string): string => {
+  const date = new Date(startDate);
+  
+  switch (periodType) {
+    case 'monthly':
+      return date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    case 'quarterly':
+      const quarter = Math.floor(date.getMonth() / 3) + 1;
+      return `Q${quarter} ${date.getFullYear()}`;
+    case 'yearly':
+      return date.getFullYear().toString();
+    default:
+      const endDate = new Date(date);
+      endDate.setMonth(endDate.getMonth() + 1);
+      return `${date.toLocaleDateString('pt-BR')} - ${endDate.toLocaleDateString('pt-BR')}`;
+  }
 };
