@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,10 +26,10 @@ const ClientFPAReports = () => {
   const { data: clients = [] } = useFPAClients();
   
   const currentClient = clients.find(client => {
-    if (!client.client_profile || client.client_profile === null) return false;
+    if (!client.client_profile) return false;
     if (typeof client.client_profile !== 'object') return false;
     if (!('id' in client.client_profile)) return false;
-    return (client.client_profile as any).id === user?.id;
+    return (client.client_profile as { id: string }).id === user?.id;
   });
 
   const filteredReports = reports.filter(report => {
