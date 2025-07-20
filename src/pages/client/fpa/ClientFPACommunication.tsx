@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,8 +26,7 @@ const ClientFPACommunication = () => {
   
   const currentClient = clients.find(client => {
     if (!client.client_profile || typeof client.client_profile !== 'object') return false;
-    if (!('id' in client.client_profile)) return false;
-    return (client.client_profile as { id: string }).id === user?.id;
+    return 'id' in client.client_profile && (client.client_profile as { id: string }).id === user?.id;
   });
 
   const messages = [
