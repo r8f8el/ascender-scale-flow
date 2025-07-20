@@ -47,6 +47,20 @@ const FPAOnboardingWizard: React.FC<FPAOnboardingWizardProps> = ({ clientProfile
     }
   };
 
+  const generatePeriodName = () => {
+    const startDate = new Date(formData.start_date);
+    const endDate = new Date(formData.end_date);
+    
+    if (formData.period_type === 'monthly') {
+      return `${startDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}`;
+    } else if (formData.period_type === 'quarterly') {
+      const quarter = Math.floor(startDate.getMonth() / 3) + 1;
+      return `Q${quarter} ${startDate.getFullYear()}`;
+    } else {
+      return `${startDate.getFullYear()}`;
+    }
+  };
+
   const handleComplete = async () => {
     try {
       // Criar cliente FP&A
@@ -61,6 +75,7 @@ const FPAOnboardingWizard: React.FC<FPAOnboardingWizardProps> = ({ clientProfile
       // Criar período inicial
       await createPeriod.mutateAsync({
         fpa_client_id: clientData.id,
+        period_name: generatePeriodName(),
         start_date: formData.start_date,
         end_date: formData.end_date,
         period_type: formData.period_type,

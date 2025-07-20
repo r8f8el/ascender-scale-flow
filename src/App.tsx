@@ -1,10 +1,9 @@
-
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
-import { AdminAuthProvider } from "./contexts/AdminAuthContext";
+import AuthProvider from "./contexts/AuthContext";
+import AdminAuthProvider from "./contexts/AdminAuthContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Index from "./pages/Index";
 import AbrirChamado from "./pages/AbrirChamado";
