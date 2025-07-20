@@ -638,6 +638,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_fpa_clients_profile"
+            columns: ["client_profile_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fpa_clients_client_profile_id_fkey"
             columns: ["client_profile_id"]
             isOneToOne: false
@@ -681,6 +688,13 @@ export type Database = {
           sender_type?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_fpa_communications_client"
+            columns: ["fpa_client_id"]
+            isOneToOne: false
+            referencedRelation: "fpa_clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fpa_communications_fpa_client_id_fkey"
             columns: ["fpa_client_id"]
@@ -728,6 +742,27 @@ export type Database = {
           validation_errors?: Json | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_fpa_data_uploads_client"
+            columns: ["fpa_client_id"]
+            isOneToOne: false
+            referencedRelation: "fpa_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_fpa_data_uploads_period"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "fpa_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_fpa_data_uploads_uploader"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fpa_data_uploads_fpa_client_id_fkey"
             columns: ["fpa_client_id"]
@@ -924,6 +959,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_fpa_financial_data_client"
+            columns: ["fpa_client_id"]
+            isOneToOne: false
+            referencedRelation: "fpa_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_fpa_financial_data_period"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "fpa_periods"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fpa_financial_data_fpa_client_id_fkey"
             columns: ["fpa_client_id"]
             isOneToOne: false
@@ -971,6 +1020,13 @@ export type Database = {
           start_date?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_fpa_periods_client"
+            columns: ["fpa_client_id"]
+            isOneToOne: false
+            referencedRelation: "fpa_clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fpa_periods_fpa_client_id_fkey"
             columns: ["fpa_client_id"]
@@ -1021,6 +1077,20 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_fpa_reports_client"
+            columns: ["fpa_client_id"]
+            isOneToOne: false
+            referencedRelation: "fpa_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_fpa_reports_creator"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fpa_reports_created_by_fkey"
             columns: ["created_by"]
@@ -1078,6 +1148,27 @@ export type Database = {
           variance_percentage?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_fpa_variance_analysis_client"
+            columns: ["fpa_client_id"]
+            isOneToOne: false
+            referencedRelation: "fpa_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_fpa_variance_analysis_creator"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_fpa_variance_analysis_period"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "fpa_periods"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fpa_variance_analysis_created_by_fkey"
             columns: ["created_by"]
@@ -1716,6 +1807,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_period_name: {
+        Args: { start_date: string; period_type: string }
+        Returns: string
+      }
       generate_ticket_number: {
         Args: Record<PropertyKey, never>
         Returns: string

@@ -2,271 +2,312 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  Plus, 
-  Edit, 
-  Trash2, 
+  Users, 
   Building, 
-  User, 
-  Mail,
-  CheckCircle,
-  XCircle,
-  AlertCircle
+  TrendingUp, 
+  Calendar, 
+  Settings,
+  Plus,
+  Edit,
+  Eye,
+  FileText,
+  Upload
 } from 'lucide-react';
-import { useFPAClients, useCreateFPAClient } from '@/hooks/useFPAClients';
-import { useToast } from '@/components/ui/use-toast';
+import { useFPAClients } from '@/hooks/useFPAClients';
+import { useFPAPeriods } from '@/hooks/useFPAPeriods';
+import { useFPAReports } from '@/hooks/useFPAReports';
+import { useFPADataUploads } from '@/hooks/useFPADataUploads';
+import FPAOnboardingWizard from './FPAOnboardingWizard';
 
-interface FPAClientManagerProps {
-  onClientSelect?: (clientId: string) => void;
-  selectedClientId?: string;
-}
+const FPAClientManager: React.FC = () => {
+  const [selectedClient, setSelectedClient] = useState<string | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
-const FPAClientManager: React.FC<FPAClientManagerProps> = ({ 
-  onClientSelect, 
-  selectedClientId 
-}) => {
-  const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({
-    company_name: '',
-    industry: '',
-    business_model: '',
-    strategic_objectives: '',
-    client_profile_id: ''
-  });
+  const { data: clients = [], isLoading: clientsLoading } = useFPAClients();
+  const { data: periods = [] } = useFPAPeriods(selectedClient || undefined);
+  const { data: reports = [] } = useFPAReports(selectedClient || undefined);
+  const { data: uploads = [] } = useFPADataUploads(selectedClient || undefined);
 
-  const { data: clients = [], isLoading } = useFPAClients();
-  const createClient = useCreateFPAClient();
-  const { toast } = useToast();
+  const getClientStatus = (client: any) => {
+    if (!client.onboarding_completed) return 'onboarding';
+    if (client.current_phase === 1) return 'setup';
+    if (client.current_phase === 2) return 'data_collection';
+    if (client.current_phase === 3) return 'analysis';
+    return 'active';
+  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.company_name) {
-      toast({
-        title: "Erro",
-        description: "Nome da empresa é obrigatório",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      await createClient.mutateAsync(formData);
-      toast({
-        title: "Sucesso",
-        description: "Cliente FP&A criado com sucesso"
-      });
-      setShowForm(false);
-      setFormData({
-        company_name: '',
-        industry: '',
-        business_model: '',
-        strategic_objectives: '',
-        client_profile_id: ''
-      });
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Falha ao criar cliente FP&A",
-        variant: "destructive"
-      });
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'onboarding':
+        return <Badge variant="outline" className="bg-yellow-100 text-yellow-700">Onboarding</Badge>;
+      case 'setup':
+        return <Badge variant="outline" className="bg-blue-100 text-blue-700">Configuração</Badge>;
+      case 'data_collection':
+        return <Badge variant="outline" className="bg-orange-100 text-orange-700">Coleta de Dados</Badge>;
+      case 'analysis':
+        return <Badge variant="outline" className="bg-purple-100 text-purple-700">Análise</Badge>;
+      case 'active':
+        return <Badge className="bg-green-100 text-green-700">Ativo</Badge>;
+      default:
+        return <Badge variant="outline">Indefinido</Badge>;
     }
   };
 
-  const getStatusBadge = (client: any) => {
-    if (client.onboarding_completed) {
-      return <Badge className="bg-green-100 text-green-700">Ativo</Badge>;
-    }
-    return <Badge className="bg-yellow-100 text-yellow-700">Onboarding</Badge>;
-  };
-
-  const getPhaseInfo = (phase: number) => {
-    switch (phase) {
-      case 1: return { name: 'Diagnóstico', color: 'text-blue-600' };
-      case 2: return { name: 'Modelagem', color: 'text-purple-600' };
-      case 3: return { name: 'Implementação', color: 'text-orange-600' };
-      case 4: return { name: 'Monitoramento', color: 'text-green-600' };
-      default: return { name: 'Indefinido', color: 'text-gray-600' };
-    }
-  };
-
-  if (isLoading) {
+  if (clientsLoading) {
     return (
-      <div className="flex items-center justify-center h-32">
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center min-h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
       </div>
     );
   }
 
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle>Clientes FP&A</CardTitle>
-          <Button 
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Novo Cliente
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {showForm && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-lg">Novo Cliente FP&A</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="company_name">Nome da Empresa *</Label>
-                    <Input
-                      id="company_name"
-                      value={formData.company_name}
-                      onChange={(e) => setFormData({...formData, company_name: e.target.value})}
-                      placeholder="Ex: TechCorp Ltda"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="industry">Setor</Label>
-                    <Input
-                      id="industry"
-                      value={formData.industry}
-                      onChange={(e) => setFormData({...formData, industry: e.target.value})}
-                      placeholder="Ex: Tecnologia"
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="business_model">Modelo de Negócio</Label>
-                  <Input
-                    id="business_model"
-                    value={formData.business_model}
-                    onChange={(e) => setFormData({...formData, business_model: e.target.value})}
-                    placeholder="Ex: SaaS, E-commerce, Consultoria"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="strategic_objectives">Objetivos Estratégicos</Label>
-                  <Textarea
-                    id="strategic_objectives"
-                    value={formData.strategic_objectives}
-                    onChange={(e) => setFormData({...formData, strategic_objectives: e.target.value})}
-                    placeholder="Descreva os principais objetivos estratégicos..."
-                    rows={3}
-                  />
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button type="submit" disabled={createClient.isPending}>
-                    {createClient.isPending ? 'Criando...' : 'Criar Cliente'}
-                  </Button>
-                  <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                    Cancelar
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        )}
+  if (showOnboarding) {
+    return (
+      <FPAOnboardingWizard
+        clientProfile={null}
+        onComplete={() => setShowOnboarding(false)}
+      />
+    );
+  }
 
-        {clients.length === 0 ? (
-          <div className="text-center py-8">
-            <Building className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Nenhum cliente FP&A cadastrado
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Comece criando seu primeiro cliente FP&A
-            </p>
-            <Button onClick={() => setShowForm(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Criar Primeiro Cliente
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {clients.map((client) => {
-              const phase = getPhaseInfo(client.current_phase);
-              const isSelected = selectedClientId === client.id;
-              
-              return (
-                <Card 
-                  key={client.id} 
-                  className={`cursor-pointer transition-all ${
-                    isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:shadow-md'
-                  }`}
-                  onClick={() => onClientSelect?.(client.id)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex items-center gap-3">
-                        <Building className="h-5 w-5 text-gray-500" />
-                        <div>
-                          <h4 className="font-semibold text-gray-900">{client.company_name}</h4>
-                          <p className="text-sm text-gray-600">{client.industry || 'Setor não definido'}</p>
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Gerenciamento de Clientes FP&A</h2>
+        <Button onClick={() => setShowOnboarding(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Novo Cliente
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Lista de Clientes */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Clientes ({clients.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {clients.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">
+                  Nenhum cliente FP&A cadastrado
+                </p>
+              ) : (
+                clients.map((client) => (
+                  <div
+                    key={client.id}
+                    className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                      selectedClient === client.id ? 'border-blue-500 bg-blue-50' : 'hover:bg-gray-50'
+                    }`}
+                    onClick={() => setSelectedClient(client.id)}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-medium">{client.company_name}</h4>
+                        <p className="text-sm text-gray-600">{client.industry}</p>
+                      </div>
+                      {getStatusBadge(getClientStatus(client))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Detalhes do Cliente */}
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building className="h-5 w-5" />
+              {selectedClient ? 'Detalhes do Cliente' : 'Selecione um Cliente'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {selectedClient ? (
+              <Tabs defaultValue="overview" className="w-full">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+                  <TabsTrigger value="periods">Períodos</TabsTrigger>
+                  <TabsTrigger value="reports">Relatórios</TabsTrigger>
+                  <TabsTrigger value="uploads">Uploads</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="overview" className="space-y-4">
+                  {(() => {
+                    const client = clients.find(c => c.id === selectedClient);
+                    if (!client) return null;
+                    
+                    return (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">Empresa</label>
+                            <p className="font-medium">{client.company_name}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">Setor</label>
+                            <p className="font-medium">{client.industry || 'Não informado'}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">Modelo de Negócio</label>
+                            <p className="font-medium">{client.business_model || 'Não informado'}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">Fase Atual</label>
+                            <p className="font-medium">Fase {client.current_phase}</p>
+                          </div>
+                        </div>
+                        
+                        {client.strategic_objectives && (
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">Objetivos Estratégicos</label>
+                            <p className="font-medium">{client.strategic_objectives}</p>
+                          </div>
+                        )}
+                        
+                        <div className="flex gap-2">
+                          <Button size="sm">
+                            <Edit className="h-4 w-4 mr-2" />
+                            Editar
+                          </Button>
+                          <Button size="sm" variant="outline">
+                            <Settings className="h-4 w-4 mr-2" />
+                            Configurar
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {getStatusBadge(client)}
-                        <Badge variant="outline" className={phase.color}>
-                          Fase {client.current_phase}: {phase.name}
-                        </Badge>
-                      </div>
-                    </div>
-                    
-                    {client.client_profile && (
-                      <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                        <User className="h-4 w-4" />
-                        <span>{client.client_profile.name}</span>
-                        <Mail className="h-4 w-4 ml-2" />
-                        <span>{client.client_profile.email}</span>
-                      </div>
-                    )}
-                    
-                    {client.business_model && (
-                      <p className="text-sm text-gray-600 mb-2">
-                        <strong>Modelo:</strong> {client.business_model}
+                    );
+                  })()}
+                </TabsContent>
+                
+                <TabsContent value="periods" className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-medium">Períodos ({periods.length})</h4>
+                    <Button size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Novo Período
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    {periods.length === 0 ? (
+                      <p className="text-gray-500 text-center py-8">
+                        Nenhum período cadastrado
                       </p>
+                    ) : (
+                      periods.map((period) => (
+                        <div key={period.id} className="flex justify-between items-center p-3 border rounded-lg">
+                          <div>
+                            <h5 className="font-medium">{period.period_name}</h5>
+                            <p className="text-sm text-gray-600">
+                              {new Date(period.start_date).toLocaleDateString('pt-BR')} - {new Date(period.end_date).toLocaleDateString('pt-BR')}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={period.is_actual ? "default" : "outline"}>
+                              {period.is_actual ? 'Real' : 'Planejado'}
+                            </Badge>
+                            <Button size="sm" variant="outline">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))
                     )}
-                    
-                    {client.strategic_objectives && (
-                      <p className="text-sm text-gray-600 line-clamp-2">
-                        <strong>Objetivos:</strong> {client.strategic_objectives}
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="reports" className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-medium">Relatórios ({reports.length})</h4>
+                    <Button size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Novo Relatório
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    {reports.length === 0 ? (
+                      <p className="text-gray-500 text-center py-8">
+                        Nenhum relatório criado
                       </p>
+                    ) : (
+                      reports.map((report) => (
+                        <div key={report.id} className="flex justify-between items-center p-3 border rounded-lg">
+                          <div>
+                            <h5 className="font-medium">{report.title}</h5>
+                            <p className="text-sm text-gray-600">
+                              {report.report_type} - {report.period_covered}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={report.status === 'published' ? "default" : "outline"}>
+                              {report.status === 'published' ? 'Publicado' : 'Rascunho'}
+                            </Badge>
+                            <Button size="sm" variant="outline">
+                              <FileText className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))
                     )}
-                    
-                    <div className="flex justify-between items-center mt-3 pt-3 border-t">
-                      <span className="text-xs text-gray-500">
-                        Criado em {new Date(client.created_at).toLocaleDateString('pt-BR')}
-                      </span>
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="uploads" className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-medium">Uploads ({uploads.length})</h4>
+                    <Button size="sm">
+                      <Upload className="h-4 w-4 mr-2" />
+                      Novo Upload
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    {uploads.length === 0 ? (
+                      <p className="text-gray-500 text-center py-8">
+                        Nenhum arquivo enviado
+                      </p>
+                    ) : (
+                      uploads.map((upload) => (
+                        <div key={upload.id} className="flex justify-between items-center p-3 border rounded-lg">
+                          <div>
+                            <h5 className="font-medium">{upload.file_name}</h5>
+                            <p className="text-sm text-gray-600">
+                              {upload.file_type} - {new Date(upload.created_at || '').toLocaleDateString('pt-BR')}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={upload.status === 'validated' ? "default" : "outline"}>
+                              {upload.status === 'validated' ? 'Validado' : upload.status || 'Pendente'}
+                            </Badge>
+                            <Button size="sm" variant="outline">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            ) : (
+              <div className="text-center py-12">
+                <Building className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">Selecione um cliente para ver os detalhes</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 };
 

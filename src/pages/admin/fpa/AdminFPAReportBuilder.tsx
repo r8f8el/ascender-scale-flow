@@ -2,463 +2,385 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { 
-  PieChart, 
-  BarChart3,
+  FileText, 
+  Plus, 
+  Edit, 
+  Eye, 
+  Download, 
+  Send,
+  BarChart,
   TrendingUp,
-  FileText,
-  Image,
-  Table,
-  Layout,
-  Save,
-  Eye,
-  Copy,
-  Download,
-  Plus,
-  Trash2,
-  Move,
-  Settings
+  DollarSign
 } from 'lucide-react';
 import { useFPAClients } from '@/hooks/useFPAClients';
-import { useFPAFinancialData } from '@/hooks/useFPAFinancialData';
 import { useFPAPeriods } from '@/hooks/useFPAPeriods';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
+import { useFPAReports, useCreateFPAReport, useUpdateFPAReport } from '@/hooks/useFPAReports';
+import { useFPAFinancialData } from '@/hooks/useFPAFinancialData';
 import FPAClientSelector from '@/components/fpa/FPAClientSelector';
 import FPAPeriodSelector from '@/components/fpa/FPAPeriodSelector';
 
 const AdminFPAReportBuilder = () => {
   const [selectedClient, setSelectedClient] = useState('');
   const [selectedPeriod, setSelectedPeriod] = useState('');
-  const [reportTitle, setReportTitle] = useState('');
-  const [reportDescription, setReportDescription] = useState('');
-  const [reportType, setReportType] = useState('executive');
-  const [reportComponents, setReportComponents] = useState<any[]>([]);
-  const [selectedComponent, setSelectedComponent] = useState<any>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  
+  const [selectedReport, setSelectedReport] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [reportForm, setReportForm] = useState({
+    title: '',
+    report_type: '',
+    period_covered: '',
+    insights: '',
+    status: 'draft'
+  });
+
   const { data: clients = [] } = useFPAClients();
   const { data: periods = [] } = useFPAPeriods(selectedClient);
+  const { data: reports = [] } = useFPAReports(selectedClient);
   const { data: financialData = [] } = useFPAFinancialData(selectedClient, selectedPeriod);
-  const { toast } = useToast();
+  
+  const createReport = useCreateFPAReport();
+  const updateReport = useUpdateFPAReport();
 
-  const componentTypes = [
-    { 
-      id: 'header', 
-      name: 'Cabeçalho', 
-      icon: FileText, 
-      description: 'Título e informações básicas do relatório',
-      config: { title: '', subtitle: '', period: '' }
-    },
-    { 
-      id: 'kpi-grid', 
-      name: 'Grid de KPIs', 
-      icon: BarChart3, 
-      description: 'Cartões com métricas principais',
-      config: { metrics: ['revenue', 'ebitda', 'net_income', 'cash_balance'] }
-    },
-    { 
-      id: 'revenue-chart', 
-      name: 'Gráfico de Receita', 
-      icon: PieChart, 
-      description: 'Evolução da receita',
-      config: { chartType: 'line', period: 'monthly' }
-    },
-    { 
-      id: 'variance-table', 
-      name: 'Tabela de Variações', 
-      icon: Table, 
-      description: 'Análise de variações vs orçamento',
-      config: { showPercentage: true, highlightVariances: true }
-    },
-    { 
-      id: 'cash-flow', 
-      name: 'Fluxo de Caixa', 
-      icon: TrendingUp, 
-      description: 'Análise do fluxo de caixa',
-      config: { periods: 12, showProjection: true }
-    },
-    { 
-      id: 'insights', 
-      name: 'Insights e Comentários', 
-      icon: FileText, 
-      description: 'Análises e comentários executivos',
-      config: { autoGenerate: true, includeRecommendations: true }
-    }
-  ];
+  const handleCreateReport = async () => {
+    if (!selectedClient || !selectedPeriod) return;
+    
+    const period = periods.find(p => p.id === selectedPeriod);
+    const client = clients.find(c => c.id === selectedClient);
+    
+    if (!period || !client) return;
 
-  const addComponent = (componentType: any) => {
-    const newComponent = {
-      id: Date.now(),
-      type: componentType.id,
-      title: componentType.name,
-      config: { ...componentType.config },
-      position: reportComponents.length + 1
-    };
-    setReportComponents([...reportComponents, newComponent]);
-  };
-
-  const removeComponent = (componentId: number) => {
-    setReportComponents(reportComponents.filter(c => c.id !== componentId));
-  };
-
-  const updateComponent = (componentId: number, updates: any) => {
-    setReportComponents(reportComponents.map(c => 
-      c.id === componentId ? { ...c, ...updates } : c
-    ));
-  };
-
-  const generateReport = async () => {
-    if (!selectedClient || !selectedPeriod || !reportTitle) {
-      toast({
-        title: "Erro",
-        description: "Selecione um cliente, período e título para o relatório",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsGenerating(true);
-    try {
-      const reportContent = {
-        components: reportComponents,
+    const reportData = {
+      fpa_client_id: selectedClient,
+      title: reportForm.title || `Relatório ${client.company_name} - ${period.period_name}`,
+      report_type: reportForm.report_type,
+      period_covered: period.period_name,
+      insights: reportForm.insights,
+      status: reportForm.status,
+      content: {
         client_id: selectedClient,
         period_id: selectedPeriod,
-        financial_data: financialData,
-        generated_at: new Date().toISOString()
-      };
+        financial_data: financialData[0] || {},
+        generated_at: new Date().toISOString(),
+        charts: generateChartData(financialData[0] || {})
+      }
+    };
 
-      const { error } = await supabase
-        .from('fpa_reports')
-        .insert({
-          fpa_client_id: selectedClient,
-          title: reportTitle,
-          report_type: reportType,
-          period_covered: selectedPeriod,
-          content: reportContent,
-          insights: reportDescription,
-          status: 'draft'
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Sucesso",
-        description: "Relatório gerado com sucesso!"
+    try {
+      await createReport.mutateAsync(reportData);
+      setIsCreating(false);
+      setReportForm({
+        title: '',
+        report_type: '',
+        period_covered: '',
+        insights: '',
+        status: 'draft'
       });
-
-      // Reset form
-      setReportTitle('');
-      setReportDescription('');
-      setReportComponents([]);
-      
     } catch (error) {
-      console.error('Erro ao gerar relatório:', error);
-      toast({
-        title: "Erro",
-        description: "Falha ao gerar relatório",
-        variant: "destructive"
-      });
-    } finally {
-      setIsGenerating(false);
+      console.error('Error creating report:', error);
     }
   };
 
-  const getComponentIcon = (type: string) => {
-    const component = componentTypes.find(c => c.id === type);
-    if (component) {
-      const IconComponent = component.icon;
-      return <IconComponent className="h-4 w-4" />;
+  const generateChartData = (data: any) => {
+    if (!data || !data.revenue) return [];
+    
+    return [
+      {
+        name: 'Receita',
+        value: data.revenue || 0,
+        color: '#3B82F6'
+      },
+      {
+        name: 'Custo dos Produtos Vendidos',
+        value: data.cost_of_goods_sold || 0,
+        color: '#EF4444'
+      },
+      {
+        name: 'Lucro Bruto',
+        value: data.gross_profit || 0,
+        color: '#10B981'
+      },
+      {
+        name: 'EBITDA',
+        value: data.ebitda || 0,
+        color: '#F59E0B'
+      },
+      {
+        name: 'Lucro Líquido',
+        value: data.net_income || 0,
+        color: '#8B5CF6'
+      }
+    ];
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'published':
+        return <Badge className="bg-green-100 text-green-700">Publicado</Badge>;
+      case 'draft':
+        return <Badge variant="outline">Rascunho</Badge>;
+      case 'review':
+        return <Badge className="bg-yellow-100 text-yellow-700">Em Revisão</Badge>;
+      default:
+        return <Badge variant="outline">Indefinido</Badge>;
     }
-    return <Layout className="h-4 w-4" />;
   };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-start">
+      <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Construtor de Relatórios FP&A</h1>
           <p className="text-gray-600 mt-1">
-            Crie relatórios personalizados com dados reais dos clientes
+            Crie e gerencie relatórios financeiros personalizados
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" className="flex items-center gap-2">
-            <Eye className="h-4 w-4" />
-            Visualizar
-          </Button>
-          <Button 
-            onClick={generateReport} 
-            disabled={isGenerating || !selectedClient || !selectedPeriod}
-            className="flex items-center gap-2"
-          >
-            <Save className="h-4 w-4" />
-            {isGenerating ? 'Gerando...' : 'Gerar Relatório'}
-          </Button>
-        </div>
+        <Button 
+          onClick={() => setIsCreating(true)}
+          disabled={!selectedClient || !selectedPeriod}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Novo Relatório
+        </Button>
       </div>
 
-      {/* Client and Period Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Configuração do Relatório</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <FPAClientSelector 
-              value={selectedClient}
-              onChange={setSelectedClient}
-            />
-            <FPAPeriodSelector 
-              clientId={selectedClient}
-              value={selectedPeriod}
-              onChange={setSelectedPeriod}
-            />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="reportTitle">Título do Relatório</Label>
-              <Input 
-                id="reportTitle"
-                value={reportTitle}
-                onChange={(e) => setReportTitle(e.target.value)}
-                placeholder="Ex: Relatório Mensal - Janeiro 2024"
-              />
-            </div>
-            <div>
-              <Label htmlFor="reportType">Tipo de Relatório</Label>
-              <select 
-                id="reportType"
-                value={reportType}
-                onChange={(e) => setReportType(e.target.value)}
-                className="w-full p-2 border rounded-md"
-              >
-                <option value="executive">Executivo</option>
-                <option value="detailed">Detalhado</option>
-                <option value="variance">Análise de Variações</option>
-                <option value="forecast">Projeções</option>
-              </select>
-            </div>
-          </div>
-          <div className="mt-4">
-            <Label htmlFor="reportDescription">Descrição/Insights</Label>
-            <Textarea 
-              id="reportDescription"
-              value={reportDescription}
-              onChange={(e) => setReportDescription(e.target.value)}
-              placeholder="Descreva os principais insights e objetivos do relatório..."
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FPAClientSelector
+          value={selectedClient}
+          onChange={setSelectedClient}
+          label="Cliente"
+          placeholder="Selecione um cliente"
+        />
+        <FPAPeriodSelector
+          clientId={selectedClient}
+          value={selectedPeriod}
+          onChange={setSelectedPeriod}
+          label="Período"
+          placeholder="Selecione um período"
+        />
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Component Palette */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Componentes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {componentTypes.map((component) => {
-                  const IconComponent = component.icon;
-                  return (
-                    <div
-                      key={component.id}
-                      className="p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-                      onClick={() => addComponent(component)}
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        <IconComponent className="h-4 w-4 text-blue-500" />
-                        <span className="font-medium text-sm">{component.name}</span>
+      {isCreating && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Criar Novo Relatório</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="title">Título do Relatório</Label>
+                  <Input
+                    id="title"
+                    value={reportForm.title}
+                    onChange={(e) => setReportForm({ ...reportForm, title: e.target.value })}
+                    placeholder="Digite o título do relatório"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="report_type">Tipo de Relatório</Label>
+                  <Select 
+                    value={reportForm.report_type} 
+                    onValueChange={(value) => setReportForm({ ...reportForm, report_type: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="financial_summary">Resumo Financeiro</SelectItem>
+                      <SelectItem value="performance_analysis">Análise de Performance</SelectItem>
+                      <SelectItem value="variance_report">Relatório de Variação</SelectItem>
+                      <SelectItem value="budget_review">Revisão Orçamentária</SelectItem>
+                      <SelectItem value="custom">Personalizado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="insights">Insights e Observações</Label>
+                <Textarea
+                  id="insights"
+                  value={reportForm.insights}
+                  onChange={(e) => setReportForm({ ...reportForm, insights: e.target.value })}
+                  placeholder="Adicione insights e observações sobre o relatório"
+                  rows={4}
+                />
+              </div>
+              
+              {financialData.length > 0 && (
+                <div className="border rounded-lg p-4">
+                  <h4 className="font-medium mb-4">Prévia dos Dados Financeiros</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="text-center">
+                      <div className="flex items-center justify-center mb-2">
+                        <DollarSign className="h-5 w-5 text-blue-500" />
                       </div>
-                      <p className="text-xs text-gray-600">{component.description}</p>
+                      <p className="text-sm text-gray-600">Receita</p>
+                      <p className="font-bold text-lg">
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
+                          .format(financialData[0]?.revenue || 0)}
+                      </p>
                     </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Report Canvas */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-lg">Canvas do Relatório</CardTitle>
-                <Badge variant="outline">
-                  {reportComponents.length} componentes
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="min-h-[600px] border-2 border-dashed border-gray-300 rounded-lg p-4">
-                {reportComponents.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                    <Plus className="h-12 w-12 mb-4" />
-                    <p className="text-lg font-medium mb-2">Adicione componentes ao relatório</p>
-                    <p className="text-sm">Clique nos componentes à esquerda para começar</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {reportComponents
-                      .sort((a, b) => a.position - b.position)
-                      .map((component) => (
-                        <div
-                          key={component.id}
-                          className={`p-4 border rounded-lg bg-white hover:shadow-md transition-shadow group cursor-pointer ${
-                            selectedComponent?.id === component.id ? 'ring-2 ring-blue-500' : ''
-                          }`}
-                          onClick={() => setSelectedComponent(component)}
-                        >
-                          <div className="flex justify-between items-center mb-2">
-                            <div className="flex items-center gap-2">
-                              {getComponentIcon(component.type)}
-                              <span className="font-medium">{component.title}</span>
-                              <Badge variant="outline" className="text-xs">
-                                {component.type}
-                              </Badge>
-                            </div>
-                            
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedComponent(component);
-                                }}
-                              >
-                                <Settings className="h-3 w-3" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  removeComponent(component.id);
-                                }}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-                          
-                          <div className="bg-gray-50 rounded p-4 min-h-[120px] flex items-center justify-center">
-                            <div className="text-center">
-                              <p className="text-gray-600 font-medium mb-2">{component.title}</p>
-                              <p className="text-sm text-gray-500">
-                                {component.type === 'kpi-grid' && 'Métricas: Receita, EBITDA, Lucro'}
-                                {component.type === 'revenue-chart' && 'Gráfico de linha - Receita'}
-                                {component.type === 'variance-table' && 'Tabela de variações'}
-                                {component.type === 'cash-flow' && 'Fluxo de caixa operacional'}
-                                {component.type === 'insights' && 'Comentários executivos'}
-                                {component.type === 'header' && 'Cabeçalho do relatório'}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Properties Panel */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">
-                {selectedComponent ? 'Propriedades' : 'Selecione um Componente'}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {selectedComponent ? (
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="componentTitle">Título</Label>
-                    <Input 
-                      id="componentTitle"
-                      value={selectedComponent.title}
-                      onChange={(e) => updateComponent(selectedComponent.id, { title: e.target.value })}
-                      placeholder="Nome do componente"
-                    />
-                  </div>
-                  
-                  {selectedComponent.type === 'kpi-grid' && (
-                    <div>
-                      <Label>Métricas</Label>
-                      <div className="space-y-2 mt-2">
-                        {['revenue', 'ebitda', 'net_income', 'cash_balance'].map(metric => (
-                          <label key={metric} className="flex items-center space-x-2">
-                            <input 
-                              type="checkbox"
-                              checked={selectedComponent.config.metrics.includes(metric)}
-                              onChange={(e) => {
-                                const metrics = e.target.checked
-                                  ? [...selectedComponent.config.metrics, metric]
-                                  : selectedComponent.config.metrics.filter((m: string) => m !== metric);
-                                updateComponent(selectedComponent.id, { 
-                                  config: { ...selectedComponent.config, metrics }
-                                });
-                              }}
-                            />
-                            <span className="text-sm capitalize">{metric.replace('_', ' ')}</span>
-                          </label>
-                        ))}
+                    <div className="text-center">
+                      <div className="flex items-center justify-center mb-2">
+                        <TrendingUp className="h-5 w-5 text-green-500" />
                       </div>
+                      <p className="text-sm text-gray-600">Lucro Bruto</p>
+                      <p className="font-bold text-lg">
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
+                          .format(financialData[0]?.gross_profit || 0)}
+                      </p>
                     </div>
-                  )}
-                  
-                  {selectedComponent.type === 'revenue-chart' && (
-                    <div>
-                      <Label htmlFor="chartType">Tipo de Gráfico</Label>
-                      <select 
-                        id="chartType"
-                        value={selectedComponent.config.chartType}
-                        onChange={(e) => updateComponent(selectedComponent.id, { 
-                          config: { ...selectedComponent.config, chartType: e.target.value }
-                        })}
-                        className="w-full p-2 border rounded-md mt-1"
-                      >
-                        <option value="line">Linha</option>
-                        <option value="bar">Barras</option>
-                        <option value="area">Área</option>
-                      </select>
+                    <div className="text-center">
+                      <div className="flex items-center justify-center mb-2">
+                        <BarChart className="h-5 w-5 text-purple-500" />
+                      </div>
+                      <p className="text-sm text-gray-600">EBITDA</p>
+                      <p className="font-bold text-lg">
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
+                          .format(financialData[0]?.ebitda || 0)}
+                      </p>
                     </div>
-                  )}
-                  
-                  <div className="pt-4 border-t">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full"
-                      onClick={() => removeComponent(selectedComponent.id)}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Remover Componente
-                    </Button>
+                    <div className="text-center">
+                      <div className="flex items-center justify-center mb-2">
+                        <DollarSign className="h-5 w-5 text-orange-500" />
+                      </div>
+                      <p className="text-sm text-gray-600">Lucro Líquido</p>
+                      <p className="font-bold text-lg">
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
+                          .format(financialData[0]?.net_income || 0)}
+                      </p>
+                    </div>
                   </div>
                 </div>
+              )}
+              
+              <div className="flex justify-end gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsCreating(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleCreateReport}
+                  disabled={createReport.isPending || !reportForm.report_type}
+                >
+                  {createReport.isPending ? 'Criando...' : 'Criar Relatório'}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Tabs defaultValue="reports" className="w-full">
+        <TabsList>
+          <TabsTrigger value="reports">Relatórios Existentes</TabsTrigger>
+          <TabsTrigger value="templates">Modelos</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="reports" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Relatórios Existentes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {reports.length === 0 ? (
+                <div className="text-center py-8">
+                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">Nenhum relatório encontrado</p>
+                  <p className="text-gray-400 text-sm mt-1">
+                    Selecione um cliente e período para começar
+                  </p>
+                </div>
               ) : (
-                <p className="text-gray-500 text-sm">
-                  Clique em um componente no canvas para editar suas propriedades
-                </p>
+                <div className="space-y-3">
+                  {reports.map((report) => (
+                    <div key={report.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex-1">
+                        <h4 className="font-medium">{report.title}</h4>
+                        <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                          <span>{report.report_type}</span>
+                          <span>•</span>
+                          <span>{report.period_covered}</span>
+                          <span>•</span>
+                          <span>{new Date(report.created_at || '').toLocaleDateString('pt-BR')}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {getStatusBadge(report.status || 'draft')}
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="outline">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="outline">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="outline">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="outline">
+                            <Send className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </CardContent>
           </Card>
-        </div>
-      </div>
+        </TabsContent>
+        
+        <TabsContent value="templates" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Modelos de Relatório</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[
+                  {
+                    name: 'Relatório Executivo',
+                    description: 'Resumo executivo com principais métricas',
+                    icon: <BarChart className="h-8 w-8" />
+                  },
+                  {
+                    name: 'Análise de Variação',
+                    description: 'Comparação entre realizado e planejado',
+                    icon: <TrendingUp className="h-8 w-8" />
+                  },
+                  {
+                    name: 'Dashboard Financeiro',
+                    description: 'Painel completo de indicadores financeiros',
+                    icon: <DollarSign className="h-8 w-8" />
+                  }
+                ].map((template, index) => (
+                  <Card key={index} className="cursor-pointer hover:shadow-md transition-shadow">
+                    <CardContent className="p-4 text-center">
+                      <div className="flex justify-center mb-3 text-blue-500">
+                        {template.icon}
+                      </div>
+                      <h4 className="font-medium mb-2">{template.name}</h4>
+                      <p className="text-sm text-gray-600 mb-4">{template.description}</p>
+                      <Button size="sm" variant="outline" className="w-full">
+                        Usar Modelo
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
