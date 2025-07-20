@@ -25,12 +25,25 @@ export const useCurrentFPAClient = () => {
   const { user } = useAuth();
   const { data: clients = [], isLoading, error } = useFPAClients();
 
+  // Type guard to ensure client_profile exists and has required properties
+  const isValidFPAClient = (client: any): client is CurrentFPAClient => {
+    return client && 
+           client.client_profile && 
+           typeof client.client_profile === 'object' &&
+           'id' in client.client_profile &&
+           'name' in client.client_profile &&
+           'email' in client.client_profile;
+  };
+
   const currentClient = clients.find(client => {
-    return client.client_profile?.id === user?.id;
-  }) as CurrentFPAClient | undefined;
+    if (!isValidFPAClient(client) || !user?.id) {
+      return false;
+    }
+    return client.client_profile.id === user.id;
+  });
 
   return {
-    currentClient,
+    currentClient: currentClient as CurrentFPAClient | undefined,
     isLoading,
     error,
     hasClient: !!currentClient,

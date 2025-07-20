@@ -7,15 +7,13 @@ export const useFPAPeriods = (clientId?: string) => {
   return useQuery({
     queryKey: ['fpa-periods', clientId],
     queryFn: async () => {
-      let query = supabase
+      if (!clientId) return [];
+      
+      const { data, error } = await supabase
         .from('fpa_periods')
-        .select('*');
-      
-      if (clientId) {
-        query = query.eq('fpa_client_id', clientId);
-      }
-      
-      const { data, error } = await query.order('start_date', { ascending: false });
+        .select('*')
+        .eq('fpa_client_id', clientId)
+        .order('start_date', { ascending: false });
       
       if (error) {
         console.error('Error fetching FPA periods:', error);
@@ -33,21 +31,15 @@ export const useCreateFPAPeriod = () => {
   return useMutation({
     mutationFn: async (periodData: {
       fpa_client_id: string;
+      period_name: string;
+      period_type: string;
       start_date: string;
       end_date: string;
-      period_type: string;
-      period_name?: string;
       is_actual?: boolean;
     }) => {
-      // Gerar period_name se não fornecido
-      const finalPeriodData = {
-        ...periodData,
-        period_name: periodData.period_name || generatePeriodName(periodData.start_date, periodData.period_type)
-      };
-
       const { data, error } = await supabase
         .from('fpa_periods')
-        .insert(finalPeriodData)
+        .insert(periodData)
         .select()
         .single();
       
@@ -59,11 +51,11 @@ export const useCreateFPAPeriod = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fpa-periods'] });
-      toast.success('Período criado com sucesso!');
+      toast.success('Período FP&A criado com sucesso!');
     },
     onError: (error) => {
       console.error('Error creating FPA period:', error);
-      toast.error('Erro ao criar período');
+      toast.error('Erro ao criar período FP&A');
     }
   });
 };
@@ -86,32 +78,14 @@ export const useUpdateFPAPeriod = () => {
       }
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['fpa-periods'] });
-      toast.success('Período atualizado com sucesso!');
+      queryClient.invalidateQueries({ queryKey: ['fpa-periods', variables.fpa_client_id] });
+      toast.success('Período FP&A atualizado com sucesso!');
     },
     onError: (error) => {
       console.error('Error updating FPA period:', error);
-      toast.error('Erro ao atualizar período');
+      toast.error('Erro ao atualizar período FP&A');
     }
   });
-};
-
-// Função auxiliar para gerar nome do período
-const generatePeriodName = (startDate: string, periodType: string): string => {
-  const date = new Date(startDate);
-  
-  switch (periodType) {
-    case 'monthly':
-      return date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-    case 'quarterly':
-      const quarter = Math.floor(date.getMonth() / 3) + 1;
-      return `Q${quarter} ${date.getFullYear()}`;
-    case 'yearly':
-      return date.getFullYear().toString();
-    default:
-      const endDate = new Date(date);
-      endDate.setMonth(endDate.getMonth() + 1);
-      return `${date.toLocaleDateString('pt-BR')} - ${endDate.toLocaleDateString('pt-BR')}`;
-  }
 };

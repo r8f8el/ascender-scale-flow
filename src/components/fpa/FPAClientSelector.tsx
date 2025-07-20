@@ -10,6 +10,15 @@ interface FPAClientSelectorProps {
   placeholder?: string;
 }
 
+// Type guard to ensure client has valid client_profile
+const hasValidClientProfile = (client: any): boolean => {
+  return client && 
+         client.client_profile && 
+         typeof client.client_profile === 'object' &&
+         'id' in client.client_profile &&
+         'name' in client.client_profile;
+};
+
 const FPAClientSelector: React.FC<FPAClientSelectorProps> = ({
   value,
   onChange,
@@ -18,12 +27,8 @@ const FPAClientSelector: React.FC<FPAClientSelectorProps> = ({
 }) => {
   const { data: clients = [], isLoading } = useFPAClients();
 
-  // Type guard para garantir que client_profile existe
-  const validClients = clients.filter(client => 
-    client.client_profile && 
-    typeof client.client_profile === 'object' &&
-    'id' in client.client_profile
-  );
+  // Filter clients to only include those with valid client_profile
+  const validClients = clients.filter(hasValidClientProfile);
 
   return (
     <div>

@@ -638,13 +638,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_fpa_clients_profile"
-            columns: ["client_profile_id"]
-            isOneToOne: false
-            referencedRelation: "client_profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "fpa_clients_client_profile_id_fkey"
             columns: ["client_profile_id"]
             isOneToOne: false
