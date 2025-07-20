@@ -49,6 +49,69 @@ export const useFPAClient = (clientId: string) => {
   });
 };
 
+// Hook para criar cliente FP&A diretamente de client_profiles existentes
+export const useCreateFPAClientFromProfile = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (clientProfileId: string) => {
+      // Primeiro buscar o perfil do cliente
+      const { data: profile, error: profileError } = await supabase
+        .from('client_profiles')
+        .select('*')
+        .eq('id', clientProfileId)
+        .single();
+      
+      if (profileError) {
+        console.error('Error fetching client profile:', profileError);
+        throw profileError;
+      }
+
+      // Verificar se já existe um cliente FP&A para este perfil
+      const { data: existingClient, error: checkError } = await supabase
+        .from('fpa_clients')
+        .select('id')
+        .eq('client_profile_id', clientProfileId)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking existing FPA client:', checkError);
+        throw checkError;
+      }
+
+      if (existingClient) {
+        return existingClient;
+      }
+
+      // Criar novo cliente FP&A
+      const { data, error } = await supabase
+        .from('fpa_clients')
+        .insert({
+          client_profile_id: clientProfileId,
+          company_name: profile.company || profile.name,
+          onboarding_completed: false,
+          current_phase: 1
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error creating FPA client:', error);
+        throw error;
+      }
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fpa-clients'] });
+      toast.success('Cliente FP&A criado com sucesso!');
+    },
+    onError: (error) => {
+      console.error('Error creating FPA client:', error);
+      toast.error('Erro ao criar cliente FP&A');
+    }
+  });
+};
+
 export const useCreateFPAClient = () => {
   const queryClient = useQueryClient();
   
