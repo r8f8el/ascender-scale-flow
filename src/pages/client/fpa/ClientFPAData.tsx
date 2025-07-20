@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Upload, FileText, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFPAClients } from '@/hooks/useFPAClients';
-import { useFPADataUploads } from '@/hooks/useFPADataUploads';
+import { useFPADataUploads, useCreateFPADataUpload } from '@/hooks/useFPADataUploads';
 import { toast } from 'sonner';
 
 const ClientFPAData = () => {
@@ -25,6 +25,7 @@ const ClientFPAData = () => {
   });
   
   const { data: uploads = [], isLoading: uploadsLoading } = useFPADataUploads(currentClient?.id);
+  const createUpload = useCreateFPADataUpload();
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -41,9 +42,19 @@ const ClientFPAData = () => {
 
     setIsUploading(true);
     try {
-      // Aqui implementaremos o upload real para o Supabase
+      await createUpload.mutateAsync({
+        fpa_client_id: currentClient.id,
+        file_name: selectedFile.name,
+        file_path: `uploads/${currentClient.id}/${selectedFile.name}`,
+        file_type: selectedFile.type || 'application/octet-stream',
+        status: 'uploaded'
+      });
+      
       toast.success('Arquivo enviado com sucesso!');
       setSelectedFile(null);
+      // Reset file input
+      const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
     } catch (error) {
       console.error('Erro no upload:', error);
       toast.error('Erro ao enviar arquivo');
@@ -115,11 +126,11 @@ const ClientFPAData = () => {
 
           <Button 
             onClick={handleUpload}
-            disabled={!selectedFile || isUploading}
+            disabled={!selectedFile || isUploading || createUpload.isPending}
             className="w-full"
           >
             <Upload className="h-4 w-4 mr-2" />
-            {isUploading ? 'Enviando...' : 'Enviar Arquivo'}
+            {isUploading || createUpload.isPending ? 'Enviando...' : 'Enviar Arquivo'}
           </Button>
         </CardContent>
       </Card>

@@ -51,6 +51,16 @@ const ClientFPAReports = () => {
     }
   };
 
+  const handleViewReport = (reportId: string) => {
+    // Implementar visualização do relatório
+    console.log('Visualizando relatório:', reportId);
+  };
+
+  const handleDownloadReport = (reportId: string) => {
+    // Implementar download do relatório
+    console.log('Fazendo download do relatório:', reportId);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-96">
@@ -146,11 +156,19 @@ const ClientFPAReports = () => {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleViewReport(report.id)}
+                    >
                       <Eye className="h-4 w-4 mr-2" />
                       Visualizar
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleDownloadReport(report.id)}
+                    >
                       <Download className="h-4 w-4 mr-2" />
                       Download
                     </Button>
