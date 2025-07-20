@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import ErrorBoundary from "./components/ErrorBoundary";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import ClientLogin from "./pages/ClientLogin";
@@ -66,69 +67,119 @@ function App() {
         <Router>
           <AuthProvider>
             <AdminAuthProvider>
-              <div className="App">
-                <Routes>
-                  {/* Public routes */}
-                  <Route path="/" element={<Index />} />
-                  <Route path="/participante-dados" element={<ParticipantData />} />
-                  <Route path="/convite/:invitationId" element={<AcceptInvitation />} />
-                  
-                  {/* Client routes */}
-                  <Route path="/cliente/login" element={<ClientLogin />} />
-                  <Route path="/cliente" element={<ProtectedRoute><ClientArea /></ProtectedRoute>}>
-                    <Route index element={<ProtectedRoute><ClientDocuments /></ProtectedRoute>} />
-                    <Route path="equipe" element={<ProtectedRoute><ClientTeam /></ProtectedRoute>} />
-                    <Route path="solicitacoes" element={<ProtectedRoute><ClientRequests /></ProtectedRoute>} />
-                    <Route path="cronograma" element={<ProtectedRoute><ClientSchedule /></ProtectedRoute>} />
-                    <Route path="contato" element={<ProtectedRoute><ClientContact /></ProtectedRoute>} />
-                    <Route path="chamados" element={<ClientTickets />} />
-                    <Route path="chamados/:id" element={<ClientTicketDetail />} />
+              <ErrorBoundary>
+                <div className="App">
+                  <Routes>
+                    {/* Public routes */}
+                    <Route path="/" element={<Index />} />
+                    <Route path="/participante-dados" element={<ParticipantData />} />
+                    <Route path="/convite/:invitationId" element={<AcceptInvitation />} />
                     
-                    {/* FP&A Client Routes */}
-                    <Route path="fpa/dashboard" element={<ProtectedRoute><ClientFPADashboard /></ProtectedRoute>} />
-                    <Route path="fpa/dados" element={<ProtectedRoute><ClientFPAData /></ProtectedRoute>} />
-                    <Route path="fpa/cenarios" element={<ProtectedRoute><ClientFPAScenarios /></ProtectedRoute>} />
-                    <Route path="fpa/relatorios" element={<ProtectedRoute><ClientFPAReports /></ProtectedRoute>} />
-                    <Route path="fpa/comunicacao" element={<ProtectedRoute><ClientFPACommunication /></ProtectedRoute>} />
-                  </Route>
-                  
-                  {/* Página pública de abertura de chamado */}
-                  <Route path="/abrir-chamado" element={<AbrirChamado />} />
-                  
-                  {/* Admin routes */}
-                  <Route path="/admin/login" element={<AdminLogin />} />
-                  <Route path="/admin/register" element={<AdminRegister />} />
-                  <Route path="/admin/unauthorized" element={<AdminUnauthorized />} />
-                  <Route path="/admin" element={<AdminProtectedRoute><AdminArea /></AdminProtectedRoute>}>
-                    <Route index element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
-                    <Route path="clientes" element={<AdminProtectedRoute><ClientesAdmin /></AdminProtectedRoute>} />
-                    <Route path="projetos" element={<AdminProtectedRoute><ProjectsAdmin /></AdminProtectedRoute>} />
-                    <Route path="colaboradores" element={<AdminProtectedRoute><CollaboratorsAdmin /></AdminProtectedRoute>} />
-                    <Route path="tarefas" element={<AdminProtectedRoute><TasksAdmin /></AdminProtectedRoute>} />
-                    <Route path="chamados" element={<AdminProtectedRoute><TicketsAdmin /></AdminProtectedRoute>} />
-                    <Route path="arquivos" element={<AdminProtectedRoute><ArquivosAdmin /></AdminProtectedRoute>} />
-                    <Route path="cronogramas" element={<AdminProtectedRoute><CronogramasAdmin /></AdminProtectedRoute>} />
-                    <Route path="mensagens" element={<AdminProtectedRoute><MensagensAdmin /></AdminProtectedRoute>} />
-                    <Route path="logs" element={<AdminProtectedRoute><LogsAdmin /></AdminProtectedRoute>} />
-                    <Route path="activity-logs" element={<AdminProtectedRoute><ActivityLogsAdmin /></AdminProtectedRoute>} />
-                    <Route path="configuracoes" element={<AdminProtectedRoute><ConfiguracoesAdmin /></AdminProtectedRoute>} />
-                    <Route path="onedrive" element={<AdminProtectedRoute><OneDriveIntegration /></AdminProtectedRoute>} />
-                    <Route path="meus-chamados" element={<AdminProtectedRoute><MyTickets /></AdminProtectedRoute>} />
+                    {/* Client routes */}
+                    <Route path="/cliente/login" element={<ClientLogin />} />
+                    <Route path="/cliente" element={
+                      <ErrorBoundary>
+                        <ProtectedRoute><ClientArea /></ProtectedRoute>
+                      </ErrorBoundary>
+                    }>
+                      <Route index element={<ProtectedRoute><ClientDocuments /></ProtectedRoute>} />
+                      <Route path="equipe" element={<ProtectedRoute><ClientTeam /></ProtectedRoute>} />
+                      <Route path="solicitacoes" element={<ProtectedRoute><ClientRequests /></ProtectedRoute>} />
+                      <Route path="cronograma" element={<ProtectedRoute><ClientSchedule /></ProtectedRoute>} />
+                      <Route path="contato" element={<ProtectedRoute><ClientContact /></ProtectedRoute>} />
+                      <Route path="chamados" element={<ClientTickets />} />
+                      <Route path="chamados/:id" element={<ClientTicketDetail />} />
+                      
+                      {/* FP&A Client Routes */}
+                      <Route path="fpa/dashboard" element={
+                        <ErrorBoundary>
+                          <ProtectedRoute><ClientFPADashboard /></ProtectedRoute>
+                        </ErrorBoundary>
+                      } />
+                      <Route path="fpa/dados" element={
+                        <ErrorBoundary>
+                          <ProtectedRoute><ClientFPAData /></ProtectedRoute>
+                        </ErrorBoundary>
+                      } />
+                      <Route path="fpa/cenarios" element={
+                        <ErrorBoundary>
+                          <ProtectedRoute><ClientFPAScenarios /></ProtectedRoute>
+                        </ErrorBoundary>
+                      } />
+                      <Route path="fpa/relatorios" element={
+                        <ErrorBoundary>
+                          <ProtectedRoute><ClientFPAReports /></ProtectedRoute>
+                        </ErrorBoundary>
+                      } />
+                      <Route path="fpa/comunicacao" element={
+                        <ErrorBoundary>
+                          <ProtectedRoute><ClientFPACommunication /></ProtectedRoute>
+                        </ErrorBoundary>
+                      } />
+                    </Route>
                     
-                    {/* FP&A Admin Routes */}
-                    <Route path="fpa/gestao-clientes" element={<AdminProtectedRoute><AdminFPAClientManagement /></AdminProtectedRoute>} />
-                    <Route path="fpa/integracao-dados" element={<AdminProtectedRoute><AdminFPADataIntegration /></AdminProtectedRoute>} />
-                    <Route path="fpa/modelagem" element={<AdminProtectedRoute><AdminFPAModeling /></AdminProtectedRoute>} />
-                    <Route path="fpa/analise-variacao" element={<AdminProtectedRoute><AdminFPAVarianceAnalysis /></AdminProtectedRoute>} />
-                    <Route path="fpa/relatorios" element={<AdminProtectedRoute><AdminFPAReportBuilder /></AdminProtectedRoute>} />
-                  </Route>
-                  
-                  {/* Catch-all route */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-                <Toaster />
-                <Sonner />
-              </div>
+                    {/* Página pública de abertura de chamado */}
+                    <Route path="/abrir-chamado" element={<AbrirChamado />} />
+                    
+                    {/* Admin routes */}
+                    <Route path="/admin/login" element={<AdminLogin />} />
+                    <Route path="/admin/register" element={<AdminRegister />} />
+                    <Route path="/admin/unauthorized" element={<AdminUnauthorized />} />
+                    <Route path="/admin" element={
+                      <ErrorBoundary>
+                        <AdminProtectedRoute><AdminArea /></AdminProtectedRoute>
+                      </ErrorBoundary>
+                    }>
+                      <Route index element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+                      <Route path="clientes" element={<AdminProtectedRoute><ClientesAdmin /></AdminProtectedRoute>} />
+                      <Route path="projetos" element={<AdminProtectedRoute><ProjectsAdmin /></AdminProtectedRoute>} />
+                      <Route path="colaboradores" element={<AdminProtectedRoute><CollaboratorsAdmin /></AdminProtectedRoute>} />
+                      <Route path="tarefas" element={<AdminProtectedRoute><TasksAdmin /></AdminProtectedRoute>} />
+                      <Route path="chamados" element={<AdminProtectedRoute><TicketsAdmin /></AdminProtectedRoute>} />
+                      <Route path="arquivos" element={<AdminProtectedRoute><ArquivosAdmin /></AdminProtectedRoute>} />
+                      <Route path="cronogramas" element={<AdminProtectedRoute><CronogramasAdmin /></AdminProtectedRoute>} />
+                      <Route path="mensagens" element={<AdminProtectedRoute><MensagensAdmin /></AdminProtectedRoute>} />
+                      <Route path="logs" element={<AdminProtectedRoute><LogsAdmin /></AdminProtectedRoute>} />
+                      <Route path="activity-logs" element={<AdminProtectedRoute><ActivityLogsAdmin /></AdminProtectedRoute>} />
+                      <Route path="configuracoes" element={<AdminProtectedRoute><ConfiguracoesAdmin /></AdminProtectedRoute>} />
+                      <Route path="onedrive" element={<AdminProtectedRoute><OneDriveIntegration /></AdminProtectedRoute>} />
+                      <Route path="meus-chamados" element={<AdminProtectedRoute><MyTickets /></AdminProtectedRoute>} />
+                      
+                      {/* FP&A Admin Routes */}
+                      <Route path="fpa/gestao-clientes" element={
+                        <ErrorBoundary>
+                          <AdminProtectedRoute><AdminFPAClientManagement /></AdminProtectedRoute>
+                        </ErrorBoundary>
+                      } />
+                      <Route path="fpa/integracao-dados" element={
+                        <ErrorBoundary>
+                          <AdminProtectedRoute><AdminFPADataIntegration /></AdminProtectedRoute>
+                        </ErrorBoundary>
+                      } />
+                      <Route path="fpa/modelagem" element={
+                        <ErrorBoundary>
+                          <AdminProtectedRoute><AdminFPAModeling /></AdminProtectedRoute>
+                        </ErrorBoundary>
+                      } />
+                      <Route path="fpa/analise-variacao" element={
+                        <ErrorBoundary>
+                          <AdminProtectedRoute><AdminFPAVarianceAnalysis /></AdminProtectedRoute>
+                        </ErrorBoundary>
+                      } />
+                      <Route path="fpa/relatorios" element={
+                        <ErrorBoundary>
+                          <AdminProtectedRoute><AdminFPAReportBuilder /></AdminProtectedRoute>
+                        </ErrorBoundary>
+                      } />
+                    </Route>
+                    
+                    {/* Catch-all route */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                  <Toaster />
+                  <Sonner />
+                </div>
+              </ErrorBoundary>
             </AdminAuthProvider>
           </AuthProvider>
         </Router>

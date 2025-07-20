@@ -18,6 +18,13 @@ const FPAClientSelector: React.FC<FPAClientSelectorProps> = ({
 }) => {
   const { data: clients = [], isLoading } = useFPAClients();
 
+  // Type guard para garantir que client_profile existe
+  const validClients = clients.filter(client => 
+    client.client_profile && 
+    typeof client.client_profile === 'object' &&
+    'id' in client.client_profile
+  );
+
   return (
     <div>
       <Label htmlFor="client">{label}</Label>
@@ -29,7 +36,7 @@ const FPAClientSelector: React.FC<FPAClientSelectorProps> = ({
         disabled={isLoading}
       >
         <option value="">{isLoading ? "Carregando..." : placeholder}</option>
-        {clients.map((client) => (
+        {validClients.map((client) => (
           <option key={client.id} value={client.id}>
             {client.company_name}
           </option>

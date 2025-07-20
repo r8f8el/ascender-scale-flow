@@ -1,25 +1,19 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Upload, FileText, CheckCircle, AlertCircle } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useFPAClients } from '@/hooks/useFPAClients';
+import { useCurrentFPAClient } from '@/hooks/useCurrentFPAClient';
 import { useFPADataUploads, useCreateFPADataUpload } from '@/hooks/useFPADataUploads';
 import { toast } from 'sonner';
 
 const ClientFPAData = () => {
-  const { user } = useAuth();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  // Get the current user's FPA client data
-  const { data: clients = [], isLoading: clientsLoading } = useFPAClients();
-  const currentClient = clients.find(client => {
-    return client.client_profile?.id === user?.id;
-  });
-  
+  const { currentClient, isLoading: clientLoading, hasClient } = useCurrentFPAClient();
   const { data: uploads = [], isLoading: uploadsLoading } = useFPADataUploads(currentClient?.id);
   const createUpload = useCreateFPADataUpload();
 
@@ -59,7 +53,7 @@ const ClientFPAData = () => {
     }
   };
 
-  if (clientsLoading) {
+  if (clientLoading) {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
@@ -67,7 +61,7 @@ const ClientFPAData = () => {
     );
   }
 
-  if (!currentClient) {
+  if (!hasClient) {
     return (
       <div className="text-center py-12">
         <AlertCircle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
@@ -154,7 +148,7 @@ const ClientFPAData = () => {
                     <div>
                       <p className="font-medium">{upload.file_name}</p>
                       <p className="text-sm text-gray-500">
-                        {new Date(upload.created_at || '').toLocaleDateString('pt-BR')}
+                        {upload.created_at ? new Date(upload.created_at).toLocaleDateString('pt-BR') : 'Data não disponível'}
                       </p>
                     </div>
                   </div>
