@@ -28,6 +28,7 @@ const ClientFPAReports = () => {
   
   const currentClient = clients.find(client => {
     return client.client_profile && 
+           client.client_profile !== null &&
            typeof client.client_profile === 'object' && 
            'id' in client.client_profile && 
            client.client_profile.id === user?.id;
