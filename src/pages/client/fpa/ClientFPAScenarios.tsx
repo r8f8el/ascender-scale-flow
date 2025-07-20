@@ -33,7 +33,6 @@ const ClientFPAScenarios = () => {
     return (client.client_profile as { id: string }).id === user?.id;
   });
 
-  // Mock scenarios data
   const scenarios = [
     {
       id: 'base',

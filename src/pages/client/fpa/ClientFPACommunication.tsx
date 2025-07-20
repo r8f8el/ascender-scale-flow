@@ -30,7 +30,6 @@ const ClientFPACommunication = () => {
     return (client.client_profile as { id: string }).id === user?.id;
   });
 
-  // Mock messages data
   const messages = [
     {
       id: '1',
