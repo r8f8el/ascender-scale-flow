@@ -29,7 +29,9 @@ const ClientArea = () => {
   const { retry } = useErrorHandler();
 
   const handleRefresh = () => {
-    retry(refetch);
+    retry(() => {
+      refetch();
+    });
   };
 
   const getStatusBadgeVariant = (status: string) => {

@@ -66,11 +66,14 @@ export const useDashboardData = () => {
           throw new Error('Nenhum dado retornado do servidor');
         }
 
+        // Cast the data to the expected type since RPC returns Json
+        const dashboardData = data as any;
+
         return {
-          projects: data.projects || [],
-          recent_files: data.recent_files || [],
-          stats: data.stats || { total_projects: 0, active_projects: 0, completed_projects: 0 },
-          recent_tickets: data.recent_tickets || []
+          projects: dashboardData.projects || [],
+          recent_files: dashboardData.recent_files || [],
+          stats: dashboardData.stats || { total_projects: 0, active_projects: 0, completed_projects: 0 },
+          recent_tickets: dashboardData.recent_tickets || []
         };
       } catch (error) {
         const err = error instanceof Error ? error : new Error('Erro desconhecido');
@@ -80,7 +83,7 @@ export const useDashboardData = () => {
     },
     enabled: !!user?.id,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes (renamed from cacheTime)
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
