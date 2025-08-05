@@ -273,9 +273,9 @@ export const TicketChat: React.FC<TicketChatProps> = ({ ticketId, isTicketClosed
   }
 
   return (
-    <div className="flex flex-col h-[600px] bg-background border rounded-lg">
+    <div className="flex flex-col h-[600px] bg-background border rounded-lg overflow-hidden">
       {/* Header do chat */}
-      <div className="p-4 border-b border-border bg-muted/30">
+      <div className="p-4 border-b border-border bg-muted/30 flex-shrink-0">
         <h3 className="font-semibold">Chat do Chamado</h3>
         <p className="text-sm text-muted-foreground">
           Converse com nossa equipe de suporte
@@ -283,7 +283,7 @@ export const TicketChat: React.FC<TicketChatProps> = ({ ticketId, isTicketClosed
       </div>
 
       {/* Área de mensagens */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[400px]">
         {messages.length === 0 ? (
           <div className="text-center text-muted-foreground">
             <p>Nenhuma mensagem ainda.</p>

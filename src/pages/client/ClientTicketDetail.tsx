@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Send, User, Clock, CheckCircle2 } from 'lucide-react';
 import { TicketChat } from '@/components/ticket/TicketChat';
+import { ChatHistoryByDay } from '@/components/ticket/ChatHistoryByDay';
 
 interface TicketDetail {
   id: string;
@@ -259,40 +260,10 @@ const ClientTicketDetail = () => {
         />
       </div>
 
-      {/* Histórico de Conversas (Legacy) */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Histórico de Conversas</CardTitle>
-          <CardDescription>
-            Mensagens anteriores (para referência)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {responses.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">
-                Nenhuma resposta ainda. Nossa equipe entrará em contato em breve.
-              </p>
-            ) : (
-              responses.map((response) => (
-                <div key={response.id} className="border-l-4 border-blue-200 pl-4 py-2">
-                  <div className="flex items-center gap-2 mb-2">
-                    <User size={16} className="text-gray-500" />
-                    <span className="font-medium text-gray-800">
-                      {response.admin_id ? response.admin_profiles?.name || 'Suporte' : 'Você'}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      <Clock size={14} className="inline mr-1" />
-                      {new Date(response.created_at).toLocaleString('pt-BR')}
-                    </span>
-                  </div>
-                  <p className="text-gray-700 whitespace-pre-wrap">{response.message}</p>
-                </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Histórico de Conversas por Dia */}
+      <div className="mb-6">
+        <ChatHistoryByDay ticketId={ticket.id} />
+      </div>
     </div>
   );
 };
