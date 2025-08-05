@@ -365,16 +365,21 @@ const AdminFPADataIntegrationReal = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {financialData.map((data) => (
-                      <div key={data.id} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-center mb-3">
-                          <h4 className="font-medium text-gray-900">
-                            Período: {data.period && typeof data.period === 'object' && 'period_name' in data.period ? String((data.period as any).period_name) : 'N/A'}
-                          </h4>
-                          <Badge variant={data.period && typeof data.period === 'object' && 'is_actual' in data.period && (data.period as any).is_actual ? "default" : "outline"}>
-                            {data.period && typeof data.period === 'object' && 'is_actual' in data.period && (data.period as any).is_actual ? 'Atual' : 'Histórico'}
-                          </Badge>
-                        </div>
+                    {financialData.map((data) => {
+                      const period = data.period as any;
+                      const periodName = period?.period_name || 'N/A';
+                      const isActual = period?.is_actual || false;
+                      
+                      return (
+                        <div key={data.id} className="border rounded-lg p-4">
+                          <div className="flex justify-between items-center mb-3">
+                            <h4 className="font-medium text-gray-900">
+                              Período: {periodName}
+                            </h4>
+                            <Badge variant={isActual ? "default" : "outline"}>
+                              {isActual ? 'Atual' : 'Histórico'}
+                            </Badge>
+                          </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                           <div>
                             <span className="text-gray-600">Receita:</span>
@@ -393,8 +398,9 @@ const AdminFPADataIntegrationReal = () => {
                             <div className="font-medium">{new Date(data.updated_at || '').toLocaleDateString('pt-BR')}</div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
