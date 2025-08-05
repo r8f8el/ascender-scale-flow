@@ -194,10 +194,10 @@ const ClientFPADashboardReal = () => {
         <CardContent className="text-center py-12">
           <AlertCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Cliente FP&A não encontrado
+            Sistema FP&A
           </h3>
           <p className="text-muted-foreground">
-            Entre em contato com o administrador para configurar o acesso ao FP&A.
+            Sua conta está sendo configurada pela equipe administrativa. Em breve você terá acesso aos seus relatórios financeiros.
           </p>
         </CardContent>
       </Card>

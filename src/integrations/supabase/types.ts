@@ -640,7 +640,7 @@ export type Database = {
           {
             foreignKeyName: "fpa_clients_client_profile_id_fkey"
             columns: ["client_profile_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "client_profiles"
             referencedColumns: ["id"]
           },
@@ -1070,13 +1070,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "fk_fpa_reports_client"
-            columns: ["fpa_client_id"]
-            isOneToOne: false
-            referencedRelation: "fpa_clients"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "fk_fpa_reports_creator"
             columns: ["created_by"]
