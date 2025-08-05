@@ -10,15 +10,6 @@ interface FPAClientSelectorProps {
   placeholder?: string;
 }
 
-// Type guard to ensure client has valid client_profile
-const hasValidClientProfile = (client: any): boolean => {
-  return client && 
-         client.client_profile && 
-         typeof client.client_profile === 'object' &&
-         'id' in client.client_profile &&
-         'name' in client.client_profile;
-};
-
 const FPAClientSelector: React.FC<FPAClientSelectorProps> = ({
   value,
   onChange,
@@ -26,9 +17,6 @@ const FPAClientSelector: React.FC<FPAClientSelectorProps> = ({
   placeholder = "Selecione um cliente"
 }) => {
   const { data: clients = [], isLoading } = useFPAClients();
-
-  // Filter clients to only include those with valid client_profile
-  const validClients = clients.filter(hasValidClientProfile);
 
   return (
     <div>
@@ -41,7 +29,7 @@ const FPAClientSelector: React.FC<FPAClientSelectorProps> = ({
         disabled={isLoading}
       >
         <option value="">{isLoading ? "Carregando..." : placeholder}</option>
-        {validClients.map((client) => (
+        {clients.map((client) => (
           <option key={client.id} value={client.id}>
             {client.company_name}
           </option>
