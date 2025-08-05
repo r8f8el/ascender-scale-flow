@@ -369,10 +369,10 @@ const AdminFPADataIntegrationReal = () => {
                       <div key={data.id} className="border rounded-lg p-4">
                         <div className="flex justify-between items-center mb-3">
                           <h4 className="font-medium text-gray-900">
-                            Período: {typeof data.period === 'object' && data.period ? data.period.period_name : 'N/A'}
+                            Período: {data.period && typeof data.period === 'object' && 'period_name' in data.period ? String((data.period as any).period_name) : 'N/A'}
                           </h4>
-                          <Badge variant={typeof data.period === 'object' && data.period?.is_actual ? "default" : "outline"}>
-                            {typeof data.period === 'object' && data.period?.is_actual ? 'Atual' : 'Histórico'}
+                          <Badge variant={data.period && typeof data.period === 'object' && 'is_actual' in data.period && (data.period as any).is_actual ? "default" : "outline"}>
+                            {data.period && typeof data.period === 'object' && 'is_actual' in data.period && (data.period as any).is_actual ? 'Atual' : 'Histórico'}
                           </Badge>
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
