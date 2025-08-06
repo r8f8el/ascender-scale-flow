@@ -3,7 +3,6 @@ import React from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { Chat } from '@/components/Chat';
 import ClientTickets from './ClientTickets';
@@ -11,6 +10,11 @@ import ClientSchedule from './ClientSchedule';
 import ClientTeam from './ClientTeam';
 import ClientContact from './ClientContact';
 import ClientTicketDetail from './ClientTicketDetail';
+import ClientFPADashboard from './fpa/ClientFPADashboard';
+import ClientFPAData from './fpa/ClientFPAData';
+import ClientFPAScenarios from './fpa/ClientFPAScenarios';
+import ClientFPAReports from './fpa/ClientFPAReports';
+import ClientFPACommunication from './fpa/ClientFPACommunication';
 import { FileManager } from '@/components/FileManager';
 import { 
   LayoutDashboard, 
@@ -20,7 +24,8 @@ import {
   MessageCircle,
   FileText,
   Settings,
-  LogOut
+  LogOut,
+  TrendingUp
 } from 'lucide-react';
 
 const ClientArea = () => {
@@ -34,6 +39,14 @@ const ClientArea = () => {
     { name: 'Cronograma', href: '/cliente/cronograma', icon: Calendar },
     { name: 'Documentos', href: '/cliente/documentos', icon: FileText },
     { name: 'Contato', href: '/cliente/contato', icon: MessageCircle },
+  ];
+
+  const fpaNavigation = [
+    { name: 'Dashboard FP&A', href: '/cliente/fpa/dashboard', icon: TrendingUp },
+    { name: 'Cofre de Dados', href: '/cliente/fpa/dados', icon: FileText },
+    { name: 'Cenários Interativos', href: '/cliente/fpa/cenarios', icon: TrendingUp },
+    { name: 'Biblioteca de Relatórios', href: '/cliente/fpa/relatorios', icon: FileText },
+    { name: 'Comunicação', href: '/cliente/fpa/comunicacao', icon: MessageCircle },
   ];
 
   const isActive = (href: string) => {
@@ -74,21 +87,50 @@ const ClientArea = () => {
       <div className="flex">
         {/* Sidebar */}
         <nav className="w-64 bg-white dark:bg-gray-900 border-r min-h-[calc(100vh-4rem)] p-4">
-          <div className="space-y-2">
-            {navigation.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link key={item.name} to={item.href}>
-                  <Button
-                    variant={isActive(item.href) ? "default" : "ghost"}
-                    className="w-full justify-start"
-                  >
-                    <Icon className="h-4 w-4 mr-2" />
-                    {item.name}
-                  </Button>
-                </Link>
-              );
-            })}
+          <div className="space-y-6">
+            <div>
+              <h3 className="font-medium text-gray-500 uppercase text-xs tracking-wider mb-4">
+                Menu Principal
+              </h3>
+              <div className="space-y-2">
+                {navigation.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link key={item.name} to={item.href}>
+                      <Button
+                        variant={isActive(item.href) ? "default" : "ghost"}
+                        className="w-full justify-start"
+                      >
+                        <Icon className="h-4 w-4 mr-2" />
+                        {item.name}
+                      </Button>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-medium text-gray-500 uppercase text-xs tracking-wider mb-4">
+                FP&A - Planejamento Financeiro
+              </h3>
+              <div className="space-y-2">
+                {fpaNavigation.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link key={item.name} to={item.href}>
+                      <Button
+                        variant={isActive(item.href) ? "default" : "ghost"}
+                        className="w-full justify-start"
+                      >
+                        <Icon className="h-4 w-4 mr-2" />
+                        {item.name}
+                      </Button>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </nav>
 
@@ -102,6 +144,11 @@ const ClientArea = () => {
             <Route path="/cronograma" element={<ClientSchedule />} />
             <Route path="/documentos" element={<FileManager />} />
             <Route path="/contato" element={<ClientContact />} />
+            <Route path="/fpa/dashboard" element={<ClientFPADashboard />} />
+            <Route path="/fpa/dados" element={<ClientFPAData />} />
+            <Route path="/fpa/cenarios" element={<ClientFPAScenarios />} />
+            <Route path="/fpa/relatorios" element={<ClientFPAReports />} />
+            <Route path="/fpa/comunicacao" element={<ClientFPACommunication />} />
           </Routes>
         </main>
       </div>

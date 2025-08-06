@@ -18,7 +18,7 @@ import ClientLogin from "./pages/ClientLogin";
 import AdminLogin from "./pages/AdminLogin";
 import AdminRegister from "./pages/AdminRegister";
 import AcceptInvitation from "./pages/AcceptInvitation";
-import ClientArea from "./pages/ClientArea";
+import ClientAreaMain from "./pages/client/ClientArea";
 import AdminArea from "./pages/AdminArea";
 import AdminUnauthorized from "./pages/AdminUnauthorized";
 import NotFound from "./pages/NotFound";
@@ -81,7 +81,7 @@ function AppContent() {
                     path="/cliente/*" 
                     element={
                       <ProtectedRoute>
-                        <ClientArea />
+                        <ClientAreaMain />
                       </ProtectedRoute>
                     } 
                   />
@@ -116,4 +116,3 @@ function App() {
 }
 
 export default App;
-
