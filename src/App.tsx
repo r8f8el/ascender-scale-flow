@@ -13,6 +13,7 @@ import ClientLogin from "@/pages/ClientLogin";
 import AdminLogin from "@/pages/AdminLogin";
 import ClientArea from "@/pages/ClientArea";
 import AdminArea from "@/pages/admin/AdminArea";
+import AbrirChamado from "@/pages/AbrirChamado";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminProtectedRoute from "@/components/AdminProtectedRoute";
 import { Toaster } from "@/components/ui/toaster";
@@ -53,6 +54,9 @@ function App() {
                 <Route path="/" element={<Index />} />
                 <Route path="/cliente/login" element={<ClientLogin />} />
                 <Route path="/admin/login" element={<AdminLogin />} />
+                
+                {/* Public ticket route */}
+                <Route path="/abrir-chamado" element={<AbrirChamado />} />
                 
                 {/* Client Protected Routes */}
                 <Route path="/cliente/*" element={

@@ -98,7 +98,8 @@ const ClientTickets = () => {
   };
 
   const handleNewTicket = () => {
-    navigate('/abrir-chamado');
+    console.log('Navegando para abrir chamado...');
+    window.location.href = '/abrir-chamado';
   };
 
   const getStatusColor = (ticket: Ticket) => {
