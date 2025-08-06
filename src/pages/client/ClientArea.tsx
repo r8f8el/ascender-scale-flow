@@ -1,7 +1,9 @@
 
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import { ClientHeader } from '@/components/client/ClientHeader';
+import { useAuth } from '@/contexts/AuthContext';
+import { useResponsive } from '@/hooks/useResponsive';
 import ClientDocuments from './ClientDocuments';
 import ClientDocumentsAdvanced from './ClientDocumentsAdvanced';
 import ClientDocumentsNew from './ClientDocumentsNew';
@@ -22,9 +24,22 @@ import ClientFPAScenarios from './fpa/ClientFPAScenarios';
 import ClientFPACommunication from './fpa/ClientFPACommunication';
 
 const ClientArea = () => {
+  const { client, logout } = useAuth();
+  const navigate = useNavigate();
+  const isMobile = useResponsive();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/cliente/login');
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      <ClientHeader />
+      <ClientHeader 
+        clientName={client?.name}
+        isMobile={isMobile}
+        onLogout={handleLogout}
+      />
       
       {/* Componente de sincronização em tempo real */}
       <ClientDocumentSync />
