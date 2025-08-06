@@ -43,7 +43,7 @@ class MonitoringService {
       window.addEventListener('load', () => {
         setTimeout(() => {
           const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-          this.performance.pageLoadTime = navigation.loadEventEnd - navigation.navigationStart;
+          this.performance.pageLoadTime = navigation.loadEventEnd - navigation.fetchStart;
         }, 0);
       });
 
@@ -65,7 +65,6 @@ class MonitoringService {
             type: 'api_call',
             page: window.location.pathname,
             timestamp: Date.now(),
-            sessionId: this.sessionId,
             metadata: { metric: 'LCP', value: lastEntry.startTime }
           });
         }).observe({ entryTypes: ['largest-contentful-paint'] });
