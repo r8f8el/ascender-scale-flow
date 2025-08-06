@@ -8,6 +8,18 @@ import AdminDashboard from '@/pages/admin/AdminDashboard';
 import ClientesAdminFixed from '@/pages/admin/ClientesAdminFixed';
 import ClientDocumentsAdmin from '@/pages/admin/ClientDocumentsAdmin';
 import AdminFPAClientManagement from '@/pages/admin/fpa/AdminFPAClientManagement';
+import ProjectsAdmin from '@/pages/admin/ProjectsAdmin';
+import CollaboratorsAdmin from '@/pages/admin/CollaboratorsAdmin';
+import TasksAdmin from '@/pages/admin/TasksAdmin';
+import TicketsAdmin from '@/pages/admin/TicketsAdmin';
+import MyTickets from '@/pages/admin/MyTickets';
+import ArquivosAdmin from '@/pages/admin/ArquivosAdmin';
+import CronogramasAdmin from '@/pages/admin/CronogramasAdmin';
+import MensagensAdmin from '@/pages/admin/MensagensAdmin';
+import LogsAdmin from '@/pages/admin/LogsAdmin';
+import ActivityLogsAdmin from '@/pages/admin/ActivityLogsAdmin';
+import OneDriveIntegration from '@/pages/admin/OneDriveIntegration';
+import ConfiguracoesAdmin from '@/pages/admin/ConfiguracoesAdmin';
 
 const AdminArea = () => {
   const { isAdminAuthenticated, loading } = useAdminAuth();
@@ -44,8 +56,20 @@ const AdminArea = () => {
           <Routes>
             <Route index element={<AdminDashboard />} />
             <Route path="clientes" element={<ClientesAdminFixed />} />
+            <Route path="projetos" element={<ProjectsAdmin />} />
+            <Route path="colaboradores" element={<CollaboratorsAdmin />} />
+            <Route path="tarefas" element={<TasksAdmin />} />
+            <Route path="chamados" element={<TicketsAdmin />} />
+            <Route path="meus-chamados" element={<MyTickets />} />
+            <Route path="arquivos" element={<ArquivosAdmin />} />
+            <Route path="cronogramas" element={<CronogramasAdmin />} />
+            <Route path="mensagens" element={<MensagensAdmin />} />
+            <Route path="logs" element={<LogsAdmin />} />
+            <Route path="activity-logs" element={<ActivityLogsAdmin />} />
+            <Route path="onedrive" element={<OneDriveIntegration />} />
             <Route path="documentos" element={<ClientDocumentsAdmin />} />
             <Route path="fpa/gestao-clientes" element={<AdminFPAClientManagement />} />
+            <Route path="configuracoes" element={<ConfiguracoesAdmin />} />
           </Routes>
         </main>
       </div>

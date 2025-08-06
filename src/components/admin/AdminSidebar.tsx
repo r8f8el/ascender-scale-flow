@@ -12,7 +12,10 @@ import {
   Database,
   Cloud,
   Activity,
-  Bell
+  Bell,
+  Briefcase,
+  FileText,
+  UserCheck
 } from 'lucide-react';
 
 const AdminSidebar = () => {
@@ -51,6 +54,160 @@ const AdminSidebar = () => {
           >
             <Users size={20} />
             <span>Clientes</span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/projetos"
+            className={({ isActive }) => 
+              `flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                isActive 
+                  ? 'bg-blue-50 text-blue-700' 
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`
+            }
+          >
+            <Briefcase size={20} />
+            <span>Projetos</span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/colaboradores"
+            className={({ isActive }) => 
+              `flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                isActive 
+                  ? 'bg-blue-50 text-blue-700' 
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`
+            }
+          >
+            <UserCheck size={20} />
+            <span>Colaboradores</span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/tarefas"
+            className={({ isActive }) => 
+              `flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                isActive 
+                  ? 'bg-blue-50 text-blue-700' 
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`
+            }
+          >
+            <FileText size={20} />
+            <span>Tarefas</span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/chamados"
+            className={({ isActive }) => 
+              `flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                isActive 
+                  ? 'bg-blue-50 text-blue-700' 
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`
+            }
+          >
+            <MessageSquare size={20} />
+            <span>Todos os Chamados</span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/meus-chamados"
+            className={({ isActive }) => 
+              `flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                isActive 
+                  ? 'bg-blue-50 text-blue-700' 
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`
+            }
+          >
+            <User size={20} />
+            <span>Meus Chamados</span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/arquivos"
+            className={({ isActive }) => 
+              `flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                isActive 
+                  ? 'bg-blue-50 text-blue-700' 
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`
+            }
+          >
+            <FileUp size={20} />
+            <span>Arquivos</span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/cronogramas"
+            className={({ isActive }) => 
+              `flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                isActive 
+                  ? 'bg-blue-50 text-blue-700' 
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`
+            }
+          >
+            <Calendar size={20} />
+            <span>Cronogramas</span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/mensagens"
+            className={({ isActive }) => 
+              `flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                isActive 
+                  ? 'bg-blue-50 text-blue-700' 
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`
+            }
+          >
+            <Bell size={20} />
+            <span>Mensagens</span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/logs"
+            className={({ isActive }) => 
+              `flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                isActive 
+                  ? 'bg-blue-50 text-blue-700' 
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`
+            }
+          >
+            <Shield size={20} />
+            <span>Logs de Acesso</span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/activity-logs"
+            className={({ isActive }) => 
+              `flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                isActive 
+                  ? 'bg-blue-50 text-blue-700' 
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`
+            }
+          >
+            <Activity size={20} />
+            <span>Logs de Atividade</span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/onedrive"
+            className={({ isActive }) => 
+              `flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                isActive 
+                  ? 'bg-blue-50 text-blue-700' 
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`
+            }
+          >
+            <Cloud size={20} />
+            <span>OneDrive/SharePoint</span>
           </NavLink>
           
           <NavLink
