@@ -1,4 +1,5 @@
 
+
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -32,7 +33,7 @@ const queryClient = new QueryClient({
   },
 });
 
-function AppContent() {
+function MonitoringProvider({ children }: { children: React.ReactNode }) {
   const { logError } = useMonitoring();
   
   // Global error handler
@@ -54,45 +55,51 @@ function AppContent() {
     };
   }, [logError]);
 
+  return <>{children}</>;
+}
+
+function AppContent() {
   return (
     <TooltipProvider>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          <ScrollToTop />
-          <AuthProvider>
-            <AdminAuthProvider>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/abrir-chamado" element={<AbrirChamado />} />
-                <Route path="/participante" element={<ParticipantData />} />
-                <Route path="/cliente/login" element={<ClientLogin />} />
-                <Route path="/admin/login" element={<AdminLogin />} />
-                <Route path="/admin/register" element={<AdminRegister />} />
-                <Route path="/admin/unauthorized" element={<AdminUnauthorized />} />
-                <Route path="/accept-invitation" element={<AcceptInvitation />} />
-                
-                <Route 
-                  path="/cliente/*" 
-                  element={
-                    <ProtectedRoute>
-                      <ClientArea />
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                <Route 
-                  path="/admin/*" 
-                  element={
-                    <AdminProtectedRoute>
-                      <AdminArea />
-                    </AdminProtectedRoute>
-                  } 
-                />
-                
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </AdminAuthProvider>
-          </AuthProvider>
+          <MonitoringProvider>
+            <ScrollToTop />
+            <AuthProvider>
+              <AdminAuthProvider>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/abrir-chamado" element={<AbrirChamado />} />
+                  <Route path="/participante" element={<ParticipantData />} />
+                  <Route path="/cliente/login" element={<ClientLogin />} />
+                  <Route path="/admin/login" element={<AdminLogin />} />
+                  <Route path="/admin/register" element={<AdminRegister />} />
+                  <Route path="/admin/unauthorized" element={<AdminUnauthorized />} />
+                  <Route path="/accept-invitation" element={<AcceptInvitation />} />
+                  
+                  <Route 
+                    path="/cliente/*" 
+                    element={
+                      <ProtectedRoute>
+                        <ClientArea />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  <Route 
+                    path="/admin/*" 
+                    element={
+                      <AdminProtectedRoute>
+                        <AdminArea />
+                      </AdminProtectedRoute>
+                    } 
+                  />
+                  
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </AdminAuthProvider>
+            </AuthProvider>
+          </MonitoringProvider>
         </BrowserRouter>
         <Toaster />
       </QueryClientProvider>
@@ -109,3 +116,4 @@ function App() {
 }
 
 export default App;
+
