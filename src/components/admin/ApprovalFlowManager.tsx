@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarInitials } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { AvatarInitials } from '@/components/ui/avatar-initials';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -115,8 +115,8 @@ const ApprovalFlowManager: React.FC = () => {
           request_id: requestId,
           action,
           comments,
-          approver_name: 'Admin', // Seria o nome do admin logado
-          approver_email: 'admin@example.com', // Seria o email do admin logado
+          approver_name: 'Admin',
+          approver_email: 'admin@example.com',
           step_order: selectedRequest?.current_step || 1
         });
 
@@ -330,7 +330,6 @@ const ApprovalFlowManager: React.FC = () => {
                                 </div>
                               )}
 
-                              {/* Histórico de aprovações */}
                               {selectedRequestHistory.length > 0 && (
                                 <div>
                                   <Label className="text-sm font-medium">Histórico</Label>
@@ -355,7 +354,6 @@ const ApprovalFlowManager: React.FC = () => {
                                 </div>
                               )}
 
-                              {/* Ações de aprovação */}
                               {selectedRequest.status === 'pending' && (
                                 <div className="space-y-4 border-t pt-4">
                                   <div>

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import ClientHeader from '@/components/client/ClientHeader';
+import { ClientHeader } from '@/components/client/ClientHeader';
 import ClientDocuments from './ClientDocuments';
 import ClientDocumentsAdvanced from './ClientDocumentsAdvanced';
 import ClientDocumentsNew from './ClientDocumentsNew';
