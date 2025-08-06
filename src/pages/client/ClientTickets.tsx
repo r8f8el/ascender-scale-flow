@@ -97,10 +97,7 @@ const ClientTickets = () => {
     }
   };
 
-  const handleNewTicket = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log('Navegando para abrir chamado...');
+  const handleNewTicket = () => {
     navigate('/abrir-chamado');
   };
 
@@ -161,7 +158,6 @@ const ClientTickets = () => {
         <Button 
           onClick={handleNewTicket}
           className="bg-[#f07c00] hover:bg-[#e56b00] text-white"
-          type="button"
         >
           <Plus className="h-4 w-4 mr-2" />
           Novo Chamado
@@ -263,7 +259,6 @@ const ClientTickets = () => {
                 <Button 
                   onClick={handleNewTicket}
                   className="bg-[#f07c00] hover:bg-[#e56b00] text-white"
-                  type="button"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Abrir Primeiro Chamado
