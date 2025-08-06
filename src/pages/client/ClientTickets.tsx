@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -98,6 +97,13 @@ const ClientTickets = () => {
     }
   };
 
+  const handleNewTicket = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Navegando para abrir chamado...');
+    navigate('/abrir-chamado');
+  };
+
   const getStatusColor = (ticket: Ticket) => {
     if (ticket.ticket_statuses?.is_closed) {
       return 'bg-green-100 text-green-800';
@@ -153,8 +159,9 @@ const ClientTickets = () => {
           </p>
         </div>
         <Button 
-          onClick={() => navigate('/abrir-chamado')} 
+          onClick={handleNewTicket}
           className="bg-[#f07c00] hover:bg-[#e56b00] text-white"
+          type="button"
         >
           <Plus className="h-4 w-4 mr-2" />
           Novo Chamado
@@ -254,8 +261,9 @@ const ClientTickets = () => {
               </p>
               {!searchTerm && (
                 <Button 
-                  onClick={() => navigate('/abrir-chamado')}
+                  onClick={handleNewTicket}
                   className="bg-[#f07c00] hover:bg-[#e56b00] text-white"
+                  type="button"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Abrir Primeiro Chamado

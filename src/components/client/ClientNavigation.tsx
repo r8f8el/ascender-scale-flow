@@ -7,11 +7,9 @@ import {
   Calendar,
   Users,
   Mail,
-  Shield,
   TrendingUp,
   FileText,
   MessageCircle,
-  Plus,
   Menu,
   X,
   LayoutDashboard,
@@ -42,10 +40,6 @@ export const ClientNavigation: React.FC = () => {
   const { logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const handleNewTicket = () => {
-    navigate('/abrir-chamado');
-  };
-
   const handleLogout = () => {
     logout();
     navigate('/cliente/login');
@@ -68,17 +62,6 @@ export const ClientNavigation: React.FC = () => {
       <nav className={`bg-white border-r border-gray-200 w-64 min-h-screen ${
         isMobileMenuOpen ? 'block' : 'hidden md:block'
       }`}>
-        {/* Botão Novo Chamado */}
-        <div className="p-4 border-b">
-          <Button 
-            onClick={handleNewTicket}
-            className="w-full bg-[#f07c00] hover:bg-[#e56b00] text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Chamado
-          </Button>
-        </div>
-
         <div className="p-4">
           {/* Menu Principal */}
           <div className="mb-6">
