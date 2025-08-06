@@ -6,12 +6,13 @@ export const useFPAFinancialData = (clientId?: string, periodId?: string) => {
   return useQuery({
     queryKey: ['fpa-financial-data', clientId, periodId],
     queryFn: async () => {
+      console.log('🔍 Fetching FPA financial data for client:', clientId, 'period:', periodId);
+      
       let query = supabase
         .from('fpa_financial_data')
         .select(`
           *,
-          fpa_client:fpa_clients!fpa_financial_data_fpa_client_id_fkey(company_name),
-          period:fpa_periods(period_name, period_type)
+          fpa_client:fpa_clients!fpa_financial_data_fpa_client_id_fkey(company_name)
         `);
       
       if (clientId) {
@@ -24,10 +25,18 @@ export const useFPAFinancialData = (clientId?: string, periodId?: string) => {
       
       const { data, error } = await query.order('created_at', { ascending: false });
       
-      if (error) throw error;
-      return data;
+      console.log('📊 FPA Financial data response:', { data, error });
+      
+      if (error) {
+        console.error('❌ Error fetching FPA financial data:', error);
+        throw error;
+      }
+      
+      return data || [];
     },
-    enabled: !!clientId
+    enabled: !!clientId,
+    retry: 3,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000)
   });
 };
 
@@ -36,13 +45,20 @@ export const useCreateFPAFinancialData = () => {
   
   return useMutation({
     mutationFn: async (financialData: any) => {
+      console.log('💾 Creating FPA financial data:', financialData);
+      
       const { data, error } = await supabase
         .from('fpa_financial_data')
         .insert(financialData)
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error creating FPA financial data:', error);
+        throw error;
+      }
+      
+      console.log('✅ FPA financial data created:', data);
       return data;
     },
     onSuccess: () => {
@@ -56,6 +72,8 @@ export const useUpdateFPAFinancialData = () => {
   
   return useMutation({
     mutationFn: async ({ id, ...updateData }: any) => {
+      console.log('🔄 Updating FPA financial data:', id, updateData);
+      
       const { data, error } = await supabase
         .from('fpa_financial_data')
         .update(updateData)
@@ -63,7 +81,12 @@ export const useUpdateFPAFinancialData = () => {
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error updating FPA financial data:', error);
+        throw error;
+      }
+      
+      console.log('✅ FPA financial data updated:', data);
       return data;
     },
     onSuccess: () => {
