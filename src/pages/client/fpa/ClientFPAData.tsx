@@ -8,7 +8,6 @@ import { Upload, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-reac
 import { useAuth } from '@/contexts/AuthContext';
 import { useFPAClients } from '@/hooks/useFPAClients';
 import { useFPADataUploads, useCreateFPADataUpload } from '@/hooks/useFPADataUploads';
-import { useFPAFinancialData } from '@/hooks/useFPAFinancialData';
 import { toast } from 'sonner';
 
 const ClientFPAData = () => {
@@ -16,54 +15,24 @@ const ClientFPAData = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  console.log('🎯 ClientFPAData component mounted');
-  console.log('👤 Current user:', user?.id, user?.email);
+  console.log('🎯 ClientFPAData - User:', user?.id, user?.email);
   
-  // Get the current user's FPA client data
   const { data: clients = [], isLoading: clientsLoading, error: clientsError } = useFPAClients();
   
-  console.log('🏢 FPA Clients data:', {
-    clients,
-    isLoading: clientsLoading,
-    error: clientsError,
-    clientsCount: clients.length
-  });
+  const currentClient = clients.find(client => 
+    client.client_profile?.id === user?.id
+  );
 
-  const currentClient = clients.find(client => {
-    console.log('🔍 Comparing client profile:', client.client_profile?.id, 'with user:', user?.id);
-    return client.client_profile?.id === user?.id;
-  });
-
-  console.log('✅ Current client found:', currentClient);
+  console.log('🏢 Current FPA client found:', !!currentClient, currentClient?.company_name);
   
-  const { data: uploads = [], isLoading: uploadsLoading, error: uploadsError } = useFPADataUploads(currentClient?.id);
-  const { data: financialData = [], isLoading: financialLoading, error: financialError } = useFPAFinancialData(currentClient?.id);
+  const { data: uploads = [], isLoading: uploadsLoading } = useFPADataUploads(currentClient?.id);
   const createUpload = useCreateFPADataUpload();
-
-  console.log('📤 Uploads state:', {
-    uploads,
-    isLoading: uploadsLoading,
-    error: uploadsError,
-    uploadsCount: uploads.length
-  });
-
-  console.log('💰 Financial data state:', {
-    financialData,
-    isLoading: financialLoading,
-    error: financialError,
-    dataCount: financialData.length
-  });
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      console.log('📁 File selected:', {
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        lastModified: new Date(file.lastModified)
-      });
       setSelectedFile(file);
+      console.log('📁 File selected:', file.name);
     }
   };
 
@@ -72,12 +41,6 @@ const ClientFPAData = () => {
       toast.error('Por favor, selecione um arquivo primeiro');
       return;
     }
-
-    console.log('🚀 Starting upload process:', {
-      clientId: currentClient.id,
-      fileName: selectedFile.name,
-      fileSize: selectedFile.size
-    });
     
     setIsUploading(true);
     
@@ -90,15 +53,10 @@ const ClientFPAData = () => {
         status: 'uploaded'
       };
       
-      console.log('📊 Upload data prepared:', uploadData);
-      
-      const result = await createUpload.mutateAsync(uploadData);
-      
-      console.log('✅ Upload successful:', result);
+      await createUpload.mutateAsync(uploadData);
       toast.success('Arquivo enviado com sucesso!');
       setSelectedFile(null);
       
-      // Reset file input
       const fileInput = document.getElementById('file-upload') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
       
@@ -110,7 +68,6 @@ const ClientFPAData = () => {
     }
   };
 
-  // Show loading state
   if (clientsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -127,27 +84,16 @@ const ClientFPAData = () => {
     );
   }
 
-  // Show error state for client loading
   if (clientsError) {
-    console.error('❌ Clients error details:', clientsError);
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center max-w-md">
           <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold mb-2">Erro ao Carregar Dados</h3>
+          <h3 className="text-xl font-semibold mb-2">Erro ao Carregar</h3>
           <p className="text-gray-600 mb-4">
-            Não foi possível carregar as informações do cliente FP&A.
+            Não foi possível carregar os dados FP&A.
           </p>
-          <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
-            <p className="text-sm text-red-700">
-              <strong>Detalhes do erro:</strong> {clientsError.message}
-            </p>
-          </div>
-          <Button 
-            onClick={() => window.location.reload()}
-            variant="outline"
-            className="mx-auto"
-          >
+          <Button onClick={() => window.location.reload()}>
             Tentar Novamente
           </Button>
         </div>
@@ -155,7 +101,6 @@ const ClientFPAData = () => {
     );
   }
 
-  // Show setup required state
   if (!currentClient) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -163,17 +108,9 @@ const ClientFPAData = () => {
           <AlertCircle className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
           <h3 className="text-xl font-semibold mb-2">Configuração FP&A Necessária</h3>
           <p className="text-gray-600 mb-4">
-            Você precisa completar o onboarding FP&A antes de enviar dados.
+            Entre em contato com o administrador para configurar sua conta FP&A.
           </p>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mb-4">
-            <p className="text-sm text-yellow-700">
-              Entre em contato com o administrador para configurar sua conta FP&A.
-            </p>
-          </div>
-          <Button 
-            onClick={() => window.location.href = '/cliente/contato'}
-            className="mx-auto"
-          >
+          <Button onClick={() => window.location.href = '/cliente/contato'}>
             Entrar em Contato
           </Button>
         </div>
@@ -183,14 +120,13 @@ const ClientFPAData = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2">
+      <div>
         <h1 className="text-3xl font-bold text-gray-900">Envio de Dados FP&A</h1>
-        <p className="text-gray-600">
-          Envie suas planilhas financeiras para análise - Cliente: <strong>{currentClient.company_name}</strong>
+        <p className="text-gray-600 mt-1">
+          Envie suas planilhas financeiras para análise - {currentClient.company_name}
         </p>
       </div>
 
-      {/* Upload de Arquivos */}
       <Card>
         <CardHeader>
           <CardTitle>Enviar Dados Financeiros</CardTitle>
@@ -226,11 +162,11 @@ const ClientFPAData = () => {
 
           <Button 
             onClick={handleUpload}
-            disabled={!selectedFile || isUploading || createUpload.isPending}
+            disabled={!selectedFile || isUploading}
             className="w-full"
             size="lg"
           >
-            {(isUploading || createUpload.isPending) ? (
+            {isUploading ? (
               <>
                 <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                 Enviando arquivo...
@@ -245,7 +181,6 @@ const ClientFPAData = () => {
         </CardContent>
       </Card>
 
-      {/* Histórico de Uploads */}
       <Card>
         <CardHeader>
           <CardTitle>Histórico de Uploads</CardTitle>
@@ -254,13 +189,7 @@ const ClientFPAData = () => {
           {uploadsLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-blue-600 mr-3" />
-              <p className="text-gray-600">Carregando histórico de uploads...</p>
-            </div>
-          ) : uploadsError ? (
-            <div className="text-center py-8">
-              <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-3" />
-              <p className="text-red-600 font-medium">Erro ao carregar histórico</p>
-              <p className="text-sm text-red-500 mt-1">{uploadsError.message}</p>
+              <p className="text-gray-600">Carregando histórico...</p>
             </div>
           ) : uploads.length === 0 ? (
             <div className="text-center py-12">
@@ -273,19 +202,13 @@ const ClientFPAData = () => {
           ) : (
             <div className="space-y-3">
               {uploads.map((upload) => (
-                <div key={upload.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                <div key={upload.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center gap-3">
                     <FileText className="h-6 w-6 text-gray-500" />
                     <div>
                       <p className="font-medium text-gray-900">{upload.file_name}</p>
                       <p className="text-sm text-gray-500">
-                        Enviado em {upload.created_at && new Date(upload.created_at).toLocaleDateString('pt-BR', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
+                        {upload.created_at && new Date(upload.created_at).toLocaleDateString('pt-BR')}
                       </p>
                     </div>
                   </div>
@@ -298,9 +221,7 @@ const ClientFPAData = () => {
                     ) : (
                       <>
                         <AlertCircle className="h-5 w-5 text-yellow-500" />
-                        <span className="text-sm font-medium text-yellow-700 capitalize">
-                          {upload.status === 'uploaded' ? 'Processando' : upload.status}
-                        </span>
+                        <span className="text-sm font-medium text-yellow-700">Processando</span>
                       </>
                     )}
                   </div>
@@ -310,24 +231,6 @@ const ClientFPAData = () => {
           )}
         </CardContent>
       </Card>
-
-      {/* Debug Information (only in development) */}
-      {process.env.NODE_ENV === 'development' && (
-        <Card className="border-dashed">
-          <CardHeader>
-            <CardTitle className="text-sm text-gray-500">Debug Info</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xs space-y-1 text-gray-500">
-              <p>User ID: {user?.id}</p>
-              <p>Client ID: {currentClient?.id}</p>
-              <p>Company: {currentClient?.company_name}</p>
-              <p>Uploads: {uploads.length}</p>
-              <p>Financial Data: {financialData.length}</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

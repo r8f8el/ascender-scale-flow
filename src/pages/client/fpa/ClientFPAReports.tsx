@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,10 +12,11 @@ import {
   Calendar,
   TrendingUp,
   BarChart3,
-  Search
+  Search,
+  Loader2
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useClientFPAReports } from '@/hooks/useFPAReports';
+import { useFPAReports } from '@/hooks/useFPAReports';
 import { useFPAClients } from '@/hooks/useFPAClients';
 
 const ClientFPAReports = () => {
@@ -22,16 +24,17 @@ const ClientFPAReports = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   
-  const { data: reports = [], isLoading } = useClientFPAReports();
-  const { data: clients = [] } = useFPAClients();
+  const { data: clients = [], isLoading: clientsLoading } = useFPAClients();
+  const currentClient = clients.find(client => 
+    client.client_profile?.id === user?.id
+  );
   
-  const currentClient = clients.find(client => {
-    return client.client_profile?.id === user?.id;
-  });
+  const { data: reports = [], isLoading: reportsLoading } = useFPAReports(currentClient?.id);
 
   const filteredReports = reports.filter(report => {
-    const matchesSearch = report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         report.report_type.toLowerCase().includes(searchTerm.toLowerCase());
+    if (!report) return false;
+    const matchesSearch = report.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         report.report_type?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = filterType === 'all' || report.report_type === filterType;
     return matchesSearch && matchesType;
   });
@@ -47,20 +50,25 @@ const ClientFPAReports = () => {
     }
   };
 
-  const handleViewReport = (reportId: string) => {
-    // Implementar visualização do relatório
-    console.log('Visualizando relatório:', reportId);
-  };
-
-  const handleDownloadReport = (reportId: string) => {
-    // Implementar download do relatório
-    console.log('Fazendo download do relatório:', reportId);
-  };
-
-  if (isLoading) {
+  if (clientsLoading || reportsLoading) {
     return (
       <div className="flex items-center justify-center min-h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+          <p className="text-gray-600">Carregando relatórios...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentClient) {
+    return (
+      <div className="text-center py-12">
+        <FileText className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+        <h3 className="text-lg font-semibold mb-2">Configuração FP&A Necessária</h3>
+        <p className="text-gray-600">
+          Complete o onboarding FP&A para acessar seus relatórios.
+        </p>
       </div>
     );
   }
@@ -74,7 +82,6 @@ const ClientFPAReports = () => {
         </p>
       </div>
 
-      {/* Filtros */}
       <Card>
         <CardHeader>
           <CardTitle>Filtros e Busca</CardTitle>
@@ -108,7 +115,6 @@ const ClientFPAReports = () => {
         </CardContent>
       </Card>
 
-      {/* Lista de Relatórios */}
       <div className="grid gap-6">
         {filteredReports.length === 0 ? (
           <Card>
@@ -137,13 +143,13 @@ const ClientFPAReports = () => {
                       <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
-                          {report.period_covered}
+                          {report.period_covered || 'N/A'}
                         </div>
                         <Badge variant="outline" className="capitalize">
                           {report.report_type}
                         </Badge>
                         <span>
-                          {new Date(report.created_at || '').toLocaleDateString('pt-BR')}
+                          {report.created_at && new Date(report.created_at).toLocaleDateString('pt-BR')}
                         </span>
                       </div>
                       {report.insights && (
@@ -152,19 +158,11 @@ const ClientFPAReports = () => {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleViewReport(report.id)}
-                    >
+                    <Button variant="outline" size="sm">
                       <Eye className="h-4 w-4 mr-2" />
                       Visualizar
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleDownloadReport(report.id)}
-                    >
+                    <Button variant="outline" size="sm">
                       <Download className="h-4 w-4 mr-2" />
                       Download
                     </Button>
