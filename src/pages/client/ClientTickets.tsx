@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,114 +14,134 @@ import {
   Filter
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+interface Ticket {
+  id: string;
+  ticket_number: string;
+  title: string;
+  description: string;
+  status_id: string;
+  priority_id: string;
+  category_id: string;
+  user_name: string;
+  user_email: string;
+  user_phone: string;
+  created_at: string;
+  updated_at: string;
+  ticket_statuses?: { name: string; color: string; is_closed: boolean };
+  ticket_priorities?: { name: string; color: string; level: number };
+  ticket_categories?: { name: string; description: string };
+  responses_count?: number;
+}
 
 const ClientTickets = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data for tickets
-  const tickets = [
-    {
-      id: '1',
-      number: 'TCK-001234',
-      title: 'Problema no acesso ao sistema',
-      description: 'Não consigo fazer login na plataforma há 2 dias',
-      status: 'open',
-      priority: 'high',
-      created_at: '2024-01-15T10:00:00Z',
-      updated_at: '2024-01-15T14:30:00Z',
-      responses_count: 3
-    },
-    {
-      id: '2',
-      number: 'TCK-001235',
-      title: 'Solicitação de relatório personalizado',
-      description: 'Preciso de um relatório específico para apresentação',
-      status: 'in_progress',
-      priority: 'medium',
-      created_at: '2024-01-14T09:15:00Z',
-      updated_at: '2024-01-15T16:45:00Z',
-      responses_count: 5
-    },
-    {
-      id: '3',
-      number: 'TCK-001236',
-      title: 'Dúvida sobre funcionalidade',
-      description: 'Como posso exportar os dados em formato Excel?',
-      status: 'closed',
-      priority: 'low',
-      created_at: '2024-01-13T14:20:00Z',
-      updated_at: '2024-01-14T11:30:00Z',
-      responses_count: 2
+  useEffect(() => {
+    if (user) {
+      loadTickets();
     }
-  ];
+  }, [user]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'open':
-        return 'bg-red-100 text-red-800';
-      case 'in_progress':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'closed':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  const loadTickets = async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase
+        .from('tickets')
+        .select(`
+          *,
+          ticket_statuses:status_id(name, color, is_closed),
+          ticket_priorities:priority_id(name, color, level),
+          ticket_categories:category_id(name, description)
+        `)
+        .or(`user_id.eq.${user.id},user_email.eq.${user.email}`)
+        .order('created_at', { ascending: false });
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'open':
-        return <AlertCircle className="h-4 w-4" />;
-      case 'in_progress':
-        return <Clock className="h-4 w-4" />;
-      case 'closed':
-        return <CheckCircle className="h-4 w-4" />;
-      default:
-        return <MessageSquare className="h-4 w-4" />;
+      if (error) {
+        console.error('Erro ao carregar chamados:', error);
+        toast.error('Erro ao carregar seus chamados');
+        return;
+      }
+
+      // Buscar contagem de respostas para cada ticket
+      const ticketsWithResponses = await Promise.all(
+        (data || []).map(async (ticket) => {
+          const { count } = await supabase
+            .from('ticket_responses')
+            .select('*', { count: 'exact', head: true })
+            .eq('ticket_id', ticket.id);
+          
+          return {
+            ...ticket,
+            responses_count: count || 0
+          };
+        })
+      );
+
+      setTickets(ticketsWithResponses);
+    } catch (error) {
+      console.error('Erro ao carregar chamados:', error);
+      toast.error('Erro ao carregar chamados');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'open':
-        return 'Aberto';
-      case 'in_progress':
-        return 'Em Andamento';
-      case 'closed':
-        return 'Fechado';
-      default:
-        return status;
+  const getStatusColor = (ticket: Ticket) => {
+    if (ticket.ticket_statuses?.is_closed) {
+      return 'bg-green-100 text-green-800';
     }
+    return ticket.ticket_statuses?.color ? `bg-${ticket.ticket_statuses.color}-100 text-${ticket.ticket_statuses.color}-800` : 'bg-red-100 text-red-800';
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return 'bg-red-500';
-      case 'medium':
-        return 'bg-yellow-500';
-      case 'low':
-        return 'bg-green-500';
-      default:
-        return 'bg-gray-500';
+  const getStatusIcon = (ticket: Ticket) => {
+    if (ticket.ticket_statuses?.is_closed) {
+      return <CheckCircle className="h-4 w-4" />;
     }
+    return <AlertCircle className="h-4 w-4" />;
+  };
+
+  const getStatusLabel = (ticket: Ticket) => {
+    return ticket.ticket_statuses?.name || 'Aberto';
+  };
+
+  const getPriorityColor = (ticket: Ticket) => {
+    return ticket.ticket_priorities?.color || '#gray';
   };
 
   const filteredTickets = tickets.filter(ticket => {
     const matchesSearch = ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         ticket.number.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || ticket.status === filterStatus;
+                         ticket.ticket_number.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === 'all' || 
+                         (filterStatus === 'open' && !ticket.ticket_statuses?.is_closed) ||
+                         (filterStatus === 'closed' && ticket.ticket_statuses?.is_closed);
     return matchesSearch && matchesStatus;
   });
 
   const stats = {
     total: tickets.length,
-    open: tickets.filter(t => t.status === 'open').length,
-    in_progress: tickets.filter(t => t.status === 'in_progress').length,
-    closed: tickets.filter(t => t.status === 'closed').length
+    open: tickets.filter(t => !t.ticket_statuses?.is_closed).length,
+    closed: tickets.filter(t => t.ticket_statuses?.is_closed).length,
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-lg">Carregando chamados...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -132,14 +152,17 @@ const ClientTickets = () => {
             Acompanhe o status dos seus chamados de suporte
           </p>
         </div>
-        <Button onClick={() => navigate('/abrir-chamado')} className="bg-blue-600 hover:bg-blue-700">
+        <Button 
+          onClick={() => navigate('/abrir-chamado')} 
+          className="bg-[#f07c00] hover:bg-[#e56b00] text-white"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Novo Chamado
         </Button>
       </div>
 
       {/* Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -160,18 +183,6 @@ const ClientTickets = () => {
                 <p className="text-2xl font-bold text-red-600">{stats.open}</p>
               </div>
               <AlertCircle className="h-8 w-8 text-red-400" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Em Andamento</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats.in_progress}</p>
-              </div>
-              <Clock className="h-8 w-8 text-yellow-400" />
             </div>
           </CardContent>
         </Card>
@@ -220,13 +231,6 @@ const ClientTickets = () => {
                 Abertos
               </Button>
               <Button
-                variant={filterStatus === 'in_progress' ? 'default' : 'outline'}
-                onClick={() => setFilterStatus('in_progress')}
-                size="sm"
-              >
-                Em Andamento
-              </Button>
-              <Button
                 variant={filterStatus === 'closed' ? 'default' : 'outline'}
                 onClick={() => setFilterStatus('closed')}
                 size="sm"
@@ -249,7 +253,10 @@ const ClientTickets = () => {
                 {searchTerm ? 'Tente ajustar os filtros de busca' : 'Você ainda não possui chamados registrados'}
               </p>
               {!searchTerm && (
-                <Button onClick={() => navigate('/abrir-chamado')}>
+                <Button 
+                  onClick={() => navigate('/abrir-chamado')}
+                  className="bg-[#f07c00] hover:bg-[#e56b00] text-white"
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Abrir Primeiro Chamado
                 </Button>
@@ -264,22 +271,25 @@ const ClientTickets = () => {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="font-semibold text-lg">{ticket.title}</h3>
-                      <div className={`w-3 h-3 rounded-full ${getPriorityColor(ticket.priority)}`}></div>
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: getPriorityColor(ticket) }}
+                      ></div>
                     </div>
                     <p className="text-gray-600 mb-3 line-clamp-2">{ticket.description}</p>
                     <div className="flex items-center gap-4 text-sm text-gray-500">
-                      <span className="font-mono">{ticket.number}</span>
+                      <span className="font-mono">{ticket.ticket_number}</span>
                       <span>•</span>
                       <span>{new Date(ticket.created_at).toLocaleDateString('pt-BR')}</span>
                       <span>•</span>
-                      <span>{ticket.responses_count} respostas</span>
+                      <span>{ticket.responses_count || 0} respostas</span>
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-3">
-                    <Badge className={getStatusColor(ticket.status)}>
+                    <Badge className={getStatusColor(ticket)}>
                       <div className="flex items-center gap-1">
-                        {getStatusIcon(ticket.status)}
-                        {getStatusLabel(ticket.status)}
+                        {getStatusIcon(ticket)}
+                        {getStatusLabel(ticket)}
                       </div>
                     </Badge>
                     <Button 

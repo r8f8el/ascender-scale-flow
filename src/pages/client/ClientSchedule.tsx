@@ -1,271 +1,388 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  Calendar, 
-  Clock, 
-  Search, 
-  Filter,
-  Users,
-  CheckCircle,
-  AlertTriangle,
-  Play
-} from 'lucide-react';
+import { Calendar, Clock, User, MapPin, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+interface Event {
+  id: string;
+  title: string;
+  description: string;
+  start_date: string;
+  end_date: string;
+  type: 'meeting' | 'deadline' | 'task' | 'presentation';
+  status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled';
+  location?: string;
+  attendees?: string[];
+  created_at: string;
+}
 
 const ClientSchedule = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const { user } = useAuth();
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [viewMode, setViewMode] = useState<'month' | 'week' | 'list'>('month');
 
-  console.log('📅 ClientSchedule: Componente carregado');
+  useEffect(() => {
+    loadEvents();
+  }, [user]);
 
-  // Dados mockados do cronograma
-  const scheduleItems = [
-    {
-      id: '1',
-      title: 'Análise Financeira Inicial',
-      description: 'Revisão completa dos dados financeiros e setup inicial do projeto',
-      startDate: '2024-01-15',
-      endDate: '2024-01-25',
-      status: 'completed',
-      responsible: 'Rafael Gontijo',
-      phase: 'Fase 1 - Setup',
-      progress: 100
-    },
-    {
-      id: '2',
-      title: 'Implementação Dashboard FP&A',
-      description: 'Desenvolvimento e configuração do dashboard de análise financeira',
-      startDate: '2024-01-26',
-      endDate: '2024-02-10',
-      status: 'in_progress',
-      responsible: 'Ana Silva',
-      phase: 'Fase 2 - Desenvolvimento',
-      progress: 65
-    },
-    {
-      id: '3',
-      title: 'Treinamento da Equipe',
-      description: 'Sessões de treinamento para utilização das ferramentas',
-      startDate: '2024-02-11',
-      endDate: '2024-02-20',
-      status: 'pending',
-      responsible: 'Mariana Costa',
-      phase: 'Fase 3 - Implementação',
-      progress: 0
-    },
-    {
-      id: '4',
-      title: 'Entrega Final e Documentação',
-      description: 'Finalização do projeto e entrega da documentação completa',
-      startDate: '2024-02-21',
-      endDate: '2024-02-28',
-      status: 'pending',
-      responsible: 'Daniel Ascalate',
-      phase: 'Fase 4 - Entrega',
-      progress: 0
+  const loadEvents = async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      
+      // Buscar eventos/tarefas relacionados ao cliente
+      const { data: tasks, error: tasksError } = await supabase
+        .from('tasks')
+        .select(`
+          id,
+          title,
+          description,
+          due_date,
+          status,
+          priority,
+          project:project_id(name, client_id),
+          assigned_to:assigned_to(name)
+        `)
+        .eq('project.client_id', user.id);
+
+      if (tasksError) {
+        console.error('Erro ao carregar tarefas:', tasksError);
+      }
+
+      // Buscar projetos e suas datas importantes
+      const { data: projects, error: projectsError } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('client_id', user.id);
+
+      if (projectsError) {
+        console.error('Erro ao carregar projetos:', projectsError);
+      }
+
+      // Converter dados para formato de eventos
+      const allEvents: Event[] = [];
+
+      // Adicionar tarefas como eventos
+      if (tasks) {
+        tasks.forEach(task => {
+          if (task.due_date) {
+            allEvents.push({
+              id: `task-${task.id}`,
+              title: task.title,
+              description: task.description || '',
+              start_date: task.due_date,
+              end_date: task.due_date,
+              type: 'task',
+              status: task.status === 'completed' ? 'completed' : 'scheduled',
+              created_at: new Date().toISOString()
+            });
+          }
+        });
+      }
+
+      // Adicionar marcos dos projetos
+      if (projects) {
+        projects.forEach(project => {
+          if (project.start_date) {
+            allEvents.push({
+              id: `project-start-${project.id}`,
+              title: `Início: ${project.name}`,
+              description: project.description || '',
+              start_date: project.start_date,
+              end_date: project.start_date,
+              type: 'presentation',
+              status: 'scheduled',
+              created_at: project.created_at
+            });
+          }
+          
+          if (project.end_date) {
+            allEvents.push({
+              id: `project-end-${project.id}`,
+              title: `Entrega: ${project.name}`,
+              description: project.description || '',
+              start_date: project.end_date,
+              end_date: project.end_date,
+              type: 'deadline',
+              status: project.status === 'completed' ? 'completed' : 'scheduled',
+              created_at: project.created_at
+            });
+          }
+        });
+      }
+
+      setEvents(allEvents);
+    } catch (error) {
+      console.error('Erro ao carregar cronograma:', error);
+      toast.error('Erro ao carregar cronograma');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  const filteredItems = scheduleItems.filter(item => {
-    const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
-    return matchesSearch && matchesStatus;
+  const getEventColor = (type: string, status: string) => {
+    if (status === 'completed') return 'bg-green-100 text-green-800 border-green-200';
+    if (status === 'cancelled') return 'bg-gray-100 text-gray-800 border-gray-200';
+    
+    switch (type) {
+      case 'meeting':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'deadline':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'task':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'presentation':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getEventIcon = (type: string) => {
+    switch (type) {
+      case 'meeting':
+        return <User className="h-4 w-4" />;
+      case 'deadline':
+        return <Clock className="h-4 w-4" />;
+      case 'task':
+        return <Calendar className="h-4 w-4" />;
+      case 'presentation':
+        return <MapPin className="h-4 w-4" />;
+      default:
+        return <Calendar className="h-4 w-4" />;
+    }
+  };
+
+  const formatEventType = (type: string) => {
+    const types = {
+      meeting: 'Reunião',
+      deadline: 'Prazo',
+      task: 'Tarefa',
+      presentation: 'Apresentação'
+    };
+    return types[type as keyof typeof types] || type;
+  };
+
+  const formatStatus = (status: string) => {
+    const statuses = {
+      scheduled: 'Agendado',
+      confirmed: 'Confirmado',
+      completed: 'Concluído',
+      cancelled: 'Cancelado'
+    };
+    return statuses[status as keyof typeof statuses] || status;
+  };
+
+  // Filtrar eventos do mês atual para visualização
+  const currentMonthEvents = events.filter(event => {
+    const eventDate = new Date(event.start_date);
+    return eventDate.getMonth() === currentDate.getMonth() && 
+           eventDate.getFullYear() === currentDate.getFullYear();
   });
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <Badge className="bg-green-100 text-green-700"><CheckCircle className="h-3 w-3 mr-1" />Concluído</Badge>;
-      case 'in_progress':
-        return <Badge className="bg-blue-100 text-blue-700"><Play className="h-3 w-3 mr-1" />Em Andamento</Badge>;
-      case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-700"><Clock className="h-3 w-3 mr-1" />Pendente</Badge>;
-      case 'delayed':
-        return <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" />Atrasado</Badge>;
-      default:
-        return <Badge variant="outline">Indefinido</Badge>;
-    }
-  };
+  // Eventos próximos (próximos 7 dias)
+  const upcomingEvents = events.filter(event => {
+    const eventDate = new Date(event.start_date);
+    const today = new Date();
+    const nextWeek = new Date();
+    nextWeek.setDate(today.getDate() + 7);
+    
+    return eventDate >= today && eventDate <= nextWeek && event.status !== 'completed';
+  }).sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
 
-  const getProgressColor = (progress: number) => {
-    if (progress === 100) return 'bg-green-500';
-    if (progress >= 70) return 'bg-blue-500';
-    if (progress >= 40) return 'bg-yellow-500';
-    return 'bg-gray-300';
-  };
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-lg">Carregando cronograma...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Cronograma do Projeto</h1>
-        <p className="text-gray-600 mt-1">
-          Acompanhe o andamento das atividades do seu projeto
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Cronograma</h1>
+          <p className="text-gray-600 mt-1">
+            Acompanhe seus compromissos, prazos e marcos importantes
+          </p>
+        </div>
+        
+        <div className="flex gap-2">
+          <Button
+            variant={viewMode === 'list' ? 'default' : 'outline'}
+            onClick={() => setViewMode('list')}
+            size="sm"
+          >
+            Lista
+          </Button>
+          <Button
+            variant={viewMode === 'month' ? 'default' : 'outline'}
+            onClick={() => setViewMode('month')}
+            size="sm"
+          >
+            Mês
+          </Button>
+        </div>
       </div>
 
-      {/* Estatísticas do Cronograma */}
+      {/* Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <CheckCircle className="h-8 w-8 text-green-500" />
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Concluído</p>
-                <p className="text-2xl font-bold">
-                  {scheduleItems.filter(item => item.status === 'completed').length}
-                </p>
+                <p className="text-sm font-medium text-gray-600">Total</p>
+                <p className="text-2xl font-bold text-gray-900">{events.length}</p>
               </div>
+              <Calendar className="h-8 w-8 text-gray-400" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Play className="h-8 w-8 text-blue-500" />
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Em Andamento</p>
-                <p className="text-2xl font-bold">
-                  {scheduleItems.filter(item => item.status === 'in_progress').length}
-                </p>
+                <p className="text-sm font-medium text-gray-600">Este Mês</p>
+                <p className="text-2xl font-bold text-blue-600">{currentMonthEvents.length}</p>
               </div>
+              <Calendar className="h-8 w-8 text-blue-400" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Clock className="h-8 w-8 text-yellow-500" />
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Pendente</p>
-                <p className="text-2xl font-bold">
-                  {scheduleItems.filter(item => item.status === 'pending').length}
-                </p>
+                <p className="text-sm font-medium text-gray-600">Próximos 7 Dias</p>
+                <p className="text-2xl font-bold text-orange-600">{upcomingEvents.length}</p>
               </div>
+              <Clock className="h-8 w-8 text-orange-400" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Calendar className="h-8 w-8 text-purple-500" />
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Total Atividades</p>
-                <p className="text-2xl font-bold">{scheduleItems.length}</p>
+                <p className="text-sm font-medium text-gray-600">Concluídos</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {events.filter(e => e.status === 'completed').length}
+                </p>
               </div>
+              <Calendar className="h-8 w-8 text-green-400" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filtros */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filtros
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Buscar atividades..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os status</SelectItem>
-                <SelectItem value="completed">Concluído</SelectItem>
-                <SelectItem value="in_progress">Em Andamento</SelectItem>
-                <SelectItem value="pending">Pendente</SelectItem>
-                <SelectItem value="delayed">Atrasado</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Lista de Atividades do Cronograma */}
-      <div className="space-y-4">
-        {filteredItems.map((item) => (
-          <Card key={item.id} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900">{item.title}</h3>
-                    {getStatusBadge(item.status)}
-                    <Badge variant="outline">{item.phase}</Badge>
-                  </div>
-                  <p className="text-gray-600 mb-3">{item.description}</p>
-                  
-                  {/* Informações da atividade */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Calendar className="h-4 w-4" />
-                      <span>Início: {new Date(item.startDate).toLocaleDateString('pt-BR')}</span>
+      {/* Próximos eventos */}
+      {upcomingEvents.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-orange-500" />
+              Próximos Eventos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {upcomingEvents.slice(0, 5).map((event) => (
+                <div key={event.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-full ${getEventColor(event.type, event.status)}`}>
+                      {getEventIcon(event.type)}
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Calendar className="h-4 w-4" />
-                      <span>Fim: {new Date(item.endDate).toLocaleDateString('pt-BR')}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Users className="h-4 w-4" />
-                      <span>Responsável: {item.responsible}</span>
+                    <div>
+                      <h4 className="font-medium">{event.title}</h4>
+                      <p className="text-sm text-gray-600">
+                        {new Date(event.start_date).toLocaleDateString('pt-BR', {
+                          weekday: 'short',
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </p>
                     </div>
                   </div>
-
-                  {/* Barra de Progresso */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Progresso</span>
-                      <span className="font-medium">{item.progress}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className={`h-2 rounded-full transition-all duration-300 ${getProgressColor(item.progress)}`}
-                        style={{ width: `${item.progress}%` }}
-                      ></div>
-                    </div>
-                  </div>
+                  <Badge variant="outline" className={getEventColor(event.type, event.status)}>
+                    {formatEventType(event.type)}
+                  </Badge>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {filteredItems.length === 0 && (
-        <Card>
-          <CardContent className="text-center py-12">
-            <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Nenhuma atividade encontrada</h3>
-            <p className="text-gray-600">
-              {searchTerm || statusFilter !== 'all' 
-                ? 'Tente ajustar os filtros de busca'
-                : 'Não há atividades programadas no momento'
-              }
-            </p>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}
+
+      {/* Lista de todos os eventos */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Todos os Eventos</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {events.length === 0 ? (
+            <div className="text-center py-8">
+              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum evento encontrado</h3>
+              <p className="text-gray-600">Seus compromissos e prazos aparecerão aqui conforme os projetos forem criados.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {events
+                .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
+                .map((event) => (
+                  <div key={event.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3">
+                        <div className={`p-2 rounded-full ${getEventColor(event.type, event.status)}`}>
+                          {getEventIcon(event.type)}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-medium text-lg">{event.title}</h4>
+                          {event.description && (
+                            <p className="text-gray-600 mt-1">{event.description}</p>
+                          )}
+                          <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-4 w-4" />
+                              {new Date(event.start_date).toLocaleDateString('pt-BR')}
+                            </span>
+                            {event.location && (
+                              <span className="flex items-center gap-1">
+                                <MapPin className="h-4 w-4" />
+                                {event.location}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                        <Badge variant="outline" className={getEventColor(event.type, event.status)}>
+                          {formatEventType(event.type)}
+                        </Badge>
+                        <Badge variant="outline">
+                          {formatStatus(event.status)}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

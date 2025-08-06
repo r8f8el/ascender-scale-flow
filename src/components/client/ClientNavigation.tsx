@@ -1,78 +1,89 @@
 
-import React from 'react';
-import { NavLink as RouterNavLink } from 'react-router-dom';
-import { File, MessageSquare, Calendar, Mail, Users, TrendingUp } from 'lucide-react';
+import React, { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import {
+  MessageSquare,
+  Calendar,
+  Users,
+  Mail,
+  Shield,
+  TrendingUp,
+  FileText,
+  MessageCircle,
+  Plus,
+  Menu,
+  X
+} from 'lucide-react';
 
-interface NavLinkProps {
-  to: string;
-  children: React.ReactNode;
-  icon: React.ReactNode;
-}
-
-const NavLink: React.FC<NavLinkProps> = ({ to, children, icon }) => (
-  <RouterNavLink
-    to={to}
-    className={({ isActive }) => 
-      `flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
-        isActive 
-          ? 'bg-blue-50 text-blue-700' 
-          : 'text-gray-700 hover:bg-gray-100'
-      }`
-    }
-  >
-    {icon}
-    <span>{children}</span>
-  </RouterNavLink>
-);
+const navigationItems = [
+  { path: '/cliente/chamados', icon: MessageSquare, label: 'Chamados' },
+  { path: '/cliente/cronograma', icon: Calendar, label: 'Cronograma' },
+  { path: '/cliente/equipe', icon: Users, label: 'Equipe' },
+  { path: '/cliente/contato', icon: Mail, label: 'Contato' },
+  { path: '/cliente/documentos', icon: Shield, label: 'Cofre de Dados' },
+  { path: '/cliente/fpa/cenarios', icon: TrendingUp, label: 'Cenários Interativos' },
+  { path: '/cliente/fpa/relatorios', icon: FileText, label: 'Biblioteca de Relatórios' },
+  { path: '/cliente/fpa/comunicacao', icon: MessageCircle, label: 'Comunicação' }
+];
 
 export const ClientNavigation: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const handleNewTicket = () => {
+    navigate('/abrir-chamado');
+  };
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="font-medium text-gray-500 uppercase text-xs tracking-wider mb-4">
-          Menu Principal
-        </h3>
-        <div className="space-y-1">
-          <NavLink to="/cliente/dashboard" icon={<File size={20} />}>
-            Dashboard
-          </NavLink>
-          <NavLink to="/cliente/equipe" icon={<Users size={20} />}>
-            Equipe
-          </NavLink>
-          <NavLink to="/cliente/chamados" icon={<MessageSquare size={20} />}>
-            Chamados
-          </NavLink>
-          <NavLink to="/cliente/cronograma" icon={<Calendar size={20} />}>
-            Cronograma
-          </NavLink>
-          <NavLink to="/cliente/contato" icon={<Mail size={20} />}>
-            Contato
-          </NavLink>
-        </div>
+    <>
+      {/* Mobile menu button */}
+      <div className="md:hidden p-4 bg-white border-b">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </Button>
       </div>
 
-      <div>
-        <h3 className="font-medium text-gray-500 uppercase text-xs tracking-wider mb-4">
-          FP&A - Planejamento Financeiro
-        </h3>
-        <div className="space-y-1">
-          <NavLink to="/cliente/fpa/dashboard" icon={<TrendingUp size={20} />}>
-            Dashboard FP&A
-          </NavLink>
-          <NavLink to="/cliente/fpa/dados" icon={<File size={20} />}>
-            Cofre de Dados
-          </NavLink>
-          <NavLink to="/cliente/fpa/cenarios" icon={<TrendingUp size={20} />}>
-            Cenários Interativos
-          </NavLink>
-          <NavLink to="/cliente/fpa/relatorios" icon={<File size={20} />}>
-            Biblioteca de Relatórios
-          </NavLink>
-          <NavLink to="/cliente/fpa/comunicacao" icon={<MessageSquare size={20} />}>
-            Comunicação
-          </NavLink>
+      {/* Navigation */}
+      <nav className={`bg-white border-r border-gray-200 w-64 min-h-screen ${
+        isMobileMenuOpen ? 'block' : 'hidden md:block'
+      }`}>
+        <div className="p-4 border-b">
+          <Button 
+            onClick={handleNewTicket}
+            className="w-full bg-[#f07c00] hover:bg-[#e56b00] text-white"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Chamado
+          </Button>
         </div>
-      </div>
-    </div>
+
+        <div className="p-4">
+          <ul className="space-y-2">
+            {navigationItems.map((item) => (
+              <li key={item.path}>
+                <Link
+                  to={item.path}
+                  className={`flex items-center px-3 py-2 rounded-lg transition-colors ${
+                    location.pathname === item.path
+                      ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <item.icon className="h-5 w-5 mr-3" />
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </nav>
+    </>
   );
 };
