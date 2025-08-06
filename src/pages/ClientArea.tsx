@@ -49,20 +49,8 @@ const ClientArea = () => {
       <ClientDocumentSync />
       
       <div className="flex flex-1 container mx-auto">
-        {/* Sidebar (Desktop) */}
-        <aside className="hidden md:block w-64 bg-white border-r p-6">
-          <ClientNavigation />
-          
-          <div className="mt-auto pt-8">
-            <button 
-              onClick={handleLogout}
-              className="flex items-center gap-2 text-red-600 hover:text-red-700 transition-colors w-full"
-            >
-              <LogOut size={20} />
-              <span>Sair</span>
-            </button>
-          </div>
-        </aside>
+        {/* Sidebar Navigation */}
+        <ClientNavigation />
         
         {/* Main Content */}
         <main className="flex-1 p-4 md:p-8 overflow-auto">
@@ -70,7 +58,7 @@ const ClientArea = () => {
             <Routes>
               <Route path="/" element={<ClientDocuments />} />
               <Route path="/dashboard" element={<ClientDocuments />} />
-              <Route path="/documents" element={<ClientDocuments />} />
+              <Route path="/documentos" element={<ClientDocuments />} />
               <Route path="/documents-advanced" element={<ClientDocumentsAdvanced />} />
               <Route path="/documents-new" element={<ClientDocumentsNew />} />
               <Route path="/requests" element={<ClientRequests />} />

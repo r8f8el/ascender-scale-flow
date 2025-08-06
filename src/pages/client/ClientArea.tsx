@@ -50,7 +50,7 @@ const ClientArea = () => {
         <Routes>
           <Route path="/" element={<ClientDocuments />} />
           <Route path="/dashboard" element={<ClientDocuments />} />
-          <Route path="/documents" element={<ClientDocuments />} />
+          <Route path="/documentos" element={<ClientDocuments />} />
           <Route path="/documents-advanced" element={<ClientDocumentsAdvanced />} />
           <Route path="/documents-new" element={<ClientDocumentsNew />} />
           <Route path="/requests" element={<ClientRequests />} />

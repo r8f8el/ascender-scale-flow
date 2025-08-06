@@ -33,6 +33,7 @@ export const ClientNavigation: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleNewTicket = () => {
+    // Use navigate instead of direct navigation to prevent logout
     navigate('/abrir-chamado');
   };
 
