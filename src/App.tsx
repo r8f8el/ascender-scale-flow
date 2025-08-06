@@ -1,5 +1,4 @@
 
-
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -19,7 +18,7 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminRegister from "./pages/AdminRegister";
 import AcceptInvitation from "./pages/AcceptInvitation";
 import ClientAreaMain from "./pages/client/ClientArea";
-import AdminArea from "./pages/AdminArea";
+import AdminArea from "./pages/admin/AdminArea";
 import AdminUnauthorized from "./pages/AdminUnauthorized";
 import NotFound from "./pages/NotFound";
 import React from 'react';

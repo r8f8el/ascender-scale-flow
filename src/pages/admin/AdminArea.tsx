@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Outlet, NavLink as RouterNavLink, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, NavLink as RouterNavLink, useNavigate, useLocation } from 'react-router-dom';
 import { Logo } from '../../components/Logo';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -32,6 +32,29 @@ import {
   PieChart
 } from 'lucide-react';
 
+// Import admin pages
+import AdminDashboard from '../AdminDashboard';
+import ClientesAdminFixed from './ClientesAdminFixed';
+import ProjectsAdmin from './ProjectsAdmin';
+import CollaboratorsAdmin from './CollaboratorsAdmin';
+import TasksAdmin from './TasksAdmin';
+import TicketsAdmin from './TicketsAdmin';
+import MyTickets from './MyTickets';
+import ArquivosAdminNew from './ArquivosAdminNew';
+import CronogramasAdmin from './CronogramasAdmin';
+import MensagensAdmin from './MensagensAdmin';
+import LogsAdmin from './LogsAdmin';
+import ActivityLogsAdmin from './ActivityLogsAdmin';
+import OneDriveIntegration from './OneDriveIntegration';
+import ConfiguracoesAdmin from './ConfiguracoesAdmin';
+
+// Import FPA admin pages
+import AdminFPAClientManagement from './fpa/AdminFPAClientManagement';
+import AdminFPADataIntegration from './fpa/AdminFPADataIntegration';
+import AdminFPAModeling from './fpa/AdminFPAModeling';
+import AdminFPAVarianceAnalysis from './fpa/AdminFPAVarianceAnalysis';
+import AdminFPAReportBuilder from './fpa/AdminFPAReportBuilder';
+
 const AdminArea = () => {
   const { admin, adminLogout } = useAdminAuth();
   const navigate = useNavigate();
@@ -51,7 +74,7 @@ const AdminArea = () => {
   useEffect(() => {
     // Update page title based on current route
     const path = location.pathname;
-    if (path === '/admin') setPageTitle('Dashboard');
+    if (path === '/admin' || path === '/admin/') setPageTitle('Dashboard');
     else if (path.includes('/admin/clientes')) setPageTitle('Gestão de Clientes');
     else if (path.includes('/admin/projetos')) setPageTitle('Gestão de Projetos');
     else if (path.includes('/admin/colaboradores')) setPageTitle('Gestão de Colaboradores');
@@ -65,7 +88,11 @@ const AdminArea = () => {
     else if (path.includes('/admin/activity-logs')) setPageTitle('Logs de Atividade');
     else if (path.includes('/admin/configuracoes')) setPageTitle('Configurações');
     else if (path.includes('/admin/onedrive')) setPageTitle('Integração OneDrive/SharePoint');
-    else if (path.includes('/admin/fpa')) setPageTitle('FP&A - Consultoria Financeira');
+    else if (path.includes('/admin/fpa/gestao-clientes')) setPageTitle('Gestão de Clientes FP&A');
+    else if (path.includes('/admin/fpa/integracao-dados')) setPageTitle('Integração de Dados FP&A');
+    else if (path.includes('/admin/fpa/modelagem')) setPageTitle('Motor de Modelagem FP&A');
+    else if (path.includes('/admin/fpa/analise-variacao')) setPageTitle('Análise de Variação FP&A');
+    else if (path.includes('/admin/fpa/relatorios')) setPageTitle('Construtor de Relatórios FP&A');
     else setPageTitle('Painel Administrativo');
   }, [location]);
 
@@ -292,7 +319,29 @@ const AdminArea = () => {
             <h1 className="text-2xl font-bold text-gray-900">{pageTitle}</h1>
           </div>
           <div className="bg-white rounded-lg shadow p-6">
-            <Outlet />
+            <Routes>
+              <Route index element={<AdminDashboard />} />
+              <Route path="clientes" element={<ClientesAdminFixed />} />
+              <Route path="projetos" element={<ProjectsAdmin />} />
+              <Route path="colaboradores" element={<CollaboratorsAdmin />} />
+              <Route path="tarefas" element={<TasksAdmin />} />
+              <Route path="chamados" element={<TicketsAdmin />} />
+              <Route path="meus-chamados" element={<MyTickets />} />
+              <Route path="arquivos" element={<ArquivosAdminNew />} />
+              <Route path="cronogramas" element={<CronogramasAdmin />} />
+              <Route path="mensagens" element={<MensagensAdmin />} />
+              <Route path="logs" element={<LogsAdmin />} />
+              <Route path="activity-logs" element={<ActivityLogsAdmin />} />
+              <Route path="onedrive" element={<OneDriveIntegration />} />
+              <Route path="configuracoes" element={<ConfiguracoesAdmin />} />
+              
+              {/* FP&A Routes */}
+              <Route path="fpa/gestao-clientes" element={<AdminFPAClientManagement />} />
+              <Route path="fpa/integracao-dados" element={<AdminFPADataIntegration />} />
+              <Route path="fpa/modelagem" element={<AdminFPAModeling />} />
+              <Route path="fpa/analise-variacao" element={<AdminFPAVarianceAnalysis />} />
+              <Route path="fpa/relatorios" element={<AdminFPAReportBuilder />} />
+            </Routes>
           </div>
         </main>
       </div>
