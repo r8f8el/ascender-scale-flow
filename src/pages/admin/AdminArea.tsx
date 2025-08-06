@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import AdminHeader from '@/components/admin/AdminHeader';
@@ -12,6 +13,8 @@ import LogsAdmin from './LogsAdmin';
 import ConfiguracoesAdmin from './ConfiguracoesAdmin';
 import CollaboratorsAdmin from './CollaboratorsAdmin';
 import CronogramasAdmin from './CronogramasAdmin';
+import AdminDocuments from './AdminDocuments';
+import AdminApprovalFlows from './AdminApprovalFlows';
 
 // FP&A components
 import AdminFPAClientManagement from './fpa/AdminFPAClientManagement';
@@ -30,11 +33,11 @@ const AdminArea = () => {
             <Route path="/" element={<AdminDashboard />} />
             <Route path="/dashboard" element={<AdminDashboard />} />
             <Route path="/clients" element={<ClientManagementFixed />} />
-            <Route path="/documents" element={<div>Documentos - Em desenvolvimento</div>} />
+            <Route path="/documents" element={<AdminDocuments />} />
             <Route path="/tickets" element={<TicketsAdmin />} />
             <Route path="/projects" element={<ProjectsAdmin />} />
             <Route path="/logs" element={<LogsAdmin />} />
-            <Route path="/approval-flows" element={<div>Fluxos de Aprovação - Em desenvolvimento</div>} />
+            <Route path="/approval-flows" element={<AdminApprovalFlows />} />
             <Route path="/settings" element={<ConfiguracoesAdmin />} />
             <Route path="/collaborators" element={<CollaboratorsAdmin />} />
             <Route path="/schedules" element={<CronogramasAdmin />} />
