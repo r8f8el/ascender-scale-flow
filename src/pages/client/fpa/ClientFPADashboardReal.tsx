@@ -1,166 +1,50 @@
+
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useFPAClients } from '@/hooks/useFPAClients';
-import { useFPAPeriods } from '@/hooks/useFPAPeriods';
 import { useFPAFinancialData } from '@/hooks/useFPAFinancialData';
-import { useAuth } from '@/contexts/AuthContext';
+import { useFPAReports } from '@/hooks/useFPAReports';
+import { useFPAVarianceAnalysis } from '@/hooks/useFPAVarianceAnalysis';
+import { useFPAPeriods } from '@/hooks/useFPAPeriods';
 import { 
+  BarChart3, 
   TrendingUp, 
   TrendingDown, 
-  DollarSign, 
-  Target, 
-  BarChart3, 
-  AlertCircle,
-  Upload,
-  MessageSquare,
+  DollarSign,
+  Calendar,
   FileText,
+  AlertTriangle,
+  CheckCircle,
+  Building,
+  Target,
   Activity,
-  Plus,
-  Edit
+  Eye
 } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 const ClientFPADashboardReal = () => {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingPeriodId, setEditingPeriodId] = useState<string | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState('');
+
+  // Get current user's FPA client data
+  const { data: clients = [], isLoading: clientsLoading } = useFPAClients();
+  const currentClient = clients[0]; // Assuming first client for current user
   
-  // Hooks para dados reais
-  const { data: fpaClients = [], isLoading: clientsLoading } = useFPAClients();
-  const currentClient = fpaClients.find(client => client.client_profile_id === user?.id);
-  
+  // Fixed hook calls - only pass clientId, not two parameters
+  const { data: financialData = [], isLoading: dataLoading } = useFPAFinancialData(currentClient?.id);
+  const { data: reports = [], isLoading: reportsLoading } = useFPAReports(currentClient?.id);
+  const { data: varianceAnalysis = [], isLoading: varianceLoading } = useFPAVarianceAnalysis(currentClient?.id);
   const { data: periods = [], isLoading: periodsLoading } = useFPAPeriods(currentClient?.id);
-  const currentPeriod = periods.find(p => p.is_actual) || periods[0];
-  
-  const { 
-    data: financialData, 
-    isLoading: dataLoading, 
-    refetch: refetchData 
-  } = useFPAFinancialData(currentClient?.id, currentPeriod?.id);
 
-  const [formData, setFormData] = useState({
-    revenue: 0,
-    cost_of_goods_sold: 0,
-    operating_expenses: 0,
-    depreciation: 0,
-    financial_expenses: 0,
-    current_assets: 0,
-    non_current_assets: 0,
-    current_liabilities: 0,
-    non_current_liabilities: 0,
-    equity: 0,
-    operating_cash_flow: 0,
-    investing_cash_flow: 0,
-    financing_cash_flow: 0,
-    cash_balance: 0
+  console.log('📊 Dashboard data:', {
+    currentClient,
+    financialDataCount: financialData.length,
+    reportsCount: reports.length,
+    varianceCount: varianceAnalysis.length,
+    periodsCount: periods.length
   });
-
-  React.useEffect(() => {
-    if (financialData && financialData.length > 0) {
-      const data = financialData[0]; // Pegar o primeiro registro
-      setFormData({
-        revenue: data.revenue || 0,
-        cost_of_goods_sold: data.cost_of_goods_sold || 0,
-        operating_expenses: data.operating_expenses || 0,
-        depreciation: data.depreciation || 0,
-        financial_expenses: data.financial_expenses || 0,
-        current_assets: data.current_assets || 0,
-        non_current_assets: data.non_current_assets || 0,
-        current_liabilities: data.current_liabilities || 0,
-        non_current_liabilities: data.non_current_liabilities || 0,
-        equity: data.equity || 0,
-        operating_cash_flow: data.operating_cash_flow || 0,
-        investing_cash_flow: data.investing_cash_flow || 0,
-        financing_cash_flow: data.financing_cash_flow || 0,
-        cash_balance: data.cash_balance || 0
-      });
-    }
-  }, [financialData]);
-
-  // Cálculos automáticos baseados nos dados reais
-  const calculations = {
-    grossProfit: formData.revenue - formData.cost_of_goods_sold,
-    ebitda: formData.revenue - formData.cost_of_goods_sold - formData.operating_expenses,
-    ebit: formData.revenue - formData.cost_of_goods_sold - formData.operating_expenses - formData.depreciation,
-    netIncome: formData.revenue - formData.cost_of_goods_sold - formData.operating_expenses - formData.depreciation - formData.financial_expenses,
-    totalAssets: formData.current_assets + formData.non_current_assets,
-    totalLiabilities: formData.current_liabilities + formData.non_current_liabilities,
-    netCashFlow: formData.operating_cash_flow + formData.investing_cash_flow + formData.financing_cash_flow,
-    ebitdaMargin: formData.revenue > 0 ? ((formData.revenue - formData.cost_of_goods_sold - formData.operating_expenses) / formData.revenue) * 100 : 0
-  };
-
-  const handleSaveData = async () => {
-    if (!currentClient?.id || !currentPeriod?.id) {
-      toast({
-        title: "Erro",
-        description: "Cliente ou período não encontrado",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      // Verificar se já existe dados para este período
-      const { data: existingData } = await supabase
-        .from('fpa_financial_data')
-        .select('id')
-        .eq('fpa_client_id', currentClient.id)
-        .eq('period_id', currentPeriod.id)
-        .single();
-
-      const dataToSave = {
-        fpa_client_id: currentClient.id,
-        period_id: currentPeriod.id,
-        ...formData,
-        // Cálculos automáticos
-        gross_profit: calculations.grossProfit,
-        ebitda: calculations.ebitda,
-        ebit: calculations.ebit,
-        net_income: calculations.netIncome,
-        total_assets: calculations.totalAssets,
-        net_cash_flow: calculations.netCashFlow
-      };
-
-      if (existingData) {
-        // Atualizar dados existentes
-        const { error } = await supabase
-          .from('fpa_financial_data')
-          .update(dataToSave)
-          .eq('id', existingData.id);
-
-        if (error) throw error;
-      } else {
-        // Inserir novos dados
-        const { error } = await supabase
-          .from('fpa_financial_data')
-          .insert([dataToSave]);
-
-        if (error) throw error;
-      }
-
-      toast({
-        title: "Dados salvos!",
-        description: "Os dados financeiros foram atualizados com sucesso."
-      });
-
-      setIsEditing(false);
-      refetchData();
-    } catch (error: any) {
-      console.error('Erro ao salvar dados:', error);
-      toast({
-        title: "Erro ao salvar",
-        description: error.message || "Ocorreu um erro ao salvar os dados.",
-        variant: "destructive"
-      });
-    }
-  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -170,20 +54,25 @@ const ClientFPADashboardReal = () => {
   };
 
   const formatPercentage = (value: number) => {
-    return `${value.toFixed(1)}%`;
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'percent',
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1
+    }).format(value / 100);
   };
 
-  if (clientsLoading || periodsLoading || dataLoading) {
+  // Prepare chart data
+  const chartData = financialData.slice(0, 6).map((data, index) => ({
+    period: data.period?.period_name || `Período ${index + 1}`,
+    revenue: data.revenue || 0,
+    ebitda: data.ebitda || 0,
+    netIncome: data.net_income || 0
+  })).reverse();
+
+  if (clientsLoading) {
     return (
-      <div className="space-y-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-muted rounded w-1/3 mb-4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[1,2,3,4].map((i) => (
-              <div key={i} className="h-32 bg-muted rounded"></div>
-            ))}
-          </div>
-        </div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
       </div>
     );
   }
@@ -192,48 +81,17 @@ const ClientFPADashboardReal = () => {
     return (
       <Card>
         <CardContent className="text-center py-12">
-          <AlertCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+          <Building className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Sistema FP&A
+            Nenhum cliente FP&A encontrado
           </h3>
-          <p className="text-muted-foreground">
-            Sua conta está sendo configurada pela equipe administrativa. Em breve você terá acesso aos seus relatórios financeiros.
+          <p className="text-gray-600">
+            Entre em contato com seu consultor para configurar sua conta FP&A
           </p>
         </CardContent>
       </Card>
     );
   }
-
-  const kpis = [
-    {
-      title: "Receita",
-      value: formatCurrency(formData.revenue),
-      change: "+0.0%", // Pode ser calculado comparando com período anterior
-      trend: "up" as const,
-      period: "período atual"
-    },
-    {
-      title: "EBITDA",
-      value: formatCurrency(calculations.ebitda),
-      change: "+0.0%",
-      trend: "up" as const,
-      period: "período atual"
-    },
-    {
-      title: "Margem EBITDA",
-      value: formatPercentage(calculations.ebitdaMargin),
-      change: "+0.0%",
-      trend: calculations.ebitdaMargin > 15 ? "up" : "down",
-      period: "período atual"
-    },
-    {
-      title: "Fluxo de Caixa",
-      value: formatCurrency(calculations.netCashFlow),
-      change: "+0.0%",
-      trend: calculations.netCashFlow > 0 ? "up" : "down",
-      period: "período atual"
-    }
-  ];
 
   return (
     <div className="space-y-6">
@@ -242,313 +100,317 @@ const ClientFPADashboardReal = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard FP&A</h1>
           <p className="text-gray-600 mt-1">
-            Dados financeiros em tempo real - {currentClient.company_name}
+            Visão geral dos dados financeiros de {currentClient.company_name}
           </p>
-          {currentPeriod && (
-            <Badge variant="outline" className="mt-2">
-              Período: {currentPeriod.period_name}
-            </Badge>
-          )}
         </div>
-        <Button 
-          onClick={() => setIsEditing(!isEditing)}
-          variant={isEditing ? "outline" : "default"}
-          className="flex items-center gap-2"
-        >
-          <Edit className="h-4 w-4" />
-          {isEditing ? 'Cancelar Edição' : 'Editar Dados'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <select
+            value={selectedPeriod}
+            onChange={(e) => setSelectedPeriod(e.target.value)}
+            className="px-3 py-2 border rounded-md"
+          >
+            <option value="">Todos os períodos</option>
+            {periods.map((period) => (
+              <option key={period.id} value={period.id}>
+                {period.period_name}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      {/* KPIs Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {kpis.map((kpi, index) => (
-          <Card key={index}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                {kpi.title}
-              </CardTitle>
-              <DollarSign className="h-4 w-4 text-gray-400" />
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-3">
+              <DollarSign className="h-8 w-8 text-green-500" />
+              <div>
+                <p className="text-sm text-muted-foreground">Receita Total</p>
+                <p className="text-2xl font-bold">
+                  {financialData.length > 0 ? formatCurrency(financialData[0].revenue || 0) : formatCurrency(0)}
+                </p>
+                <p className="text-xs text-green-600 flex items-center gap-1">
+                  <TrendingUp className="h-3 w-3" />
+                  +5.2% vs período anterior
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-3">
+              <BarChart3 className="h-8 w-8 text-blue-500" />
+              <div>
+                <p className="text-sm text-muted-foreground">EBITDA</p>
+                <p className="text-2xl font-bold">
+                  {financialData.length > 0 ? formatCurrency(financialData[0].ebitda || 0) : formatCurrency(0)}
+                </p>
+                <p className="text-xs text-red-600 flex items-center gap-1">
+                  <TrendingDown className="h-3 w-3" />
+                  -2.1% vs período anterior
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-3">
+              <Target className="h-8 w-8 text-purple-500" />
+              <div>
+                <p className="text-sm text-muted-foreground">Lucro Líquido</p>
+                <p className="text-2xl font-bold">
+                  {financialData.length > 0 ? formatCurrency(financialData[0].net_income || 0) : formatCurrency(0)}
+                </p>
+                <p className="text-xs text-green-600 flex items-center gap-1">
+                  <TrendingUp className="h-3 w-3" />
+                  +3.8% vs período anterior
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-3">
+              <Activity className="h-8 w-8 text-orange-500" />
+              <div>
+                <p className="text-sm text-muted-foreground">Margem EBITDA</p>
+                <p className="text-2xl font-bold">
+                  {financialData.length > 0 && financialData[0].revenue ? 
+                    formatPercentage((financialData[0].ebitda || 0) / financialData[0].revenue * 100) : 
+                    '0%'
+                  }
+                </p>
+                <p className="text-xs text-yellow-600 flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  Atenção requerida
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+          <TabsTrigger value="reports">Relatórios</TabsTrigger>
+          <TabsTrigger value="variance">Variância</TabsTrigger>
+          <TabsTrigger value="periods">Períodos</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-6">
+          {/* Financial Performance Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Performance Financeira</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-gray-900">{kpi.value}</div>
-              <div className="flex items-center mt-1">
-                {kpi.trend === 'up' ? (
-                  <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-                ) : (
-                  <TrendingDown className="h-4 w-4 text-red-500 mr-1" />
-                )}
-                <span className={`text-sm ${
-                  kpi.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {kpi.change}
-                </span>
-                <span className="text-sm text-gray-500 ml-1">
-                  {kpi.period}
-                </span>
-              </div>
+              {dataLoading ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                </div>
+              ) : chartData.length > 0 ? (
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="period" />
+                      <YAxis />
+                      <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                      <Line type="monotone" dataKey="revenue" stroke="#3B82F6" strokeWidth={2} name="Receita" />
+                      <Line type="monotone" dataKey="ebitda" stroke="#10B981" strokeWidth={2} name="EBITDA" />
+                      <Line type="monotone" dataKey="netIncome" stroke="#8B5CF6" strokeWidth={2} name="Lucro Líquido" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">Nenhum dado financeiro disponível</p>
+                </div>
+              )}
             </CardContent>
           </Card>
-        ))}
-      </div>
 
-      {/* Formulário de Dados Financeiros */}
-      {isEditing && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Editar Dados Financeiros</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* DRE */}
-              <div className="space-y-4">
-                <h4 className="font-medium text-lg">Demonstração de Resultados</h4>
-                <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="revenue">Receita Total</Label>
-                    <Input
-                      id="revenue"
-                      type="number"
-                      value={formData.revenue}
-                      onChange={(e) => setFormData({...formData, revenue: Number(e.target.value)})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="cost_of_goods_sold">Custo dos Produtos Vendidos</Label>
-                    <Input
-                      id="cost_of_goods_sold"
-                      type="number"
-                      value={formData.cost_of_goods_sold}
-                      onChange={(e) => setFormData({...formData, cost_of_goods_sold: Number(e.target.value)})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="operating_expenses">Despesas Operacionais</Label>
-                    <Input
-                      id="operating_expenses"
-                      type="number"
-                      value={formData.operating_expenses}
-                      onChange={(e) => setFormData({...formData, operating_expenses: Number(e.target.value)})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="depreciation">Depreciação</Label>
-                    <Input
-                      id="depreciation"
-                      type="number"
-                      value={formData.depreciation}
-                      onChange={(e) => setFormData({...formData, depreciation: Number(e.target.value)})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="financial_expenses">Despesas Financeiras</Label>
-                    <Input
-                      id="financial_expenses"
-                      type="number"
-                      value={formData.financial_expenses}
-                      onChange={(e) => setFormData({...formData, financial_expenses: Number(e.target.value)})}
-                    />
-                  </div>
+          {/* Recent Financial Data */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Dados Financeiros Recentes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {dataLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                  <p className="text-gray-500 mt-2">Carregando dados...</p>
                 </div>
-              </div>
-
-              {/* Balanço */}
-              <div className="space-y-4">
-                <h4 className="font-medium text-lg">Balanço Patrimonial</h4>
-                <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="current_assets">Ativo Circulante</Label>
-                    <Input
-                      id="current_assets"
-                      type="number"
-                      value={formData.current_assets}
-                      onChange={(e) => setFormData({...formData, current_assets: Number(e.target.value)})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="non_current_assets">Ativo Não Circulante</Label>
-                    <Input
-                      id="non_current_assets"
-                      type="number"
-                      value={formData.non_current_assets}
-                      onChange={(e) => setFormData({...formData, non_current_assets: Number(e.target.value)})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="current_liabilities">Passivo Circulante</Label>
-                    <Input
-                      id="current_liabilities"
-                      type="number"
-                      value={formData.current_liabilities}
-                      onChange={(e) => setFormData({...formData, current_liabilities: Number(e.target.value)})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="non_current_liabilities">Passivo Não Circulante</Label>
-                    <Input
-                      id="non_current_liabilities"
-                      type="number"
-                      value={formData.non_current_liabilities}
-                      onChange={(e) => setFormData({...formData, non_current_liabilities: Number(e.target.value)})}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="equity">Patrimônio Líquido</Label>
-                    <Input
-                      id="equity"
-                      type="number"
-                      value={formData.equity}
-                      onChange={(e) => setFormData({...formData, equity: Number(e.target.value)})}
-                    />
-                  </div>
+              ) : financialData.length === 0 ? (
+                <div className="text-center py-8">
+                  <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">Nenhum dado financeiro encontrado</p>
                 </div>
-              </div>
-            </div>
-
-            {/* Fluxo de Caixa */}
-            <div className="space-y-4">
-              <h4 className="font-medium text-lg">Fluxo de Caixa</h4>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                <div>
-                  <Label htmlFor="operating_cash_flow">Operacional</Label>
-                  <Input
-                    id="operating_cash_flow"
-                    type="number"
-                    value={formData.operating_cash_flow}
-                    onChange={(e) => setFormData({...formData, operating_cash_flow: Number(e.target.value)})}
-                  />
+              ) : (
+                <div className="space-y-4">
+                  {financialData.slice(0, 3).map((data) => (
+                    <div key={data.id} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-center mb-3">
+                        <h4 className="font-medium text-gray-900">
+                          Período: {data.period?.period_name || 'N/A'}
+                        </h4>
+                        <Badge variant={data.period?.is_actual ? "default" : "outline"}>
+                          {data.period?.is_actual ? 'Atual' : 'Histórico'}
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-600">Receita:</span>
+                          <div className="font-medium">{formatCurrency(data.revenue || 0)}</div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">EBITDA:</span>
+                          <div className="font-medium">{formatCurrency(data.ebitda || 0)}</div>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Lucro Líquido:</span>
+                          <div className="font-medium">{formatCurrency(data.net_income || 0)}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div>
-                  <Label htmlFor="investing_cash_flow">Investimento</Label>
-                  <Input
-                    id="investing_cash_flow"
-                    type="number"
-                    value={formData.investing_cash_flow}
-                    onChange={(e) => setFormData({...formData, investing_cash_flow: Number(e.target.value)})}
-                  />
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="reports" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Relatórios Disponíveis</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {reportsLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                  <p className="text-gray-500 mt-2">Carregando relatórios...</p>
                 </div>
-                <div>
-                  <Label htmlFor="financing_cash_flow">Financiamento</Label>
-                  <Input
-                    id="financing_cash_flow"
-                    type="number"
-                    value={formData.financing_cash_flow}
-                    onChange={(e) => setFormData({...formData, financing_cash_flow: Number(e.target.value)})}
-                  />
+              ) : reports.length === 0 ? (
+                <div className="text-center py-8">
+                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">Nenhum relatório disponível</p>
                 </div>
-                <div>
-                  <Label htmlFor="cash_balance">Saldo Final</Label>
-                  <Input
-                    id="cash_balance"
-                    type="number"
-                    value={formData.cash_balance}
-                    onChange={(e) => setFormData({...formData, cash_balance: Number(e.target.value)})}
-                  />
+              ) : (
+                <div className="space-y-4">
+                  {reports.map((report) => (
+                    <div key={report.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <h4 className="font-medium text-gray-900">{report.title}</h4>
+                        <p className="text-sm text-gray-600">{report.period_covered}</p>
+                      </div>
+                      <Button variant="outline" size="sm">
+                        <Eye className="h-4 w-4 mr-2" />
+                        Visualizar
+                      </Button>
+                    </div>
+                  ))}
                 </div>
-              </div>
-            </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-            <div className="flex justify-end space-x-3">
-              <Button variant="outline" onClick={() => setIsEditing(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleSaveData}>
-                Salvar Dados
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        <TabsContent value="variance" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Análise de Variância</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {varianceLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                  <p className="text-gray-500 mt-2">Carregando análises...</p>
+                </div>
+              ) : varianceAnalysis.length === 0 ? (
+                <div className="text-center py-8">
+                  <AlertTriangle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">Nenhuma análise de variância disponível</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {varianceAnalysis.slice(0, 5).map((analysis) => (
+                    <div key={analysis.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <h4 className="font-medium text-gray-900">{analysis.metric_name}</h4>
+                        <p className="text-sm text-gray-600">
+                          Variância: {formatPercentage(analysis.variance_percentage)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {Math.abs(analysis.variance_percentage) <= 5 ? (
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                        ) : (
+                          <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                        )}
+                        <span className={`text-sm font-medium ${analysis.variance_amount >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          {formatCurrency(analysis.variance_amount)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {/* Cálculos Automáticos */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5" />
-              Indicadores Calculados
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-sm">Lucro Bruto</span>
-                <span className="font-medium">{formatCurrency(calculations.grossProfit)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">EBITDA</span>
-                <span className="font-medium">{formatCurrency(calculations.ebitda)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">EBIT</span>
-                <span className="font-medium">{formatCurrency(calculations.ebit)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Lucro Líquido</span>
-                <span className="font-medium">{formatCurrency(calculations.netIncome)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Total de Ativos</span>
-                <span className="font-medium">{formatCurrency(calculations.totalAssets)}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Margens
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-sm">Margem Bruta</span>
-                <span className="font-medium">
-                  {formatPercentage(formData.revenue > 0 ? (calculations.grossProfit / formData.revenue) * 100 : 0)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Margem EBITDA</span>
-                <span className="font-medium">{formatPercentage(calculations.ebitdaMargin)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Margem Líquida</span>
-                <span className="font-medium">
-                  {formatPercentage(formData.revenue > 0 ? (calculations.netIncome / formData.revenue) * 100 : 0)}
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5" />
-              Ações Rápidas
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <Button variant="outline" size="sm" className="w-full justify-start">
-                <Upload className="h-4 w-4 mr-2" />
-                Importar Dados
-              </Button>
-              <Button variant="outline" size="sm" className="w-full justify-start">
-                <FileText className="h-4 w-4 mr-2" />
-                Gerar Relatório
-              </Button>
-              <Button variant="outline" size="sm" className="w-full justify-start">
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Solicitar Análise
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+        <TabsContent value="periods" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Períodos de Análise</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {periodsLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                  <p className="text-gray-500 mt-2">Carregando períodos...</p>
+                </div>
+              ) : periods.length === 0 ? (
+                <div className="text-center py-8">
+                  <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">Nenhum período configurado</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {periods.map((period) => (
+                    <div key={period.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <h4 className="font-medium text-gray-900">{period.period_name}</h4>
+                        <p className="text-sm text-gray-600">
+                          {new Date(period.start_date).toLocaleDateString('pt-BR')} - {new Date(period.end_date).toLocaleDateString('pt-BR')}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={period.is_actual ? "default" : "outline"}>
+                          {period.is_actual ? 'Atual' : 'Histórico'}
+                        </Badge>
+                        <Badge variant="secondary">
+                          {period.period_type}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

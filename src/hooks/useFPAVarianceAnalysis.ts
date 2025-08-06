@@ -2,10 +2,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-export const useFPAVarianceAnalysis = (clientId?: string, periodId?: string) => {
+export const useFPAVarianceAnalysis = (clientId?: string) => {
   return useQuery({
-    queryKey: ['fpa-variance-analysis', clientId, periodId],
+    queryKey: ['fpa-variance-analysis', clientId],
     queryFn: async () => {
+      console.log('🔍 Fetching FPA variance analysis for client:', clientId);
+      
       let query = supabase
         .from('fpa_variance_analysis')
         .select(`
@@ -19,15 +21,19 @@ export const useFPAVarianceAnalysis = (clientId?: string, periodId?: string) => 
         query = query.eq('fpa_client_id', clientId);
       }
       
-      if (periodId) {
-        query = query.eq('period_id', periodId);
-      }
-      
       const { data, error } = await query.order('created_at', { ascending: false });
       
-      if (error) throw error;
-      return data;
-    }
+      if (error) {
+        console.error('❌ Error fetching FPA variance analysis:', error);
+        throw error;
+      }
+      
+      console.log('✅ FPA variance analysis loaded:', data?.length, 'records');
+      return data || [];
+    },
+    enabled: !!clientId,
+    staleTime: 1000 * 60 * 5,
+    retry: 2
   });
 };
 

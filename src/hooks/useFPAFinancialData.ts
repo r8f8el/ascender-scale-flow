@@ -8,16 +8,20 @@ export const useFPAFinancialData = (clientId?: string) => {
     queryFn: async () => {
       console.log('🔍 Fetching FPA financial data for client:', clientId);
       
+      if (!clientId) {
+        console.log('❌ No client ID provided');
+        return [];
+      }
+      
       let query = supabase
         .from('fpa_financial_data')
         .select(`
           *,
-          fpa_client:fpa_clients(company_name)
+          fpa_client:fpa_clients(company_name),
+          period:fpa_periods(id, period_name, period_type, is_actual, start_date, end_date)
         `);
       
-      if (clientId) {
-        query = query.eq('fpa_client_id', clientId);
-      }
+      query = query.eq('fpa_client_id', clientId);
       
       const { data, error } = await query.order('created_at', { ascending: false });
       
