@@ -12,7 +12,6 @@ import Index from "@/pages/Index";
 import ClientLogin from "@/pages/ClientLogin";
 import AdminLogin from "@/pages/AdminLogin";
 import ClientArea from "@/pages/ClientArea";
-import ClientFPADashboard from "@/pages/client/fpa/ClientFPADashboard";
 import AdminArea from "@/pages/admin/AdminArea";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminProtectedRoute from "@/components/AdminProtectedRoute";
@@ -52,21 +51,17 @@ function App() {
               <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<Index />} />
-                <Route path="/login" element={<ClientLogin />} />
-                <Route path="/admin-login" element={<AdminLogin />} />
+                <Route path="/cliente/login" element={<ClientLogin />} />
+                <Route path="/admin/login" element={<AdminLogin />} />
                 
                 {/* Client Protected Routes */}
-                <Route path="/client/*" element={
+                <Route path="/cliente/*" element={
                   <ProtectedRoute>
-                    <Routes>
-                      <Route path="dashboard" element={<ClientArea />} />
-                      <Route path="fpa/*" element={<ClientFPADashboard />} />
-                      <Route path="*" element={<Navigate to="/client/dashboard" replace />} />
-                    </Routes>
+                    <ClientArea />
                   </ProtectedRoute>
                 } />
                 
-                {/* Admin Protected Routes - with wildcard to handle subroutes */}
+                {/* Admin Protected Routes */}
                 <Route path="/admin/*" element={
                   <AdminProtectedRoute>
                     <AdminArea />
