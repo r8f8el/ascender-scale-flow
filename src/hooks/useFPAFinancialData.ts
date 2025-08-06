@@ -10,7 +10,7 @@ export const useFPAFinancialData = (clientId?: string, periodId?: string) => {
         .from('fpa_financial_data')
         .select(`
           *,
-          fpa_client:fpa_clients(company_name),
+          fpa_client:fpa_clients!fpa_financial_data_fpa_client_id_fkey(company_name),
           period:fpa_periods(period_name, period_type)
         `);
       

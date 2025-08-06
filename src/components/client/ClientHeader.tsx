@@ -4,6 +4,7 @@ import { LogOut, Menu, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import NotificationCenter from '@/components/NotificationCenter';
+import { Logo } from '@/components/Logo';
 
 interface ClientHeaderProps {
   clientName?: string;
@@ -22,9 +23,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="text-xl font-bold text-blue-600">
-              Ascalate
-            </div>
+            <Logo className="h-8 w-auto" />
           </div>
 
           {/* User Info & Actions */}
