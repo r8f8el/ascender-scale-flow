@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 
 interface PerformanceMetrics {
@@ -24,6 +24,7 @@ class MonitoringService {
   private sessionId: string;
   private events: UserEvent[] = [];
   private performance: Partial<PerformanceMetrics> = {};
+  private loggedPages = new Set<string>();
   
   constructor() {
     this.sessionId = crypto.randomUUID();
@@ -38,7 +39,6 @@ class MonitoringService {
   }
 
   private initPerformanceTracking() {
-    // Track page load performance
     if (typeof window !== 'undefined' && 'performance' in window) {
       window.addEventListener('load', () => {
         setTimeout(() => {
@@ -46,43 +46,6 @@ class MonitoringService {
           this.performance.pageLoadTime = navigation.loadEventEnd - navigation.fetchStart;
         }, 0);
       });
-
-      // Track Core Web Vitals
-      this.trackCoreWebVitals();
-    }
-  }
-
-  private trackCoreWebVitals() {
-    // Simplified CWV tracking - em produção usar web-vitals library
-    if ('PerformanceObserver' in window) {
-      try {
-        // Largest Contentful Paint (LCP)
-        new PerformanceObserver((list) => {
-          const entries = list.getEntries();
-          const lastEntry = entries[entries.length - 1];
-          console.log('LCP:', lastEntry.startTime);
-          this.logEvent({
-            type: 'api_call',
-            page: window.location.pathname,
-            timestamp: Date.now(),
-            metadata: { metric: 'LCP', value: lastEntry.startTime }
-          });
-        }).observe({ entryTypes: ['largest-contentful-paint'] });
-
-        // Cumulative Layout Shift (CLS)
-        let clsValue = 0;
-        new PerformanceObserver((list) => {
-          for (const entry of list.getEntries()) {
-            if (!(entry as any).hadRecentInput) {
-              clsValue += (entry as any).value;
-            }
-          }
-          console.log('CLS:', clsValue);
-        }).observe({ entryTypes: ['layout-shift'] });
-
-      } catch (error) {
-        console.warn('Performance Observer not supported:', error);
-      }
     }
   }
 
@@ -93,11 +56,32 @@ class MonitoringService {
     };
     
     this.events.push(fullEvent);
-    console.log('Event logged:', fullEvent);
+    
+    // Only log in development for debugging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Event logged:', fullEvent);
+    }
+  }
 
-    // Em produção, enviar para serviço de analytics
-    if (process.env.NODE_ENV === 'production') {
-      this.sendToAnalytics(fullEvent);
+  logNavigation(pathname: string): void {
+    // Avoid duplicate navigation logs for the same page
+    const pageKey = pathname;
+    if (this.loggedPages.has(pageKey)) {
+      return;
+    }
+    
+    this.loggedPages.add(pageKey);
+    
+    this.logEvent({
+      type: 'navigation',
+      page: pathname,
+      timestamp: Date.now()
+    });
+
+    // Clean up old logged pages to prevent memory leaks
+    if (this.loggedPages.size > 50) {
+      const firstPage = this.loggedPages.values().next().value;
+      this.loggedPages.delete(firstPage);
     }
   }
 
@@ -124,14 +108,7 @@ class MonitoringService {
       metadata: { url, method, duration, status }
     });
 
-    // Track average API response time
     this.performance.apiResponseTime = duration;
-  }
-
-  private sendToAnalytics(event: UserEvent): void {
-    // Em produção, enviar para Google Analytics, Mixpanel, etc.
-    // fetch('/api/analytics', { method: 'POST', body: JSON.stringify(event) });
-    console.log('Would send to analytics:', event);
   }
 
   getPerformanceMetrics(): Partial<PerformanceMetrics> {
@@ -146,14 +123,14 @@ class MonitoringService {
 export const useMonitoring = () => {
   const location = useLocation();
   const monitoring = MonitoringService.getInstance();
+  const lastPathname = useRef<string>('');
 
   useEffect(() => {
-    // Log page navigation
-    monitoring.logEvent({
-      type: 'navigation',
-      page: location.pathname,
-      timestamp: Date.now()
-    });
+    // Only log if the pathname actually changed
+    if (location.pathname !== lastPathname.current) {
+      monitoring.logNavigation(location.pathname);
+      lastPathname.current = location.pathname;
+    }
   }, [location.pathname, monitoring]);
 
   const logClick = (element: string, metadata?: Record<string, any>) => {

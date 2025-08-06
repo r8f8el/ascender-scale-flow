@@ -11,7 +11,7 @@ export const useFPAReports = (clientId?: string) => {
         .from('fpa_reports')
         .select(`
           *,
-          fpa_client:fpa_clients(
+          fpa_client:fpa_clients!fpa_reports_fpa_client_id_fkey(
             id,
             company_name,
             client_profile_id
@@ -44,7 +44,7 @@ export const useClientFPAReports = () => {
         .from('fpa_reports')
         .select(`
           *,
-          fpa_client:fpa_clients!inner(
+          fpa_client:fpa_clients!fpa_reports_fpa_client_id_fkey!inner(
             id,
             company_name,
             client_profile_id
