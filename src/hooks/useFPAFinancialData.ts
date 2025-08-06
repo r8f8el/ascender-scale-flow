@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -13,17 +12,15 @@ export const useFPAFinancialData = (clientId?: string) => {
         return [];
       }
       
-      let query = supabase
+      const { data, error } = await supabase
         .from('fpa_financial_data')
         .select(`
           *,
-          fpa_client:fpa_clients(company_name),
-          period:fpa_periods(id, period_name, period_type, is_actual, start_date, end_date)
-        `);
-      
-      query = query.eq('fpa_client_id', clientId);
-      
-      const { data, error } = await query.order('created_at', { ascending: false });
+          fpa_client:fpa_clients!fpa_financial_data_fpa_client_id_fkey(company_name),
+          period:fpa_periods!fpa_financial_data_period_id_fkey(id, period_name, period_type, is_actual, start_date, end_date)
+        `)
+        .eq('fpa_client_id', clientId)
+        .order('created_at', { ascending: false });
       
       if (error) {
         console.error('❌ Error fetching FPA financial data:', error);

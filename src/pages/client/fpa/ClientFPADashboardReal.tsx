@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -62,12 +61,15 @@ const ClientFPADashboardReal = () => {
   };
 
   // Prepare chart data
-  const chartData = financialData.slice(0, 6).map((data, index) => ({
-    period: data.period?.period_name || `Período ${index + 1}`,
-    revenue: data.revenue || 0,
-    ebitda: data.ebitda || 0,
-    netIncome: data.net_income || 0
-  })).reverse();
+  const chartData = financialData.slice(0, 6).map((data, index) => {
+    const periodData = Array.isArray(data.period) ? data.period[0] : data.period;
+    return {
+      period: periodData?.period_name || `Período ${index + 1}`,
+      revenue: data.revenue || 0,
+      ebitda: data.ebitda || 0,
+      netIncome: data.net_income || 0
+    };
+  }).reverse();
 
   if (clientsLoading) {
     return (
@@ -257,32 +259,38 @@ const ClientFPADashboardReal = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {financialData.slice(0, 3).map((data) => (
-                    <div key={data.id} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-center mb-3">
-                        <h4 className="font-medium text-gray-900">
-                          Período: {data.period?.period_name || 'N/A'}
-                        </h4>
-                        <Badge variant={data.period?.is_actual ? "default" : "outline"}>
-                          {data.period?.is_actual ? 'Atual' : 'Histórico'}
-                        </Badge>
+                  {financialData.slice(0, 3).map((data) => {
+                    const periodData = Array.isArray(data.period) ? data.period[0] : data.period;
+                    const periodName = periodData?.period_name || 'N/A';
+                    const isActual = periodData?.is_actual || false;
+                    
+                    return (
+                      <div key={data.id} className="border rounded-lg p-4">
+                        <div className="flex justify-between items-center mb-3">
+                          <h4 className="font-medium text-gray-900">
+                            Período: {periodName}
+                          </h4>
+                          <Badge variant={isActual ? "default" : "outline"}>
+                            {isActual ? 'Atual' : 'Histórico'}
+                          </Badge>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <span className="text-gray-600">Receita:</span>
+                            <div className="font-medium">{formatCurrency(data.revenue || 0)}</div>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">EBITDA:</span>
+                            <div className="font-medium">{formatCurrency(data.ebitda || 0)}</div>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Lucro Líquido:</span>
+                            <div className="font-medium">{formatCurrency(data.net_income || 0)}</div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="grid grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <span className="text-gray-600">Receita:</span>
-                          <div className="font-medium">{formatCurrency(data.revenue || 0)}</div>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">EBITDA:</span>
-                          <div className="font-medium">{formatCurrency(data.ebitda || 0)}</div>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Lucro Líquido:</span>
-                          <div className="font-medium">{formatCurrency(data.net_income || 0)}</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>

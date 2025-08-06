@@ -366,7 +366,7 @@ const AdminFPADataIntegrationReal = () => {
                 ) : (
                   <div className="space-y-4">
                     {financialData.map((data) => {
-                      const periodData = data.period;
+                      const periodData = Array.isArray(data.period) ? data.period[0] : data.period;
                       const periodName = periodData?.period_name || 'N/A';
                       const isActual = periodData?.is_actual || false;
                       
