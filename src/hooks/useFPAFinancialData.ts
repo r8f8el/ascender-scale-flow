@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -12,7 +11,8 @@ export const useFPAFinancialData = (clientId?: string, periodId?: string) => {
         .from('fpa_financial_data')
         .select(`
           *,
-          fpa_client:fpa_clients!fpa_financial_data_fpa_client_id_fkey(company_name)
+          fpa_client:fpa_clients!fpa_financial_data_fpa_client_id_fkey(company_name),
+          period:fpa_periods!fpa_financial_data_period_id_fkey(id, period_name, period_type, is_actual, start_date, end_date)
         `);
       
       if (clientId) {
