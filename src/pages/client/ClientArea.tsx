@@ -33,6 +33,8 @@ const ClientArea = () => {
     navigate('/cliente/login');
   };
 
+  console.log('🔍 ClientArea: Renderizando com cliente:', client?.name);
+
   return (
     <div className="min-h-screen bg-background">
       <ClientHeader 
@@ -52,19 +54,19 @@ const ClientArea = () => {
           <Route path="/documents-advanced" element={<ClientDocumentsAdvanced />} />
           <Route path="/documents-new" element={<ClientDocumentsNew />} />
           <Route path="/requests" element={<ClientRequests />} />
-          <Route path="/schedule" element={<ClientSchedule />} />
-          <Route path="/contact" element={<ClientContact />} />
-          <Route path="/tickets" element={<ClientTickets />} />
-          <Route path="/tickets/:id" element={<ClientTicketDetail />} />
-          <Route path="/team" element={<ClientTeam />} />
+          <Route path="/cronograma" element={<ClientSchedule />} />
+          <Route path="/contato" element={<ClientContact />} />
+          <Route path="/chamados" element={<ClientTickets />} />
+          <Route path="/chamados/:id" element={<ClientTicketDetail />} />
+          <Route path="/equipe" element={<ClientTeam />} />
           
           {/* FP&A Routes */}
           <Route path="/fpa" element={<ClientFPADashboard />} />
           <Route path="/fpa/dashboard" element={<ClientFPADashboardReal />} />
-          <Route path="/fpa/data" element={<ClientFPAData />} />
-          <Route path="/fpa/reports" element={<ClientFPAReports />} />
-          <Route path="/fpa/scenarios" element={<ClientFPAScenarios />} />
-          <Route path="/fpa/communication" element={<ClientFPACommunication />} />
+          <Route path="/fpa/dados" element={<ClientFPAData />} />
+          <Route path="/fpa/relatorios" element={<ClientFPAReports />} />
+          <Route path="/fpa/cenarios" element={<ClientFPAScenarios />} />
+          <Route path="/fpa/comunicacao" element={<ClientFPACommunication />} />
         </Routes>
       </main>
     </div>

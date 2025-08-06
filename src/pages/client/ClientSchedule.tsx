@@ -3,208 +3,121 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Calendar, 
   Clock, 
-  User, 
-  AlertCircle,
+  Search, 
+  Filter,
+  Users,
   CheckCircle,
-  PlayCircle,
-  PauseCircle,
-  TrendingUp,
-  FileText
+  AlertTriangle,
+  Play
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
 
 const ClientSchedule = () => {
-  const { client } = useAuth();
-  const [selectedProject, setSelectedProject] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
-  console.log('📅 ClientSchedule - Cliente:', client?.name);
+  console.log('📅 ClientSchedule: Componente carregado');
 
-  // Dados do cronograma com mais detalhes
-  const projects = [
+  // Dados mockados do cronograma
+  const scheduleItems = [
     {
       id: '1',
-      title: 'Implementação Sistema FP&A',
-      description: 'Implementação completa do sistema de Financial Planning & Analysis',
-      status: 'em_andamento',
-      progress: 65,
-      start_date: '2024-01-15',
-      end_date: '2024-04-30',
+      title: 'Análise Financeira Inicial',
+      description: 'Revisão completa dos dados financeiros e setup inicial do projeto',
+      startDate: '2024-01-15',
+      endDate: '2024-01-25',
+      status: 'completed',
       responsible: 'Rafael Gontijo',
-      phases: [
-        {
-          id: '1',
-          name: 'Análise de Requisitos',
-          start_date: '2024-01-15',
-          end_date: '2024-01-30',
-          status: 'concluido',
-          progress: 100,
-          description: 'Levantamento completo dos requisitos do sistema'
-        },
-        {
-          id: '2',
-          name: 'Configuração Inicial',
-          start_date: '2024-02-01',
-          end_date: '2024-02-15',
-          status: 'em_andamento',
-          progress: 80,
-          description: 'Setup inicial do ambiente e configurações básicas'
-        },
-        {
-          id: '3',
-          name: 'Desenvolvimento Custom',
-          start_date: '2024-02-16',
-          end_date: '2024-03-30',
-          status: 'em_andamento',
-          progress: 40,
-          description: 'Desenvolvimento de funcionalidades customizadas'
-        },
-        {
-          id: '4',
-          name: 'Testes e Validação',
-          start_date: '2024-04-01',
-          end_date: '2024-04-15',
-          status: 'agendado',
-          progress: 0,
-          description: 'Testes completos e validação do sistema'
-        },
-        {
-          id: '5',
-          name: 'Go-live e Treinamento',
-          start_date: '2024-04-16',
-          end_date: '2024-04-30',
-          status: 'agendado',
-          progress: 0,
-          description: 'Lançamento do sistema e treinamento dos usuários'
-        }
-      ]
+      phase: 'Fase 1 - Setup',
+      progress: 100
     },
     {
       id: '2',
-      title: 'Migração de Dados Históricos',
-      description: 'Migração de dados financeiros dos últimos 3 anos',
-      status: 'agendado',
-      progress: 25,
-      start_date: '2024-02-01',
-      end_date: '2024-03-15',
+      title: 'Implementação Dashboard FP&A',
+      description: 'Desenvolvimento e configuração do dashboard de análise financeira',
+      startDate: '2024-01-26',
+      endDate: '2024-02-10',
+      status: 'in_progress',
       responsible: 'Ana Silva',
-      phases: [
-        {
-          id: '1',
-          name: 'Mapeamento de Dados',
-          start_date: '2024-02-01',
-          end_date: '2024-02-10',
-          status: 'concluido',
-          progress: 100,
-          description: 'Identificação e mapeamento dos dados a serem migrados'
-        },
-        {
-          id: '2',
-          name: 'Extração e Limpeza',
-          start_date: '2024-02-11',
-          end_date: '2024-02-25',
-          status: 'em_andamento',
-          progress: 60,
-          description: 'Extração e limpeza dos dados históricos'
-        },
-        {
-          id: '3',
-          name: 'Validação e Carga',
-          start_date: '2024-02-26',
-          end_date: '2024-03-15',
-          status: 'agendado',
-          progress: 0,
-          description: 'Validação e carga final dos dados'
-        }
-      ]
+      phase: 'Fase 2 - Desenvolvimento',
+      progress: 65
+    },
+    {
+      id: '3',
+      title: 'Treinamento da Equipe',
+      description: 'Sessões de treinamento para utilização das ferramentas',
+      startDate: '2024-02-11',
+      endDate: '2024-02-20',
+      status: 'pending',
+      responsible: 'Mariana Costa',
+      phase: 'Fase 3 - Implementação',
+      progress: 0
+    },
+    {
+      id: '4',
+      title: 'Entrega Final e Documentação',
+      description: 'Finalização do projeto e entrega da documentação completa',
+      startDate: '2024-02-21',
+      endDate: '2024-02-28',
+      status: 'pending',
+      responsible: 'Daniel Ascalate',
+      phase: 'Fase 4 - Entrega',
+      progress: 0
     }
   ];
 
+  const filteredItems = scheduleItems.filter(item => {
+    const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         item.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'em_andamento':
-        return <Badge className="bg-blue-100 text-blue-700"><PlayCircle className="h-3 w-3 mr-1" />Em Andamento</Badge>;
-      case 'agendado':
-        return <Badge variant="outline" className="bg-gray-100 text-gray-700"><Clock className="h-3 w-3 mr-1" />Agendado</Badge>;
-      case 'concluido':
+      case 'completed':
         return <Badge className="bg-green-100 text-green-700"><CheckCircle className="h-3 w-3 mr-1" />Concluído</Badge>;
-      case 'pausado':
-        return <Badge className="bg-yellow-100 text-yellow-700"><PauseCircle className="h-3 w-3 mr-1" />Pausado</Badge>;
+      case 'in_progress':
+        return <Badge className="bg-blue-100 text-blue-700"><Play className="h-3 w-3 mr-1" />Em Andamento</Badge>;
+      case 'pending':
+        return <Badge className="bg-yellow-100 text-yellow-700"><Clock className="h-3 w-3 mr-1" />Pendente</Badge>;
+      case 'delayed':
+        return <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" />Atrasado</Badge>;
       default:
         return <Badge variant="outline">Indefinido</Badge>;
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
-  };
-
-  const calculateDuration = (startDate: string, endDate: string) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return `${diffDays} dias`;
-  };
-
-  const calculateDaysRemaining = (endDate: string) => {
-    const end = new Date(endDate);
-    const now = new Date();
-    const diffTime = end.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 0 ? diffDays : 0;
+  const getProgressColor = (progress: number) => {
+    if (progress === 100) return 'bg-green-500';
+    if (progress >= 70) return 'bg-blue-500';
+    if (progress >= 40) return 'bg-yellow-500';
+    return 'bg-gray-300';
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Cronograma de Projetos</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Cronograma do Projeto</h1>
         <p className="text-gray-600 mt-1">
-          Acompanhe o progresso detalhado dos seus projetos
+          Acompanhe o andamento das atividades do seu projeto
         </p>
       </div>
 
-      {/* Resumo Executivo */}
+      {/* Estatísticas do Cronograma */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <TrendingUp className="h-8 w-8 text-blue-500" />
-              <div>
-                <p className="text-sm text-gray-600">Projetos Ativos</p>
-                <p className="text-2xl font-bold">
-                  {projects.filter(p => p.status === 'em_andamento').length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Clock className="h-8 w-8 text-orange-500" />
-              <div>
-                <p className="text-sm text-gray-600">Agendados</p>
-                <p className="text-2xl font-bold">
-                  {projects.filter(p => p.status === 'agendado').length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <CheckCircle className="h-8 w-8 text-green-500" />
               <div>
-                <p className="text-sm text-gray-600">Progresso Médio</p>
+                <p className="text-sm text-gray-600">Concluído</p>
                 <p className="text-2xl font-bold">
-                  {Math.round(projects.reduce((acc, p) => acc + p.progress, 0) / projects.length)}%
+                  {scheduleItems.filter(item => item.status === 'completed').length}
                 </p>
               </div>
             </div>
@@ -214,141 +127,141 @@ const ClientSchedule = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <User className="h-8 w-8 text-purple-500" />
+              <Play className="h-8 w-8 text-blue-500" />
               <div>
-                <p className="text-sm text-gray-600">Especialistas</p>
+                <p className="text-sm text-gray-600">Em Andamento</p>
                 <p className="text-2xl font-bold">
-                  {new Set(projects.map(p => p.responsible)).size}
+                  {scheduleItems.filter(item => item.status === 'in_progress').length}
                 </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <Clock className="h-8 w-8 text-yellow-500" />
+              <div>
+                <p className="text-sm text-gray-600">Pendente</p>
+                <p className="text-2xl font-bold">
+                  {scheduleItems.filter(item => item.status === 'pending').length}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <Calendar className="h-8 w-8 text-purple-500" />
+              <div>
+                <p className="text-sm text-gray-600">Total Atividades</p>
+                <p className="text-2xl font-bold">{scheduleItems.length}</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Lista de Projetos */}
-      <div className="space-y-6">
-        {projects.map((project) => (
-          <Card key={project.id} className="overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-xl">{project.title}</CardTitle>
-                  <p className="text-gray-600 mt-1">{project.description}</p>
-                </div>
-                {getStatusBadge(project.status)}
+      {/* Filtros */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filtros
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Buscar atividades..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="h-4 w-4 text-gray-500" />
-                  <div>
-                    <p className="font-medium">Período</p>
-                    <p className="text-gray-600">
-                      {formatDate(project.start_date)} - {formatDate(project.end_date)}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2 text-sm">
-                  <Clock className="h-4 w-4 text-gray-500" />
-                  <div>
-                    <p className="font-medium">Duração</p>
-                    <p className="text-gray-600">
-                      {calculateDuration(project.start_date, project.end_date)}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2 text-sm">
-                  <User className="h-4 w-4 text-gray-500" />
-                  <div>
-                    <p className="font-medium">Responsável</p>
-                    <p className="text-gray-600">{project.responsible}</p>
-                  </div>
-                </div>
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os status</SelectItem>
+                <SelectItem value="completed">Concluído</SelectItem>
+                <SelectItem value="in_progress">Em Andamento</SelectItem>
+                <SelectItem value="pending">Pendente</SelectItem>
+                <SelectItem value="delayed">Atrasado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
-                <div className="flex items-center gap-2 text-sm">
-                  <TrendingUp className="h-4 w-4 text-gray-500" />
-                  <div>
-                    <p className="font-medium">Restam</p>
-                    <p className="text-gray-600">
-                      {calculateDaysRemaining(project.end_date)} dias
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <div className="flex justify-between text-sm mb-1">
-                  <span>Progresso Geral</span>
-                  <span>{project.progress}%</span>
-                </div>
-                <Progress value={project.progress} className="h-2" />
-              </div>
-            </CardHeader>
-
+      {/* Lista de Atividades do Cronograma */}
+      <div className="space-y-4">
+        {filteredItems.map((item) => (
+          <Card key={item.id} className="hover:shadow-md transition-shadow">
             <CardContent className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h4 className="font-semibold">Fases do Projeto</h4>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setSelectedProject(selectedProject === project.id ? null : project.id)}
-                >
-                  {selectedProject === project.id ? 'Ocultar' : 'Ver'} Detalhes
-                </Button>
-              </div>
-
-              {selectedProject === project.id && (
-                <div className="space-y-4">
-                  {project.phases.map((phase, index) => (
-                    <div key={phase.id} className="border rounded-lg p-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-bold">
-                            {index + 1}
-                          </div>
-                          <div>
-                            <h5 className="font-medium">{phase.name}</h5>
-                            <p className="text-sm text-gray-600">{phase.description}</p>
-                          </div>
-                        </div>
-                        {getStatusBadge(phase.status)}
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3 text-sm">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-gray-400" />
-                          <span>{formatDate(phase.start_date)} - {formatDate(phase.end_date)}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-gray-400" />
-                          <span>{calculateDuration(phase.start_date, phase.end_date)}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex justify-between text-xs mb-1">
-                        <span>Progresso da Fase</span>
-                        <span>{phase.progress}%</span>
-                      </div>
-                      <Progress value={phase.progress} className="h-1" />
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-lg font-semibold text-gray-900">{item.title}</h3>
+                    {getStatusBadge(item.status)}
+                    <Badge variant="outline">{item.phase}</Badge>
+                  </div>
+                  <p className="text-gray-600 mb-3">{item.description}</p>
+                  
+                  {/* Informações da atividade */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Calendar className="h-4 w-4" />
+                      <span>Início: {new Date(item.startDate).toLocaleDateString('pt-BR')}</span>
                     </div>
-                  ))}
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Calendar className="h-4 w-4" />
+                      <span>Fim: {new Date(item.endDate).toLocaleDateString('pt-BR')}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Users className="h-4 w-4" />
+                      <span>Responsável: {item.responsible}</span>
+                    </div>
+                  </div>
+
+                  {/* Barra de Progresso */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Progresso</span>
+                      <span className="font-medium">{item.progress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full transition-all duration-300 ${getProgressColor(item.progress)}`}
+                        style={{ width: `${item.progress}%` }}
+                      ></div>
+                    </div>
+                  </div>
                 </div>
-              )}
+              </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {projects.length === 0 && (
+      {filteredItems.length === 0 && (
         <Card>
           <CardContent className="text-center py-12">
-            <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Nenhum cronograma disponível</h3>
+            <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Nenhuma atividade encontrada</h3>
             <p className="text-gray-600">
-              Seus cronogramas de projeto aparecerão aqui quando forem criados pela equipe.
+              {searchTerm || statusFilter !== 'all' 
+                ? 'Tente ajustar os filtros de busca'
+                : 'Não há atividades programadas no momento'
+              }
             </p>
           </CardContent>
         </Card>

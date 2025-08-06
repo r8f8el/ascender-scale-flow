@@ -33,7 +33,7 @@ export const ClientNavigation: React.FC = () => {
           Menu Principal
         </h3>
         <div className="space-y-1">
-          <NavLink to="/cliente" icon={<File size={20} />}>
+          <NavLink to="/cliente/dashboard" icon={<File size={20} />}>
             Dashboard
           </NavLink>
           <NavLink to="/cliente/equipe" icon={<Users size={20} />}>

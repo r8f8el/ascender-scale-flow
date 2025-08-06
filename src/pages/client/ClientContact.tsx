@@ -4,155 +4,230 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Mail, 
   Phone, 
   MapPin, 
-  Clock, 
+  Clock,
   MessageSquare,
   Send,
   User,
   Building
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 const ClientContact = () => {
-  const { client } = useAuth();
   const [formData, setFormData] = useState({
-    name: client?.name || '',
-    email: client?.email || '',
+    name: '',
+    email: '',
     subject: '',
-    priority: '',
     message: ''
   });
 
-  console.log('📞 ClientContact - Cliente:', client?.name);
+  console.log('📞 ClientContact: Componente carregado');
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [name]: value
     }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.subject || !formData.message) {
-      toast.error('Por favor, preencha o assunto e a mensagem');
-      return;
-    }
-
     console.log('📧 Enviando mensagem:', formData);
-    toast.success('Mensagem enviada com sucesso! Nossa equipe entrará em contato em breve.');
+    toast.success('Mensagem enviada com sucesso! Retornaremos em breve.');
     
     // Limpar formulário
-    setFormData(prev => ({
-      ...prev,
+    setFormData({
+      name: '',
+      email: '',
       subject: '',
-      priority: '',
       message: ''
-    }));
+    });
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Contato</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Entre em Contato</h1>
         <p className="text-gray-600 mt-1">
-          Entre em contato conosco para dúvidas ou suporte
+          Estamos aqui para ajudar. Entre em contato conosco através dos canais abaixo
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Informações de Contato */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Informações de Contato</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Mail className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="font-medium text-gray-900">Email</h3>
+                  <p className="text-gray-600">contato@ascalate.com.br</p>
+                  <p className="text-gray-600">suporte@ascalate.com.br</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Phone className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="font-medium text-gray-900">Telefone</h3>
+                  <p className="text-gray-600">(11) 3456-7890</p>
+                  <p className="text-gray-600">(11) 99999-0000</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <MapPin className="h-5 w-5 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="font-medium text-gray-900">Endereço</h3>
+                  <p className="text-gray-600">
+                    Rua Example, 123<br />
+                    São Paulo, SP - 01234-567
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <Clock className="h-5 w-5 text-orange-600" />
+                </div>
+                <div>
+                  <h3 className="font-medium text-gray-900">Horário de Atendimento</h3>
+                  <p className="text-gray-600">
+                    Segunda a Sexta: 8h às 18h<br />
+                    Sábado: 9h às 12h
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Canais de Atendimento Rápido */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Atendimento Rápido</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 gap-4">
+                <Button className="justify-start h-auto p-4" variant="outline">
+                  <MessageSquare className="h-5 w-5 mr-3" />
+                  <div className="text-left">
+                    <p className="font-medium">Chat Online</p>
+                    <p className="text-sm text-gray-600">Resposta imediata</p>
+                  </div>
+                </Button>
+
+                <Button className="justify-start h-auto p-4" variant="outline">
+                  <Phone className="h-5 w-5 mr-3" />
+                  <div className="text-left">
+                    <p className="font-medium">WhatsApp</p>
+                    <p className="text-sm text-gray-600">(11) 99999-0000</p>
+                  </div>
+                </Button>
+
+                <Button className="justify-start h-auto p-4" variant="outline">
+                  <Mail className="h-5 w-5 mr-3" />
+                  <div className="text-left">
+                    <p className="font-medium">Suporte Técnico</p>
+                    <p className="text-sm text-gray-600">suporte@ascalate.com.br</p>
+                  </div>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Formulário de Contato */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5" />
-              Enviar Mensagem
-            </CardTitle>
+            <CardTitle>Envie sua Mensagem</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nome
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                    Nome Completo
                   </label>
                   <div className="relative">
                     <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
-                      value={formData.name}
-                      onChange={(e) => handleInputChange('name', e.target.value)}
-                      placeholder="Seu nome"
-                      className="pl-10"
+                      id="name"
+                      name="name"
+                      type="text"
                       required
+                      placeholder="Seu nome completo"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      className="pl-10"
                     />
                   </div>
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                     Email
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
+                      id="email"
+                      name="email"
                       type="email"
-                      value={formData.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                      placeholder="seu@email.com"
-                      className="pl-10"
                       required
+                      placeholder="seu@email.com"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      className="pl-10"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Assunto
-                  </label>
+              <div>
+                <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
+                  Assunto
+                </label>
+                <div className="relative">
+                  <Building className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
-                    value={formData.subject}
-                    onChange={(e) => handleInputChange('subject', e.target.value)}
-                    placeholder="Assunto da mensagem"
+                    id="subject"
+                    name="subject"
+                    type="text"
                     required
+                    placeholder="Assunto da sua mensagem"
+                    value={formData.subject}
+                    onChange={handleInputChange}
+                    className="pl-10"
                   />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Prioridade
-                  </label>
-                  <Select value={formData.priority} onValueChange={(value) => handleInputChange('priority', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a prioridade" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="baixa">Baixa</SelectItem>
-                      <SelectItem value="media">Média</SelectItem>
-                      <SelectItem value="alta">Alta</SelectItem>
-                      <SelectItem value="urgente">Urgente</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
                   Mensagem
                 </label>
                 <Textarea
-                  value={formData.message}
-                  onChange={(e) => handleInputChange('message', e.target.value)}
-                  placeholder="Descreva sua dúvida ou solicitação..."
-                  rows={6}
+                  id="message"
+                  name="message"
                   required
+                  rows={5}
+                  placeholder="Digite sua mensagem aqui..."
+                  value={formData.message}
+                  onChange={handleInputChange}
                 />
               </div>
 
@@ -163,88 +238,6 @@ const ClientContact = () => {
             </form>
           </CardContent>
         </Card>
-
-        {/* Informações de Contato */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building className="h-5 w-5" />
-                Informações de Contato
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-start gap-3">
-                <Mail className="h-5 w-5 text-blue-500 mt-0.5" />
-                <div>
-                  <p className="font-medium">Email</p>
-                  <p className="text-gray-600">contato@ascalate.com.br</p>
-                  <p className="text-gray-600">suporte@ascalate.com.br</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <Phone className="h-5 w-5 text-green-500 mt-0.5" />
-                <div>
-                  <p className="font-medium">Telefone</p>
-                  <p className="text-gray-600">(11) 3456-7890</p>
-                  <p className="text-gray-600">(11) 98765-4321</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <MapPin className="h-5 w-5 text-red-500 mt-0.5" />
-                <div>
-                  <p className="font-medium">Endereço</p>
-                  <p className="text-gray-600">
-                    Av. Paulista, 1000<br />
-                    São Paulo - SP<br />
-                    CEP: 01310-100
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <Clock className="h-5 w-5 text-orange-500 mt-0.5" />
-                <div>
-                  <p className="font-medium">Horário de Atendimento</p>
-                  <p className="text-gray-600">
-                    Segunda a Sexta: 8h às 18h<br />
-                    Sábado: 9h às 12h
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Canais de Atendimento</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <p className="font-medium text-blue-900">Suporte Técnico</p>
-                <p className="text-sm text-blue-700">
-                  Para questões técnicas e problemas no sistema
-                </p>
-              </div>
-              
-              <div className="p-3 bg-green-50 rounded-lg">
-                <p className="font-medium text-green-900">Suporte Comercial</p>
-                <p className="text-sm text-green-700">
-                  Para dúvidas sobre contratos e serviços
-                </p>
-              </div>
-              
-              <div className="p-3 bg-orange-50 rounded-lg">
-                <p className="font-medium text-orange-900">Emergências</p>
-                <p className="text-sm text-orange-700">
-                  Para situações urgentes fora do horário comercial
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
       </div>
     </div>
   );
