@@ -1,3 +1,4 @@
+
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
@@ -7,9 +8,9 @@ import { useMonitoring } from "@/hooks/useMonitoring";
 
 // Pages
 import Index from "@/pages/Index";
-import Login from "@/pages/Login";
+import ClientLogin from "@/pages/ClientLogin";
 import AdminLogin from "@/pages/AdminLogin";
-import ClientDashboard from "@/pages/client/ClientDashboard";
+import ClientArea from "@/pages/ClientArea";
 import ClientFPADashboard from "@/pages/client/fpa/ClientFPADashboard";
 import AdminArea from "@/pages/admin/AdminArea";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -39,14 +40,14 @@ function App() {
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
+              <Route path="/login" element={<ClientLogin />} />
               <Route path="/admin-login" element={<AdminLogin />} />
               
               {/* Client Protected Routes */}
               <Route path="/client/*" element={
                 <ProtectedRoute>
                   <Routes>
-                    <Route path="dashboard" element={<ClientDashboard />} />
+                    <Route path="dashboard" element={<ClientArea />} />
                     <Route path="fpa/*" element={<ClientFPADashboard />} />
                     <Route path="*" element={<Navigate to="/client/dashboard" replace />} />
                   </Routes>

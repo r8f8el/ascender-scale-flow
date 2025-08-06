@@ -4,18 +4,16 @@ import AdminHeader from '@/components/admin/AdminHeader';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminDashboard from './AdminDashboard';
 
-// Existing components that were removed
+// Existing components that are available
 import ClientManagementFixed from '@/components/admin/ClientManagementFixed';
-import AdminDocumentManager from './AdminDocumentManager';
-import AdminTickets from './AdminTickets';
-import AdminProjects from './AdminProjects';
-import AdminLogs from './AdminLogs';
-import AdminApprovalFlows from './AdminApprovalFlows';
-import AdminSettings from './AdminSettings';
-import AdminCollaboratorManagement from './AdminCollaboratorManagement';
-import AdminProjectSchedules from './AdminProjectSchedules';
+import TicketsAdmin from './TicketsAdmin';
+import ProjectsAdmin from './ProjectsAdmin';
+import LogsAdmin from './LogsAdmin';
+import ConfiguracoesAdmin from './ConfiguracoesAdmin';
+import CollaboratorsAdmin from './CollaboratorsAdmin';
+import CronogramasAdmin from './CronogramasAdmin';
 
-// FP&A components that were removed
+// FP&A components
 import AdminFPAClientManagement from './fpa/AdminFPAClientManagement';
 import AdminFPADataIntegration from './fpa/AdminFPADataIntegration';
 import AdminFPAReportBuilder from './fpa/AdminFPAReportBuilder';
@@ -32,16 +30,16 @@ const AdminArea = () => {
             <Route path="/" element={<AdminDashboard />} />
             <Route path="/dashboard" element={<AdminDashboard />} />
             <Route path="/clients" element={<ClientManagementFixed />} />
-            <Route path="/documents" element={<AdminDocumentManager />} />
-            <Route path="/tickets" element={<AdminTickets />} />
-            <Route path="/projects" element={<AdminProjects />} />
-            <Route path="/logs" element={<AdminLogs />} />
-            <Route path="/approval-flows" element={<AdminApprovalFlows />} />
-            <Route path="/settings" element={<AdminSettings />} />
-            <Route path="/collaborators" element={<AdminCollaboratorManagement />} />
-            <Route path="/schedules" element={<AdminProjectSchedules />} />
+            <Route path="/documents" element={<div>Documentos - Em desenvolvimento</div>} />
+            <Route path="/tickets" element={<TicketsAdmin />} />
+            <Route path="/projects" element={<ProjectsAdmin />} />
+            <Route path="/logs" element={<LogsAdmin />} />
+            <Route path="/approval-flows" element={<div>Fluxos de Aprovação - Em desenvolvimento</div>} />
+            <Route path="/settings" element={<ConfiguracoesAdmin />} />
+            <Route path="/collaborators" element={<CollaboratorsAdmin />} />
+            <Route path="/schedules" element={<CronogramasAdmin />} />
             
-            {/* FP&A Routes - Restored */}
+            {/* FP&A Routes */}
             <Route path="/fpa/clients" element={<AdminFPAClientManagement />} />
             <Route path="/fpa/data-integration" element={<AdminFPADataIntegration />} />
             <Route path="/fpa/reports" element={<AdminFPAReportBuilder />} />
