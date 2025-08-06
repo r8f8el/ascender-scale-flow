@@ -1,4 +1,3 @@
-
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { LogOut } from 'lucide-react';
@@ -6,7 +5,7 @@ import { Chat } from '@/components/Chat';
 import { ClientHeader } from '../components/client/ClientHeader';
 import { ClientNavigation } from '../components/client/ClientNavigation';
 import { useResponsive } from '../hooks/useResponsive';
-import { ClientDocumentSync } from '@/components/client/ClientDocumentSync';
+import ClientDocumentSync from '@/components/client/ClientDocumentSync';
 
 // Client pages
 import ClientDocuments from './client/ClientDocuments';
