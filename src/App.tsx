@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import AuthProvider from "@/contexts/AuthContext";
-import { AdminAuthProvider } from "@/contexts/AdminAuthContext";
+import AdminAuthProvider from "@/contexts/AdminAuthContext";
 import { useMonitoring } from "@/hooks/useMonitoring";
 
 // Pages
@@ -32,11 +32,12 @@ const queryClient = new QueryClient();
 
 // Component to track navigation
 const NavigationTracker = () => {
-  const { trackEvent } = useMonitoring();
+  const { logClick } = useMonitoring();
   
   useEffect(() => {
-    trackEvent('navigation', window.location.pathname);
-  }, [trackEvent]);
+    // Log navigation event using logClick since trackEvent doesn't exist
+    logClick('navigation', { path: window.location.pathname });
+  }, [logClick]);
   
   return null;
 };
