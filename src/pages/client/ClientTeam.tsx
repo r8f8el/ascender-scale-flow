@@ -1,137 +1,147 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { 
   Users, 
+  Search, 
   Mail, 
-  Phone, 
-  Calendar, 
-  Award,
+  Phone,
+  Calendar,
   MapPin,
-  Briefcase,
+  Star,
+  MessageSquare,
   User,
-  MessageCircle
+  Shield,
+  CheckCircle
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const ClientTeam = () => {
-  const { client } = useAuth();
+  const { user } = useAuth();
+  const [searchTerm, setSearchTerm] = useState('');
 
-  console.log('👥 ClientTeam - Cliente:', client?.name);
+  console.log('👥 ClientTeam - Usuário:', user?.email);
 
   // Dados da equipe com informações completas
   const teamMembers = [
     {
       id: '1',
-      name: 'Daniel Ascalate',
-      role: 'Gerente de Projeto',
-      email: 'daniel@ascalate.com.br',
+      name: 'Rafael Gontijo',
+      role: 'Consultor Senior FP&A',
+      department: 'Análise Financeira',
+      email: 'rafael.gontijo@ascalate.com.br',
       phone: '(11) 99999-0001',
-      department: 'Gestão',
-      joinDate: '2020-01-15',
-      specialties: ['Gestão de Projetos', 'Consultoria Estratégica', 'Liderança'],
-      status: 'Ativo',
-      bio: 'Especialista em gestão de projetos com mais de 8 anos de experiência em consultoria empresarial.',
-      availability: 'Disponível'
+      avatar: 'RG',
+      status: 'online',
+      location: 'São Paulo, SP',
+      joinDate: '2023-01-15',
+      specialties: ['Modelagem Financeira', 'Análise de Variância', 'Cenários'],
+      isLead: true,
+      projectsCount: 8,
+      clientSatisfaction: 4.9
     },
     {
       id: '2',
-      name: 'Rafael Gontijo',
-      role: 'Consultor Senior FP&A',
-      email: 'rafael.gontijo@ascalate.com.br',
+      name: 'Daniel Ascalate',
+      role: 'Gerente de Projeto',
+      department: 'Gestão de Projetos',
+      email: 'daniel@ascalate.com.br',
       phone: '(11) 99999-0002',
-      department: 'Consultoria Financeira',
-      joinDate: '2021-03-20',
-      specialties: ['Análise Financeira', 'FP&A', 'Modelagem Financeira', 'Business Intelligence'],
-      status: 'Ativo',
-      bio: 'Especialista em FP&A com vasta experiência em modelagem financeira e análise de cenários.',
-      availability: 'Disponível'
+      avatar: 'DA',
+      status: 'busy',
+      location: 'São Paulo, SP',
+      joinDate: '2022-03-10',
+      specialties: ['Gestão Estratégica', 'Liderança de Equipe', 'Processos'],
+      isLead: true,
+      projectsCount: 15,
+      clientSatisfaction: 4.8
     },
     {
       id: '3',
       name: 'Ana Silva',
-      role: 'Analista de Sistemas',
+      role: 'Analista de Dados',
+      department: 'Business Intelligence',
       email: 'ana.silva@ascalate.com.br',
       phone: '(11) 99999-0003',
-      department: 'Tecnologia',
-      joinDate: '2022-06-10',
-      specialties: ['Desenvolvimento Web', 'Integração de Sistemas', 'Automação'],
-      status: 'Ativo',
-      bio: 'Desenvolvedora fullstack focada em soluções de integração e automação de processos.',
-      availability: 'Em reunião'
+      avatar: 'AS',
+      status: 'online',
+      location: 'São Paulo, SP',
+      joinDate: '2023-06-20',
+      specialties: ['Power BI', 'Automação', 'Dashboards'],
+      isLead: false,
+      projectsCount: 5,
+      clientSatisfaction: 4.7
     },
     {
       id: '4',
-      name: 'Carlos Santos',
+      name: 'Carlos Mendes',
       role: 'Consultor Financeiro',
-      email: 'carlos.santos@ascalate.com.br',
+      department: 'Consultoria',
+      email: 'carlos.mendes@ascalate.com.br',
       phone: '(11) 99999-0004',
-      department: 'Finanças',
-      joinDate: '2023-02-01',
-      specialties: ['Planejamento Financeiro', 'Controladoria', 'Análise de Investimentos'],
-      status: 'Ativo',
-      bio: 'Contador e consultor financeiro especializado em planejamento estratégico e controladoria.',
-      availability: 'Disponível'
+      avatar: 'CM',
+      status: 'away',
+      location: 'Rio de Janeiro, RJ',
+      joinDate: '2023-09-01',
+      specialties: ['Planejamento Orçamentário', 'Cash Flow', 'KPIs'],
+      isLead: false,
+      projectsCount: 3,
+      clientSatisfaction: 4.6
+    },
+    {
+      id: '5',
+      name: 'Mariana Costa',
+      role: 'Especialista em Implementação',
+      department: 'Tecnologia',
+      email: 'mariana.costa@ascalate.com.br',
+      phone: '(11) 99999-0005',
+      avatar: 'MC',
+      status: 'online',
+      location: 'São Paulo, SP',
+      joinDate: '2023-04-12',
+      specialties: ['Integração de Sistemas', 'Treinamentos', 'Suporte'],
+      isLead: false,
+      projectsCount: 6,
+      clientSatisfaction: 4.8
     }
   ];
 
+  const filteredMembers = teamMembers.filter(member =>
+    member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    member.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    member.department.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'Ativo':
-        return <Badge className="bg-green-100 text-green-700">Ativo</Badge>;
-      case 'Férias':
-        return <Badge className="bg-blue-100 text-blue-700">Férias</Badge>;
-      case 'Ausente':
-        return <Badge variant="outline" className="bg-gray-100 text-gray-700">Ausente</Badge>;
-      default:
-        return <Badge variant="outline">Indefinido</Badge>;
-    }
-  };
-
-  const getAvailabilityBadge = (availability: string) => {
-    switch (availability) {
-      case 'Disponível':
-        return <Badge className="bg-green-100 text-green-700">● Disponível</Badge>;
-      case 'Em reunião':
-        return <Badge className="bg-yellow-100 text-yellow-700">● Em reunião</Badge>;
-      case 'Ocupado':
-        return <Badge className="bg-red-100 text-red-700">● Ocupado</Badge>;
+      case 'online':
+        return <Badge className="bg-green-100 text-green-700">● Online</Badge>;
+      case 'busy':
+        return <Badge className="bg-yellow-100 text-yellow-700">● Ocupado</Badge>;
+      case 'away':
+        return <Badge className="bg-gray-100 text-gray-700">● Ausente</Badge>;
       default:
         return <Badge variant="outline">● Offline</Badge>;
     }
   };
 
-  const calculateExperience = (joinDate: string) => {
-    const start = new Date(joinDate);
-    const now = new Date();
-    const years = now.getFullYear() - start.getFullYear();
-    const months = now.getMonth() - start.getMonth();
-    
-    if (years === 0) {
-      return `${Math.max(1, months)} meses`;
-    } else if (months < 0) {
-      return `${years - 1} anos e ${12 + months} meses`;
-    } else {
-      return `${years} anos${months > 0 ? ` e ${months} meses` : ''}`;
-    }
+  const formatJoinDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR', {
+      month: 'long',
+      year: 'numeric'
+    });
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Nossa Equipe</h1>
-          <p className="text-gray-600 mt-1">
-            Conheça os profissionais dedicados ao seu projeto
-          </p>
-        </div>
-        
-        <div className="text-right">
-          <p className="text-sm text-gray-600">Total de membros</p>
-          <p className="text-2xl font-bold text-blue-600">{teamMembers.length}</p>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Nossa Equipe</h1>
+        <p className="text-gray-600 mt-1">
+          Conheça os especialistas dedicados ao seu projeto
+        </p>
       </div>
 
       {/* Estatísticas da Equipe */}
@@ -141,9 +151,21 @@ const ClientTeam = () => {
             <div className="flex items-center gap-3">
               <Users className="h-8 w-8 text-blue-500" />
               <div>
-                <p className="text-sm text-gray-600">Equipe Ativa</p>
+                <p className="text-sm text-gray-600">Total de Membros</p>
+                <p className="text-2xl font-bold">{teamMembers.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="h-8 w-8 text-green-500" />
+              <div>
+                <p className="text-sm text-gray-600">Online Agora</p>
                 <p className="text-2xl font-bold">
-                  {teamMembers.filter(member => member.status === 'Ativo').length}
+                  {teamMembers.filter(m => m.status === 'online').length}
                 </p>
               </div>
             </div>
@@ -153,11 +175,11 @@ const ClientTeam = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <Briefcase className="h-8 w-8 text-green-500" />
+              <Shield className="h-8 w-8 text-purple-500" />
               <div>
-                <p className="text-sm text-gray-600">Departamentos</p>
+                <p className="text-sm text-gray-600">Líderes de Projeto</p>
                 <p className="text-2xl font-bold">
-                  {new Set(teamMembers.map(member => member.department)).size}
+                  {teamMembers.filter(m => m.isLead).length}
                 </p>
               </div>
             </div>
@@ -167,25 +189,11 @@ const ClientTeam = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <Award className="h-8 w-8 text-purple-500" />
+              <Star className="h-8 w-8 text-orange-500" />
               <div>
-                <p className="text-sm text-gray-600">Especialidades</p>
+                <p className="text-sm text-gray-600">Satisfação Média</p>
                 <p className="text-2xl font-bold">
-                  {teamMembers.reduce((acc, member) => acc + member.specialties.length, 0)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Calendar className="h-8 w-8 text-orange-500" />
-              <div>
-                <p className="text-sm text-gray-600">Disponíveis</p>
-                <p className="text-2xl font-bold">
-                  {teamMembers.filter(m => m.availability === 'Disponível').length}
+                  {(teamMembers.reduce((acc, m) => acc + m.clientSatisfaction, 0) / teamMembers.length).toFixed(1)}
                 </p>
               </div>
             </div>
@@ -193,117 +201,166 @@ const ClientTeam = () => {
         </Card>
       </div>
 
-      {/* Membros da Equipe */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {teamMembers.map((member) => (
-          <Card key={member.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-16 w-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-xl font-bold">
-                    {member.name.split(' ').map(n => n[0]).join('')}
+      {/* Busca */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Buscar Membros da Equipe</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Buscar por nome, cargo ou departamento..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Lista da Equipe */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {filteredMembers.length === 0 ? (
+          <div className="lg:col-span-2">
+            <Card>
+              <CardContent className="text-center py-12">
+                <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Nenhum membro encontrado</h3>
+                <p className="text-gray-600">
+                  Tente ajustar sua busca para encontrar membros da equipe
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          filteredMembers.map((member) => (
+            <Card key={member.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  {/* Avatar */}
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                    {member.avatar}
                   </div>
-                  <div>
-                    <CardTitle className="text-lg">{member.name}</CardTitle>
-                    <p className="text-sm text-gray-600 font-medium">{member.role}</p>
-                    <div className="flex gap-2 mt-1">
+                  
+                  {/* Informações Principais */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-lg font-semibold text-gray-900 truncate">
+                        {member.name}
+                        {member.isLead && (
+                          <Shield className="inline ml-2 h-4 w-4 text-purple-500" />
+                        )}
+                      </h3>
                       {getStatusBadge(member.status)}
-                      {getAvailabilityBadge(member.availability)}
+                    </div>
+                    
+                    <p className="text-blue-600 font-medium mb-1">{member.role}</p>
+                    <p className="text-sm text-gray-600 mb-3">{member.department}</p>
+                    
+                    {/* Contato */}
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Mail className="h-4 w-4" />
+                        <span className="truncate">{member.email}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Phone className="h-4 w-4" />
+                        <span>{member.phone}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <MapPin className="h-4 w-4" />
+                        <span>{member.location}</span>
+                      </div>
+                    </div>
+
+                    {/* Estatísticas */}
+                    <div className="grid grid-cols-3 gap-3 mb-4 text-center">
+                      <div>
+                        <p className="text-lg font-bold text-blue-600">{member.projectsCount}</p>
+                        <p className="text-xs text-gray-600">Projetos</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-bold text-green-600">{member.clientSatisfaction}</p>
+                        <p className="text-xs text-gray-600">Satisfação</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-bold text-purple-600">
+                          {formatJoinDate(member.joinDate)}
+                        </p>
+                        <p className="text-xs text-gray-600">Desde</p>
+                      </div>
+                    </div>
+
+                    {/* Especialidades */}
+                    <div className="mb-4">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Especialidades:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {member.specialties.map((specialty, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {specialty}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Ações */}
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" className="flex-1">
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        Contatar
+                      </Button>
+                      <Button variant="outline" size="sm" className="flex-1">
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Agendar
+                      </Button>
                     </div>
                   </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Bio */}
-              <p className="text-sm text-gray-700">{member.bio}</p>
-              
-              {/* Informações de Contato */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <Mail className="h-4 w-4 text-gray-500" />
-                  <span className="text-gray-700">{member.email}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="h-4 w-4 text-gray-500" />
-                  <span className="text-gray-700">{member.phone}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-gray-500" />
-                  <span className="text-gray-700">{member.department}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="h-4 w-4 text-gray-500" />
-                  <span className="text-gray-700">
-                    {calculateExperience(member.joinDate)} na empresa
-                  </span>
-                </div>
-              </div>
-
-              {/* Especialidades */}
-              <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">Especialidades:</p>
-                <div className="flex flex-wrap gap-1">
-                  {member.specialties.map((specialty, index) => (
-                    <Badge key={index} variant="outline" className="text-xs">
-                      {specialty}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              {/* Botões de Ação */}
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex-1"
-                  onClick={() => window.location.href = `mailto:${member.email}`}
-                >
-                  <Mail className="h-4 w-4 mr-2" />
-                  Email
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => window.location.href = `/cliente/chat?member=${member.id}`}
-                >
-                  <MessageCircle className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
 
-      {/* Informações sobre Suporte */}
+      {/* Seção de Contato da Equipe */}
       <Card>
         <CardHeader>
-          <CardTitle>Como Entrar em Contato</CardTitle>
+          <CardTitle>Entre em Contato com a Equipe</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-2">📧 Email</h4>
-              <p className="text-gray-700 text-sm mb-3">
-                Para questões gerais, utilize o email da equipe ou entre em contato diretamente 
-                com o membro responsável pela sua área.
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <MessageSquare className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+              <h4 className="font-medium text-blue-900 mb-1">Chat Direto</h4>
+              <p className="text-sm text-blue-700 mb-3">
+                Converse diretamente com sua equipe
               </p>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => window.location.href = 'mailto:suporte@ascalate.com.br'}
-              >
-                suporte@ascalate.com.br
+              <Button size="sm" className="w-full">
+                Abrir Chat
               </Button>
             </div>
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-2">🕒 Horário de Atendimento</h4>
-              <p className="text-gray-700 text-sm">
-                <strong>Segunda a Sexta:</strong> 8h às 18h<br />
-                <strong>Sábado:</strong> 9h às 12h<br />
-                <strong>Emergências:</strong> 24/7 via chamado
+            
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <Calendar className="h-8 w-8 text-green-600 mx-auto mb-2" />
+              <h4 className="font-medium text-green-900 mb-1">Reunião</h4>
+              <p className="text-sm text-green-700 mb-3">
+                Agende uma reunião com a equipe
               </p>
+              <Button size="sm" variant="outline" className="w-full">
+                Agendar
+              </Button>
+            </div>
+            
+            <div className="text-center p-4 bg-purple-50 rounded-lg">
+              <Phone className="h-8 w-8 text-purple-600 mx-auto mb-2" />
+              <h4 className="font-medium text-purple-900 mb-1">Emergência</h4>
+              <p className="text-sm text-purple-700 mb-3">
+                Contato direto para questões urgentes
+              </p>
+              <Button size="sm" variant="outline" className="w-full">
+                Ligar
+              </Button>
             </div>
           </div>
         </CardContent>
