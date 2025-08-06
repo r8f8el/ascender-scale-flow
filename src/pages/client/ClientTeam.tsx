@@ -11,7 +11,8 @@ import {
   Award,
   MapPin,
   Briefcase,
-  User
+  User,
+  MessageCircle
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -20,7 +21,7 @@ const ClientTeam = () => {
 
   console.log('👥 ClientTeam - Cliente:', client?.name);
 
-  // Dados mockados da equipe
+  // Dados da equipe com informações completas
   const teamMembers = [
     {
       id: '1',
@@ -30,19 +31,23 @@ const ClientTeam = () => {
       phone: '(11) 99999-0001',
       department: 'Gestão',
       joinDate: '2020-01-15',
-      specialties: ['Gestão de Projetos', 'Consultoria Estratégica'],
-      status: 'Ativo'
+      specialties: ['Gestão de Projetos', 'Consultoria Estratégica', 'Liderança'],
+      status: 'Ativo',
+      bio: 'Especialista em gestão de projetos com mais de 8 anos de experiência em consultoria empresarial.',
+      availability: 'Disponível'
     },
     {
       id: '2',
       name: 'Rafael Gontijo',
-      role: 'Consultor Senior',
+      role: 'Consultor Senior FP&A',
       email: 'rafael.gontijo@ascalate.com.br',
       phone: '(11) 99999-0002',
-      department: 'Consultoria',
+      department: 'Consultoria Financeira',
       joinDate: '2021-03-20',
-      specialties: ['Análise Financeira', 'FP&A'],
-      status: 'Ativo'
+      specialties: ['Análise Financeira', 'FP&A', 'Modelagem Financeira', 'Business Intelligence'],
+      status: 'Ativo',
+      bio: 'Especialista em FP&A com vasta experiência em modelagem financeira e análise de cenários.',
+      availability: 'Disponível'
     },
     {
       id: '3',
@@ -52,8 +57,10 @@ const ClientTeam = () => {
       phone: '(11) 99999-0003',
       department: 'Tecnologia',
       joinDate: '2022-06-10',
-      specialties: ['Desenvolvimento', 'Integração de Sistemas'],
-      status: 'Ativo'
+      specialties: ['Desenvolvimento Web', 'Integração de Sistemas', 'Automação'],
+      status: 'Ativo',
+      bio: 'Desenvolvedora fullstack focada em soluções de integração e automação de processos.',
+      availability: 'Em reunião'
     },
     {
       id: '4',
@@ -63,8 +70,10 @@ const ClientTeam = () => {
       phone: '(11) 99999-0004',
       department: 'Finanças',
       joinDate: '2023-02-01',
-      specialties: ['Planejamento Financeiro', 'Controladoria'],
-      status: 'Ativo'
+      specialties: ['Planejamento Financeiro', 'Controladoria', 'Análise de Investimentos'],
+      status: 'Ativo',
+      bio: 'Contador e consultor financeiro especializado em planejamento estratégico e controladoria.',
+      availability: 'Disponível'
     }
   ];
 
@@ -78,6 +87,19 @@ const ClientTeam = () => {
         return <Badge variant="outline" className="bg-gray-100 text-gray-700">Ausente</Badge>;
       default:
         return <Badge variant="outline">Indefinido</Badge>;
+    }
+  };
+
+  const getAvailabilityBadge = (availability: string) => {
+    switch (availability) {
+      case 'Disponível':
+        return <Badge className="bg-green-100 text-green-700">● Disponível</Badge>;
+      case 'Em reunião':
+        return <Badge className="bg-yellow-100 text-yellow-700">● Em reunião</Badge>;
+      case 'Ocupado':
+        return <Badge className="bg-red-100 text-red-700">● Ocupado</Badge>;
+      default:
+        return <Badge variant="outline">● Offline</Badge>;
     }
   };
 
@@ -102,7 +124,7 @@ const ClientTeam = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Nossa Equipe</h1>
           <p className="text-gray-600 mt-1">
-            Conheça os profissionais que trabalham no seu projeto
+            Conheça os profissionais dedicados ao seu projeto
           </p>
         </div>
         
@@ -161,8 +183,10 @@ const ClientTeam = () => {
             <div className="flex items-center gap-3">
               <Calendar className="h-8 w-8 text-orange-500" />
               <div>
-                <p className="text-sm text-gray-600">Experiência Média</p>
-                <p className="text-lg font-bold">2+ anos</p>
+                <p className="text-sm text-gray-600">Disponíveis</p>
+                <p className="text-2xl font-bold">
+                  {teamMembers.filter(m => m.availability === 'Disponível').length}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -176,18 +200,24 @@ const ClientTeam = () => {
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <User className="h-6 w-6 text-blue-600" />
+                  <div className="h-16 w-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-xl font-bold">
+                    {member.name.split(' ').map(n => n[0]).join('')}
                   </div>
                   <div>
                     <CardTitle className="text-lg">{member.name}</CardTitle>
-                    <p className="text-sm text-gray-600">{member.role}</p>
+                    <p className="text-sm text-gray-600 font-medium">{member.role}</p>
+                    <div className="flex gap-2 mt-1">
+                      {getStatusBadge(member.status)}
+                      {getAvailabilityBadge(member.availability)}
+                    </div>
                   </div>
                 </div>
-                {getStatusBadge(member.status)}
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Bio */}
+              <p className="text-sm text-gray-700">{member.bio}</p>
+              
               {/* Informações de Contato */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm">
@@ -222,42 +252,57 @@ const ClientTeam = () => {
                 </div>
               </div>
 
-              {/* Botão de Contato */}
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full"
-                onClick={() => window.location.href = `mailto:${member.email}`}
-              >
-                <Mail className="h-4 w-4 mr-2" />
-                Enviar Email
-              </Button>
+              {/* Botões de Ação */}
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1"
+                  onClick={() => window.location.href = `mailto:${member.email}`}
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  Email
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => window.location.href = `/cliente/chat?member=${member.id}`}
+                >
+                  <MessageCircle className="h-4 w-4" />
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Informações Adicionais */}
+      {/* Informações sobre Suporte */}
       <Card>
         <CardHeader>
-          <CardTitle>Sobre Nossa Equipe</CardTitle>
+          <CardTitle>Como Entrar em Contato</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h4 className="font-semibold text-gray-900 mb-2">Missão da Equipe</h4>
-              <p className="text-gray-700 text-sm">
-                Nossa equipe multidisciplinar está comprometida em fornecer soluções 
-                inovadoras e personalizadas, garantindo o sucesso dos projetos dos nossos clientes 
-                através de expertise técnica e atendimento excepcional.
+              <h4 className="font-semibold text-gray-900 mb-2">📧 Email</h4>
+              <p className="text-gray-700 text-sm mb-3">
+                Para questões gerais, utilize o email da equipe ou entre em contato diretamente 
+                com o membro responsável pela sua área.
               </p>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => window.location.href = 'mailto:suporte@ascalate.com.br'}
+              >
+                suporte@ascalate.com.br
+              </Button>
             </div>
             <div>
-              <h4 className="font-semibold text-gray-900 mb-2">Disponibilidade</h4>
+              <h4 className="font-semibold text-gray-900 mb-2">🕒 Horário de Atendimento</h4>
               <p className="text-gray-700 text-sm">
-                Nossa equipe está disponível durante o horário comercial (8h às 18h, seg-sex) 
-                e oferece suporte de emergência 24/7 para questões críticas. 
-                Entre em contato conosco sempre que precisar.
+                <strong>Segunda a Sexta:</strong> 8h às 18h<br />
+                <strong>Sábado:</strong> 9h às 12h<br />
+                <strong>Emergências:</strong> 24/7 via chamado
               </p>
             </div>
           </div>

@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -8,20 +7,21 @@ export const useFPAVarianceAnalysis = (clientId?: string) => {
     queryFn: async () => {
       console.log('🔍 Fetching FPA variance analysis for client:', clientId);
       
-      let query = supabase
+      if (!clientId) {
+        console.log('❌ No client ID provided');
+        return [];
+      }
+      
+      const { data, error } = await supabase
         .from('fpa_variance_analysis')
         .select(`
           *,
-          fpa_client:fpa_clients(company_name),
+          fpa_client:fpa_clients!fpa_variance_analysis_fpa_client_id_fkey(company_name),
           period:fpa_periods(period_name, period_type),
-          created_by_user:admin_profiles(name)
-        `);
-      
-      if (clientId) {
-        query = query.eq('fpa_client_id', clientId);
-      }
-      
-      const { data, error } = await query.order('created_at', { ascending: false });
+          created_by_user:admin_profiles!fpa_variance_analysis_created_by_fkey(name)
+        `)
+        .eq('fpa_client_id', clientId)
+        .order('created_at', { ascending: false });
       
       if (error) {
         console.error('❌ Error fetching FPA variance analysis:', error);

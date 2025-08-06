@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -8,19 +7,20 @@ export const useFPAReports = (clientId?: string) => {
     queryFn: async () => {
       console.log('🔍 Fetching FPA reports for client:', clientId);
       
-      let query = supabase
+      if (!clientId) {
+        console.log('❌ No client ID provided');
+        return [];
+      }
+      
+      const { data, error } = await supabase
         .from('fpa_reports')
         .select(`
           *,
           fpa_client:fpa_clients(company_name),
-          created_by_user:admin_profiles(name)
-        `);
-      
-      if (clientId) {
-        query = query.eq('fpa_client_id', clientId);
-      }
-      
-      const { data, error } = await query.order('created_at', { ascending: false });
+          created_by_user:admin_profiles!fpa_reports_created_by_fkey(name)
+        `)
+        .eq('fpa_client_id', clientId)
+        .order('created_at', { ascending: false });
       
       if (error) {
         console.error('❌ Error fetching FPA reports:', error);
