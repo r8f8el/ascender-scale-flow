@@ -1,233 +1,189 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Calendar, 
-  Clock, 
-  Plus, 
-  MapPin,
-  Users,
-  Video
-} from 'lucide-react';
+import { Calendar, Clock, User, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
 
 const ClientSchedule = () => {
-  const { user, client } = useAuth();
+  const { client } = useAuth();
+
+  console.log('📅 ClientSchedule - Cliente:', client?.name);
 
   // Dados mockados para demonstração
-  const events = [
+  const scheduleData = [
     {
       id: '1',
-      title: 'Reunião de Acompanhamento',
-      description: 'Revisão mensal dos indicadores financeiros',
-      date: '2024-01-20',
-      time: '14:00',
-      duration: 60,
-      type: 'meeting',
-      location: 'Sala de Reuniões - Online',
-      attendees: ['Rafael Gontijo', 'Daniel Ascalate']
+      project_title: 'Implementação Sistema ERP',
+      phase: 'Análise de Requisitos',
+      start_date: '2024-01-15',
+      end_date: '2024-01-30',
+      status: 'em_andamento',
+      responsible: 'João Silva',
+      description: 'Levantamento e documentação dos requisitos do sistema'
     },
     {
       id: '2',
-      title: 'Apresentação de Resultados',
-      description: 'Apresentação dos resultados do Q1',
-      date: '2024-01-25',
-      time: '10:00',
-      duration: 90,
-      type: 'presentation',
-      location: 'Auditório Principal',
-      attendees: ['Equipe FP&A', 'Diretoria']
+      project_title: 'Migração de Dados',
+      phase: 'Preparação',
+      start_date: '2024-02-01',
+      end_date: '2024-02-15',
+      status: 'agendado',
+      responsible: 'Maria Santos',
+      description: 'Preparação da estrutura para migração dos dados legados'
     },
     {
       id: '3',
-      title: 'Workshop de Planejamento',
-      description: 'Sessão de planejamento estratégico para 2024',
-      date: '2024-01-30',
-      time: '09:00',
-      duration: 240,
-      type: 'workshop',
-      location: 'Centro de Treinamento',
-      attendees: ['Toda a equipe']
+      project_title: 'Treinamento de Usuários',
+      phase: 'Capacitação',
+      start_date: '2024-03-01',
+      end_date: '2024-03-10',
+      status: 'agendado',
+      responsible: 'Pedro Costa',
+      description: 'Treinamento dos usuários finais no novo sistema'
     }
   ];
 
-  const getEventIcon = (type: string) => {
-    switch (type) {
-      case 'meeting':
-        return <Users className="h-5 w-5" />;
-      case 'presentation':
-        return <Video className="h-5 w-5" />;
-      case 'workshop':
-        return <Calendar className="h-5 w-5" />;
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'em_andamento':
+        return <Badge className="bg-blue-100 text-blue-700">Em Andamento</Badge>;
+      case 'agendado':
+        return <Badge variant="outline" className="bg-gray-100 text-gray-700">Agendado</Badge>;
+      case 'concluido':
+        return <Badge className="bg-green-100 text-green-700">Concluído</Badge>;
       default:
-        return <Calendar className="h-5 w-5" />;
+        return <Badge variant="outline">Indefinido</Badge>;
     }
   };
 
-  const getEventBadge = (type: string) => {
-    switch (type) {
-      case 'meeting':
-        return <Badge className="bg-blue-100 text-blue-700">Reunião</Badge>;
-      case 'presentation':
-        return <Badge className="bg-green-100 text-green-700">Apresentação</Badge>;
-      case 'workshop':
-        return <Badge className="bg-purple-100 text-purple-700">Workshop</Badge>;
-      default:
-        return <Badge variant="outline">Evento</Badge>;
-    }
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
-  const handleNewEvent = () => {
-    toast.info('Funcionalidade de agendamento em desenvolvimento');
+  const calculateDuration = (startDate: string, endDate: string) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return `${diffDays} dias`;
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Minha Agenda</h1>
-          <p className="text-gray-600 mt-1">
-            Acompanhe seus compromissos e reuniões
-          </p>
-        </div>
-        <Button onClick={handleNewEvent}>
-          <Plus className="h-4 w-4 mr-2" />
-          Agendar Reunião
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Cronograma de Projetos</h1>
+        <p className="text-gray-600 mt-1">
+          Acompanhe o andamento e prazos dos seus projetos
+        </p>
       </div>
 
-      {/* Visão do Calendário */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Calendário Principal */}
-        <div className="lg:col-span-2">
+      {/* Resumo */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <Calendar className="h-8 w-8 text-blue-500" />
+              <div>
+                <p className="text-sm text-gray-600">Projetos Ativos</p>
+                <p className="text-2xl font-bold">
+                  {scheduleData.filter(item => item.status === 'em_andamento').length}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <Clock className="h-8 w-8 text-orange-500" />
+              <div>
+                <p className="text-sm text-gray-600">Próximos Marcos</p>
+                <p className="text-2xl font-bold">
+                  {scheduleData.filter(item => item.status === 'agendado').length}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <User className="h-8 w-8 text-green-500" />
+              <div>
+                <p className="text-sm text-gray-600">Responsáveis</p>
+                <p className="text-2xl font-bold">
+                  {new Set(scheduleData.map(item => item.responsible)).size}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Lista de Atividades */}
+      <div className="space-y-4">
+        {scheduleData.length === 0 ? (
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Janeiro 2024
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-7 gap-2 mb-4">
-                {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day) => (
-                  <div key={day} className="p-2 text-center text-sm font-medium text-gray-500">
-                    {day}
-                  </div>
-                ))}
-              </div>
-              <div className="grid grid-cols-7 gap-2">
-                {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
-                  const hasEvent = events.some(event => 
-                    new Date(event.date).getDate() === day
-                  );
-                  return (
-                    <div 
-                      key={day} 
-                      className={`p-2 text-center text-sm cursor-pointer rounded-lg hover:bg-gray-100 ${
-                        hasEvent ? 'bg-blue-100 text-blue-700 font-medium' : ''
-                      }`}
-                    >
-                      {day}
-                    </div>
-                  );
-                })}
-              </div>
+            <CardContent className="text-center py-12">
+              <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Nenhum cronograma disponível</h3>
+              <p className="text-gray-600">
+                Seus cronogramas de projeto aparecerão aqui quando forem criados pela equipe.
+              </p>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Próximos Eventos */}
-        <div>
-          <Card>
-            <CardHeader>
-              <CardTitle>Próximos Eventos</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {events.slice(0, 3).map((event) => (
-                <div key={event.id} className="p-3 border rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 bg-gray-100 rounded-lg">
-                      {getEventIcon(event.type)}
+        ) : (
+          scheduleData.map((item) => (
+            <Card key={item.id} className="hover:shadow-md transition-shadow">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="text-lg">{item.project_title}</CardTitle>
+                    <p className="text-sm text-gray-600 mt-1">Fase: {item.phase}</p>
+                  </div>
+                  {getStatusBadge(item.status)}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-700 mb-4">{item.description}</p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-gray-500" />
+                    <div>
+                      <p className="font-medium">Período</p>
+                      <p className="text-gray-600">
+                        {formatDate(item.start_date)} - {formatDate(item.end_date)}
+                      </p>
                     </div>
-                    <div className="flex-1">
-                      <h4 className="font-medium text-sm mb-1">{event.title}</h4>
-                      <div className="flex items-center gap-1 text-xs text-gray-500 mb-2">
-                        <Clock className="h-3 w-3" />
-                        {new Date(event.date).toLocaleDateString('pt-BR')} às {event.time}
-                      </div>
-                      {getEventBadge(event.type)}
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-gray-500" />
+                    <div>
+                      <p className="font-medium">Duração</p>
+                      <p className="text-gray-600">
+                        {calculateDuration(item.start_date, item.end_date)}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-gray-500" />
+                    <div>
+                      <p className="font-medium">Responsável</p>
+                      <p className="text-gray-600">{item.responsible}</p>
                     </div>
                   </div>
                 </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
-
-      {/* Lista Detalhada de Eventos */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Todos os Eventos</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {events.length === 0 ? (
-              <div className="text-center py-8">
-                <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Nenhum evento agendado</h3>
-                <p className="text-gray-600">
-                  Seus próximos compromissos aparecerão aqui
-                </p>
-              </div>
-            ) : (
-              events.map((event) => (
-                <Card key={event.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-4">
-                        <div className="p-3 bg-gray-100 rounded-lg">
-                          {getEventIcon(event.type)}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h3 className="text-lg font-semibold">{event.title}</h3>
-                            {getEventBadge(event.type)}
-                          </div>
-                          <p className="text-gray-600 mb-3">{event.description}</p>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-500">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4" />
-                              <span>{new Date(event.date).toLocaleDateString('pt-BR')}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-4 w-4" />
-                              <span>{event.time} ({event.duration}min)</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <MapPin className="h-4 w-4" />
-                              <span>{event.location}</span>
-                            </div>
-                          </div>
-                          <div className="mt-2">
-                            <div className="flex items-center gap-2 text-sm text-gray-500">
-                              <Users className="h-4 w-4" />
-                              <span>Participantes: {event.attendees.join(', ')}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
