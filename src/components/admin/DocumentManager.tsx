@@ -85,8 +85,7 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
         .from('client_documents')
         .select(`
           *,
-          client_profiles!client_documents_user_id_fkey(name, company),
-          document_categories!client_documents_category_id_fkey(name, color, icon)
+          client_profiles!client_documents_user_id_fkey(name, company)
         `);
 
       if (!isAdmin && user?.id) {
@@ -99,12 +98,17 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
 
       if (error) throw error;
       
-      // Fix the type mapping
-      const mappedDocuments = (data || []).map(doc => ({
-        ...doc,
-        user: Array.isArray(doc.client_profiles) ? doc.client_profiles[0] : doc.client_profiles,
-        category: doc.document_categories?.name || doc.category || 'Outros'
-      }));
+      // Map the documents and handle category names
+      const mappedDocuments = (data || []).map(doc => {
+        // Find category name from documentCategories
+        const categoryData = documentCategories.find(cat => cat.id === doc.category_id);
+        
+        return {
+          ...doc,
+          user: Array.isArray(doc.client_profiles) ? doc.client_profiles[0] : doc.client_profiles,
+          category: categoryData?.name || doc.category || 'Outros'
+        };
+      });
       
       setDocuments(mappedDocuments as Document[]);
     } catch (error) {
@@ -125,7 +129,7 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
     if (!categoriesLoading) {
       fetchDocuments();
     }
-  }, [selectedClient, user?.id, isAdmin, categoriesLoading]);
+  }, [selectedClient, user?.id, isAdmin, categoriesLoading, documentCategories]);
 
   const handleDelete = async (documentId: string) => {
     if (!confirm('Tem certeza que deseja excluir este documento?')) return;
