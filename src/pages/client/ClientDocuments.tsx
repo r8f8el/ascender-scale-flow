@@ -5,7 +5,6 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { 
@@ -20,8 +19,7 @@ import {
   File,
   Trash2,
   RefreshCw,
-  X,
-  Plus
+  X
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -149,7 +147,13 @@ const ClientDocuments = () => {
   };
 
   const uploadSingleFile = async (uploadFile: UploadFile, index: number): Promise<boolean> => {
-    if (!client?.id) return false;
+    if (!client?.id) {
+      updateUploadFile(index, { 
+        status: 'error', 
+        error: 'Cliente não identificado' 
+      });
+      return false;
+    }
 
     if (!validateFile(uploadFile.file)) {
       updateUploadFile(index, { 
@@ -160,7 +164,7 @@ const ClientDocuments = () => {
     }
 
     try {
-      updateUploadFile(index, { status: 'uploading', progress: 0 });
+      updateUploadFile(index, { status: 'uploading', progress: 10 });
 
       // Generate unique filename
       const timestamp = Date.now();
@@ -168,6 +172,8 @@ const ClientDocuments = () => {
       const fileExtension = uploadFile.file.name.split('.').pop();
       const uniqueFileName = `${timestamp}_${randomString}.${fileExtension}`;
       const filePath = `client-${client.id}/${uniqueFileName}`;
+
+      updateUploadFile(index, { progress: 25 });
 
       // Upload to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -177,15 +183,18 @@ const ClientDocuments = () => {
           upsert: false
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        throw uploadError;
+      }
 
-      updateUploadFile(index, { progress: 50 });
+      updateUploadFile(index, { progress: 70 });
 
-      // Save metadata to database
+      // Save metadata to database - garantir que user_id seja definido
       const { error: dbError } = await supabase
         .from('client_documents')
         .insert({
-          user_id: client.id,
+          user_id: client.id, // Explicitamente definir o user_id
           filename: uploadFile.file.name,
           file_path: filePath,
           content_type: uploadFile.file.type,
@@ -194,7 +203,14 @@ const ClientDocuments = () => {
           description: uploadFile.description || null
         });
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error('Database insert error:', dbError);
+        // Se falhou inserir no banco, remover do storage
+        await supabase.storage
+          .from('documents')
+          .remove([filePath]);
+        throw dbError;
+      }
 
       updateUploadFile(index, { status: 'completed', progress: 100 });
       return true;
@@ -214,6 +230,15 @@ const ClientDocuments = () => {
       toast({
         title: "Erro",
         description: "Selecione pelo menos um arquivo para upload",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!client?.id) {
+      toast({
+        title: "Erro",
+        description: "Cliente não identificado. Faça login novamente.",
         variant: "destructive"
       });
       return;
