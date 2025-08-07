@@ -18,7 +18,8 @@ import {
   Search,
   Filter,
   Users,
-  FolderOpen
+  FolderOpen,
+  Plus
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -28,7 +29,7 @@ interface Document {
   file_path: string;
   file_size: number;
   content_type: string;
-  category: string;
+  category_id: string;
   description: string;
   user_id: string;
   uploaded_by_admin_id?: string;
@@ -37,6 +38,11 @@ interface Document {
   user?: {
     name: string;
     company: string;
+  };
+  document_categories?: {
+    name: string;
+    color: string;
+    icon: string;
   };
 }
 
@@ -58,6 +64,17 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [documentsByClientAndCategory, setDocumentsByClientAndCategory] = useState<{
+    [clientId: string]: {
+      clientInfo: Client;
+      categories: {
+        [categoryId: string]: {
+          categoryInfo: any;
+          documents: Document[];
+        }
+      }
+    }
+  }>({});
 
   const { data: documentCategories = [], isLoading: categoriesLoading } = useDocumentCategories();
 
@@ -88,13 +105,14 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
           file_path,
           file_size,
           content_type,
-          category,
+          category_id,
           description,
           user_id,
           uploaded_by_admin_id,
           uploaded_at,
           updated_at,
-          client_profiles!client_documents_user_id_fkey(name, company)
+          client_profiles!client_documents_user_id_fkey(name, company),
+          document_categories!client_documents_category_id_fkey(name, color, icon)
         `);
 
       if (!isAdmin && user?.id) {
@@ -103,20 +121,52 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
         query = query.eq('user_id', selectedClient);
       }
 
+      if (selectedCategory) {
+        query = query.eq('category_id', selectedCategory);
+      }
+
       const { data, error } = await query.order('uploaded_at', { ascending: false });
 
       if (error) throw error;
       
-      // Map the documents and handle category names
-      const mappedDocuments = (data || []).map(doc => {
-        return {
-          ...doc,
-          user: Array.isArray(doc.client_profiles) ? doc.client_profiles[0] : doc.client_profiles,
-          category: doc.category || 'Outros'
-        };
-      });
+      const mappedDocuments = (data || []).map(doc => ({
+        ...doc,
+        user: Array.isArray(doc.client_profiles) ? doc.client_profiles[0] : doc.client_profiles,
+        document_categories: Array.isArray(doc.document_categories) ? doc.document_categories[0] : doc.document_categories
+      })) as Document[];
       
-      setDocuments(mappedDocuments as Document[]);
+      setDocuments(mappedDocuments);
+
+      // Group documents by client and category for admin view
+      if (isAdmin) {
+        const grouped = mappedDocuments.reduce((acc, doc) => {
+          const clientId = doc.user_id;
+          const categoryId = doc.category_id;
+          
+          if (!acc[clientId]) {
+            acc[clientId] = {
+              clientInfo: { 
+                id: clientId, 
+                name: doc.user?.name || 'Cliente', 
+                company: doc.user?.company || 'Empresa' 
+              },
+              categories: {}
+            };
+          }
+          
+          if (!acc[clientId].categories[categoryId]) {
+            acc[clientId].categories[categoryId] = {
+              categoryInfo: doc.document_categories || { name: 'Outros', color: '#6B7280', icon: 'FileText' },
+              documents: []
+            };
+          }
+          
+          acc[clientId].categories[categoryId].documents.push(doc);
+          return acc;
+        }, {} as typeof documentsByClientAndCategory);
+        
+        setDocumentsByClientAndCategory(grouped);
+      }
     } catch (error) {
       console.error('Error fetching documents:', error);
       toast.error('Erro ao carregar documentos');
@@ -135,7 +185,7 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
     if (!categoriesLoading) {
       fetchDocuments();
     }
-  }, [selectedClient, user?.id, isAdmin, categoriesLoading, documentCategories]);
+  }, [selectedClient, selectedCategory, user?.id, isAdmin, categoriesLoading, documentCategories]);
 
   const handleDelete = async (documentId: string) => {
     if (!confirm('Tem certeza que deseja excluir este documento?')) return;
@@ -177,10 +227,12 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
   };
 
   const filteredDocuments = documents.filter(doc => {
-    const matchesCategory = !selectedCategory || doc.category === selectedCategory;
+    const categoryName = doc.document_categories?.name || 'Outros';
+    const matchesCategory = !selectedCategory || doc.category_id === selectedCategory;
     const matchesSearch = !searchTerm || 
       doc.filename.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.description?.toLowerCase().includes(searchTerm.toLowerCase());
+      doc.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      categoryName.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
@@ -219,7 +271,7 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
             {isAdmin ? 'Gerenciamento de Documentos' : 'Meus Documentos'}
           </h2>
           <p className="text-gray-600">
-            {isAdmin ? 'Visualizar e gerenciar documentos de todos os clientes' : 'Seus documentos organizados por categoria'}
+            {isAdmin ? 'Visualizar e gerenciar documentos de todos os clientes organizados por categorias' : 'Seus documentos organizados por categoria'}
           </p>
         </div>
         
@@ -270,7 +322,7 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
             <SelectContent>
               <SelectItem value="">Todas as categorias</SelectItem>
               {documentCategories.map(category => (
-                <SelectItem key={category.id} value={category.name}>
+                <SelectItem key={category.id} value={category.id}>
                   {category.name}
                 </SelectItem>
               ))}
@@ -278,99 +330,207 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
           </Select>
         </div>
 
-        <div>
+        <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             <Search className="h-4 w-4 inline mr-1" />
             Buscar
           </label>
           <Input
-            placeholder="Nome do arquivo..."
+            placeholder="Nome do arquivo, descrição ou categoria..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
       </div>
 
-      {/* Documents Grid */}
-      {filteredDocuments.length === 0 ? (
-        <Card>
-          <CardContent className="text-center py-12">
-            <FolderOpen className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Nenhum documento encontrado
-            </h3>
-            <p className="text-gray-600">
-              {searchTerm || selectedCategory || selectedClient 
-                ? 'Tente ajustar os filtros para ver mais resultados'
-                : 'Ainda não há documentos carregados'
-              }
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredDocuments.map((document) => (
-            <Card key={document.id} className="hover:shadow-md transition-shadow">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg line-clamp-2">
-                      {document.filename}
-                    </CardTitle>
-                    {isAdmin && document.user && (
-                      <p className="text-sm text-gray-600 mt-1">
-                        Cliente: {document.user.name} - {document.user.company}
-                      </p>
-                    )}
-                  </div>
-                  <FileText className="h-5 w-5 text-gray-400 ml-2" />
+      {/* Documents Display - Admin view with grouping or regular grid */}
+      {isAdmin && !selectedClient && !selectedCategory && !searchTerm ? (
+        // Grouped view by client and category
+        <div className="space-y-8">
+          {Object.entries(documentsByClientAndCategory).map(([clientId, clientData]) => (
+            <div key={clientId} className="border rounded-lg p-6 bg-white">
+              <div className="flex items-center gap-3 mb-6">
+                <Users className="h-5 w-5 text-blue-600" />
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    {clientData.clientInfo.name}
+                  </h3>
+                  <p className="text-sm text-gray-600">{clientData.clientInfo.company}</p>
                 </div>
-              </CardHeader>
+              </div>
               
-              <CardContent className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <Badge variant="secondary">{document.category}</Badge>
-                  <span className="text-sm text-gray-500">
-                    {formatFileSize(document.file_size)}
-                  </span>
-                </div>
+              <div className="space-y-4">
+                {Object.entries(clientData.categories).map(([categoryId, categoryData]) => (
+                  <div key={categoryId} className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: categoryData.categoryInfo.color }}
+                        />
+                        <h4 className="font-medium text-gray-900">
+                          {categoryData.categoryInfo.name}
+                        </h4>
+                        <Badge variant="secondary">
+                          {categoryData.documents.length} documento(s)
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {categoryData.documents.map((document) => (
+                        <div key={document.id} className="bg-white border rounded-lg p-3">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1">
+                              <h5 className="font-medium text-sm text-gray-900 line-clamp-1">
+                                {document.filename}
+                              </h5>
+                              {document.description && (
+                                <p className="text-xs text-gray-600 line-clamp-1 mt-1">
+                                  {document.description}
+                                </p>
+                              )}
+                            </div>
+                            <FileText className="h-4 w-4 text-gray-400 ml-2" />
+                          </div>
+                          
+                          <div className="flex justify-between items-center text-xs text-gray-500 mb-2">
+                            <span>{formatFileSize(document.file_size)}</span>
+                            <span>{formatDate(document.uploaded_at)}</span>
+                          </div>
 
-                {document.description && (
-                  <p className="text-sm text-gray-600 line-clamp-2">
-                    {document.description}
-                  </p>
-                )}
-
-                <div className="text-xs text-gray-500">
-                  Enviado em: {formatDate(document.uploaded_at)}
-                </div>
-
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleDownload(document)}
-                  >
-                    <Download className="h-4 w-4 mr-1" />
-                    Baixar
-                  </Button>
-                  
-                  {isAdmin && (
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleDelete(document.id)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Excluir
-                    </Button>
-                  )}
-                </div>
+                          <div className="flex gap-1">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleDownload(document)}
+                              className="flex-1 text-xs"
+                            >
+                              <Download className="h-3 w-3 mr-1" />
+                              Baixar
+                            </Button>
+                            
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleDelete(document.id)}
+                              className="text-red-600 hover:text-red-700 text-xs"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+          
+          {Object.keys(documentsByClientAndCategory).length === 0 && (
+            <Card>
+              <CardContent className="text-center py-12">
+                <FolderOpen className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Nenhum documento encontrado
+                </h3>
+                <p className="text-gray-600">
+                  Ainda não há documentos carregados no sistema
+                </p>
               </CardContent>
             </Card>
-          ))}
+          )}
         </div>
+      ) : (
+        // Regular grid view for filtered results or client view
+        <>
+          {filteredDocuments.length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-12">
+                <FolderOpen className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Nenhum documento encontrado
+                </h3>
+                <p className="text-gray-600">
+                  {searchTerm || selectedCategory || selectedClient 
+                    ? 'Tente ajustar os filtros para ver mais resultados'
+                    : 'Ainda não há documentos carregados'
+                  }
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              {filteredDocuments.map((document) => (
+                <Card key={document.id} className="hover:shadow-md transition-shadow">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg line-clamp-2">
+                          {document.filename}
+                        </CardTitle>
+                        {isAdmin && document.user && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            Cliente: {document.user.name} - {document.user.company}
+                          </p>
+                        )}
+                      </div>
+                      <FileText className="h-5 w-5 text-gray-400 ml-2" />
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <Badge 
+                        variant="secondary" 
+                        style={{ backgroundColor: `${document.document_categories?.color}20`, color: document.document_categories?.color }}
+                      >
+                        {document.document_categories?.name || 'Outros'}
+                      </Badge>
+                      <span className="text-sm text-gray-500">
+                        {formatFileSize(document.file_size)}
+                      </span>
+                    </div>
+
+                    {document.description && (
+                      <p className="text-sm text-gray-600 line-clamp-2">
+                        {document.description}
+                      </p>
+                    )}
+
+                    <div className="text-xs text-gray-500">
+                      Enviado em: {formatDate(document.uploaded_at)}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleDownload(document)}
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Baixar
+                      </Button>
+                      
+                      {isAdmin && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleDelete(document.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Excluir
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Upload Modal */}
