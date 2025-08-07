@@ -2,7 +2,7 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import AdminHeader from '@/components/admin/AdminHeader';
-import AdminSidebar from '@/components/admin/AdminSidebar';
+import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import AdminDashboard from './AdminDashboard';
 
 // Existing components that are available

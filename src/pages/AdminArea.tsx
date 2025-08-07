@@ -1,6 +1,6 @@
 
 import { Routes, Route } from 'react-router-dom';
-import { AdminHeader } from '../components/admin/AdminHeader';
+import AdminHeader from '../components/admin/AdminHeader';
 import { AdminSidebar } from '../components/admin/AdminSidebar';
 import { useResponsive } from '../hooks/useResponsive';
 
