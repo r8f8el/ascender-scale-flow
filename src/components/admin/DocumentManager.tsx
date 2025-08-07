@@ -214,16 +214,15 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
     try {
       const { data, error } = await supabase.storage
         .from('documents')
-        .download(document.file_path);
+        .createSignedUrl(document.file_path, 60);
 
       if (error) throw error;
-
-      const url = URL.createObjectURL(data);
-      const a = window.document.createElement('a');
-      a.href = url;
-      a.download = document.filename;
-      a.click();
-      URL.revokeObjectURL(url);
+      if (data?.signedUrl) {
+        const a = window.document.createElement('a');
+        a.href = data.signedUrl;
+        a.download = document.filename;
+        a.click();
+      }
     } catch (error) {
       console.error('Error downloading document:', error);
       toast.error('Erro ao baixar documento');

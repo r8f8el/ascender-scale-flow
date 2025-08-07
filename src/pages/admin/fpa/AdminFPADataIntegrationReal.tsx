@@ -11,6 +11,7 @@ import { useFPAClients } from '@/hooks/useFPAClients';
 import { useFPAPeriods } from '@/hooks/useFPAPeriods';
 import { useFPAFinancialData } from '@/hooks/useFPAFinancialData';
 import { useFPADataUploads } from '@/hooks/useFPADataUploads';
+import * as XLSX from 'xlsx';
 import { 
   Upload, 
   File, 
@@ -154,6 +155,63 @@ const AdminFPADataIntegrationReal = () => {
     }).format(value);
   };
 
+  // Excel template headers mapped to DB columns
+  const templateFields = [
+    'revenue',
+    'cost_of_goods_sold',
+    'operating_expenses',
+    'depreciation',
+    'financial_expenses',
+    'operating_cash_flow',
+    'investing_cash_flow',
+    'financing_cash_flow',
+    'net_cash_flow',
+    'cash_balance',
+    'current_assets',
+    'non_current_assets',
+    'total_assets',
+    'current_liabilities',
+    'non_current_liabilities',
+    'equity'
+  ] as const;
+
+  const handleDownloadTemplate = () => {
+    const sample = Object.fromEntries(templateFields.map((k) => [k, 0]));
+    const ws = XLSX.utils.json_to_sheet([sample]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Dados');
+    XLSX.writeFile(wb, 'template_fpa_financeiro.xlsx');
+  };
+
+  const handleImportExcel = async (file: File) => {
+    if (!selectedClientId || !selectedPeriod) {
+      toast({
+        title: 'Seleção obrigatória',
+        description: 'Escolha o cliente e o período antes de importar.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: 0 });
+      if (!rows.length) throw new Error('Planilha vazia');
+      const r = rows[0];
+      const payload: any = { fpa_client_id: selectedClientId, period_id: selectedPeriod };
+      templateFields.forEach((f) => { payload[f] = Number(r[f]) || 0; });
+
+      const { error } = await supabase.from('fpa_financial_data').insert([payload]);
+      if (error) throw error;
+
+      toast({ title: 'Importado', description: 'Dados financeiros importados com sucesso.' });
+    } catch (e: any) {
+      console.error('Import Excel error:', e);
+      toast({ title: 'Erro ao importar', description: e.message || 'Falha ao ler o arquivo.', variant: 'destructive' });
+    }
+  };
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -417,17 +475,39 @@ const AdminFPADataIntegrationReal = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                  <Database className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Arraste arquivos ou clique para fazer upload
-                  </h3>
-                  <p className="text-gray-600 mb-4">
-                    Suporte para Excel (.xlsx), CSV (.csv) e PDF
-                  </p>
-                  <Button>
-                    Selecionar Arquivos
-                  </Button>
+                <div className="space-y-4">
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <Button variant="outline" onClick={handleDownloadTemplate}>
+                      <Download className="h-4 w-4 mr-2" /> Baixar Template Excel
+                    </Button>
+                    <input
+                      id="excel-upload"
+                      type="file"
+                      accept=".xlsx"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleImportExcel(f);
+                        e.currentTarget.value = '';
+                      }}
+                    />
+                    <Button
+                      onClick={() => document.getElementById('excel-upload')?.click()}
+                      disabled={!selectedClientId || !selectedPeriod}
+                    >
+                      <Upload className="h-4 w-4 mr-2" /> Importar Excel
+                    </Button>
+                    {!selectedClientId || !selectedPeriod ? (
+                      <span className="text-sm text-gray-500">Selecione cliente e período</span>
+                    ) : null}
+                  </div>
+
+                  <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center">
+                    <Database className="h-10 w-10 text-gray-400 mx-auto mb-2" />
+                    <p className="text-gray-600">
+                      Use o template para preencher os valores e importe para o cliente/período selecionados.
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
