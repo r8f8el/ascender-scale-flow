@@ -1,16 +1,13 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useFPAClients } from '@/hooks/useFPAClients';
 import { useFPAFinancialData } from '@/hooks/useFPAFinancialData';
 import { useFPAReports } from '@/hooks/useFPAReports';
 import { useFPAVarianceAnalysis } from '@/hooks/useFPAVarianceAnalysis';
 import { useFPAPeriods } from '@/hooks/useFPAPeriods';
-import FPADriversManager from '@/components/fpa/FPADriversManager';
-import FPAScenarioBuilder from '@/components/fpa/FPAScenarioBuilder';
-import FPARollingForecast from '@/components/fpa/FPARollingForecast';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -23,12 +20,10 @@ import {
   Building,
   Target,
   Activity,
-  Eye,
-  Settings,
-  Calculator,
+  Download,
   LineChart as LineChartIcon
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const ClientFPADashboardReal = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('');
@@ -42,14 +37,6 @@ const ClientFPADashboardReal = () => {
   const { data: reports = [], isLoading: reportsLoading } = useFPAReports(currentClient?.id);
   const { data: varianceAnalysis = [], isLoading: varianceLoading } = useFPAVarianceAnalysis(currentClient?.id);
   const { data: periods = [], isLoading: periodsLoading } = useFPAPeriods(currentClient?.id);
-
-  console.log('📊 Dashboard data:', {
-    currentClient,
-    financialDataCount: financialData.length,
-    reportsCount: reports.length,
-    varianceCount: varianceAnalysis.length,
-    periodsCount: periods.length
-  });
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -106,9 +93,9 @@ const ClientFPADashboardReal = () => {
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard FP&A Avançado</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard FP&A</h1>
           <p className="text-gray-600 mt-1">
-            Plataforma completa de Planejamento e Análise Financeira para {currentClient.company_name}
+            Análise Financeira para {currentClient.company_name}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -197,7 +184,7 @@ const ClientFPADashboardReal = () => {
                 </p>
                 <p className="text-xs text-yellow-600 flex items-center gap-1">
                   <AlertTriangle className="h-3 w-3" />
-                  Atenção requerida
+                  Dentro da meta
                 </p>
               </div>
             </div>
@@ -206,13 +193,11 @@ const ClientFPADashboardReal = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="drivers">Direcionadores</TabsTrigger>
-          <TabsTrigger value="scenarios">Cenários</TabsTrigger>
-          <TabsTrigger value="forecast">Rolling Forecast</TabsTrigger>
           <TabsTrigger value="reports">Relatórios</TabsTrigger>
-          <TabsTrigger value="variance">Variância</TabsTrigger>
+          <TabsTrigger value="variance">Análise</TabsTrigger>
+          <TabsTrigger value="forecast">Previsões</TabsTrigger>
           <TabsTrigger value="periods">Períodos</TabsTrigger>
         </TabsList>
 
@@ -222,7 +207,7 @@ const ClientFPADashboardReal = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <LineChartIcon className="h-5 w-5" />
-                Performance Financeira Integrada
+                Performance Financeira
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -247,13 +232,14 @@ const ClientFPADashboardReal = () => {
               ) : (
                 <div className="text-center py-8">
                   <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">Nenhum dado financeiro disponível</p>
+                  <p className="text-gray-500">Dados financeiros em preparação</p>
+                  <p className="text-sm text-gray-400">Seu consultor está organizando as informações</p>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {/* Recent Financial Data */}
+          {/* Recent Financial Data - Read Only */}
           <Card>
             <CardHeader>
               <CardTitle>Dados Financeiros Recentes</CardTitle>
@@ -267,7 +253,8 @@ const ClientFPADashboardReal = () => {
               ) : financialData.length === 0 ? (
                 <div className="text-center py-8">
                   <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">Nenhum dado financeiro encontrado</p>
+                  <p className="text-gray-500">Dados financeiros em preparação</p>
+                  <p className="text-sm text-gray-400">Aguardando análise do consultor</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -277,7 +264,7 @@ const ClientFPADashboardReal = () => {
                     const isActual = periodData?.is_actual || false;
                     
                     return (
-                      <div key={data.id} className="border rounded-lg p-4">
+                      <div key={data.id} className="border rounded-lg p-4 bg-gray-50">
                         <div className="flex justify-between items-center mb-3">
                           <h4 className="font-medium text-gray-900">
                             Período: {periodName}
@@ -309,22 +296,10 @@ const ClientFPADashboardReal = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="drivers">
-          <FPADriversManager clientId={currentClient.id} />
-        </TabsContent>
-
-        <TabsContent value="scenarios">
-          <FPAScenarioBuilder clientId={currentClient.id} />
-        </TabsContent>
-
-        <TabsContent value="forecast">
-          <FPARollingForecast clientId={currentClient.id} />
-        </TabsContent>
-
         <TabsContent value="reports" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Relatórios Disponíveis</CardTitle>
+              <CardTitle>Seus Relatórios</CardTitle>
             </CardHeader>
             <CardContent>
               {reportsLoading ? (
@@ -336,6 +311,7 @@ const ClientFPADashboardReal = () => {
                 <div className="text-center py-8">
                   <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-500">Nenhum relatório disponível</p>
+                  <p className="text-sm text-gray-400">Novos relatórios aparecerão aqui quando estiverem prontos</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -344,11 +320,16 @@ const ClientFPADashboardReal = () => {
                       <div>
                         <h4 className="font-medium text-gray-900">{report.title}</h4>
                         <p className="text-sm text-gray-600">{report.period_covered}</p>
+                        <Badge variant="outline" className="text-xs mt-1">
+                          {report.status === 'published' ? 'Disponível' : 'Em análise'}
+                        </Badge>
                       </div>
-                      <Button variant="outline" size="sm">
-                        <Eye className="h-4 w-4 mr-2" />
-                        Visualizar
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <button className="flex items-center gap-1 px-3 py-1 text-sm border rounded hover:bg-gray-50">
+                          <Download className="h-4 w-4" />
+                          Baixar
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -360,7 +341,7 @@ const ClientFPADashboardReal = () => {
         <TabsContent value="variance" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Análise de Variância</CardTitle>
+              <CardTitle>Análise de Performance</CardTitle>
             </CardHeader>
             <CardContent>
               {varianceLoading ? (
@@ -371,17 +352,23 @@ const ClientFPADashboardReal = () => {
               ) : varianceAnalysis.length === 0 ? (
                 <div className="text-center py-8">
                   <AlertTriangle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">Nenhuma análise de variância disponível</p>
+                  <p className="text-gray-500">Análise de performance em preparação</p>
+                  <p className="text-sm text-gray-400">Seu consultor está preparando os relatórios</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {varianceAnalysis.slice(0, 5).map((analysis) => (
-                    <div key={analysis.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div key={analysis.id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
                       <div>
                         <h4 className="font-medium text-gray-900">{analysis.metric_name}</h4>
                         <p className="text-sm text-gray-600">
-                          Variância: {formatPercentage(analysis.variance_percentage)}
+                          Variação: {formatPercentage(analysis.variance_percentage)}
                         </p>
+                        {analysis.analysis_comment && (
+                          <p className="text-xs text-gray-500 mt-1 italic">
+                            "{analysis.analysis_comment}"
+                          </p>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         {Math.abs(analysis.variance_percentage) <= 5 ? (
@@ -401,10 +388,29 @@ const ClientFPADashboardReal = () => {
           </Card>
         </TabsContent>
 
+        <TabsContent value="forecast" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Previsões Financeiras</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-12">
+                <LineChartIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Previsões em Desenvolvimento
+                </h3>
+                <p className="text-gray-600">
+                  Seu consultor está preparando as projeções financeiras personalizadas
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="periods" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Períodos de Análise</CardTitle>
+              <CardTitle>Períodos Analisados</CardTitle>
             </CardHeader>
             <CardContent>
               {periodsLoading ? (
@@ -415,12 +421,13 @@ const ClientFPADashboardReal = () => {
               ) : periods.length === 0 ? (
                 <div className="text-center py-8">
                   <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">Nenhum período configurado</p>
+                  <p className="text-gray-500">Configuração de períodos em andamento</p>
+                  <p className="text-sm text-gray-400">Seu consultor está definindo os períodos de análise</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {periods.map((period) => (
-                    <div key={period.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div key={period.id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
                       <div>
                         <h4 className="font-medium text-gray-900">{period.period_name}</h4>
                         <p className="text-sm text-gray-600">
