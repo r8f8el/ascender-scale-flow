@@ -360,6 +360,45 @@ export type Database = {
         }
         Relationships: []
       }
+      client_documents: {
+        Row: {
+          category: string | null
+          content_type: string | null
+          description: string | null
+          file_path: string
+          file_size: number
+          filename: string
+          id: string
+          updated_at: string | null
+          uploaded_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          content_type?: string | null
+          description?: string | null
+          file_path: string
+          file_size: number
+          filename: string
+          id?: string
+          updated_at?: string | null
+          uploaded_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          content_type?: string | null
+          description?: string | null
+          file_path?: string
+          file_size?: number
+          filename?: string
+          id?: string
+          updated_at?: string | null
+          uploaded_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       client_profiles: {
         Row: {
           cnpj: string | null
