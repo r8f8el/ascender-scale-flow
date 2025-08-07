@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useDocumentCategories } from '@/hooks/useDocumentCategories';
 import { toast } from 'sonner';
 import { Upload, X, FileText } from 'lucide-react';
 
@@ -34,16 +35,7 @@ const AdminDocumentUpload: React.FC<AdminDocumentUploadProps> = ({
   const [files, setFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
-  const categories = [
-    'Documentos Fiscais',
-    'Contratos',
-    'Relatórios Financeiros', 
-    'Balancetes',
-    'DRE',
-    'Fluxo de Caixa',
-    'Orçamentos',
-    'Outros'
-  ];
+  const { data: documentCategories = [], isLoading: categoriesLoading } = useDocumentCategories();
 
   useEffect(() => {
     fetchClients();
@@ -104,7 +96,7 @@ const AdminDocumentUpload: React.FC<AdminDocumentUploadProps> = ({
             file_path: filePath,
             file_size: file.size,
             content_type: file.type,
-            category: selectedCategory,
+            category_id: selectedCategory,
             description: description || null,
             user_id: selectedClient,
             uploaded_by_admin_id: user.id,
@@ -127,6 +119,19 @@ const AdminDocumentUpload: React.FC<AdminDocumentUploadProps> = ({
   const removeFile = (index: number) => {
     setFiles(files.filter((_, i) => i !== index));
   };
+
+  if (categoriesLoading) {
+    return (
+      <Dialog open={true} onOpenChange={onClose}>
+        <DialogContent className="max-w-2xl">
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            <span className="ml-2">Carregando categorias...</span>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
@@ -164,9 +169,9 @@ const AdminDocumentUpload: React.FC<AdminDocumentUploadProps> = ({
                 <SelectValue placeholder="Selecione uma categoria" />
               </SelectTrigger>
               <SelectContent>
-                {categories.map(category => (
-                  <SelectItem key={category} value={category}>
-                    {category}
+                {documentCategories.map(category => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name}
                   </SelectItem>
                 ))}
               </SelectContent>

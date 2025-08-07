@@ -1,67 +1,58 @@
-
+import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import AdminHeader from '@/components/admin/AdminHeader';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
-import { useResponsive } from '@/hooks/useResponsive';
-
-// Admin pages
+import { AdminHeader } from '@/components/admin/AdminHeader';
 import AdminDashboard from './AdminDashboard';
-import ClientesAdmin from './ClientesAdmin';
-import CollaboratorsAdmin from './CollaboratorsAdmin';
-import ProjectsAdmin from './ProjectsAdmin';
-import TasksAdmin from './TasksAdmin';
-import TicketsAdmin from './TicketsAdmin';
-import MyTickets from './MyTickets';
-import ArquivosAdmin from './ArquivosAdmin';
-import ClientDocumentsAdmin from './ClientDocumentsAdmin';
-import ConfiguracoesAdmin from './ConfiguracoesAdmin';
-import LogsAdmin from './LogsAdmin';
-import AdminApprovalFlows from './AdminApprovalFlows';
-import TestingDashboard from './TestingDashboard';
-
-// FP&A Admin pages
-import AdminFPAClientManagement from './fpa/AdminFPAClientManagement';
-import AdminFPADataIntegrationReal from './fpa/AdminFPADataIntegrationReal';
-import AdminFPAReportBuilder from './fpa/AdminFPAReportBuilder';
-import AdminFPAVarianceAnalysis from './fpa/AdminFPAVarianceAnalysis';
-import AdminFPAModeling from './fpa/AdminFPAModeling';
-import AdminFPADashboard from './fpa/AdminFPADashboard';
+import AdminCollaborators from './AdminCollaborators';
+import AdminClients from './AdminClients';
+import AdminProjects from './AdminProjects';
+import AdminTasks from './AdminTasks';
+import AdminTickets from './AdminTickets';
+import AdminMyTickets from './AdminMyTickets';
+import AdminDocuments from './AdminDocuments';
+import ArquivosAdminNew from './ArquivosAdminNew';
+import AdminWorkflows from './AdminWorkflows';
+import AdminLogs from './AdminLogs';
+import AdminSettings from './AdminSettings';
+import AdminTesting from './AdminTesting';
+import ClientDocumentsAdmin from '../client/ClientDocumentsAdmin';
+import ClientFPAData from '../client/fpa/ClientFPAData';
+import AdminFPAClientes from './fpa/AdminFPAClientes';
+import AdminFPAIntegracao from './fpa/AdminFPAIntegracao';
+import AdminFPARelatorios from './fpa/AdminFPARelatorios';
+import AdminFPAVariancia from './fpa/AdminFPAVariancia';
+import AdminFPAModelagem from './fpa/AdminFPAModelagem';
 
 const AdminArea = () => {
-  const isMobile = useResponsive();
-
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50">
       <AdminSidebar />
-      
-      <div className="flex-1 flex flex-col">
+      <div className="md:pl-64">
         <AdminHeader />
-        
-        <main className="flex-1 p-4 md:p-8 overflow-auto ml-0 md:ml-64">
+        <main className="p-6">
           <Routes>
-            <Route index element={<AdminDashboard />} />
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="clientes" element={<ClientesAdmin />} />
-            <Route path="colaboradores" element={<CollaboratorsAdmin />} />
-            <Route path="projetos" element={<ProjectsAdmin />} />
-            <Route path="tarefas" element={<TasksAdmin />} />
-            <Route path="chamados" element={<TicketsAdmin />} />
-            <Route path="meus-chamados" element={<MyTickets />} />
-            <Route path="arquivos" element={<ArquivosAdmin />} />
-            <Route path="documentos" element={<ClientDocumentsAdmin />} />
-            <Route path="configuracoes" element={<ConfiguracoesAdmin />} />
-            <Route path="logs" element={<LogsAdmin />} />
-            <Route path="workflows" element={<AdminApprovalFlows />} />
-            <Route path="testing" element={<TestingDashboard />} />
+            <Route path="/" element={<AdminDashboard />} />
+            <Route path="/colaboradores" element={<AdminCollaborators />} />
+            <Route path="/clientes" element={<AdminClients />} />
+            <Route path="/projetos" element={<AdminProjects />} />
+            <Route path="/tarefas" element={<AdminTasks />} />
+            <Route path="/chamados" element={<AdminTickets />} />
+            <Route path="/meus-chamados" element={<AdminMyTickets />} />
+            <Route path="/arquivos" element={<ArquivosAdminNew />} />
+            <Route path="/documentos" element={<AdminDocuments />} />
+            <Route path="/workflows" element={<AdminWorkflows />} />
+            <Route path="/logs" element={<AdminLogs />} />
+            <Route path="/configuracoes" element={<AdminSettings />} />
+            <Route path="/testing" element={<AdminTesting />} />
+            <Route path="/client-documents" element={<ClientDocumentsAdmin />} />
             
-            {/* FP&A Admin Routes */}
-            <Route path="fpa" element={<AdminFPADashboard />} />
-            <Route path="fpa/dashboard" element={<AdminFPADashboard />} />
-            <Route path="fpa/clientes" element={<AdminFPAClientManagement />} />
-            <Route path="fpa/integracao" element={<AdminFPADataIntegrationReal />} />
-            <Route path="fpa/relatorios" element={<AdminFPAReportBuilder />} />
-            <Route path="fpa/variancia" element={<AdminFPAVarianceAnalysis />} />
-            <Route path="fpa/modelagem" element={<AdminFPAModeling />} />
+            {/* FP&A Routes */}
+            <Route path="/fpa" element={<ClientFPAData />} />
+            <Route path="/fpa/clientes" element={<AdminFPAClientes />} />
+            <Route path="/fpa/integracao" element={<AdminFPAIntegracao />} />
+            <Route path="/fpa/relatorios" element={<AdminFPARelatorios />} />
+            <Route path="/fpa/variancia" element={<AdminFPAVariancia />} />
+            <Route path="/fpa/modelagem" element={<AdminFPAModelagem />} />
           </Routes>
         </main>
       </div>

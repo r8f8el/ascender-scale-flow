@@ -24,8 +24,18 @@ import { cn } from '@/lib/utils';
 
 const navigation = [
   {
+    name: 'Dashboard',
+    href: '/admin',
+    icon: LayoutDashboard,
+  },
+  {
     name: 'Colaboradores',
     href: '/admin/colaboradores',
+    icon: Users,
+  },
+  {
+    name: 'Clientes',
+    href: '/admin/clientes',
     icon: Users,
   },
   {
@@ -123,6 +133,9 @@ export function AdminSidebar() {
     if (href === '/admin/fpa') {
       return location.pathname === '/admin/fpa' || location.pathname === '/admin/fpa/';
     }
+    if (href === '/admin') {
+      return location.pathname === '/admin' || location.pathname === '/admin/';
+    }
     return location.pathname === href || location.pathname.startsWith(href + '/');
   };
 
@@ -147,9 +160,13 @@ export function AdminSidebar() {
   return (
     <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-50">
       <div className="flex flex-col flex-1 min-h-0 bg-white border-r border-gray-200">
-        {/* Header */}
+        {/* Header com Logo */}
         <div className="flex items-center justify-center h-16 px-4 bg-white border-b border-gray-100">
-          <h1 className="text-gray-900 text-lg font-semibold">Admin Panel</h1>
+          <img 
+            src="/lovable-uploads/770511e1-4eca-4d48-9bf0-ba1d8072c723.png" 
+            alt="Ascalate Logo" 
+            className="h-8 w-auto"
+          />
         </div>
 
         {/* Navigation */}

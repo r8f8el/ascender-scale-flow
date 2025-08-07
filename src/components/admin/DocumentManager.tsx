@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import AdminDocumentUpload from './AdminDocumentUpload';
+import { useDocumentCategories } from '@/hooks/useDocumentCategories';
 import { 
   Upload, 
   Download, 
@@ -27,6 +29,7 @@ interface Document {
   file_size: number;
   content_type: string;
   category: string;
+  category_id?: string;
   description: string;
   user_id: string;
   uploaded_by_admin_id?: string;
@@ -57,16 +60,7 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [showUploadModal, setShowUploadModal] = useState(false);
 
-  const categories = [
-    'Documentos Fiscais',
-    'Contratos',
-    'Relatórios Financeiros', 
-    'Balancetes',
-    'DRE',
-    'Fluxo de Caixa',
-    'Orçamentos',
-    'Outros'
-  ];
+  const { data: documentCategories = [], isLoading: categoriesLoading } = useDocumentCategories();
 
   const fetchClients = async () => {
     if (!isAdmin) return;
@@ -91,7 +85,8 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
         .from('client_documents')
         .select(`
           *,
-          client_profiles!client_documents_user_id_fkey(name, company)
+          client_profiles!client_documents_user_id_fkey(name, company),
+          document_categories!client_documents_category_id_fkey(name, color, icon)
         `);
 
       if (!isAdmin && user?.id) {
@@ -107,7 +102,8 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
       // Fix the type mapping
       const mappedDocuments = (data || []).map(doc => ({
         ...doc,
-        user: Array.isArray(doc.client_profiles) ? doc.client_profiles[0] : doc.client_profiles
+        user: Array.isArray(doc.client_profiles) ? doc.client_profiles[0] : doc.client_profiles,
+        category: doc.document_categories?.name || doc.category || 'Outros'
       }));
       
       setDocuments(mappedDocuments as Document[]);
@@ -126,8 +122,10 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
   }, [isAdmin]);
 
   useEffect(() => {
-    fetchDocuments();
-  }, [selectedClient, user?.id, isAdmin]);
+    if (!categoriesLoading) {
+      fetchDocuments();
+    }
+  }, [selectedClient, user?.id, isAdmin, categoriesLoading]);
 
   const handleDelete = async (documentId: string) => {
     if (!confirm('Tem certeza que deseja excluir este documento?')) return;
@@ -169,7 +167,7 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
   };
 
   const filteredDocuments = documents.filter(doc => {
-    const matchesCategory = !selectedCategory || doc.category === selectedCategory;
+    const matchesCategory = !selectedCategory || doc.category === selectedCategory || doc.category_id === selectedCategory;
     const matchesSearch = !searchTerm || 
       doc.filename.toLowerCase().includes(searchTerm.toLowerCase()) ||
       doc.description?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -194,7 +192,7 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
     });
   };
 
-  if (isLoading) {
+  if (isLoading || categoriesLoading) {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
@@ -261,9 +259,9 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="">Todas as categorias</SelectItem>
-              {categories.map(category => (
-                <SelectItem key={category} value={category}>
-                  {category}
+              {documentCategories.map(category => (
+                <SelectItem key={category.id} value={category.name}>
+                  {category.name}
                 </SelectItem>
               ))}
             </SelectContent>
