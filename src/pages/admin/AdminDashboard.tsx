@@ -192,32 +192,59 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Status do Sistema */}
+        {/* Alertas e Notificações */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Status do Sistema
+              <AlertCircle className="h-5 w-5" />
+              Alertas do Sistema
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 gap-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Base de Dados</span>
-                <span className="text-sm font-medium text-green-600">Online</span>
+            <div className="space-y-4">
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-yellow-800">
+                      Sistema Funcionando Normalmente
+                    </p>
+                    <p className="text-xs text-yellow-700">
+                      Todos os serviços estão operacionais
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">API Status</span>
-                <span className="text-sm font-medium text-green-600">Operacional</span>
+
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <TrendingUp className="h-4 w-4 text-green-600 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-green-800">
+                      Crescimento Positivo
+                    </p>
+                    <p className="text-xs text-green-700">
+                      Aumento nas atividades desta semana
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Backup</span>
-                <span className="text-sm font-medium text-green-600">Atualizado</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Uptime</span>
-                <span className="text-sm font-medium text-green-600">99.9%</span>
-              </div>
+
+              {(collaboratorsStats?.inactive || 0) > 0 && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <Users className="h-4 w-4 text-blue-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-blue-800">
+                        Colaboradores Inativos
+                      </p>
+                      <p className="text-xs text-blue-700">
+                        {collaboratorsStats.inactive} colaboradores precisam de atenção
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
