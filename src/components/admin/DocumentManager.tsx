@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,7 +30,7 @@ interface Document {
   description: string;
   user_id: string;
   uploaded_by_admin_id?: string;
-  uploaded_at: string; // Changed from created_at
+  uploaded_at: string;
   updated_at: string;
   user?: {
     name: string;
@@ -158,7 +157,7 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
       if (error) throw error;
 
       const url = URL.createObjectURL(data);
-      const a = document.createElement('a');
+      const a = window.document.createElement('a');
       a.href = url;
       a.download = document.filename;
       a.click();
@@ -369,9 +368,6 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
       {/* Upload Modal */}
       {showUploadModal && (
         <AdminDocumentUpload
-          clients={clients}
-          categories={categories}
-          selectedClient={selectedClient}
           onClose={() => setShowUploadModal(false)}
           onUploadComplete={() => {
             fetchDocuments();

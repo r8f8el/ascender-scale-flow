@@ -243,7 +243,7 @@ const FPARollingForecast: React.FC<{ clientId: string }> = ({ clientId }) => {
                       dataKey="revenue" 
                       stroke="#3B82F6" 
                       strokeWidth={2}
-                      strokeDasharray={(entry) => entry?.payload?.type === 'forecast' ? '5 5' : '0'}
+                      strokeDasharray="0"
                     />
                   </LineChart>
                 </ResponsiveContainer>
