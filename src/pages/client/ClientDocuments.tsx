@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Progress } from '@/components/ui/progress';
 import { 
   FileText, 
   Download, 
@@ -19,12 +19,13 @@ import {
   FolderOpen,
   File,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  X,
+  Plus
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useUploadManager } from '@/hooks/useUploadManager';
 
 interface Document {
   id: string;
@@ -38,21 +39,26 @@ interface Document {
   updated_at: string;
 }
 
+interface UploadFile {
+  file: File;
+  category: string;
+  description: string;
+  progress: number;
+  status: 'pending' | 'uploading' | 'completed' | 'error';
+  error?: string;
+}
+
 const ClientDocuments = () => {
   const { client } = useAuth();
   const { toast } = useToast();
-  const { uploadFile, isUploading } = useUploadManager();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
-  const [uploadFileData, setUploadFileData] = useState<File | null>(null);
-  const [uploadMetadata, setUploadMetadata] = useState({
-    category: 'Outros',
-    description: ''
-  });
+  const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   console.log('📄 ClientDocuments - Cliente:', client?.name);
 
@@ -94,63 +100,162 @@ const ClientDocuments = () => {
     fetchDocuments();
   }, [client?.id]);
 
-  const handleUpload = async () => {
-    if (!uploadFileData || !client?.id) {
+  const handleFilesSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const newUploadFiles: UploadFile[] = files.map(file => ({
+      file,
+      category: 'Outros',
+      description: '',
+      progress: 0,
+      status: 'pending'
+    }));
+    
+    setUploadFiles(prev => [...prev, ...newUploadFiles]);
+  };
+
+  const updateUploadFile = (index: number, updates: Partial<UploadFile>) => {
+    setUploadFiles(prev => prev.map((item, i) => 
+      i === index ? { ...item, ...updates } : item
+    ));
+  };
+
+  const removeUploadFile = (index: number) => {
+    setUploadFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const validateFile = (file: File): boolean => {
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'text/plain'
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      return false;
+    }
+
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    if (file.size > maxSize) {
+      return false;
+    }
+
+    return true;
+  };
+
+  const uploadSingleFile = async (uploadFile: UploadFile, index: number): Promise<boolean> => {
+    if (!client?.id) return false;
+
+    if (!validateFile(uploadFile.file)) {
+      updateUploadFile(index, { 
+        status: 'error', 
+        error: 'Tipo de arquivo não permitido ou muito grande (máx 50MB)' 
+      });
+      return false;
+    }
+
+    try {
+      updateUploadFile(index, { status: 'uploading', progress: 0 });
+
+      // Generate unique filename
+      const timestamp = Date.now();
+      const randomString = Math.random().toString(36).substring(2, 15);
+      const fileExtension = uploadFile.file.name.split('.').pop();
+      const uniqueFileName = `${timestamp}_${randomString}.${fileExtension}`;
+      const filePath = `client-${client.id}/${uniqueFileName}`;
+
+      // Upload to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(filePath, uploadFile.file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      updateUploadFile(index, { progress: 50 });
+
+      // Save metadata to database
+      const { error: dbError } = await supabase
+        .from('client_documents')
+        .insert({
+          user_id: client.id,
+          filename: uploadFile.file.name,
+          file_path: filePath,
+          content_type: uploadFile.file.type,
+          file_size: uploadFile.file.size,
+          category: uploadFile.category,
+          description: uploadFile.description || null
+        });
+
+      if (dbError) throw dbError;
+
+      updateUploadFile(index, { status: 'completed', progress: 100 });
+      return true;
+
+    } catch (error) {
+      console.error('Erro no upload:', error);
+      updateUploadFile(index, { 
+        status: 'error', 
+        error: error instanceof Error ? error.message : 'Erro desconhecido' 
+      });
+      return false;
+    }
+  };
+
+  const handleUploadAll = async () => {
+    if (uploadFiles.length === 0) {
       toast({
         title: "Erro",
-        description: "Selecione um arquivo para upload",
+        description: "Selecione pelo menos um arquivo para upload",
         variant: "destructive"
       });
       return;
     }
 
-    try {
-      const result = await uploadFile(uploadFileData, {
-        bucket: 'documents',
-        folder: `client-${client.id}`,
-        allowedTypes: [
-          'application/pdf',
-          'application/msword',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          'application/vnd.ms-excel',
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          'image/*'
-        ],
-        maxSizeBytes: 50 * 1024 * 1024 // 50MB
-      });
+    setIsUploading(true);
+    let successCount = 0;
+    let errorCount = 0;
 
-      // Salvar metadados no banco
-      const { error: dbError } = await supabase
-        .from('client_documents')
-        .insert({
-          user_id: client.id,
-          filename: uploadFileData.name,
-          file_path: result.path,
-          content_type: uploadFileData.type,
-          file_size: uploadFileData.size,
-          category: uploadMetadata.category,
-          description: uploadMetadata.description || null
-        });
+    for (let i = 0; i < uploadFiles.length; i++) {
+      const uploadFile = uploadFiles[i];
+      if (uploadFile.status === 'pending') {
+        const success = await uploadSingleFile(uploadFile, i);
+        if (success) {
+          successCount++;
+        } else {
+          errorCount++;
+        }
+      }
+    }
 
-      if (dbError) throw dbError;
+    setIsUploading(false);
 
+    if (successCount > 0) {
       toast({
         title: "Sucesso!",
-        description: `Documento ${uploadFileData.name} enviado com sucesso!`
+        description: `${successCount} arquivo(s) enviado(s) com sucesso!`
       });
-
-      setIsUploadDialogOpen(false);
-      setUploadFileData(null);
-      setUploadMetadata({ category: 'Outros', description: '' });
       fetchDocuments();
+    }
 
-    } catch (error) {
-      console.error('Erro no upload:', error);
+    if (errorCount > 0) {
       toast({
-        title: "Erro no upload",
-        description: "Não foi possível enviar o arquivo. Tente novamente.",
+        title: "Atenção",
+        description: `${errorCount} arquivo(s) falharam no upload`,
         variant: "destructive"
       });
+    }
+
+    if (successCount === uploadFiles.length) {
+      setIsUploadDialogOpen(false);
+      setUploadFiles([]);
     }
   };
 
@@ -210,14 +315,14 @@ const ClientDocuments = () => {
     }
 
     try {
-      // Deletar arquivo do storage
+      // Delete file from storage
       const { error: storageError } = await supabase.storage
         .from('documents')
         .remove([document.file_path]);
 
       if (storageError) throw storageError;
 
-      // Deletar registro do banco
+      // Delete record from database
       const { error: dbError } = await supabase
         .from('client_documents')
         .delete()
@@ -326,64 +431,128 @@ const ClientDocuments = () => {
             <DialogTrigger asChild>
               <Button>
                 <Upload className="h-4 w-4 mr-2" />
-                Upload de Arquivo
+                Upload de Arquivos
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Enviar Novo Documento</DialogTitle>
+                <DialogTitle>Enviar Documentos</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="file-upload">Arquivo</Label>
+                  <Label htmlFor="files-upload">Selecionar Arquivos</Label>
                   <Input
-                    id="file-upload"
+                    id="files-upload"
                     type="file"
-                    onChange={(e) => setUploadFileData(e.target.files?.[0] || null)}
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                    multiple
+                    onChange={handleFilesSelect}
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.txt"
+                    className="cursor-pointer"
                   />
+                  <p className="text-sm text-gray-500 mt-1">
+                    Tipos aceitos: PDF, Word, Excel, Imagens, TXT (máx 50MB cada)
+                  </p>
                 </div>
 
-                <div>
-                  <Label htmlFor="category">Categoria</Label>
-                  <Select 
-                    value={uploadMetadata.category} 
-                    onValueChange={(value) => setUploadMetadata({...uploadMetadata, category: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map(category => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {uploadFiles.length > 0 && (
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    <h4 className="font-semibold">Arquivos Selecionados:</h4>
+                    {uploadFiles.map((uploadFile, index) => (
+                      <div key={index} className="border rounded-lg p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            <span className="text-sm font-medium">{uploadFile.file.name}</span>
+                            <span className="text-xs text-gray-500">
+                              ({formatFileSize(uploadFile.file.size)})
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {uploadFile.status === 'completed' && (
+                              <Badge variant="secondary" className="bg-green-100 text-green-700">
+                                Concluído
+                              </Badge>
+                            )}
+                            {uploadFile.status === 'error' && (
+                              <Badge variant="secondary" className="bg-red-100 text-red-700">
+                                Erro
+                              </Badge>
+                            )}
+                            {uploadFile.status === 'uploading' && (
+                              <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                                Enviando...
+                              </Badge>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeUploadFile(index)}
+                              disabled={uploadFile.status === 'uploading'}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
 
-                <div>
-                  <Label htmlFor="description">Descrição (opcional)</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Descrição do documento..."
-                    value={uploadMetadata.description}
-                    onChange={(e) => setUploadMetadata({...uploadMetadata, description: e.target.value})}
-                  />
-                </div>
+                        {uploadFile.status === 'uploading' && (
+                          <Progress value={uploadFile.progress} className="w-full" />
+                        )}
+
+                        {uploadFile.status === 'error' && uploadFile.error && (
+                          <p className="text-sm text-red-600">{uploadFile.error}</p>
+                        )}
+
+                        {uploadFile.status === 'pending' && (
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs">Categoria</Label>
+                              <Select 
+                                value={uploadFile.category}
+                                onValueChange={(value) => updateUploadFile(index, { category: value })}
+                              >
+                                <SelectTrigger className="h-8">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {categories.map(category => (
+                                    <SelectItem key={category} value={category}>
+                                      {category}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label className="text-xs">Descrição</Label>
+                              <Input
+                                placeholder="Opcional..."
+                                value={uploadFile.description}
+                                onChange={(e) => updateUploadFile(index, { description: e.target.value })}
+                                className="h-8"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 <div className="flex gap-2 pt-4">
                   <Button 
-                    onClick={handleUpload} 
-                    disabled={!uploadFileData || isUploading}
+                    onClick={handleUploadAll} 
+                    disabled={uploadFiles.length === 0 || isUploading}
                     className="flex-1"
                   >
-                    {isUploading ? 'Enviando...' : 'Enviar'}
+                    {isUploading ? 'Enviando...' : `Enviar ${uploadFiles.length} arquivo(s)`}
                   </Button>
                   <Button 
                     variant="outline" 
-                    onClick={() => setIsUploadDialogOpen(false)}
+                    onClick={() => {
+                      setIsUploadDialogOpen(false);
+                      setUploadFiles([]);
+                    }}
+                    disabled={isUploading}
                   >
                     Cancelar
                   </Button>
