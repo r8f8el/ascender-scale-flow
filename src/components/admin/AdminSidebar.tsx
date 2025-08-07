@@ -132,10 +132,10 @@ export function AdminSidebar() {
         key={item.name}
         to={item.href}
         className={cn(
-          'flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-none border-l-4 transition-colors',
+          'flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg mx-2 transition-all duration-200',
           isCurrentPath(item.href)
-            ? 'bg-slate-700 text-white border-l-blue-400'
-            : 'text-slate-300 hover:bg-slate-700 hover:text-white border-l-transparent hover:border-l-slate-600'
+            ? 'bg-gray-100 text-gray-900'
+            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
         )}
       >
         <item.icon className="h-5 w-5 flex-shrink-0" />
@@ -146,24 +146,24 @@ export function AdminSidebar() {
 
   return (
     <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-50">
-      <div className="flex flex-col flex-1 min-h-0 bg-slate-800">
+      <div className="flex flex-col flex-1 min-h-0 bg-white border-r border-gray-200">
         {/* Header */}
-        <div className="flex items-center justify-center h-16 px-4 bg-slate-900 border-b border-slate-700">
-          <h1 className="text-white text-lg font-semibold">Admin Panel</h1>
+        <div className="flex items-center justify-center h-16 px-4 bg-white border-b border-gray-100">
+          <h1 className="text-gray-900 text-lg font-semibold">Admin Panel</h1>
         </div>
 
         {/* Navigation */}
-        <div className="flex-1 flex flex-col overflow-y-auto scrollbar-thin scrollbar-track-slate-800 scrollbar-thumb-slate-600">
-          <nav className="flex-1 py-4">
+        <div className="flex-1 flex flex-col overflow-y-auto py-4">
+          <nav className="flex-1">
             {/* General Section */}
             <div className="space-y-1">
               {renderNavItems(navigation)}
             </div>
 
             {/* FP&A Analytics Section */}
-            <div className="mt-6">
+            <div className="mt-8">
               <div className="px-4 py-2">
-                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   FP&A ANALYTICS
                 </h3>
               </div>
@@ -173,9 +173,9 @@ export function AdminSidebar() {
             </div>
 
             {/* System Section */}
-            <div className="mt-6">
+            <div className="mt-8">
               <div className="px-4 py-2">
-                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   SISTEMA
                 </h3>
               </div>
