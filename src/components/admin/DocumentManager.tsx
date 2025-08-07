@@ -114,8 +114,7 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
           user_id,
           uploaded_by_admin_id,
           uploaded_at,
-          updated_at,
-          client_profiles!client_documents_user_id_fkey(name, company)
+          updated_at
         `);
 
       if (!isAdmin && user?.id) {
@@ -132,10 +131,13 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
 
       if (error) throw error;
       
-      const mappedDocuments = (data || []).map(doc => ({
-        ...doc,
-        user: Array.isArray(doc.client_profiles) ? doc.client_profiles[0] : doc.client_profiles
-      })) as Document[];
+      const mappedDocuments = (data || []).map((doc: any) => {
+        const clientInfo = clients.find(c => c.id === doc.user_id);
+        return {
+          ...doc,
+          user: clientInfo ? { name: clientInfo.name, company: clientInfo.company } : undefined
+        };
+      }) as Document[];
       
       setDocuments(mappedDocuments);
 
@@ -187,7 +189,7 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
     if (!categoriesLoading) {
       fetchDocuments();
     }
-  }, [selectedClient, selectedCategory, user?.id, isAdmin, categoriesLoading, documentCategories]);
+  }, [selectedClient, selectedCategory, user?.id, isAdmin, categoriesLoading, documentCategories, clients]);
 
   const handleDelete = async (documentId: string) => {
     if (!confirm('Tem certeza que deseja excluir este documento?')) return;

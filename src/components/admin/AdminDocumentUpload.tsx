@@ -89,6 +89,7 @@ const AdminDocumentUpload: React.FC<AdminDocumentUploadProps> = ({
         if (uploadError) throw uploadError;
 
         // Save document record
+        const categoryName = documentCategories.find(c => c.id === selectedCategory)?.name || null;
         const { error: insertError } = await supabase
           .from('client_documents')
           .insert({
@@ -96,7 +97,7 @@ const AdminDocumentUpload: React.FC<AdminDocumentUploadProps> = ({
             file_path: filePath,
             file_size: file.size,
             content_type: file.type,
-            category_id: selectedCategory,
+            category: categoryName,
             description: description || null,
             user_id: selectedClient,
             uploaded_by_admin_id: user.id,

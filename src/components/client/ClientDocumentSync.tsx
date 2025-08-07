@@ -21,7 +21,7 @@ const ClientDocumentSync: React.FC = () => {
         {
           event: '*',
           schema: 'public',
-          table: 'documents',
+          table: 'client_documents',
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
