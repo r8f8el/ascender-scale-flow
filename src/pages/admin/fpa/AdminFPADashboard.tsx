@@ -12,6 +12,7 @@ import FPADriversManager from '@/components/fpa/FPADriversManager';
 import FPAScenarioBuilder from '@/components/fpa/FPAScenarioBuilder';
 import FPARollingForecast from '@/components/fpa/FPARollingForecast';
 import FPAClientSelector from '@/components/fpa/FPAClientSelector';
+import FPAExcelUploader from '@/components/fpa/FPAExcelUploader';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -207,7 +208,7 @@ const AdminFPADashboard = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-7">
+            <TabsList className="grid w-full grid-cols-8">
               <TabsTrigger value="overview">Visão Geral</TabsTrigger>
               <TabsTrigger value="drivers">Direcionadores</TabsTrigger>
               <TabsTrigger value="scenarios">Cenários</TabsTrigger>
@@ -215,6 +216,7 @@ const AdminFPADashboard = () => {
               <TabsTrigger value="reports">Relatórios</TabsTrigger>
               <TabsTrigger value="variance">Variância</TabsTrigger>
               <TabsTrigger value="periods">Períodos</TabsTrigger>
+              <TabsTrigger value="data">Dados</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
@@ -483,6 +485,10 @@ const AdminFPADashboard = () => {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="data" className="space-y-6">
+              <FPAExcelUploader clientId={selectedClient} />
             </TabsContent>
           </Tabs>
         </>
