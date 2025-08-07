@@ -29,7 +29,7 @@ interface Document {
   file_path: string;
   file_size: number;
   content_type: string;
-  category_id: string;
+  category: string;
   description: string;
   user_id: string;
   uploaded_by_admin_id?: string;
@@ -38,11 +38,6 @@ interface Document {
   user?: {
     name: string;
     company: string;
-  };
-  document_categories?: {
-    name: string;
-    color: string;
-    icon: string;
   };
 }
 
@@ -68,8 +63,8 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
     [clientId: string]: {
       clientInfo: Client;
       categories: {
-        [categoryId: string]: {
-          categoryInfo: any;
+        [categoryName: string]: {
+          categoryInfo: { name: string; color: string; icon: string };
           documents: Document[];
         }
       }
@@ -77,6 +72,15 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
   }>({});
 
   const { data: documentCategories = [], isLoading: categoriesLoading } = useDocumentCategories();
+
+  // Mapeamento de categorias por nome para facilitar a busca
+  const categoryMap = React.useMemo(() => {
+    const map: { [key: string]: { name: string; color: string; icon: string } } = {};
+    documentCategories.forEach(cat => {
+      map[cat.name] = { name: cat.name, color: cat.color, icon: cat.icon };
+    });
+    return map;
+  }, [documentCategories]);
 
   const fetchClients = async () => {
     if (!isAdmin) return;
@@ -105,14 +109,13 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
           file_path,
           file_size,
           content_type,
-          category_id,
+          category,
           description,
           user_id,
           uploaded_by_admin_id,
           uploaded_at,
           updated_at,
-          client_profiles!client_documents_user_id_fkey(name, company),
-          document_categories!client_documents_category_id_fkey(name, color, icon)
+          client_profiles!client_documents_user_id_fkey(name, company)
         `);
 
       if (!isAdmin && user?.id) {
@@ -122,7 +125,7 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
       }
 
       if (selectedCategory) {
-        query = query.eq('category_id', selectedCategory);
+        query = query.eq('category', selectedCategory);
       }
 
       const { data, error } = await query.order('uploaded_at', { ascending: false });
@@ -131,8 +134,7 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
       
       const mappedDocuments = (data || []).map(doc => ({
         ...doc,
-        user: Array.isArray(doc.client_profiles) ? doc.client_profiles[0] : doc.client_profiles,
-        document_categories: Array.isArray(doc.document_categories) ? doc.document_categories[0] : doc.document_categories
+        user: Array.isArray(doc.client_profiles) ? doc.client_profiles[0] : doc.client_profiles
       })) as Document[];
       
       setDocuments(mappedDocuments);
@@ -141,7 +143,7 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
       if (isAdmin) {
         const grouped = mappedDocuments.reduce((acc, doc) => {
           const clientId = doc.user_id;
-          const categoryId = doc.category_id;
+          const categoryName = doc.category || 'Outros';
           
           if (!acc[clientId]) {
             acc[clientId] = {
@@ -154,14 +156,14 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
             };
           }
           
-          if (!acc[clientId].categories[categoryId]) {
-            acc[clientId].categories[categoryId] = {
-              categoryInfo: doc.document_categories || { name: 'Outros', color: '#6B7280', icon: 'FileText' },
+          if (!acc[clientId].categories[categoryName]) {
+            acc[clientId].categories[categoryName] = {
+              categoryInfo: categoryMap[categoryName] || { name: categoryName, color: '#6B7280', icon: 'FileText' },
               documents: []
             };
           }
           
-          acc[clientId].categories[categoryId].documents.push(doc);
+          acc[clientId].categories[categoryName].documents.push(doc);
           return acc;
         }, {} as typeof documentsByClientAndCategory);
         
@@ -227,8 +229,8 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
   };
 
   const filteredDocuments = documents.filter(doc => {
-    const categoryName = doc.document_categories?.name || 'Outros';
-    const matchesCategory = !selectedCategory || doc.category_id === selectedCategory;
+    const categoryName = doc.category || 'Outros';
+    const matchesCategory = !selectedCategory || doc.category === selectedCategory;
     const matchesSearch = !searchTerm || 
       doc.filename.toLowerCase().includes(searchTerm.toLowerCase()) ||
       doc.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -322,7 +324,7 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
             <SelectContent>
               <SelectItem value="">Todas as categorias</SelectItem>
               {documentCategories.map(category => (
-                <SelectItem key={category.id} value={category.id}>
+                <SelectItem key={category.id} value={category.name}>
                   {category.name}
                 </SelectItem>
               ))}
@@ -360,8 +362,8 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
               </div>
               
               <div className="space-y-4">
-                {Object.entries(clientData.categories).map(([categoryId, categoryData]) => (
-                  <div key={categoryId} className="bg-gray-50 rounded-lg p-4">
+                {Object.entries(clientData.categories).map(([categoryName, categoryData]) => (
+                  <div key={categoryName} className="bg-gray-50 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <div 
@@ -484,9 +486,12 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
                     <div className="flex justify-between items-center">
                       <Badge 
                         variant="secondary" 
-                        style={{ backgroundColor: `${document.document_categories?.color}20`, color: document.document_categories?.color }}
+                        style={{ 
+                          backgroundColor: `${categoryMap[document.category || 'Outros']?.color || '#6B7280'}20`, 
+                          color: categoryMap[document.category || 'Outros']?.color || '#6B7280' 
+                        }}
                       >
-                        {document.document_categories?.name || 'Outros'}
+                        {document.category || 'Outros'}
                       </Badge>
                       <span className="text-sm text-gray-500">
                         {formatFileSize(document.file_size)}
