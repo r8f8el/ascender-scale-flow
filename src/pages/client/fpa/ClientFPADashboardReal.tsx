@@ -8,6 +8,9 @@ import { useFPAFinancialData } from '@/hooks/useFPAFinancialData';
 import { useFPAReports } from '@/hooks/useFPAReports';
 import { useFPAVarianceAnalysis } from '@/hooks/useFPAVarianceAnalysis';
 import { useFPAPeriods } from '@/hooks/useFPAPeriods';
+import FPADriversManager from '@/components/fpa/FPADriversManager';
+import FPAScenarioBuilder from '@/components/fpa/FPAScenarioBuilder';
+import FPARollingForecast from '@/components/fpa/FPARollingForecast';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -20,18 +23,21 @@ import {
   Building,
   Target,
   Activity,
-  Eye
+  Eye,
+  Settings,
+  Calculator,
+  LineChart as LineChartIcon
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 const ClientFPADashboardReal = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('');
+  const [activeTab, setActiveTab] = useState('overview');
 
   // Get current user's FPA client data
   const { data: clients = [], isLoading: clientsLoading } = useFPAClients();
   const currentClient = clients[0]; // Assuming first client for current user
   
-  // Fixed hook calls - only pass clientId, not two parameters
   const { data: financialData = [], isLoading: dataLoading } = useFPAFinancialData(currentClient?.id);
   const { data: reports = [], isLoading: reportsLoading } = useFPAReports(currentClient?.id);
   const { data: varianceAnalysis = [], isLoading: varianceLoading } = useFPAVarianceAnalysis(currentClient?.id);
@@ -100,9 +106,9 @@ const ClientFPADashboardReal = () => {
       {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard FP&A</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard FP&A Avançado</h1>
           <p className="text-gray-600 mt-1">
-            Visão geral dos dados financeiros de {currentClient.company_name}
+            Plataforma completa de Planejamento e Análise Financeira para {currentClient.company_name}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -199,9 +205,12 @@ const ClientFPADashboardReal = () => {
         </Card>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+          <TabsTrigger value="drivers">Direcionadores</TabsTrigger>
+          <TabsTrigger value="scenarios">Cenários</TabsTrigger>
+          <TabsTrigger value="forecast">Rolling Forecast</TabsTrigger>
           <TabsTrigger value="reports">Relatórios</TabsTrigger>
           <TabsTrigger value="variance">Variância</TabsTrigger>
           <TabsTrigger value="periods">Períodos</TabsTrigger>
@@ -211,7 +220,10 @@ const ClientFPADashboardReal = () => {
           {/* Financial Performance Chart */}
           <Card>
             <CardHeader>
-              <CardTitle>Performance Financeira</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <LineChartIcon className="h-5 w-5" />
+                Performance Financeira Integrada
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {dataLoading ? (
@@ -295,6 +307,18 @@ const ClientFPADashboardReal = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="drivers">
+          <FPADriversManager clientId={currentClient.id} />
+        </TabsContent>
+
+        <TabsContent value="scenarios">
+          <FPAScenarioBuilder clientId={currentClient.id} />
+        </TabsContent>
+
+        <TabsContent value="forecast">
+          <FPARollingForecast clientId={currentClient.id} />
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">
