@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -92,6 +91,8 @@ const AdminFPADashboard = () => {
         </div>
         <div className="flex items-center gap-4">
           <FPAClientSelector
+            value={selectedClient}
+            onChange={setSelectedClient}
             clients={clients}
             selectedClient={selectedClient}
             onClientSelect={setSelectedClient}
