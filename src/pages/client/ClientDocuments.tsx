@@ -71,24 +71,45 @@ const ClientDocuments = () => {
 
   const fetchDocuments = async () => {
     if (!client?.id) return;
-    
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('client_documents')
-        .select('*')
-        .eq('user_id', client.id)
-        .order('uploaded_at', { ascending: false });
 
-      if (error) throw error;
-      setDocuments(data || []);
+      const [cdRes, docRes] = await Promise.all([
+        supabase
+          .from('client_documents')
+          .select('*')
+          .eq('user_id', client.id)
+          .order('uploaded_at', { ascending: false }),
+        supabase
+          .from('documents')
+          .select('*, document_categories(name)')
+          .eq('user_id', client.id)
+          .order('created_at', { ascending: false })
+      ]);
+
+      if (cdRes.error) throw cdRes.error;
+      if (docRes.error) throw docRes.error;
+
+      const clientDocs = (cdRes.data || []) as any[];
+      const legacyDocs = (docRes.data || []).map((d: any) => ({
+        id: d.id,
+        filename: d.filename,
+        file_path: d.file_path,
+        content_type: d.content_type,
+        file_size: d.file_size ?? 0,
+        category: d.document_categories?.name || 'Outros',
+        description: null,
+        uploaded_at: d.created_at,
+        updated_at: d.updated_at
+      })) as any[];
+
+      const all = [...clientDocs, ...legacyDocs]
+        .sort((a, b) => new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime());
+
+      setDocuments(all);
     } catch (error) {
       console.error('Erro ao buscar documentos:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar documentos",
-        variant: "destructive"
-      });
+      toast({ title: 'Erro', description: 'Erro ao carregar documentos', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
