@@ -29,7 +29,6 @@ interface Document {
   file_size: number;
   content_type: string;
   category: string;
-  category_id?: string;
   description: string;
   user_id: string;
   uploaded_by_admin_id?: string;
@@ -90,7 +89,6 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
           file_size,
           content_type,
           category,
-          category_id,
           description,
           user_id,
           uploaded_by_admin_id,
@@ -111,13 +109,10 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
       
       // Map the documents and handle category names
       const mappedDocuments = (data || []).map(doc => {
-        // Find category name from documentCategories using category_id
-        const categoryData = documentCategories.find(cat => cat.id === doc.category_id);
-        
         return {
           ...doc,
           user: Array.isArray(doc.client_profiles) ? doc.client_profiles[0] : doc.client_profiles,
-          category: categoryData?.name || doc.category || 'Outros'
+          category: doc.category || 'Outros'
         };
       });
       
@@ -182,7 +177,7 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
   };
 
   const filteredDocuments = documents.filter(doc => {
-    const matchesCategory = !selectedCategory || doc.category === selectedCategory || doc.category_id === selectedCategory;
+    const matchesCategory = !selectedCategory || doc.category === selectedCategory;
     const matchesSearch = !searchTerm || 
       doc.filename.toLowerCase().includes(searchTerm.toLowerCase()) ||
       doc.description?.toLowerCase().includes(searchTerm.toLowerCase());
