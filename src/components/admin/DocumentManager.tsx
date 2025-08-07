@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,8 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { AvatarInitials } from '@/components/ui/avatar-initials';
-import { FileText, Search, Eye, Download, User, Building } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FileText, Search, Download, User, Building, Upload, Trash2, Filter, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import AdminDocumentUpload from './AdminDocumentUpload';
 
 interface Document {
   id: string;
@@ -18,11 +21,9 @@ interface Document {
   content_type: string | null;
   created_at: string;
   user_id: string;
-  category_id: string | null;
-  document_categories?: {
-    name: string;
-    color: string;
-  };
+  category: string;
+  description: string | null;
+  uploaded_by_admin_id: string | null;
 }
 
 interface ClientProfile {
@@ -32,9 +33,21 @@ interface ClientProfile {
   company: string | null;
 }
 
+const categories = [
+  'Contratos',
+  'Relatórios', 
+  'Manuais',
+  'Projetos',
+  'Backups',
+  'Outros'
+];
+
 const DocumentManager: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [selectedClientId, setSelectedClientId] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [uploadForClientId, setUploadForClientId] = useState<string>('');
   const { toast } = useToast();
 
   const { data: clients = [], isLoading: clientsLoading } = useQuery({
@@ -53,19 +66,20 @@ const DocumentManager: React.FC = () => {
     }
   });
 
-  const { data: documents = [], isLoading: documentsLoading } = useQuery({
-    queryKey: ['admin-documents', selectedClientId],
+  const { data: documents = [], isLoading: documentsLoading, refetch: refetchDocuments } = useQuery({
+    queryKey: ['admin-documents', selectedClientId, selectedCategory],
     queryFn: async () => {
       let query = supabase
-        .from('documents')
-        .select(`
-          *,
-          document_categories(name, color)
-        `)
-        .order('created_at', { ascending: false });
+        .from('client_documents')
+        .select('*')
+        .order('uploaded_at', { ascending: false });
 
-      if (selectedClientId) {
+      if (selectedClientId !== 'all') {
         query = query.eq('user_id', selectedClientId);
+      }
+
+      if (selectedCategory !== 'all') {
+        query = query.eq('category', selectedCategory);
       }
 
       const { data, error } = await query;
@@ -86,7 +100,8 @@ const DocumentManager: React.FC = () => {
     const client = getClientById(doc.user_id);
     const matchesSearch = doc.filename.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          client?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         client?.company?.toLowerCase().includes(searchTerm.toLowerCase());
+                         client?.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         doc.description?.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSearch;
   });
 
@@ -121,6 +136,43 @@ const DocumentManager: React.FC = () => {
     }
   };
 
+  const handleDelete = async (document: Document) => {
+    if (!confirm(`Tem certeza que deseja excluir o documento "${document.filename}"?`)) {
+      return;
+    }
+
+    try {
+      // Delete file from storage
+      const { error: storageError } = await supabase.storage
+        .from('documents')
+        .remove([document.file_path]);
+
+      if (storageError) throw storageError;
+
+      // Delete record from database
+      const { error: dbError } = await supabase
+        .from('client_documents')
+        .delete()
+        .eq('id', document.id);
+
+      if (dbError) throw dbError;
+
+      toast({
+        title: "Sucesso",
+        description: "Documento excluído com sucesso!"
+      });
+
+      refetchDocuments();
+    } catch (error) {
+      console.error('Erro ao deletar:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir documento",
+        variant: "destructive"
+      });
+    }
+  };
+
   const formatFileSize = (bytes: number | null) => {
     if (!bytes) return 'N/A';
     if (bytes === 0) return '0 Bytes';
@@ -128,6 +180,28 @@ const DocumentManager: React.FC = () => {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getCategoryBadge = (category: string) => {
+    const colors = {
+      'Contratos': 'bg-blue-100 text-blue-700',
+      'Relatórios': 'bg-green-100 text-green-700',
+      'Manuais': 'bg-purple-100 text-purple-700',
+      'Projetos': 'bg-orange-100 text-orange-700',
+      'Backups': 'bg-gray-100 text-gray-700',
+      'Outros': 'bg-gray-100 text-gray-700'
+    };
+    return colors[category as keyof typeof colors] || 'bg-gray-100 text-gray-700';
   };
 
   const documentsGroupedByClient = filteredDocuments.reduce((acc, doc) => {
@@ -143,6 +217,16 @@ const DocumentManager: React.FC = () => {
     acc[client.id].documents.push(doc);
     return acc;
   }, {} as Record<string, { client: ClientProfile; documents: Document[] }>);
+
+  const handleUploadForClient = (clientId: string) => {
+    setUploadForClientId(clientId);
+    setIsUploadDialogOpen(true);
+  };
+
+  const handleGeneralUpload = () => {
+    setUploadForClientId('');
+    setIsUploadDialogOpen(true);
+  };
 
   if (clientsLoading || documentsLoading) {
     return (
@@ -160,47 +244,96 @@ const DocumentManager: React.FC = () => {
           <p className="text-muted-foreground">Visualize e gerencie documentos de todos os clientes</p>
         </div>
         
-        <div className="flex gap-2 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-80">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Buscar por documento ou cliente..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
+        <Button onClick={handleGeneralUpload}>
+          <Upload className="h-4 w-4 mr-2" />
+          Fazer Upload
+        </Button>
       </div>
 
+      {/* Filtros */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Buscar por documento, cliente ou descrição..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filtrar por cliente..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os clientes</SelectItem>
+                {clients.map(client => (
+                  <SelectItem key={client.id} value={client.id}>
+                    {client.name} - {client.company || client.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filtrar por categoria..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as categorias</SelectItem>
+                {categories.map(category => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Lista de Documentos */}
       <div className="grid gap-6">
         {Object.entries(documentsGroupedByClient).map(([clientId, { client, documents: clientDocuments }]) => (
           <Card key={clientId} className="w-full">
             <CardHeader className="pb-4">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-12 w-12">
-                  <AvatarFallback>
-                    <AvatarInitials name={client.name} />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5" />
-                    {client.name}
-                  </CardTitle>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                    <span>{client.email}</span>
-                    {client.company && (
-                      <span className="flex items-center gap-1">
-                        <Building className="h-4 w-4" />
-                        {client.company}
-                      </span>
-                    )}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-12 w-12">
+                    <AvatarFallback>
+                      <AvatarInitials name={client.name} />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <CardTitle className="flex items-center gap-2">
+                      <User className="h-5 w-5" />
+                      {client.name}
+                    </CardTitle>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                      <span>{client.email}</span>
+                      {client.company && (
+                        <span className="flex items-center gap-1">
+                          <Building className="h-4 w-4" />
+                          {client.company}
+                        </span>
+                      )}
+                    </div>
                   </div>
+                  <Badge variant="secondary">
+                    {clientDocuments.length} {clientDocuments.length === 1 ? 'documento' : 'documentos'}
+                  </Badge>
                 </div>
-                <Badge variant="secondary">
-                  {clientDocuments.length} {clientDocuments.length === 1 ? 'documento' : 'documentos'}
-                </Badge>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleUploadForClient(client.id)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar
+                </Button>
               </div>
             </CardHeader>
             
@@ -212,19 +345,21 @@ const DocumentManager: React.FC = () => {
                       <FileText className="h-8 w-8 text-blue-500 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-sm truncate">{document.filename}</h3>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {document.description || 'Sem descrição'}
+                        </p>
                         <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
                           <span>{formatFileSize(document.file_size)}</span>
-                          <span>{new Date(document.created_at).toLocaleDateString('pt-BR')}</span>
-                          {document.document_categories && (
-                            <Badge 
-                              variant="secondary" 
-                              className="text-xs"
-                              style={{ 
-                                backgroundColor: document.document_categories.color + '20',
-                                color: document.document_categories.color 
-                              }}
-                            >
-                              {document.document_categories.name}
+                          <span>{formatDate(document.created_at)}</span>
+                          <Badge 
+                            variant="outline" 
+                            className={`text-xs ${getCategoryBadge(document.category)}`}
+                          >
+                            {document.category}
+                          </Badge>
+                          {document.uploaded_by_admin_id && (
+                            <Badge variant="secondary" className="text-xs">
+                              Admin
                             </Badge>
                           )}
                         </div>
@@ -236,8 +371,18 @@ const DocumentManager: React.FC = () => {
                         variant="ghost" 
                         size="sm"
                         onClick={() => handleDownload(document)}
+                        title="Download"
                       >
                         <Download className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleDelete(document)}
+                        className="text-red-600 hover:text-red-700"
+                        title="Excluir"
+                      >
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
@@ -255,12 +400,21 @@ const DocumentManager: React.FC = () => {
                 Nenhum documento encontrado
               </h3>
               <p className="text-gray-500">
-                {searchTerm ? 'Tente ajustar os filtros de busca' : 'Ainda não há documentos cadastrados no sistema'}
+                {searchTerm || selectedClientId !== 'all' || selectedCategory !== 'all' 
+                  ? 'Tente ajustar os filtros de busca' 
+                  : 'Ainda não há documentos cadastrados no sistema'}
               </p>
             </CardContent>
           </Card>
         )}
       </div>
+
+      <AdminDocumentUpload
+        isOpen={isUploadDialogOpen}
+        onClose={() => setIsUploadDialogOpen(false)}
+        onUploadComplete={refetchDocuments}
+        selectedClientId={uploadForClientId}
+      />
     </div>
   );
 };

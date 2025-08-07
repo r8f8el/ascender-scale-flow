@@ -371,6 +371,7 @@ export type Database = {
           id: string
           updated_at: string | null
           uploaded_at: string | null
+          uploaded_by_admin_id: string | null
           user_id: string
         }
         Insert: {
@@ -383,6 +384,7 @@ export type Database = {
           id?: string
           updated_at?: string | null
           uploaded_at?: string | null
+          uploaded_by_admin_id?: string | null
           user_id: string
         }
         Update: {
@@ -395,9 +397,18 @@ export type Database = {
           id?: string
           updated_at?: string | null
           uploaded_at?: string | null
+          uploaded_by_admin_id?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "client_documents_uploaded_by_admin_id_fkey"
+            columns: ["uploaded_by_admin_id"]
+            isOneToOne: false
+            referencedRelation: "admin_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       client_profiles: {
         Row: {
