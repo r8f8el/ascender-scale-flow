@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface FPAExcelUploaderProps {
   clientId: string;
@@ -129,6 +130,7 @@ const numberOrZero = (v: any) => {
 
 const FPAExcelUploader: React.FC<FPAExcelUploaderProps> = ({ clientId }) => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [fileName, setFileName] = useState<string | null>(null);
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
@@ -287,6 +289,11 @@ const FPAExcelUploader: React.FC<FPAExcelUploaderProps> = ({ clientId }) => {
         file_type: 'xlsx',
         status: 'processed',
       });
+
+      // Invalidate cached queries
+      queryClient.invalidateQueries({ queryKey: ['fpa-financial-data'] });
+      queryClient.invalidateQueries({ queryKey: ['fpa-periods'] });
+      queryClient.invalidateQueries({ queryKey: ['fpa-data-uploads'] });
 
       toast({ title: 'Importação concluída', description: `Linhas importadas: ${financialRows.length}` });
     } catch (e: any) {
