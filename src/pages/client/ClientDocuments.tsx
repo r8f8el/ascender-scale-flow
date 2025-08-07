@@ -309,18 +309,18 @@ const ClientDocuments = () => {
     try {
       const { data, error } = await supabase.storage
         .from('documents')
-        .download(document.file_path);
+        .createSignedUrl(document.file_path, 60);
 
       if (error) throw error;
 
-      const url = URL.createObjectURL(data);
-      const a = window.document.createElement('a');
-      a.href = url;
-      a.download = document.filename;
-      window.document.body.appendChild(a);
-      a.click();
-      window.document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      if (data?.signedUrl) {
+        const a = window.document.createElement('a');
+        a.href = data.signedUrl;
+        a.download = document.filename;
+        window.document.body.appendChild(a);
+        a.click();
+        window.document.body.removeChild(a);
+      }
 
       toast({
         title: "Sucesso",
@@ -338,12 +338,13 @@ const ClientDocuments = () => {
 
   const handleView = async (document: Document) => {
     try {
-      const { data } = supabase.storage
+      const { data, error } = await supabase.storage
         .from('documents')
-        .getPublicUrl(document.file_path);
+        .createSignedUrl(document.file_path, 300); // 5 minutos
 
-      if (data?.publicUrl) {
-        window.open(data.publicUrl, '_blank');
+      if (error) throw error;
+      if (data?.signedUrl) {
+        window.open(data.signedUrl, '_blank');
       }
     } catch (error) {
       console.error('Erro ao visualizar:', error);
