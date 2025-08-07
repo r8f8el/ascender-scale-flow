@@ -84,7 +84,18 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
       let query = supabase
         .from('client_documents')
         .select(`
-          *,
+          id,
+          filename,
+          file_path,
+          file_size,
+          content_type,
+          category,
+          category_id,
+          description,
+          user_id,
+          uploaded_by_admin_id,
+          uploaded_at,
+          updated_at,
           client_profiles!client_documents_user_id_fkey(name, company)
         `);
 
@@ -100,7 +111,7 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
       
       // Map the documents and handle category names
       const mappedDocuments = (data || []).map(doc => {
-        // Find category name from documentCategories
+        // Find category name from documentCategories using category_id
         const categoryData = documentCategories.find(cat => cat.id === doc.category_id);
         
         return {
