@@ -1,9 +1,9 @@
 
 import React from 'react';
-import { FileManager } from '@/components/FileManager';
+import ClientDocuments from './ClientDocuments';
 
 const ClientDocumentsNew = () => {
-  return <FileManager />;
+  return <ClientDocuments />;
 };
 
 export default ClientDocumentsNew;
