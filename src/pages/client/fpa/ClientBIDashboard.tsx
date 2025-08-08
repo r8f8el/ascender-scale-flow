@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { Loader2, ExternalLink, BarChart3 } from 'lucide-react';
+import { Loader2, ExternalLink, BarChart3, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useClientBIEmbeds } from '@/hooks/useClientBIEmbeds';
@@ -13,6 +13,22 @@ import { useClientBIEmbeds } from '@/hooks/useClientBIEmbeds';
 const ClientBIDashboard: React.FC = () => {
   useEffect(() => {
     document.title = 'BI do Cliente | Ascalate';
+    // SEO meta description and canonical
+    const desc = 'Dashboards de BI do cliente (Power BI, Looker Studio, Tableau).';
+    let meta = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'description';
+      document.head.appendChild(meta);
+    }
+    meta.content = desc;
+    let link = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'canonical';
+      document.head.appendChild(link);
+    }
+    link.href = window.location.href;
   }, []);
 
   const { user } = useAuth();
@@ -20,7 +36,8 @@ const ClientBIDashboard: React.FC = () => {
   const [resolvingClient, setResolvingClient] = useState(true);
   const { data: embeds = [], isLoading: loadingEmbeds } = useClientBIEmbeds(currentClientId);
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
-
+  const [frameStatus, setFrameStatus] = useState<'idle' | 'loading' | 'loaded' | 'timeout'>('idle');
+  const allowedHostsDisplay = 'app.powerbi.com, app.powerbigov.us, lookerstudio.google.com, datastudio.google.com, *.tableau.com';
   useEffect(() => {
     const resolveClient = async () => {
       if (!user?.id) return;
@@ -117,11 +134,10 @@ const ClientBIDashboard: React.FC = () => {
       const url = new URL(urlStr, window.location.origin);
       const host = url.hostname.toLowerCase();
       if (url.protocol !== 'https:') return false;
-      return (
-        host === 'app.powerbi.com' ||
-        host === 'lookerstudio.google.com' ||
-        host === 'public.tableau.com'
-      );
+      const tableauAllowed = host === 'public.tableau.com' || host.endsWith('.tableau.com');
+      const lookerAllowed = host === 'lookerstudio.google.com' || host === 'datastudio.google.com';
+      const powerBIAllowed = host === 'app.powerbi.com' || host === 'app.powerbigov.us';
+      return tableauAllowed || lookerAllowed || powerBIAllowed;
     } catch {
       return false;
     }
@@ -133,10 +149,22 @@ const ClientBIDashboard: React.FC = () => {
     if (!isAllowedBIHost(cleaned)) return null;
     try {
       const u = new URL(cleaned);
-      if (u.hostname.toLowerCase() === 'app.powerbi.com') {
-        if (!u.searchParams.has('rs:embed')) {
-          u.searchParams.set('rs:embed', 'true');
-        }
+      const host = u.hostname.toLowerCase();
+      // Power BI: force embed parameters
+      if (host === 'app.powerbi.com' || host === 'app.powerbigov.us') {
+        if (!u.searchParams.has('rs:embed')) u.searchParams.set('rs:embed', 'true');
+        return u.toString();
+      }
+      // Looker Studio: ensure embedded=true
+      if (host === 'lookerstudio.google.com' || host === 'datastudio.google.com') {
+        if (!u.searchParams.has('embedded')) u.searchParams.set('embedded', 'true');
+        return u.toString();
+      }
+      // Tableau: hide viz home and embed
+      if (host === 'public.tableau.com' || host.endsWith('.tableau.com')) {
+        const sp = u.searchParams;
+        if (!sp.has(':showVizHome')) sp.set(':showVizHome', 'no');
+        if (!sp.has(':embed')) sp.set(':embed', 'y');
         return u.toString();
       }
       return cleaned;
@@ -145,14 +173,30 @@ const ClientBIDashboard: React.FC = () => {
     }
   };
 
-  const primaryUrl = sanitizeUrl(selected.embed_url);
-  const fallbackFromHtml = sanitizeUrl(extractIframeSrc(selected.iframe_html));
+  const rawPrimary = selected.embed_url || null;
+  const rawFromHtml = extractIframeSrc(selected.iframe_html);
+  const primaryUrl = sanitizeUrl(rawPrimary);
+  const fallbackFromHtml = sanitizeUrl(rawFromHtml);
   const safeEmbedUrl = primaryUrl || fallbackFromHtml;
+  const hasAnyRaw = Boolean(rawPrimary || rawFromHtml);
+  const invalidHost = hasAnyRaw && !(isAllowedBIHost(rawPrimary || '') || isAllowedBIHost(rawFromHtml || ''));
 
   const openInNewTabSafely = (url: string) => {
     const win = window.open(url, '_blank');
     if (win) win.opener = null;
   };
+
+  useEffect(() => {
+    if (!safeEmbedUrl) {
+      setFrameStatus('idle');
+      return;
+    }
+    setFrameStatus('loading');
+    const t = setTimeout(() => {
+      setFrameStatus((prev) => (prev === 'loaded' ? 'loaded' : 'timeout'));
+    }, 8000);
+    return () => clearTimeout(t);
+  }, [safeEmbedUrl]);
 
   return (
     <div className="space-y-6">
@@ -189,18 +233,39 @@ const ClientBIDashboard: React.FC = () => {
         </CardHeader>
         <CardContent>
           {safeEmbedUrl ? (
-            <AspectRatio ratio={16/9}>
-              <iframe
-                src={safeEmbedUrl}
-                className="w-full h-full rounded-md border"
-                loading="lazy"
-                allowFullScreen
-                allow="fullscreen; clipboard-write"
-                title={selected.title || 'Dashboard de BI'}
-              />
-            </AspectRatio>
+            <>
+              <AspectRatio ratio={16/9}>
+                <iframe
+                  src={safeEmbedUrl}
+                  className="w-full h-full rounded-md border"
+                  loading="lazy"
+                  allowFullScreen
+                  allow="fullscreen; clipboard-write"
+                  onLoad={() => setFrameStatus('loaded')}
+                  title={selected.title || 'Dashboard de BI'}
+                />
+              </AspectRatio>
+              {frameStatus === 'timeout' && (
+                <div className="mt-3 flex items-start gap-2 text-amber-600 text-sm">
+                  <AlertTriangle className="h-4 w-4 mt-0.5" />
+                  <p>
+                    O embed não carregou no tempo esperado. O provedor pode estar bloqueando iframes (X-Frame-Options/CSP).
+                    Tente usar o botão “Abrir em nova aba”.
+                  </p>
+                </div>
+              )}
+            </>
           ) : (
-            <div className="py-10 text-center text-gray-600">Nenhum conteúdo de embed disponível.</div>
+            <div className="py-10 text-center">
+              {hasAnyRaw ? (
+                <>
+                  <p className="text-gray-700">URL inválida ou host não permitido.</p>
+                  <p className="text-gray-500 text-sm mt-2">Hosts permitidos: {allowedHostsDisplay}</p>
+                </>
+              ) : (
+                <p className="text-gray-600">Nenhum conteúdo de embed disponível.</p>
+              )}
+            </div>
           )}
 
           <div className="flex justify-end mt-4">
