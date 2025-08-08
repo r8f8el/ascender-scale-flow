@@ -14,7 +14,8 @@ import {
   X,
   LayoutDashboard,
   FolderOpen,
-  LogOut
+  LogOut,
+  BarChart3
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -31,6 +32,7 @@ const fpaNavigationItems = [
   { path: '/cliente/documentos', icon: FolderOpen, label: 'Cofre de Dados' },
   { path: '/cliente/fpa/cenarios', icon: TrendingUp, label: 'Cenários Interativos' },
   { path: '/cliente/fpa/relatorios', icon: FileText, label: 'Biblioteca de Relatórios' },
+  { path: '/cliente/fpa/bi', icon: BarChart3, label: 'BI do Cliente' },
   { path: '/cliente/fpa/comunicacao', icon: MessageCircle, label: 'Comunicação' }
 ];
 

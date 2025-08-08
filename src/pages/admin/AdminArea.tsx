@@ -25,6 +25,7 @@ import AdminFPAReportBuilder from './fpa/AdminFPAReportBuilder';
 import AdminFPAVarianceAnalysis from './fpa/AdminFPAVarianceAnalysis';
 import AdminFPAModeling from './fpa/AdminFPAModeling';
 import AdminFPADashboard from './fpa/AdminFPADashboard';
+import AdminFPABIEmbeds from './fpa/AdminFPABIEmbeds';
 
 const AdminArea = () => {
   return (
@@ -56,6 +57,7 @@ const AdminArea = () => {
             <Route path="/fpa/relatorios" element={<AdminFPAReportBuilder />} />
             <Route path="/fpa/variancia" element={<AdminFPAVarianceAnalysis />} />
             <Route path="/fpa/modelagem" element={<AdminFPAModeling />} />
+            <Route path="/fpa/bi" element={<AdminFPABIEmbeds />} />
           </Routes>
         </main>
       </div>

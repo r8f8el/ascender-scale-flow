@@ -22,6 +22,7 @@ import ClientFPAData from './fpa/ClientFPAData';
 import ClientFPAReports from './fpa/ClientFPAReports';
 import ClientFPAScenarios from './fpa/ClientFPAScenarios';
 import ClientFPACommunication from './fpa/ClientFPACommunication';
+import ClientBIDashboard from './fpa/ClientBIDashboard';
 
 const ClientArea = () => {
   const { client, logout } = useAuth();
@@ -67,6 +68,7 @@ const ClientArea = () => {
           <Route path="/fpa/relatorios" element={<ClientFPAReports />} />
           <Route path="/fpa/cenarios" element={<ClientFPAScenarios />} />
           <Route path="/fpa/comunicacao" element={<ClientFPACommunication />} />
+          <Route path="/fpa/bi" element={<ClientBIDashboard />} />
         </Routes>
       </main>
     </div>

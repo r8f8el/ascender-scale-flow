@@ -101,6 +101,11 @@ const fpaNavigation = [
     href: '/admin/fpa/modelagem',
     icon: Layers,
   },
+  {
+    name: 'Embeds de BI',
+    href: '/admin/fpa/bi',
+    icon: BarChart3,
+  },
 ];
 
 const systemNavigation = [
