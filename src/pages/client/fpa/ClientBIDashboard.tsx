@@ -105,9 +105,42 @@ const ClientBIDashboard: React.FC = () => {
   }
 
   const selected = embeds.find(e => e.id === selectedId) || embeds[0];
-  const safeEmbedUrl = selected.embed_url
-    ? selected.embed_url.trim().replace(/^"|"$/g, '').replace(/%22$/g, '')
-    : null;
+
+  const extractIframeSrc = (html?: string | null): string | null => {
+    if (!html) return null;
+    const match = html.match(/<iframe[^>]+src=["']([^"']+)["']/i);
+    return match ? match[1] : null;
+  };
+
+  const isAllowedBIHost = (urlStr: string): boolean => {
+    try {
+      const url = new URL(urlStr, window.location.origin);
+      const host = url.hostname.toLowerCase();
+      if (url.protocol !== 'https:') return false;
+      return (
+        host === 'app.powerbi.com' ||
+        host === 'lookerstudio.google.com' ||
+        host === 'public.tableau.com'
+      );
+    } catch {
+      return false;
+    }
+  };
+
+  const sanitizeUrl = (urlStr?: string | null): string | null => {
+    if (!urlStr) return null;
+    const cleaned = urlStr.trim().replace(/^"|"$/g, '').replace(/%22$/g, '');
+    return isAllowedBIHost(cleaned) ? cleaned : null;
+  };
+
+  const primaryUrl = sanitizeUrl(selected.embed_url);
+  const fallbackFromHtml = sanitizeUrl(extractIframeSrc(selected.iframe_html));
+  const safeEmbedUrl = primaryUrl || fallbackFromHtml;
+
+  const openInNewTabSafely = (url: string) => {
+    const win = window.open(url, '_blank');
+    if (win) win.opener = null;
+  };
 
   return (
     <div className="space-y-6">
@@ -150,18 +183,18 @@ const ClientBIDashboard: React.FC = () => {
                 className="w-full h-full rounded-md border"
                 loading="lazy"
                 allowFullScreen
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                referrerPolicy="no-referrer"
                 title={selected.title || 'Dashboard de BI'}
               />
             </AspectRatio>
-          ) : selected.iframe_html ? (
-            <div className="rounded-md border overflow-hidden" dangerouslySetInnerHTML={{ __html: selected.iframe_html }} />
           ) : (
             <div className="py-10 text-center text-gray-600">Nenhum conteúdo de embed disponível.</div>
           )}
 
           <div className="flex justify-end mt-4">
             {safeEmbedUrl && (
-              <Button variant="outline" size="sm" onClick={() => window.open(safeEmbedUrl!, '_blank') }>
+              <Button variant="outline" size="sm" onClick={() => openInNewTabSafely(safeEmbedUrl!)}>
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Abrir em nova aba
               </Button>
