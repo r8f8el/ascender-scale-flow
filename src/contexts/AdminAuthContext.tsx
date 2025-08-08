@@ -118,7 +118,7 @@ const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) 
         .from('admin_profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error loading admin profile:', error);

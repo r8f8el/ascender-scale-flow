@@ -118,7 +118,7 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
         .from('client_profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error loading client profile:', error);
