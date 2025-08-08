@@ -1,5 +1,5 @@
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Loader2, ExternalLink, BarChart3 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useFPAClients } from '@/hooks/useFPAClients';
+import { supabase } from '@/integrations/supabase/client';
 import { useClientBIEmbeds } from '@/hooks/useClientBIEmbeds';
 
 const ClientBIDashboard: React.FC = () => {
@@ -16,16 +16,57 @@ const ClientBIDashboard: React.FC = () => {
   }, []);
 
   const { user } = useAuth();
-  const { data: clients = [], isLoading: loadingClients } = useFPAClients();
-  const currentClient = useMemo(() => clients.find(c => c.client_profile?.id === user?.id), [clients, user?.id]);
-  const { data: embeds = [], isLoading: loadingEmbeds } = useClientBIEmbeds(currentClient?.id);
+  const [currentClientId, setCurrentClientId] = useState<string | undefined>(undefined);
+  const [resolvingClient, setResolvingClient] = useState(true);
+  const { data: embeds = [], isLoading: loadingEmbeds } = useClientBIEmbeds(currentClientId);
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    const resolveClient = async () => {
+      if (!user?.id) return;
+      setResolvingClient(true);
+      try {
+        // 1) Direct match: primary contact
+        const { data: direct } = await supabase
+          .from('fpa_clients')
+          .select('id')
+          .eq('client_profile_id', user.id)
+          .maybeSingle();
+        if (direct?.id) {
+          setCurrentClientId(direct.id);
+          return;
+        }
+        // 2) Company team membership
+        const { data: teams } = await supabase
+          .from('company_teams')
+          .select('company_id')
+          .eq('member_id', user.id)
+          .eq('status', 'active');
+        const companyIds = (teams || []).map((t: any) => t.company_id).filter(Boolean);
+        if (companyIds.length) {
+          const { data: client } = await supabase
+            .from('fpa_clients')
+            .select('id')
+            .in('client_profile_id', companyIds)
+            .maybeSingle();
+          if (client?.id) {
+            setCurrentClientId(client.id);
+            return;
+          }
+        }
+        setCurrentClientId(undefined);
+      } finally {
+        setResolvingClient(false);
+      }
+    };
+    resolveClient();
+  }, [user?.id]);
 
   useEffect(() => {
     if (embeds.length && !selectedId) setSelectedId(embeds[0].id);
   }, [embeds, selectedId]);
 
-  if (loadingClients || loadingEmbeds) {
+  if (resolvingClient || loadingEmbeds) {
     return (
       <div className="flex items-center justify-center min-h-72">
         <div className="flex flex-col items-center gap-3">
@@ -36,11 +77,11 @@ const ClientBIDashboard: React.FC = () => {
     );
   }
 
-  if (!currentClient) {
+  if (!currentClientId) {
     return (
       <Card>
         <CardContent className="py-10 text-center">
-          <p className="text-gray-700">Não identificamos seu cliente FP&A. Tente sair e entrar novamente.</p>
+          <p className="text-gray-700">Não encontramos um cliente FP&A associado à sua conta. Verifique com o administrador.</p>
         </CardContent>
       </Card>
     );
