@@ -360,6 +360,65 @@ export type Database = {
         }
         Relationships: []
       }
+      client_bi_embeds: {
+        Row: {
+          access_mode: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          embed_url: string | null
+          external_dashboard_id: string | null
+          filters: Json | null
+          fpa_client_id: string | null
+          id: string
+          iframe_html: string | null
+          is_active: boolean
+          provider: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_mode?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          embed_url?: string | null
+          external_dashboard_id?: string | null
+          filters?: Json | null
+          fpa_client_id?: string | null
+          id?: string
+          iframe_html?: string | null
+          is_active?: boolean
+          provider: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_mode?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          embed_url?: string | null
+          external_dashboard_id?: string | null
+          filters?: Json | null
+          fpa_client_id?: string | null
+          id?: string
+          iframe_html?: string | null
+          is_active?: boolean
+          provider?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_bi_embeds_fpa_client_id_fkey"
+            columns: ["fpa_client_id"]
+            isOneToOne: false
+            referencedRelation: "fpa_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_documents: {
         Row: {
           category: string | null
