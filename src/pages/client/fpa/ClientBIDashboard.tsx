@@ -130,7 +130,19 @@ const ClientBIDashboard: React.FC = () => {
   const sanitizeUrl = (urlStr?: string | null): string | null => {
     if (!urlStr) return null;
     const cleaned = urlStr.trim().replace(/^"|"$/g, '').replace(/%22$/g, '');
-    return isAllowedBIHost(cleaned) ? cleaned : null;
+    if (!isAllowedBIHost(cleaned)) return null;
+    try {
+      const u = new URL(cleaned);
+      if (u.hostname.toLowerCase() === 'app.powerbi.com') {
+        if (!u.searchParams.has('rs:embed')) {
+          u.searchParams.set('rs:embed', 'true');
+        }
+        return u.toString();
+      }
+      return cleaned;
+    } catch {
+      return null;
+    }
   };
 
   const primaryUrl = sanitizeUrl(selected.embed_url);
@@ -183,7 +195,7 @@ const ClientBIDashboard: React.FC = () => {
                 className="w-full h-full rounded-md border"
                 loading="lazy"
                 allowFullScreen
-                referrerPolicy="no-referrer"
+                allow="fullscreen; clipboard-write"
                 title={selected.title || 'Dashboard de BI'}
               />
             </AspectRatio>
