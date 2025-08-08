@@ -105,6 +105,9 @@ const ClientBIDashboard: React.FC = () => {
   }
 
   const selected = embeds.find(e => e.id === selectedId) || embeds[0];
+  const safeEmbedUrl = selected.embed_url
+    ? selected.embed_url.trim().replace(/^"|"$/g, '').replace(/%22$/g, '')
+    : null;
 
   return (
     <div className="space-y-6">
@@ -140,10 +143,10 @@ const ClientBIDashboard: React.FC = () => {
           )}
         </CardHeader>
         <CardContent>
-          {selected.embed_url ? (
+          {safeEmbedUrl ? (
             <AspectRatio ratio={16/9}>
               <iframe
-                src={selected.embed_url}
+                src={safeEmbedUrl}
                 className="w-full h-full rounded-md border"
                 loading="lazy"
                 allowFullScreen
@@ -157,8 +160,8 @@ const ClientBIDashboard: React.FC = () => {
           )}
 
           <div className="flex justify-end mt-4">
-            {selected.embed_url && (
-              <Button variant="outline" size="sm" onClick={() => window.open(selected.embed_url!, '_blank') }>
+            {safeEmbedUrl && (
+              <Button variant="outline" size="sm" onClick={() => window.open(safeEmbedUrl!, '_blank') }>
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Abrir em nova aba
               </Button>
