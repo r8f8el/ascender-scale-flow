@@ -183,7 +183,6 @@ const ClientBIDashboard: React.FC = () => {
                 className="w-full h-full rounded-md border"
                 loading="lazy"
                 allowFullScreen
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
                 referrerPolicy="no-referrer"
                 title={selected.title || 'Dashboard de BI'}
               />
