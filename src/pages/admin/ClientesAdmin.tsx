@@ -269,11 +269,7 @@ const ClientesAdmin = () => {
                           <div className="flex items-center gap-2 mb-1">
                             <h4 className="font-medium truncate">{client.name}</h4>
                             <Badge className="bg-blue-100 text-blue-700">FP&A</Badge>
-                            {fpaClient?.onboarding_completed ? (
-                              <Badge className="bg-green-100 text-green-700">Ativo</Badge>
-                            ) : (
-                              <Badge variant="outline">Onboarding</Badge>
-                            )}
+                            <Badge className="bg-green-100 text-green-700">Ativo</Badge>
                           </div>
                           
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">

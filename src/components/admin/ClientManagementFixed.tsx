@@ -68,11 +68,7 @@ const ClientManagementFixed = () => {
 
       const formattedClients = data?.map(client => ({
         ...client,
-        fpa_data: client.fpa_clients?.[0] || {
-          industry: null,
-          onboarding_completed: false,
-          current_phase: 1
-        }
+        fpa_data: client.fpa_clients?.[0] || null
       })) || [];
 
       setClients(formattedClients);
@@ -178,8 +174,8 @@ const ClientManagementFixed = () => {
       client.company?.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesFilter = selectedFilter === 'all' ||
-      (selectedFilter === 'fpa' && client.fpa_data?.onboarding_completed) ||
-      (selectedFilter === 'pending' && !client.fpa_data?.onboarding_completed);
+      (selectedFilter === 'fpa' && !!client.fpa_data) ||
+      (selectedFilter === 'pending' && !client.fpa_data);
 
     return matchesSearch && matchesFilter;
   });
@@ -308,7 +304,7 @@ const ClientManagementFixed = () => {
           <SelectContent>
             <SelectItem value="all">Todos os Clientes</SelectItem>
             <SelectItem value="fpa">FP&A Completo</SelectItem>
-            <SelectItem value="pending">Pendente Setup</SelectItem>
+            <SelectItem value="pending">Sem FP&A</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -356,9 +352,9 @@ const ClientManagementFixed = () => {
                           <Badge variant="secondary">Principal</Badge>
                         )}
                         <Badge 
-                          variant={client.fpa_data?.onboarding_completed ? "default" : "outline"}
+                          variant={client.fpa_data ? "default" : "outline"}
                         >
-                          {client.fpa_data?.onboarding_completed ? 'FP&A Ativo' : 'Setup Pendente'}
+                          {client.fpa_data ? 'FP&A Ativo' : 'Sem FP&A'}
                         </Badge>
                       </div>
                       

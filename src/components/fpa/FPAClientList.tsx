@@ -24,7 +24,6 @@ const FPAClientList: React.FC<FPAClientListProps> = ({
   onClientSelect
 }) => {
   const getClientStatus = (client: Client) => {
-    if (!client.onboarding_completed) return 'onboarding';
     if (client.current_phase === 1) return 'setup';
     if (client.current_phase === 2) return 'data_collection';
     if (client.current_phase === 3) return 'analysis';

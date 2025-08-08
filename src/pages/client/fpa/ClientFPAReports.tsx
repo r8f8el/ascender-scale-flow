@@ -61,17 +61,6 @@ const ClientFPAReports = () => {
     );
   }
 
-  if (!currentClient) {
-    return (
-      <div className="text-center py-12">
-        <FileText className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
-        <h3 className="text-lg font-semibold mb-2">Configuração FP&A Necessária</h3>
-        <p className="text-gray-600">
-          Complete o onboarding FP&A para acessar seus relatórios.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
