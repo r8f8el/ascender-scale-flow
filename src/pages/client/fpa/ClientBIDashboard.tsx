@@ -201,6 +201,7 @@ const ClientBIDashboard: React.FC = () => {
       return null;
     }
   })();
+  const debugMode = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1';
   const openInNewTabSafely = (url: string) => {
     const win = window.open(url, '_blank');
     if (win) win.opener = null;
@@ -219,6 +220,11 @@ const ClientBIDashboard: React.FC = () => {
     }, 8000);
     return () => clearTimeout(t);
   }, [safeEmbedUrl]);
+
+  useEffect(() => {
+    if (!debugMode) return;
+    console.log('[BI][DEBUG] user:', user?.id, 'clientId:', currentClientId, 'embeds:', embeds, 'selectedId:', selectedId, 'safeUrl:', safeEmbedUrl, 'status:', frameStatus);
+  }, [debugMode, user?.id, currentClientId, embeds, selectedId, safeEmbedUrl, frameStatus]);
 
   return (
     <div className="space-y-6">
@@ -256,6 +262,14 @@ const ClientBIDashboard: React.FC = () => {
         <CardContent>
           {safeEmbedUrl ? (
             <>
+              {debugMode && (
+                <Alert className="mb-3">
+                  <AlertTitle>Debug do Embed</AlertTitle>
+                  <AlertDescription>
+                    Cliente: {currentClientId || '—'} · Embeds: {embeds.length} · Selecionado: {selected?.id || '—'} · Status: {frameStatus} · Host: {diag?.host || '—'}
+                  </AlertDescription>
+                </Alert>
+              )}
               <AspectRatio ratio={16/9}>
                 <iframe
                   src={safeEmbedUrl}
