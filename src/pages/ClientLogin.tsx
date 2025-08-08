@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Logo } from '../components/Logo';
 import { Input } from '@/components/ui/input';
@@ -30,11 +30,12 @@ const ClientLogin = () => {
   const navigate = useNavigate();
   const { login, signup, isAuthenticated } = useAuth();
 
-  // Redirect if already authenticated
-  if (isAuthenticated) {
-    navigate('/cliente');
-    return null;
-  }
+  // Redirecionar se já autenticado
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/cliente', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

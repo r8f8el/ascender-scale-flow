@@ -114,6 +114,11 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
 
   const loadClientProfile = async (user: User) => {
     try {
+      // Não criar perfil de cliente para e-mails de admin
+      if (user.email?.endsWith('@ascalate.com.br')) {
+        return;
+      }
+
       const { data: profile, error } = await supabase
         .from('client_profiles')
         .select('*')
@@ -125,11 +130,37 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
         return;
       }
 
-      if (profile) {
+      let profileData = profile as any | null;
+
+      // Se não existir (usuário antigo), cria automaticamente o perfil
+      if (!profileData) {
+        const defaultName = (user.user_metadata as any)?.name || user.email?.split('@')[0] || 'Cliente';
+        const { data: inserted, error: insertError } = await supabase
+          .from('client_profiles')
+          .insert({
+            id: user.id,
+            name: defaultName,
+            email: user.email!,
+            company: (user.user_metadata as any)?.company || null,
+            cnpj: (user.user_metadata as any)?.cnpj || null,
+            is_primary_contact: true,
+          })
+          .select()
+          .maybeSingle();
+
+        if (insertError) {
+          console.error('Error auto-creating client profile:', insertError);
+          return;
+        }
+
+        profileData = inserted as any;
+      }
+
+      if (profileData) {
         setClient({
-          id: profile.id,
-          name: profile.name,
-          email: profile.email
+          id: profileData.id,
+          name: profileData.name,
+          email: profileData.email,
         });
       }
     } catch (error) {

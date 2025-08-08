@@ -70,7 +70,11 @@ const ClientDocuments = () => {
   ];
 
   const fetchDocuments = async () => {
-    if (!client?.id) return;
+    if (!client?.id) {
+      // Evitar spinner infinito quando não há perfil de cliente
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
 
@@ -116,6 +120,10 @@ const ClientDocuments = () => {
   };
 
   useEffect(() => {
+    if (!client?.id) {
+      setLoading(false);
+      return;
+    }
     fetchDocuments();
   }, [client?.id]);
 
