@@ -1,9 +1,21 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
+import { useUpdateFPAClient } from '@/hooks/useFPAClients';
+import { useCreateFPAPeriod } from '@/hooks/useFPAPeriods';
+import { useCreateFPAReport } from '@/hooks/useFPAReports';
+import FPAExcelUploader from './FPAExcelUploader';
 import { 
   Building, 
   Edit,
@@ -11,7 +23,8 @@ import {
   Settings,
   Plus,
   FileText,
-  Upload
+  Upload,
+  Calendar as CalendarIcon
 } from 'lucide-react';
 
 interface Client {
@@ -36,6 +49,80 @@ const FPAClientDetails: React.FC<FPAClientDetailsProps> = ({
   reports,
   uploads
 }) => {
+  const updateClient = useUpdateFPAClient();
+  const createPeriod = useCreateFPAPeriod();
+  const createReport = useCreateFPAReport();
+
+  // Dialog states
+  const [editOpen, setEditOpen] = useState(false);
+  const [periodOpen, setPeriodOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [showUploader, setShowUploader] = useState(false);
+
+  // Edit form
+  const [industry, setIndustry] = useState<string>('');
+  const [businessModel, setBusinessModel] = useState<string>('');
+  const [strategicObjectives, setStrategicObjectives] = useState<string>('');
+  const [currentPhase, setCurrentPhase] = useState<number>(1);
+
+  // Period form
+  const [periodType, setPeriodType] = useState<'monthly' | 'quarterly' | 'yearly' | 'custom'>('monthly');
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
+  const [isActual, setIsActual] = useState<boolean>(false);
+
+  // Report form
+  const [reportTitle, setReportTitle] = useState<string>('');
+  const [reportType, setReportType] = useState<string>('desempenho');
+  const [periodCovered, setPeriodCovered] = useState<string>('');
+
+  useEffect(() => {
+    if (client) {
+      setIndustry(client.industry || '');
+      setBusinessModel(client.business_model || '');
+      setStrategicObjectives(client.strategic_objectives || '');
+      setCurrentPhase(client.current_phase || 1);
+    }
+  }, [client]);
+
+  const formatDate = (d?: Date) => d ? new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).toISOString().slice(0,10) : '';
+
+  const handleEditSubmit = () => {
+    if (!client) return;
+    updateClient.mutate({
+      id: client.id,
+      industry,
+      business_model: businessModel,
+      strategic_objectives: strategicObjectives,
+      current_phase: Number(currentPhase)
+    });
+    setEditOpen(false);
+  };
+
+  const handleCreatePeriod = () => {
+    if (!client || !startDate || !endDate) return;
+    createPeriod.mutate({
+      fpa_client_id: client.id,
+      start_date: formatDate(startDate),
+      end_date: formatDate(endDate),
+      period_type: periodType,
+      is_actual: isActual
+    });
+    setPeriodOpen(false);
+  };
+
+  const handleCreateReport = () => {
+    if (!client || !reportTitle || !reportType || !periodCovered) return;
+    createReport.mutate({
+      fpa_client_id: client.id,
+      title: reportTitle,
+      report_type: reportType,
+      period_covered: periodCovered,
+      content: {},
+      status: 'draft'
+    });
+    setReportOpen(false);
+  };
   if (!client) {
     return (
       <Card className="md:col-span-2">
@@ -101,7 +188,7 @@ const FPAClientDetails: React.FC<FPAClientDetailsProps> = ({
               )}
               
               <div className="flex gap-2">
-                <Button size="sm">
+                <Button size="sm" onClick={() => setEditOpen(true)}>
                   <Edit className="h-4 w-4 mr-2" />
                   Editar
                 </Button>
@@ -116,7 +203,7 @@ const FPAClientDetails: React.FC<FPAClientDetailsProps> = ({
           <TabsContent value="periods" className="space-y-4">
             <div className="flex justify-between items-center">
               <h4 className="font-medium">Períodos ({periods.length})</h4>
-              <Button size="sm">
+              <Button size="sm" onClick={() => setPeriodOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Período
               </Button>
@@ -153,7 +240,7 @@ const FPAClientDetails: React.FC<FPAClientDetailsProps> = ({
           <TabsContent value="reports" className="space-y-4">
             <div className="flex justify-between items-center">
               <h4 className="font-medium">Relatórios ({reports.length})</h4>
-              <Button size="sm">
+              <Button size="sm" onClick={() => setReportOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Relatório
               </Button>
@@ -190,11 +277,16 @@ const FPAClientDetails: React.FC<FPAClientDetailsProps> = ({
           <TabsContent value="uploads" className="space-y-4">
             <div className="flex justify-between items-center">
               <h4 className="font-medium">Uploads ({uploads.length})</h4>
-              <Button size="sm">
+              <Button size="sm" onClick={() => setShowUploader((v) => !v)}>
                 <Upload className="h-4 w-4 mr-2" />
-                Novo Upload
+                {showUploader ? 'Ocultar Importador' : 'Importar Excel'}
               </Button>
             </div>
+            {showUploader && (
+              <div className="border rounded-lg p-3">
+                <FPAExcelUploader clientId={client.id} />
+              </div>
+            )}
             
             <div className="space-y-2">
               {uploads.length === 0 ? (
@@ -223,7 +315,127 @@ const FPAClientDetails: React.FC<FPAClientDetailsProps> = ({
               )}
             </div>
           </TabsContent>
-        </Tabs>
+          </Tabs>
+
+          {/* Dialog: Editar Cliente */}
+          <Dialog open={editOpen} onOpenChange={setEditOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Editar Cliente</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-2">
+                <div className="grid gap-2">
+                  <Label>Setor</Label>
+                  <Input value={industry} onChange={(e) => setIndustry(e.target.value)} placeholder="Ex: Varejo" />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Modelo de Negócio</Label>
+                  <Input value={businessModel} onChange={(e) => setBusinessModel(e.target.value)} placeholder="Ex: SaaS" />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Objetivos Estratégicos</Label>
+                  <Input value={strategicObjectives} onChange={(e) => setStrategicObjectives(e.target.value)} placeholder="Ex: Crescer 20% a/a" />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Fase Atual</Label>
+                  <Input type="number" min={1} value={currentPhase} onChange={(e) => setCurrentPhase(Number(e.target.value))} />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setEditOpen(false)}>Cancelar</Button>
+                <Button onClick={handleEditSubmit}>Salvar</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Dialog: Novo Período */}
+          <Dialog open={periodOpen} onOpenChange={setPeriodOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Novo Período</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-2">
+                <div className="grid gap-2">
+                  <Label>Tipo de Período</Label>
+                  <Select value={periodType} onValueChange={(v) => setPeriodType(v as any)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">Mensal</SelectItem>
+                      <SelectItem value="quarterly">Trimestral</SelectItem>
+                      <SelectItem value="yearly">Anual</SelectItem>
+                      <SelectItem value="custom">Custom</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Início</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className={cn("w-full justify-start", !startDate && "text-muted-foreground")}> 
+                        {startDate ? startDate.toLocaleDateString('pt-BR') : 'Escolha a data de início'}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={startDate} onSelect={setStartDate} initialFocus className={cn("p-3 pointer-events-auto")} />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Fim</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className={cn("w-full justify-start", !endDate && "text-muted-foreground")}> 
+                        {endDate ? endDate.toLocaleDateString('pt-BR') : 'Escolha a data de fim'}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="single" selected={endDate} onSelect={setEndDate} initialFocus className={cn("p-3 pointer-events-auto")} />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label>É Real?</Label>
+                  <Switch checked={isActual} onCheckedChange={setIsActual} />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setPeriodOpen(false)}>Cancelar</Button>
+                <Button onClick={handleCreatePeriod}>Criar</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Dialog: Novo Relatório */}
+          <Dialog open={reportOpen} onOpenChange={setReportOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Novo Relatório</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-2">
+                <div className="grid gap-2">
+                  <Label>Título</Label>
+                  <Input value={reportTitle} onChange={(e) => setReportTitle(e.target.value)} placeholder="Ex: Desempenho Mensal" />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Tipo</Label>
+                  <Input value={reportType} onChange={(e) => setReportType(e.target.value)} placeholder="Ex: desempenho, caixa, lucro" />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Período Coberto</Label>
+                  <Input value={periodCovered} onChange={(e) => setPeriodCovered(e.target.value)} placeholder="Ex: Jan/2025" />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setReportOpen(false)}>Cancelar</Button>
+                <Button onClick={handleCreateReport}>Criar</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
       </CardContent>
     </Card>
   );

@@ -9,7 +9,7 @@ const HeroImage = () => {
         alt="Ascalate Hero Background" 
         className="w-full h-full object-cover"
         loading="eager"
-        fetchPriority="high"
+        decoding="async"
         data-clonable="true"
       />
     </div>

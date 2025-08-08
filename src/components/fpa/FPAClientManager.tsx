@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useFPAClients } from '@/hooks/useFPAClients';
@@ -18,6 +18,13 @@ const FPAClientManager: React.FC = () => {
   const { data: periods = [] } = useFPAPeriods(selectedClient || undefined);
   const { data: reports = [] } = useFPAReports(selectedClient || undefined);
   const { data: uploads = [] } = useFPADataUploads(selectedClient || undefined);
+
+  // Auto-seleciona o primeiro cliente ao carregar
+  useEffect(() => {
+    if (!clientsLoading && clients.length && !selectedClient) {
+      setSelectedClient(clients[0].id);
+    }
+  }, [clientsLoading, clients, selectedClient]);
 
   if (clientsLoading) {
     return (
