@@ -50,7 +50,7 @@ const handler = async (req: Request): Promise<Response> => {
   if (!isAllowedOrigin(origin)) {
     return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } });
   }
-
+try {
     const { nome, email }: NewsletterSignupRequest = await req.json();
 
     const nameSafe = escapeHtml(String(nome || '').slice(0, 100));
