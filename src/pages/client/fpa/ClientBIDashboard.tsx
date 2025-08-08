@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { Loader2, ExternalLink, BarChart3, AlertTriangle } from 'lucide-react';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Loader2, ExternalLink, BarChart3, AlertTriangle, Copy } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useClientBIEmbeds } from '@/hooks/useClientBIEmbeds';
@@ -180,12 +181,33 @@ const ClientBIDashboard: React.FC = () => {
   const safeEmbedUrl = primaryUrl || fallbackFromHtml;
   const hasAnyRaw = Boolean(rawPrimary || rawFromHtml);
   const invalidHost = hasAnyRaw && !(isAllowedBIHost(rawPrimary || '') || isAllowedBIHost(rawFromHtml || ''));
-
+  const diag = (() => {
+    if (!safeEmbedUrl) return null;
+    try {
+      const u = new URL(safeEmbedUrl);
+      const host = u.hostname.toLowerCase();
+      return {
+        host,
+        isPowerBI: host === 'app.powerbi.com' || host === 'app.powerbigov.us',
+        isLooker: host === 'lookerstudio.google.com' || host === 'datastudio.google.com',
+        isTableau: host === 'public.tableau.com' || host.endsWith('.tableau.com'),
+        pbiRsEmbed: u.searchParams.get('rs:embed') === 'true',
+        lookerEmbedded: u.searchParams.get('embedded') === 'true',
+        tableauEmbed: u.searchParams.get(':embed') === 'y',
+        tableauShowViz: u.searchParams.get(':showVizHome') === 'no',
+        url: u.toString(),
+      };
+    } catch {
+      return null;
+    }
+  })();
   const openInNewTabSafely = (url: string) => {
     const win = window.open(url, '_blank');
     if (win) win.opener = null;
   };
-
+  const copyToClipboard = async (text: string) => {
+    try { await navigator.clipboard.writeText(text); } catch {}
+  };
   useEffect(() => {
     if (!safeEmbedUrl) {
       setFrameStatus('idle');
@@ -246,13 +268,26 @@ const ClientBIDashboard: React.FC = () => {
                 />
               </AspectRatio>
               {frameStatus === 'timeout' && (
-                <div className="mt-3 flex items-start gap-2 text-amber-600 text-sm">
-                  <AlertTriangle className="h-4 w-4 mt-0.5" />
-                  <p>
-                    O embed não carregou no tempo esperado. O provedor pode estar bloqueando iframes (X-Frame-Options/CSP).
-                    Tente usar o botão “Abrir em nova aba”.
-                  </p>
-                </div>
+                <Alert className="mt-3">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Possível bloqueio de iframe pelo provedor</AlertTitle>
+                  <AlertDescription>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>Host: {diag?.host || 'desconhecido'}</li>
+                      <li>URL final sanitizada: <span className="break-all">{diag?.url || safeEmbedUrl}</span></li>
+                      {diag?.isPowerBI && (
+                        <li>Power BI: parâmetro rs:embed {diag.pbiRsEmbed ? 'presente' : 'faltando'}; se usar “Embed para a organização”, o Power BI pode bloquear iframes externos. Prefira “Publicar na Web”.</li>
+                      )}
+                      {diag?.isLooker && (
+                        <li>Looker Studio: parâmetro embedded {diag.lookerEmbedded ? 'presente' : 'faltando'}.</li>
+                      )}
+                      {diag?.isTableau && (
+                        <li>Tableau: parâmetros :embed/:showVizHome {diag.tableauEmbed && diag.tableauShowViz ? 'ok' : 'ajuste necessário'}.</li>
+                      )}
+                    </ul>
+                    <p className="mt-2 text-sm opacity-80">Dica: use “Copiar URL final” ou “Abrir em nova aba” para validar o acesso.</p>
+                  </AlertDescription>
+                </Alert>
               )}
             </>
           ) : (
@@ -268,12 +303,18 @@ const ClientBIDashboard: React.FC = () => {
             </div>
           )}
 
-          <div className="flex justify-end mt-4">
+          <div className="flex justify-end mt-4 gap-2">
             {safeEmbedUrl && (
-              <Button variant="outline" size="sm" onClick={() => openInNewTabSafely(safeEmbedUrl!)}>
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Abrir em nova aba
-              </Button>
+              <>
+                <Button variant="outline" size="sm" onClick={() => copyToClipboard(safeEmbedUrl!)}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copiar URL final
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => openInNewTabSafely(safeEmbedUrl!)}>
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Abrir em nova aba
+                </Button>
+              </>
             )}
           </div>
         </CardContent>
