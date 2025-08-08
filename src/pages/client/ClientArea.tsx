@@ -69,6 +69,8 @@ const ClientArea = () => {
           <Route path="/fpa/cenarios" element={<ClientFPAScenarios />} />
           <Route path="/fpa/comunicacao" element={<ClientFPACommunication />} />
           <Route path="/fpa/bi" element={<ClientBIDashboard />} />
+          {/* Relative route to ensure nested matching */}
+          <Route path="fpa/bi" element={<ClientBIDashboard />} />
         </Routes>
       </main>
     </div>
