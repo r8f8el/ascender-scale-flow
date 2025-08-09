@@ -21,6 +21,8 @@ import ClientFPADashboardReal from './fpa/ClientFPADashboardReal';
 import ClientFPAData from './fpa/ClientFPAData';
 import ClientFPAReports from './fpa/ClientFPAReports';
 import ClientFPAScenarios from './fpa/ClientFPAScenarios';
+import ClientKanban from './ClientKanban';
+import ClientGantt from './ClientGantt';
 import ClientFPACommunication from './fpa/ClientFPACommunication';
 import ClientBIDashboard from './fpa/ClientBIDashboard';
 

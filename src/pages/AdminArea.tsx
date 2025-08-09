@@ -24,6 +24,8 @@ import AdminFPAClientManagement from './admin/fpa/AdminFPAClientManagement';
 import AdminFPADataIntegrationReal from './admin/fpa/AdminFPADataIntegrationReal';
 import AdminFPAReportBuilder from './admin/fpa/AdminFPAReportBuilder';
 import AdminFPAVarianceAnalysis from './admin/fpa/AdminFPAVarianceAnalysis';
+import KanbanAdmin from './admin/KanbanAdmin';
+import GanttAdmin from './admin/GanttAdmin';
 import AdminFPAModeling from './admin/fpa/AdminFPAModeling';
 import AdminFPADashboard from './admin/fpa/AdminFPADashboard';
 
