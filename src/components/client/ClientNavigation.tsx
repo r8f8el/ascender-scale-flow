@@ -15,7 +15,8 @@ import {
   LayoutDashboard,
   FolderOpen,
   LogOut,
-  BarChart3
+  BarChart3,
+  Kanban
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -23,6 +24,8 @@ const mainNavigationItems = [
   { path: '/cliente/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/cliente/equipe', icon: Users, label: 'Equipe' },
   { path: '/cliente/chamados', icon: MessageSquare, label: 'Chamados' },
+  { path: '/cliente/kanban', icon: Kanban, label: 'Quadros Kanban' },
+  { path: '/cliente/gantt', icon: BarChart3, label: 'Cronogramas Gantt' },
   { path: '/cliente/cronograma', icon: Calendar, label: 'Cronograma' },
   { path: '/cliente/contato', icon: Mail, label: 'Contato' }
 ];

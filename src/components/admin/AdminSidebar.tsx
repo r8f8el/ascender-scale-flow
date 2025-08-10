@@ -18,7 +18,8 @@ import {
   Database,
   FileBarChart,
   BarChart3,
-  Layers
+  Layers,
+  Kanban
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -42,6 +43,16 @@ const navigation = [
     name: 'Projetos',
     href: '/admin/projetos',
     icon: Briefcase,
+  },
+  {
+    name: 'Kanban',
+    href: '/admin/kanban',
+    icon: Kanban,
+  },
+  {
+    name: 'Cronogramas',
+    href: '/admin/gantt',
+    icon: BarChart3,
   },
   {
     name: 'Tarefas',

@@ -19,6 +19,10 @@ import ClientTickets from './client/ClientTickets';
 import ClientTicketDetail from './client/ClientTicketDetail';
 import ClientTeam from './client/ClientTeam';
 
+// Project management
+import ClientKanban from './client/ClientKanban';
+import ClientGantt from './client/ClientGantt';
+
 // FP&A components
 import ClientFPADashboard from './client/fpa/ClientFPADashboard';
 import ClientFPADashboardReal from './client/fpa/ClientFPADashboardReal';
@@ -67,6 +71,10 @@ const ClientArea = () => {
               <Route path="/chamados" element={<ClientTickets />} />
               <Route path="/chamados/:id" element={<ClientTicketDetail />} />
               <Route path="/equipe" element={<ClientTeam />} />
+              
+              {/* Project Management */}
+              <Route path="/kanban" element={<ClientKanban />} />
+              <Route path="/gantt" element={<ClientGantt />} />
               
               {/* FP&A Routes */}
               <Route path="/fpa" element={<ClientFPADashboard />} />

@@ -26,6 +26,8 @@ import AdminFPAVarianceAnalysis from './fpa/AdminFPAVarianceAnalysis';
 import AdminFPAModeling from './fpa/AdminFPAModeling';
 import AdminFPADashboard from './fpa/AdminFPADashboard';
 import AdminFPABIEmbeds from './fpa/AdminFPABIEmbeds';
+import KanbanAdmin from './KanbanAdmin';
+import GanttAdmin from './GanttAdmin';
 
 const AdminArea = () => {
   return (
@@ -49,6 +51,8 @@ const AdminArea = () => {
             <Route path="/configuracoes" element={<ConfiguracoesAdmin />} />
             <Route path="/testing" element={<TestingDashboard />} />
             <Route path="/client-documents" element={<ClientDocumentsAdmin />} />
+            <Route path="/kanban" element={<KanbanAdmin />} />
+            <Route path="/gantt" element={<GanttAdmin />} />
             
             {/* FP&A Routes */}
             <Route path="/fpa" element={<AdminFPADashboard />} />
