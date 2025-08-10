@@ -1353,10 +1353,46 @@ export type Database = {
           },
         ]
       }
+      gantt_task_comments: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          id?: string
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gantt_task_comments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "gantt_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gantt_tasks: {
         Row: {
           actual_hours: number | null
           assigned_to: string | null
+          attachments: Json
           created_at: string
           created_by: string | null
           dependencies: Json | null
@@ -1365,6 +1401,7 @@ export type Database = {
           estimated_hours: number | null
           id: string
           is_milestone: boolean | null
+          labels: Json
           name: string
           priority: string | null
           progress: number | null
@@ -1375,6 +1412,7 @@ export type Database = {
         Insert: {
           actual_hours?: number | null
           assigned_to?: string | null
+          attachments?: Json
           created_at?: string
           created_by?: string | null
           dependencies?: Json | null
@@ -1383,6 +1421,7 @@ export type Database = {
           estimated_hours?: number | null
           id?: string
           is_milestone?: boolean | null
+          labels?: Json
           name: string
           priority?: string | null
           progress?: number | null
@@ -1393,6 +1432,7 @@ export type Database = {
         Update: {
           actual_hours?: number | null
           assigned_to?: string | null
+          attachments?: Json
           created_at?: string
           created_by?: string | null
           dependencies?: Json | null
@@ -1401,6 +1441,7 @@ export type Database = {
           estimated_hours?: number | null
           id?: string
           is_milestone?: boolean | null
+          labels?: Json
           name?: string
           priority?: string | null
           progress?: number | null
@@ -1421,6 +1462,50 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "gantt_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gantt_time_logs: {
+        Row: {
+          created_at: string
+          duration_minutes: number | null
+          ended_at: string | null
+          id: string
+          note: string | null
+          started_at: string
+          task_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_minutes?: number | null
+          ended_at?: string | null
+          id?: string
+          note?: string | null
+          started_at?: string
+          task_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_minutes?: number | null
+          ended_at?: string | null
+          id?: string
+          note?: string | null
+          started_at?: string
+          task_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gantt_time_logs_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "gantt_tasks"
             referencedColumns: ["id"]
           },
         ]
@@ -1520,6 +1605,85 @@ export type Database = {
           },
         ]
       }
+      kanban_sprints: {
+        Row: {
+          board_id: string
+          created_at: string
+          end_date: string
+          goal: string | null
+          id: string
+          is_active: boolean
+          name: string
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          board_id: string
+          created_at?: string
+          end_date: string
+          goal?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          board_id?: string
+          created_at?: string
+          end_date?: string
+          goal?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_sprints_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_boards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kanban_task_comments: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          id?: string
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_task_comments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kanban_tasks: {
         Row: {
           actual_hours: number | null
@@ -1536,6 +1700,7 @@ export type Database = {
           id: string
           labels: Json | null
           priority: string | null
+          sprint_id: string | null
           start_date: string | null
           task_order: number
           title: string
@@ -1556,6 +1721,7 @@ export type Database = {
           id?: string
           labels?: Json | null
           priority?: string | null
+          sprint_id?: string | null
           start_date?: string | null
           task_order?: number
           title: string
@@ -1576,6 +1742,7 @@ export type Database = {
           id?: string
           labels?: Json | null
           priority?: string | null
+          sprint_id?: string | null
           start_date?: string | null
           task_order?: number
           title?: string
@@ -1601,6 +1768,57 @@ export type Database = {
             columns: ["column_id"]
             isOneToOne: false
             referencedRelation: "kanban_columns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kanban_tasks_sprint_id_fkey"
+            columns: ["sprint_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_sprints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kanban_time_logs: {
+        Row: {
+          created_at: string
+          duration_minutes: number | null
+          ended_at: string | null
+          id: string
+          note: string | null
+          started_at: string
+          task_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_minutes?: number | null
+          ended_at?: string | null
+          id?: string
+          note?: string | null
+          started_at?: string
+          task_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_minutes?: number | null
+          ended_at?: string | null
+          id?: string
+          note?: string | null
+          started_at?: string
+          task_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_time_logs_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_tasks"
             referencedColumns: ["id"]
           },
         ]
