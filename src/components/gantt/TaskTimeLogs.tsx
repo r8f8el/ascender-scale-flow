@@ -39,6 +39,25 @@ export const TaskTimeLogsGantt: React.FC<{ taskId: string }>=({ taskId })=>{
   };
   useEffect(()=>{ load(); },[taskId]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel(`rt-gantt-time-logs-${taskId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'gantt_time_logs',
+        filter: `task_id=eq.${taskId}`,
+      }, (payload) => {
+        console.log('Realtime gantt_time_logs change', payload);
+        load();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [taskId]);
+
   const start = async () => {
     if (!currentUserId) { toast.error('Usuário não autenticado'); return; }
     setLoading(true);

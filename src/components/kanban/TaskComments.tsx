@@ -38,6 +38,25 @@ export const TaskCommentsKanban: React.FC<{ taskId: string }>=({ taskId })=>{
 
   useEffect(()=>{ load(); },[taskId]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel(`rt-kanban-comments-${taskId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'kanban_task_comments',
+        filter: `task_id=eq.${taskId}`,
+      }, (payload) => {
+        console.log('Realtime kanban_task_comments change', payload);
+        load();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [taskId]);
+
   const addComment = async () => {
     if (!currentUserId) { toast.error('Usuário não autenticado'); return; }
     if (!text.trim()) return;
