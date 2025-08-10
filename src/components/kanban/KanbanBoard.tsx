@@ -42,12 +42,19 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
   const [editingTask, setEditingTask] = useState<KanbanTask | null>(null);
   const [selectedColumnId, setSelectedColumnId] = useState<string>('');
   
-  const [taskForm, setTaskForm] = useState({
+  const [taskForm, setTaskForm] = useState<{
+    title: string;
+    description: string;
+    priority: 'low' | 'medium' | 'high' | 'urgent';
+    assigned_to: string;
+    due_date: Date | undefined;
+    estimated_hours: string;
+  }>({
     title: '',
     description: '',
-    priority: 'medium' as const,
+    priority: 'medium',
     assigned_to: '',
-    due_date: undefined as Date | undefined,
+    due_date: undefined,
     estimated_hours: ''
   });
 
@@ -74,7 +81,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
     setTaskForm({
       title: task.title,
       description: task.description || '',
-      priority: task.priority,
+      priority: task.priority as 'low' | 'medium' | 'high' | 'urgent',
       assigned_to: task.assigned_to || '',
       due_date: task.due_date ? new Date(task.due_date) : undefined,
       estimated_hours: task.estimated_hours?.toString() || ''

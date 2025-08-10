@@ -37,16 +37,26 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId }) => {
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<GanttTask | null>(null);
   
-  const [taskForm, setTaskForm] = useState({
+  const [taskForm, setTaskForm] = useState<{
+    name: string;
+    description: string;
+    start_date: Date;
+    end_date: Date;
+    priority: 'low' | 'medium' | 'high' | 'urgent';
+    assigned_to: string;
+    estimated_hours: string;
+    is_milestone: boolean;
+    dependencies: string[];
+  }>({
     name: '',
     description: '',
     start_date: new Date(),
     end_date: addDays(new Date(), 7),
-    priority: 'medium' as const,
+    priority: 'medium',
     assigned_to: '',
     estimated_hours: '',
     is_milestone: false,
-    dependencies: [] as string[]
+    dependencies: []
   });
 
   const resetForm = () => {
@@ -96,7 +106,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId }) => {
       description: task.description || '',
       start_date: parseISO(task.start_date),
       end_date: parseISO(task.end_date),
-      priority: task.priority,
+      priority: task.priority as 'low' | 'medium' | 'high' | 'urgent',
       assigned_to: task.assigned_to || '',
       estimated_hours: task.estimated_hours?.toString() || '',
       is_milestone: task.is_milestone,
@@ -224,7 +234,6 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId }) => {
                 listCellWidth="200px"
                 columnWidth={viewMode === ViewMode.Month ? 300 : 100}
                 locale="pt-BR"
-                timelineFormat="DD/MM/YYYY"
               />
             </div>
           )}
