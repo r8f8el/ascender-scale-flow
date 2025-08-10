@@ -16,6 +16,9 @@ import { Plus, Calendar as CalendarIcon, Clock, User, Flag, MoreVertical } from 
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TaskCommentsKanban } from '@/components/kanban/TaskComments';
+import { TaskTimeLogsKanban } from '@/components/kanban/TaskTimeLogs';
 
 interface KanbanBoardProps {
   boardId: string;
@@ -372,6 +375,24 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
                 />
               </div>
             </div>
+            
+            {editingTask && (
+              <div className="pt-2">
+                <Tabs defaultValue="comments">
+                  <TabsList className="grid grid-cols-2 w-full sm:w-auto">
+                    <TabsTrigger value="comments">Comentários</TabsTrigger>
+                    <TabsTrigger value="time">Tempo</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="comments">
+                    <TaskCommentsKanban taskId={editingTask.id} />
+                  </TabsContent>
+                  <TabsContent value="time">
+                    <TaskTimeLogsKanban taskId={editingTask.id} />
+                  </TabsContent>
+                </Tabs>
+              </div>
+            )}
+            
             
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={() => setIsTaskDialogOpen(false)}>

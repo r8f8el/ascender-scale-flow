@@ -16,7 +16,10 @@ import { Calendar as CalendarIcon, Plus, BarChart3, List, Eye } from 'lucide-rea
 import { format, parseISO, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
-
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TaskCommentsGantt } from '@/components/gantt/TaskComments';
+import { TaskTimeLogsGantt } from '@/components/gantt/TaskTimeLogs';
+ 
 import 'gantt-task-react/dist/index.css';
 
 interface GanttChartProps {
@@ -441,6 +444,24 @@ export const GanttChart: React.FC<GanttChartProps> = ({ projectId }) => {
                 </label>
               </div>
             </div>
+            
+            {editingTask && (
+              <div className="pt-2">
+                <Tabs defaultValue="comments">
+                  <TabsList className="grid grid-cols-2 w-full sm:w-auto">
+                    <TabsTrigger value="comments">Comentários</TabsTrigger>
+                    <TabsTrigger value="time">Tempo</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="comments">
+                    <TaskCommentsGantt taskId={editingTask.id} />
+                  </TabsContent>
+                  <TabsContent value="time">
+                    <TaskTimeLogsGantt taskId={editingTask.id} />
+                  </TabsContent>
+                </Tabs>
+              </div>
+            )}
+            
             
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={() => setIsTaskDialogOpen(false)}>
