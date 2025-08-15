@@ -122,7 +122,7 @@ const fpaNavigation = [
 const systemNavigation = [
   {
     name: 'Fluxos de Aprovação',
-    href: '/admin/workflows',
+    href: '/admin/aprovacoes',
     icon: Shield,
   },
   {

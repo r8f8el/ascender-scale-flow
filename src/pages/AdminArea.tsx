@@ -16,7 +16,7 @@ import ArquivosAdmin from './admin/ArquivosAdmin';
 import ClientDocumentsAdmin from './admin/ClientDocumentsAdmin';
 import ConfiguracoesAdmin from './admin/ConfiguracoesAdmin';
 import LogsAdmin from './admin/LogsAdmin';
-import AdminApprovalFlows from './admin/AdminApprovalFlows';
+import ApprovalFlowsAdmin from './admin/ApprovalFlowsAdmin';
 import TestingDashboard from './admin/TestingDashboard';
 
 // FP&A Admin pages
@@ -53,7 +53,8 @@ const AdminArea = () => {
             <Route path="documentos" element={<ClientDocumentsAdmin />} />
             <Route path="configuracoes" element={<ConfiguracoesAdmin />} />
             <Route path="logs" element={<LogsAdmin />} />
-            <Route path="workflows" element={<AdminApprovalFlows />} />
+            <Route path="workflows" element={<ApprovalFlowsAdmin />} />
+            <Route path="aprovacoes" element={<ApprovalFlowsAdmin />} />
             <Route path="testing" element={<TestingDashboard />} />
             
             {/* FP&A Admin Routes */}

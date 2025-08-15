@@ -33,7 +33,7 @@ const mainNavigationItems = [
 ];
 
 const approvalNavigationItems = [
-  { path: '/cliente/aprovacoes', icon: CheckCircle, label: 'Minhas Solicitações' },
+  { path: '/cliente/aprovacoes', icon: CheckCircle, label: 'Visão Geral' },
   { path: '/cliente/aprovacoes/nova', icon: ClipboardList, label: 'Nova Solicitação' }
 ];
 
