@@ -52,7 +52,7 @@ const AdminApprovals = () => {
         .from('solicitacoes')
         .select(`
           *,
-          client_profiles(name, email)
+          client_profiles!fk_solicitacoes_solicitante(name, email)
         `)
         .order('data_criacao', { ascending: false });
 
