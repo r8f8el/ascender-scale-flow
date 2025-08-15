@@ -16,6 +16,8 @@ import ClientTicketDetail from './ClientTicketDetail';
 import ClientTeam from './ClientTeam';
 import ClientDocumentSync from '@/components/client/ClientDocumentSync';
 import ClientApprovals from './ClientApprovals';
+import MinhasSolicitacoes from './MinhasSolicitacoes';
+import DashboardAprovacoes from './DashboardAprovacoes';
 import ClientApprovalRequestDetail from './ClientApprovalRequestDetail';
 
 // FP&A components
@@ -71,6 +73,8 @@ const ClientArea = () => {
           <Route path="/chamados/:id" element={<ClientTicketDetail />} />
           <Route path="/equipe" element={<ClientTeam />} />
           <Route path="/aprovacoes" element={<ClientApprovals />} />
+          <Route path="/solicitacoes" element={<MinhasSolicitacoes />} />
+          <Route path="/aprovacoes-dashboard" element={<DashboardAprovacoes />} />
           <Route path="/kanban" element={<ClientKanban />} />
           <Route path="/gantt" element={<ClientGantt />} />
           
@@ -82,8 +86,6 @@ const ClientArea = () => {
           <Route path="/fpa/cenarios" element={<ClientFPAScenarios />} />
           <Route path="/fpa/comunicacao" element={<ClientFPACommunication />} />
           <Route path="/fpa/bi" element={<ClientBIDashboard />} />
-          {/* Relative route to ensure nested matching */}
-          <Route path="fpa/bi" element={<ClientBIDashboard />} />
         </Routes>
         </main>
       </div>

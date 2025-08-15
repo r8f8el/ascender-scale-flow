@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -41,226 +41,40 @@ export type Database = {
         }
         Relationships: []
       }
-      approval_attachments: {
+      anexos: {
         Row: {
-          content_type: string | null
-          created_at: string | null
-          file_path: string
-          file_size: number | null
-          filename: string
+          data_upload: string | null
           id: string
-          request_id: string
-          uploaded_by_name: string | null
-          uploaded_by_user_id: string | null
+          nome_arquivo: string
+          solicitacao_id: string
+          tamanho_arquivo: number | null
+          tipo_arquivo: string | null
+          url_arquivo: string
         }
         Insert: {
-          content_type?: string | null
-          created_at?: string | null
-          file_path: string
-          file_size?: number | null
-          filename: string
+          data_upload?: string | null
           id?: string
-          request_id: string
-          uploaded_by_name?: string | null
-          uploaded_by_user_id?: string | null
+          nome_arquivo: string
+          solicitacao_id: string
+          tamanho_arquivo?: number | null
+          tipo_arquivo?: string | null
+          url_arquivo: string
         }
         Update: {
-          content_type?: string | null
-          created_at?: string | null
-          file_path?: string
-          file_size?: number | null
-          filename?: string
+          data_upload?: string | null
           id?: string
-          request_id?: string
-          uploaded_by_name?: string | null
-          uploaded_by_user_id?: string | null
+          nome_arquivo?: string
+          solicitacao_id?: string
+          tamanho_arquivo?: number | null
+          tipo_arquivo?: string | null
+          url_arquivo?: string
         }
         Relationships: [
           {
-            foreignKeyName: "approval_attachments_request_id_fkey"
-            columns: ["request_id"]
+            foreignKeyName: "anexos_solicitacao_id_fkey"
+            columns: ["solicitacao_id"]
             isOneToOne: false
-            referencedRelation: "approval_requests"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      approval_flow_types: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          id: string
-          is_active: boolean | null
-          name: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean | null
-          name: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean | null
-          name?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      approval_history: {
-        Row: {
-          action: string
-          approver_email: string
-          approver_name: string
-          approver_user_id: string | null
-          comments: string | null
-          created_at: string | null
-          id: string
-          request_id: string
-          step_order: number
-        }
-        Insert: {
-          action: string
-          approver_email: string
-          approver_name: string
-          approver_user_id?: string | null
-          comments?: string | null
-          created_at?: string | null
-          id?: string
-          request_id: string
-          step_order: number
-        }
-        Update: {
-          action?: string
-          approver_email?: string
-          approver_name?: string
-          approver_user_id?: string | null
-          comments?: string | null
-          created_at?: string | null
-          id?: string
-          request_id?: string
-          step_order?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "approval_history_request_id_fkey"
-            columns: ["request_id"]
-            isOneToOne: false
-            referencedRelation: "approval_requests"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      approval_requests: {
-        Row: {
-          amount: number | null
-          created_at: string | null
-          current_step: number | null
-          description: string | null
-          flow_type_id: string
-          id: string
-          priority: string | null
-          requested_by_email: string
-          requested_by_name: string
-          requested_by_user_id: string
-          status: string | null
-          title: string
-          total_steps: number | null
-          updated_at: string | null
-        }
-        Insert: {
-          amount?: number | null
-          created_at?: string | null
-          current_step?: number | null
-          description?: string | null
-          flow_type_id: string
-          id?: string
-          priority?: string | null
-          requested_by_email: string
-          requested_by_name: string
-          requested_by_user_id: string
-          status?: string | null
-          title: string
-          total_steps?: number | null
-          updated_at?: string | null
-        }
-        Update: {
-          amount?: number | null
-          created_at?: string | null
-          current_step?: number | null
-          description?: string | null
-          flow_type_id?: string
-          id?: string
-          priority?: string | null
-          requested_by_email?: string
-          requested_by_name?: string
-          requested_by_user_id?: string
-          status?: string | null
-          title?: string
-          total_steps?: number | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "approval_requests_flow_type_id_fkey"
-            columns: ["flow_type_id"]
-            isOneToOne: false
-            referencedRelation: "approval_flow_types"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      approval_steps: {
-        Row: {
-          amount_threshold: number | null
-          approver_email: string | null
-          approver_name: string | null
-          approver_role: string | null
-          approver_user_id: string | null
-          created_at: string | null
-          flow_type_id: string
-          id: string
-          is_required: boolean | null
-          step_name: string
-          step_order: number
-        }
-        Insert: {
-          amount_threshold?: number | null
-          approver_email?: string | null
-          approver_name?: string | null
-          approver_role?: string | null
-          approver_user_id?: string | null
-          created_at?: string | null
-          flow_type_id: string
-          id?: string
-          is_required?: boolean | null
-          step_name: string
-          step_order: number
-        }
-        Update: {
-          amount_threshold?: number | null
-          approver_email?: string | null
-          approver_name?: string | null
-          approver_role?: string | null
-          approver_user_id?: string | null
-          created_at?: string | null
-          flow_type_id?: string
-          id?: string
-          is_required?: boolean | null
-          step_name?: string
-          step_order?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "approval_steps_flow_type_id_fkey"
-            columns: ["flow_type_id"]
-            isOneToOne: false
-            referencedRelation: "approval_flow_types"
+            referencedRelation: "solicitacoes"
             referencedColumns: ["id"]
           },
         ]
@@ -705,6 +519,36 @@ export type Database = {
           updated_at?: string | null
           uploaded_at?: string | null
           uploaded_by?: string | null
+        }
+        Relationships: []
+      }
+      fluxo_aprovadores: {
+        Row: {
+          aprovador_id: string
+          cliente_id: string
+          created_at: string | null
+          email_aprovador: string
+          id: string
+          nome_aprovador: string
+          ordem: number
+        }
+        Insert: {
+          aprovador_id: string
+          cliente_id: string
+          created_at?: string | null
+          email_aprovador: string
+          id?: string
+          nome_aprovador: string
+          ordem: number
+        }
+        Update: {
+          aprovador_id?: string
+          cliente_id?: string
+          created_at?: string | null
+          email_aprovador?: string
+          id?: string
+          nome_aprovador?: string
+          ordem?: number
         }
         Relationships: []
       }
@@ -1510,6 +1354,44 @@ export type Database = {
           },
         ]
       }
+      historico_aprovacao: {
+        Row: {
+          acao: string
+          comentario: string | null
+          data_acao: string | null
+          id: string
+          nome_usuario: string
+          solicitacao_id: string
+          usuario_id: string
+        }
+        Insert: {
+          acao: string
+          comentario?: string | null
+          data_acao?: string | null
+          id?: string
+          nome_usuario: string
+          solicitacao_id: string
+          usuario_id: string
+        }
+        Update: {
+          acao?: string
+          comentario?: string | null
+          data_acao?: string | null
+          id?: string
+          nome_usuario?: string
+          solicitacao_id?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historico_aprovacao_solicitacao_id_fkey"
+            columns: ["solicitacao_id"]
+            isOneToOne: false
+            referencedRelation: "solicitacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kanban_boards: {
         Row: {
           board_order: number | null
@@ -2076,6 +1958,45 @@ export type Database = {
         }
         Relationships: []
       }
+      solicitacoes: {
+        Row: {
+          aprovador_atual_id: string | null
+          data_criacao: string | null
+          data_ultima_modificacao: string | null
+          descricao: string
+          etapa_atual: number | null
+          id: string
+          periodo_referencia: string
+          solicitante_id: string
+          status: string
+          titulo: string
+        }
+        Insert: {
+          aprovador_atual_id?: string | null
+          data_criacao?: string | null
+          data_ultima_modificacao?: string | null
+          descricao: string
+          etapa_atual?: number | null
+          id?: string
+          periodo_referencia: string
+          solicitante_id: string
+          status?: string
+          titulo: string
+        }
+        Update: {
+          aprovador_atual_id?: string | null
+          data_criacao?: string | null
+          data_ultima_modificacao?: string | null
+          descricao?: string
+          etapa_atual?: number | null
+          id?: string
+          periodo_referencia?: string
+          solicitante_id?: string
+          status?: string
+          titulo?: string
+        }
+        Relationships: []
+      }
       system_logs: {
         Row: {
           action: string
@@ -2472,7 +2393,7 @@ export type Database = {
     }
     Functions: {
       generate_period_name: {
-        Args: { start_date: string; period_type: string }
+        Args: { period_type: string; start_date: string }
         Returns: string
       }
       generate_ticket_number: {
@@ -2488,7 +2409,7 @@ export type Database = {
         Returns: string
       }
       invite_team_member: {
-        Args: { p_email: string; p_company_id: string }
+        Args: { p_company_id: string; p_email: string }
         Returns: string
       }
       is_admin_user: {
@@ -2509,12 +2430,12 @@ export type Database = {
       }
       log_system_action: {
         Args: {
-          p_user_name: string
-          p_type: string
-          p_ip_address: string
           p_action: string
           p_details?: string
+          p_ip_address: string
           p_level?: string
+          p_type: string
+          p_user_name: string
         }
         Returns: string
       }
