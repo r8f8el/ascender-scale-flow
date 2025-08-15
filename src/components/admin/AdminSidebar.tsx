@@ -70,6 +70,11 @@ const navigation = [
     icon: Ticket,
   },
   {
+    name: 'Aprovações',
+    href: '/admin/aprovacoes',
+    icon: Shield,
+  },
+  {
     name: 'Arquivos',
     href: '/admin/arquivos',
     icon: Upload,
@@ -120,11 +125,6 @@ const fpaNavigation = [
 ];
 
 const systemNavigation = [
-  {
-    name: 'Fluxos de Aprovação',
-    href: '/admin/aprovacoes',
-    icon: Shield,
-  },
   {
     name: 'Logs do Sistema',
     href: '/admin/logs',

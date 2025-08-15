@@ -12,7 +12,7 @@ import TicketsAdmin from './TicketsAdmin';
 import MyTickets from './MyTickets';
 import AdminDocuments from './AdminDocuments';
 import ArquivosAdmin from './ArquivosAdmin';
-import AdminApprovalFlows from './AdminApprovalFlows';
+import AdminApprovals from './AdminApprovals';
 import ConfiguracoesAdmin from './ConfiguracoesAdmin';
 import LogsAdmin from './LogsAdmin';
 import TestingDashboard from './TestingDashboard';
@@ -46,7 +46,7 @@ const AdminArea = () => {
             <Route path="/meus-chamados" element={<MyTickets />} />
             <Route path="/arquivos" element={<ArquivosAdmin />} />
             <Route path="/documentos" element={<AdminDocuments />} />
-            <Route path="/aprovacoes" element={<AdminApprovalFlows />} />
+            <Route path="/aprovacoes" element={<AdminApprovals />} />
             <Route path="/logs" element={<LogsAdmin />} />
             <Route path="/configuracoes" element={<ConfiguracoesAdmin />} />
             <Route path="/testing" element={<TestingDashboard />} />

@@ -15,7 +15,7 @@ import ClientTickets from './ClientTickets';
 import ClientTicketDetail from './ClientTicketDetail';
 import ClientTeam from './ClientTeam';
 import ClientDocumentSync from '@/components/client/ClientDocumentSync';
-import ClientApprovalRequests from './ClientApprovalRequests';
+import ClientApprovals from './ClientApprovals';
 import ClientApprovalRequestDetail from './ClientApprovalRequestDetail';
 
 // FP&A components
@@ -70,8 +70,7 @@ const ClientArea = () => {
           <Route path="/chamados" element={<ClientTickets />} />
           <Route path="/chamados/:id" element={<ClientTicketDetail />} />
           <Route path="/equipe" element={<ClientTeam />} />
-          <Route path="/aprovacoes/*" element={<ClientApprovalRequests />} />
-          <Route path="/aprovacoes/:id" element={<ClientApprovalRequestDetail />} />
+          <Route path="/aprovacoes" element={<ClientApprovals />} />
           <Route path="/kanban" element={<ClientKanban />} />
           <Route path="/gantt" element={<ClientGantt />} />
           
