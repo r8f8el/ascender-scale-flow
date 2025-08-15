@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NewApprovalRequestForm } from '@/components/client/approval/NewApprovalRequestForm';
@@ -8,9 +8,20 @@ import { ApprovalOverview } from '@/components/client/approval/ApprovalOverview'
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLocation } from 'react-router-dom';
 
 const ClientApprovalRequests = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState('overview');
+
+  useEffect(() => {
+    if (location.pathname.includes('/nova')) {
+      setActiveTab('new-request');
+    } else {
+      setActiveTab('overview');
+    }
+  }, [location.pathname]);
 
   // Check if user has approver role by checking if they appear in approval_steps
   const { data: isApprover } = useQuery({
@@ -36,7 +47,7 @@ const ClientApprovalRequests = () => {
         </p>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="my-requests">Minhas Solicitações</TabsTrigger>

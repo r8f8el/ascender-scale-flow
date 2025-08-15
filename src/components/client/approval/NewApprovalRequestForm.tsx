@@ -4,198 +4,152 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
-import { Upload, X, FileText, DollarSign } from 'lucide-react';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Upload, FileText, X } from 'lucide-react';
 
 const formSchema = z.object({
   title: z.string().min(5, 'Título deve ter pelo menos 5 caracteres').max(100, 'Título muito longo'),
-  department: z.string().min(1, 'Selecione um departamento'),
-  expense_type: z.string().min(1, 'Selecione o tipo de gasto'),
-  amount: z.number().min(100, 'Valor mínimo R$ 100'),
-  cost_center: z.string().optional(),
-  account_code: z.string().optional(),
-  justification: z.string().min(50, 'Justificativa deve ter pelo menos 50 caracteres'),
-  business_case: z.string().optional(),
-  start_date: z.string().optional(),
-  end_date: z.string().optional(),
+  description: z.string().min(20, 'Descrição deve ter pelo menos 20 caracteres'),
+  flowTypeId: z.string().min(1, 'Selecione um tipo de fluxo'),
+  priority: z.enum(['low', 'medium', 'high']),
+  amount: z.number().optional()
 });
 
 type FormData = z.infer<typeof formSchema>;
-
-const departments = [
-  { value: 'IT', label: 'TI' },
-  { value: 'Marketing', label: 'Marketing' },
-  { value: 'Operations', label: 'Operações' },
-  { value: 'HR', label: 'RH' },
-  { value: 'Finance', label: 'Financeiro' },
-];
-
-const expenseTypes = [
-  { value: 'CAPEX', label: 'CAPEX' },
-  { value: 'OPEX', label: 'OPEX' },
-  { value: 'Investment', label: 'Investimento' },
-  { value: 'Maintenance', label: 'Manutenção' },
-];
 
 export const NewApprovalRequestForm = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [attachments, setAttachments] = useState<File[]>([]);
-  const [isDraft, setIsDraft] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: '',
-      department: '',
-      expense_type: '',
-      amount: 0,
-      cost_center: '',
-      account_code: '',
-      justification: '',
-      business_case: '',
-      start_date: '',
-      end_date: '',
-    },
+      description: '',
+      flowTypeId: '',
+      priority: 'medium',
+      amount: undefined
+    }
   });
 
-  // Fetch flow types
+  // Buscar tipos de fluxo disponíveis
   const { data: flowTypes } = useQuery({
     queryKey: ['approval-flow-types'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('approval_flow_types')
         .select('*')
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .order('name');
+      
       if (error) throw error;
       return data;
-    },
+    }
   });
 
-  // Get user profile
-  const { data: userProfile } = useQuery({
-    queryKey: ['user-profile', user?.id],
-    queryFn: async () => {
-      if (!user) return null;
-      const { data, error } = await supabase
-        .from('client_profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
-
+  // Mutation para criar solicitação
   const createRequestMutation = useMutation({
-    mutationFn: async (data: FormData & { status: string }) => {
-      if (!user || !userProfile) throw new Error('User not authenticated');
+    mutationFn: async (data: FormData & { attachmentUrls?: string[] }) => {
+      if (!user) throw new Error('Usuário não autenticado');
 
-      // Create approval request
-      const { data: request, error: requestError } = await supabase
+      const { data: request, error } = await supabase
         .from('approval_requests')
         .insert({
           title: data.title,
-          description: `Departamento: ${data.department}\nTipo de Gasto: ${data.expense_type}\nJustificativa: ${data.justification}${data.business_case ? `\n\nBusiness Case: ${data.business_case}` : ''}`,
+          description: data.description,
+          flow_type_id: data.flowTypeId,
+          priority: data.priority,
           amount: data.amount,
-          priority: data.amount > 50000 ? 'high' : data.amount > 10000 ? 'medium' : 'low',
-          status: data.status,
-          flow_type_id: flowTypes?.[0]?.id,
           requested_by_user_id: user.id,
-          requested_by_name: userProfile.name,
-          requested_by_email: userProfile.email,
-          current_step: data.status === 'draft' ? 0 : 1,
+          requested_by_name: user.user_metadata?.name || user.email?.split('@')[0] || 'Usuário',
+          requested_by_email: user.email || '',
+          status: 'pending',
+          current_step: 1,
+          total_steps: 3 // Será ajustado baseado no fluxo
         })
         .select()
         .single();
 
-      if (requestError) throw requestError;
+      if (error) throw error;
 
-      // Upload attachments
-      for (const file of attachments) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${request.id}/${Date.now()}.${fileExt}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('documents')
-          .upload(fileName, file);
+      // Upload de anexos se existirem
+      if (attachments.length > 0) {
+        for (const file of attachments) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${request.id}/${Date.now()}.${fileExt}`;
+          
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('documents')
+            .upload(fileName, file);
 
-        if (uploadError) throw uploadError;
+          if (uploadError) throw uploadError;
 
-        // Save attachment metadata
-        const { error: attachmentError } = await supabase
-          .from('approval_attachments')
-          .insert({
-            request_id: request.id,
-            filename: file.name,
-            file_path: fileName,
-            content_type: file.type,
-            file_size: file.size,
-            uploaded_by_user_id: user.id,
-            uploaded_by_name: userProfile.name,
-          });
+          // Salvar anexo na tabela
+          const { error: attachmentError } = await supabase
+            .from('approval_attachments')
+            .insert({
+              request_id: request.id,
+              filename: file.name,
+              file_path: uploadData.path,
+              file_size: file.size,
+              content_type: file.type,
+              uploaded_by_user_id: user.id,
+              uploaded_by_name: user.user_metadata?.name || user.email?.split('@')[0] || 'Usuário'
+            });
 
-        if (attachmentError) throw attachmentError;
-      }
-
-      // Send notification if not draft
-      if (data.status !== 'draft') {
-        await supabase.functions.invoke('send-approval-notification', {
-          body: {
-            requestId: request.id,
-            type: 'new_request',
-          },
-        });
+          if (attachmentError) throw attachmentError;
+        }
       }
 
       return request;
     },
     onSuccess: () => {
-      toast({
-        title: isDraft ? 'Rascunho salvo' : 'Solicitação enviada',
-        description: isDraft ? 'Sua solicitação foi salva como rascunho.' : 'Sua solicitação foi enviada para aprovação.',
-      });
+      queryClient.invalidateQueries({ queryKey: ['approval-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['approval-stats'] });
       form.reset();
       setAttachments([]);
-      queryClient.invalidateQueries({ queryKey: ['my-approval-requests'] });
-    },
-    onError: (error) => {
-      console.error('Error creating request:', error);
       toast({
-        title: 'Erro',
-        description: 'Erro ao criar solicitação. Tente novamente.',
-        variant: 'destructive',
+        title: "Sucesso",
+        description: "Solicitação criada com sucesso!"
       });
     },
+    onError: (error) => {
+      toast({
+        title: "Erro",
+        description: "Erro ao criar solicitação. Tente novamente.",
+        variant: "destructive"
+      });
+      console.error('Erro ao criar solicitação:', error);
+    }
   });
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const onSubmit = (data: FormData) => {
+    createRequestMutation.mutate(data);
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
-    const validFiles = files.filter(file => {
-      const validTypes = [
-        'application/pdf',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/msword',
-      ];
-      return validTypes.includes(file.type) && file.size <= 10 * 1024 * 1024; // 10MB
-    });
+    const validFiles = files.filter(file => 
+      file.size <= 10 * 1024 * 1024 && // 10MB max
+      ['application/pdf', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type)
+    );
 
     if (validFiles.length !== files.length) {
       toast({
-        title: 'Arquivos inválidos',
-        description: 'Apenas PDF, Excel e Word são permitidos (máx. 10MB cada).',
-        variant: 'destructive',
+        title: "Aviso",
+        description: "Alguns arquivos foram ignorados. Apenas PDF, Excel e Word são permitidos (máx. 10MB).",
+        variant: "destructive"
       });
     }
 
@@ -206,311 +160,192 @@ export const NewApprovalRequestForm = () => {
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
-  const onSubmit = async (data: FormData) => {
-    const status = isDraft ? 'draft' : 'pending';
-    await createRequestMutation.mutateAsync({ ...data, status });
-  };
-
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2 mb-6">
-        <DollarSign className="h-6 w-6 text-primary" />
-        <h1 className="text-2xl font-bold">Nova Solicitação de Aprovação</h1>
-      </div>
-
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {/* Informações do Projeto */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Informações do Projeto</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+    <Card className="w-full max-w-4xl mx-auto">
+      <CardHeader>
+        <CardTitle>Nova Solicitação de Aprovação</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Título do Projeto *</FormLabel>
+                    <FormLabel>Título da Solicitação *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: Upgrade de Servidores" maxLength={100} {...field} />
+                      <Input placeholder="Ex: Aprovação de orçamento para novo projeto" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="department"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Departamento *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o departamento" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {departments.map((dept) => (
-                            <SelectItem key={dept.value} value={dept.value}>
-                              {dept.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <FormField
+                control={form.control}
+                name="flowTypeId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de Fluxo *</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o tipo de fluxo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {flowTypes?.map((type) => (
+                          <SelectItem key={type.id} value={type.id}>
+                            {type.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                <FormField
-                  control={form.control}
-                  name="expense_type"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tipo de Gasto *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o tipo" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {expenseTypes.map((type) => (
-                            <SelectItem key={type.value} value={type.value}>
-                              {type.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </CardContent>
-          </Card>
+              <FormField
+                control={form.control}
+                name="priority"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Prioridade</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="low">Baixa</SelectItem>
+                        <SelectItem value="medium">Média</SelectItem>
+                        <SelectItem value="high">Alta</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          {/* Detalhes Financeiros */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Detalhes Financeiros</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
               <FormField
                 control={form.control}
                 name="amount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Valor Solicitado (R$) *</FormLabel>
+                    <FormLabel>Valor (R$)</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        min="100"
-                        step="0.01"
-                        placeholder="0.00"
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        placeholder="0,00" 
                         {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        onChange={(e) => field.onChange(parseFloat(e.target.value) || undefined)}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+            </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="cost_center"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Centro de Custo</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex: CC001" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descrição Detalhada *</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Descreva detalhadamente sua solicitação, incluindo justificativas e informações relevantes..."
+                      className="min-h-[120px]"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-                <FormField
-                  control={form.control}
-                  name="account_code"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Conta Contábil</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex: 1.2.3.001" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Justificativa e Anexos */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Justificativa e Anexos</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="justification"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Justificativa Detalhada *</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Descreva detalhadamente a necessidade e benefícios..."
-                        rows={4}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="business_case"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Business Case (Opcional)</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="ROI esperado, impacto no negócio, riscos..."
-                        rows={3}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Upload de Anexos */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">Anexos</label>
-                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
-                  <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Arraste arquivos aqui ou clique para selecionar
-                  </p>
-                  <p className="text-xs text-muted-foreground mb-4">
-                    PDF, Excel, Word (máx. 10MB cada)
-                  </p>
-                  <input
-                    type="file"
-                    multiple
-                    accept=".pdf,.xlsx,.xls,.docx,.doc"
-                    onChange={handleFileChange}
-                    className="hidden"
-                    id="file-upload"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => document.getElementById('file-upload')?.click()}
-                  >
-                    Selecionar Arquivos
-                  </Button>
-                </div>
-
-                {attachments.length > 0 && (
-                  <div className="space-y-2">
-                    {attachments.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 border rounded">
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4" />
-                          <span className="text-sm">{file.name}</span>
-                          <span className="text-xs text-muted-foreground">
-                            ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                          </span>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeAttachment(index)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
+            {/* Upload de Anexos */}
+            <div className="space-y-4">
+              <Label>Anexos</Label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                <div className="text-center">
+                  <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                  <div className="mt-4">
+                    <label htmlFor="file-upload" className="cursor-pointer">
+                      <span className="mt-2 block text-sm font-medium text-gray-900">
+                        Clique para fazer upload ou arraste arquivos aqui
+                      </span>
+                      <span className="mt-1 block text-xs text-gray-500">
+                        PDF, Excel, Word até 10MB
+                      </span>
+                    </label>
+                    <input
+                      id="file-upload"
+                      name="file-upload"
+                      type="file"
+                      multiple
+                      className="sr-only"
+                      accept=".pdf,.xls,.xlsx,.doc,.docx"
+                      onChange={handleFileUpload}
+                    />
                   </div>
-                )}
+                </div>
               </div>
-            </CardContent>
-          </Card>
 
-          {/* Cronograma */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Cronograma</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="start_date"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Data de Início Prevista</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              {/* Lista de Anexos */}
+              {attachments.length > 0 && (
+                <div className="space-y-2">
+                  {attachments.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-blue-500" />
+                        <span className="text-sm">{file.name}</span>
+                        <span className="text-xs text-gray-500">
+                          ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeAttachment(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
-                <FormField
-                  control={form.control}
-                  name="end_date"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Data de Conclusão Prevista</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Botões de Ação */}
-          <div className="flex gap-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setIsDraft(true);
-                form.handleSubmit(onSubmit)();
-              }}
-              disabled={createRequestMutation.isPending}
-            >
-              Salvar Rascunho
-            </Button>
-            <Button
-              type="submit"
-              onClick={() => setIsDraft(false)}
-              disabled={createRequestMutation.isPending}
-            >
-              {createRequestMutation.isPending ? 'Enviando...' : 'Enviar para Aprovação'}
-            </Button>
-          </div>
-        </form>
-      </Form>
-    </div>
+            <div className="flex gap-4">
+              <Button 
+                type="submit" 
+                disabled={createRequestMutation.isPending}
+                className="flex-1"
+              >
+                {createRequestMutation.isPending ? 'Enviando...' : 'Enviar Solicitação'}
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline"
+                onClick={() => {
+                  form.reset();
+                  setAttachments([]);
+                }}
+              >
+                Limpar
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
   );
 };
