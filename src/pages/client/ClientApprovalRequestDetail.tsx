@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -8,23 +9,18 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Download, Check, X, Edit, FileText, User, Calendar, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { Solicitacao } from '@/types/aprovacoes';
 
 const statusConfig = {
-  pending: { label: 'Pendente', variant: 'secondary' as const },
-  approved: { label: 'Aprovado', variant: 'default' as const },
-  rejected: { label: 'Rejeitado', variant: 'destructive' as const },
-  requires_adjustment: { label: 'Requer Ajuste', variant: 'outline' as const },
-};
-
-const priorityConfig = {
-  low: { label: 'Baixa', variant: 'secondary' as const },
-  medium: { label: 'Média', variant: 'default' as const },
-  high: { label: 'Alta', variant: 'destructive' as const },
+  'Em Elaboração': { label: 'Em Elaboração', variant: 'secondary' as const },
+  'Pendente': { label: 'Pendente', variant: 'default' as const },
+  'Aprovado': { label: 'Aprovado', variant: 'default' as const },
+  'Rejeitado': { label: 'Rejeitado', variant: 'destructive' as const },
+  'Requer Ajuste': { label: 'Requer Ajuste', variant: 'outline' as const },
 };
 
 const ClientApprovalRequestDetail = () => {
@@ -36,22 +32,53 @@ const ClientApprovalRequestDetail = () => {
   const [showCommentsField, setShowCommentsField] = useState(false);
   const [actionType, setActionType] = useState<'approve' | 'reject' | 'request_adjustment' | null>(null);
 
-  // Fetch request details
-  const { data: request, isLoading } = useQuery({
-    queryKey: ['approval-request-detail', id],
+  // Fetch solicitacao details
+  const { data: solicitacao, isLoading } = useQuery({
+    queryKey: ['solicitacao-detail', id],
     queryFn: async () => {
       if (!id) throw new Error('ID not provided');
       
       const { data, error } = await supabase
-        .from('approval_requests')
-        .select(`
-          *,
-          approval_flow_types (name, description),
-          approval_attachments (*),
-          approval_history (*)
-        `)
+        .from('solicitacoes')
+        .select('*')
         .eq('id', id)
         .single();
+
+      if (error) throw error;
+      return data as Solicitacao;
+    },
+    enabled: !!id,
+  });
+
+  // Fetch anexos
+  const { data: anexos } = useQuery({
+    queryKey: ['anexos', id],
+    queryFn: async () => {
+      if (!id) return [];
+      
+      const { data, error } = await supabase
+        .from('anexos')
+        .select('*')
+        .eq('solicitacao_id', id)
+        .order('data_upload', { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  // Fetch histórico
+  const { data: historico } = useQuery({
+    queryKey: ['historico-aprovacao', id],
+    queryFn: async () => {
+      if (!id) return [];
+      
+      const { data, error } = await supabase
+        .from('historico_aprovacao')
+        .select('*')
+        .eq('solicitacao_id', id)
+        .order('data_acao', { ascending: true });
 
       if (error) throw error;
       return data;
@@ -63,121 +90,89 @@ const ClientApprovalRequestDetail = () => {
   const { data: canApprove } = useQuery({
     queryKey: ['can-approve', id, user?.id],
     queryFn: async () => {
-      if (!id || !user || !request) return false;
-
-      const { data, error } = await supabase
-        .from('approval_steps')
-        .select('*')
-        .eq('flow_type_id', request.flow_type_id)
-        .eq('step_order', request.current_step)
-        .or(`approver_user_id.eq.${user.id},approver_email.eq.${user.email}`);
-
-      if (error) throw error;
-      return data.length > 0 && request.status === 'pending';
+      if (!id || !user || !solicitacao) return false;
+      return solicitacao.aprovador_atual_id === user.id && solicitacao.status === 'Pendente';
     },
-    enabled: !!id && !!user && !!request,
+    enabled: !!id && !!user && !!solicitacao,
   });
 
   // Process approval action
   const processApprovalMutation = useMutation({
     mutationFn: async ({ action, comments }: { action: string; comments?: string }) => {
-      if (!request || !user) throw new Error('Missing data');
+      if (!solicitacao || !user) throw new Error('Missing data');
 
-      let newStatus = request.status;
-      let newStep = request.current_step;
+      let newStatus = solicitacao.status;
+      let newAprovadorId = solicitacao.aprovador_atual_id;
 
       if (action === 'approve') {
-        // Get total steps for this flow
-        const { data: steps, error: stepsError } = await supabase
-          .from('approval_steps')
+        // Buscar próximo aprovador no fluxo
+        const { data: fluxoAprovadores, error: fluxoError } = await supabase
+          .from('fluxo_aprovadores')
           .select('*')
-          .eq('flow_type_id', request.flow_type_id)
-          .order('step_order');
+          .eq('cliente_id', solicitacao.solicitante_id)
+          .order('ordem');
 
-        if (stepsError) throw stepsError;
+        if (fluxoError) throw fluxoError;
 
-        if (request.current_step >= steps.length) {
-          newStatus = 'approved';
+        const currentApproverIndex = fluxoAprovadores.findIndex(f => f.aprovador_id === user.id);
+        const nextApprover = fluxoAprovadores[currentApproverIndex + 1];
+
+        if (nextApprover) {
+          // Há próximo aprovador
+          newAprovadorId = nextApprover.aprovador_id;
+          newStatus = 'Pendente';
         } else {
-          newStep = request.current_step + 1;
+          // É a aprovação final
+          newStatus = 'Aprovado';
+          newAprovadorId = null;
         }
       } else if (action === 'reject') {
-        newStatus = 'rejected';
+        newStatus = 'Rejeitado';
+        newAprovadorId = null;
       } else if (action === 'request_adjustment') {
-        newStatus = 'requires_adjustment';
+        newStatus = 'Requer Ajuste';
+        newAprovadorId = null;
       }
 
-      // Update request status
+      // Update solicitacao status
       const { error: updateError } = await supabase
-        .from('approval_requests')
+        .from('solicitacoes')
         .update({
           status: newStatus,
-          current_step: newStep,
-          updated_at: new Date().toISOString(),
+          aprovador_atual_id: newAprovadorId,
+          data_ultima_modificacao: new Date().toISOString(),
         })
-        .eq('id', request.id);
+        .eq('id', solicitacao.id);
 
       if (updateError) throw updateError;
 
       // Add to approval history
+      const actionMap = {
+        'approve': 'Aprovação',
+        'reject': 'Rejeição',
+        'request_adjustment': 'Solicitação de Ajuste'
+      };
+
       const { error: historyError } = await supabase
-        .from('approval_history')
+        .from('historico_aprovacao')
         .insert([{
-          request_id: request.id,
-          approver_user_id: user.id,
-          approver_email: user.email,
-          approver_name: user.email, // Will be replaced with actual name from user profile
-          action,
-          comments,
-          step_order: request.current_step,
+          solicitacao_id: solicitacao.id,
+          usuario_id: user.id,
+          nome_usuario: user.email || 'Aprovador',
+          acao: actionMap[action as keyof typeof actionMap],
+          comentario: comments,
         }]);
 
       if (historyError) throw historyError;
-
-      // Send notification to requester
-      await supabase.functions.invoke('send-notification', {
-        body: {
-          notificationId: crypto.randomUUID(),
-          recipientEmail: request.requested_by_email,
-          subject: `Atualização na solicitação: ${request.title}`,
-          message: `Sua solicitação "${request.title}" foi ${
-            action === 'approve' ? 'aprovada' : 
-            action === 'reject' ? 'rejeitada' : 'devolvida para ajuste'
-          }.${comments ? ` Comentários: ${comments}` : ''}`,
-          type: 'approval_update',
-        },
-      });
-
-      // If approved and moving to next step, notify next approver
-      if (action === 'approve' && newStatus === 'pending') {
-        const { data: nextSteps, error: nextStepsError } = await supabase
-          .from('approval_steps')
-          .select('*')
-          .eq('flow_type_id', request.flow_type_id)
-          .eq('step_order', newStep);
-
-        if (!nextStepsError && nextSteps.length > 0) {
-          const nextApprover = nextSteps[0];
-          await supabase.functions.invoke('send-notification', {
-            body: {
-              notificationId: crypto.randomUUID(),
-              recipientEmail: nextApprover.approver_email,
-              subject: `Nova solicitação de aprovação: ${request.title}`,
-              message: `A solicitação "${request.title}" aguarda sua aprovação.`,
-              type: 'approval_request',
-            },
-          });
-        }
-      }
     },
     onSuccess: () => {
       toast.success('Ação processada com sucesso!');
       setComments('');
       setShowCommentsField(false);
       setActionType(null);
-      queryClient.invalidateQueries({ queryKey: ['approval-request-detail', id] });
-      queryClient.invalidateQueries({ queryKey: ['pending-approval-tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['my-approval-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['solicitacao-detail', id] });
+      queryClient.invalidateQueries({ queryKey: ['historico-aprovacao', id] });
+      queryClient.invalidateQueries({ queryKey: ['solicitacoes-pendentes'] });
     },
     onError: (error: any) => {
       toast.error('Erro ao processar ação: ' + error.message);
@@ -209,22 +204,9 @@ const ClientApprovalRequestDetail = () => {
 
   const downloadAttachment = async (attachment: any) => {
     try {
-      const { data, error } = await supabase.storage
-        .from('documents')
-        .download(attachment.file_path);
-
-      if (error) throw error;
-
-      const url = URL.createObjectURL(data);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = attachment.filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      window.open(attachment.url_arquivo, '_blank');
     } catch (error: any) {
-      toast.error('Erro ao baixar arquivo: ' + error.message);
+      toast.error('Erro ao abrir arquivo: ' + error.message);
     }
   };
 
@@ -240,7 +222,7 @@ const ClientApprovalRequestDetail = () => {
     );
   }
 
-  if (!request) {
+  if (!solicitacao) {
     return (
       <div className="container mx-auto p-6">
         <Card>
@@ -272,17 +254,14 @@ const ClientApprovalRequestDetail = () => {
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div>
-                  <CardTitle className="text-2xl">{request.title}</CardTitle>
+                  <CardTitle className="text-2xl">{solicitacao.titulo}</CardTitle>
                   <p className="text-muted-foreground mt-1">
-                    {request.approval_flow_types?.name}
+                    Período: {solicitacao.periodo_referencia}
                   </p>
                 </div>
                 <div className="flex space-x-2">
-                  <Badge variant={statusConfig[request.status as keyof typeof statusConfig]?.variant}>
-                    {statusConfig[request.status as keyof typeof statusConfig]?.label}
-                  </Badge>
-                  <Badge variant={priorityConfig[request.priority as keyof typeof priorityConfig]?.variant}>
-                    {priorityConfig[request.priority as keyof typeof priorityConfig]?.label}
+                  <Badge variant={statusConfig[solicitacao.status as keyof typeof statusConfig]?.variant}>
+                    {statusConfig[solicitacao.status as keyof typeof statusConfig]?.label}
                   </Badge>
                 </div>
               </div>
@@ -291,52 +270,42 @@ const ClientApprovalRequestDetail = () => {
               <div>
                 <h3 className="font-medium mb-2">Descrição</h3>
                 <div className="prose prose-sm max-w-none">
-                  <pre className="whitespace-pre-wrap font-sans text-sm">
-                    {request.description}
+                  <pre className="whitespace-pre-wrap font-sans text-sm bg-muted p-4 rounded">
+                    {solicitacao.descricao}
                   </pre>
                 </div>
               </div>
-
-              {request.amount && (
-                <div>
-                  <h3 className="font-medium mb-2">Valor</h3>
-                  <p className="text-lg font-semibold">
-                    {new Intl.NumberFormat('pt-BR', {
-                      style: 'currency',
-                      currency: 'BRL',
-                    }).format(Number(request.amount))}
-                  </p>
-                </div>
-              )}
             </CardContent>
           </Card>
 
           {/* Attachments */}
-          {request.approval_attachments && request.approval_attachments.length > 0 && (
+          {anexos && anexos.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Anexos</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {request.approval_attachments.map((attachment: any) => (
+                  {anexos.map((anexo: any) => (
                     <div
-                      key={attachment.id}
+                      key={anexo.id}
                       className="flex items-center justify-between p-3 border rounded-lg"
                     >
                       <div className="flex items-center space-x-3">
                         <FileText className="h-5 w-5 text-muted-foreground" />
                         <div>
-                          <p className="font-medium">{attachment.filename}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {(attachment.file_size / 1024 / 1024).toFixed(2)} MB
-                          </p>
+                          <p className="font-medium">{anexo.nome_arquivo}</p>
+                          {anexo.tamanho_arquivo && (
+                            <p className="text-sm text-muted-foreground">
+                              {(anexo.tamanho_arquivo / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          )}
                         </div>
                       </div>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => downloadAttachment(attachment)}
+                        onClick={() => downloadAttachment(anexo)}
                       >
                         <Download className="h-4 w-4 mr-2" />
                         Baixar
@@ -436,7 +405,7 @@ const ClientApprovalRequestDetail = () => {
                 <User className="h-4 w-4 text-muted-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">Solicitante</p>
-                  <p className="font-medium">{request.requested_by_name}</p>
+                  <p className="font-medium">{solicitacao.solicitante_id}</p>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
@@ -444,7 +413,7 @@ const ClientApprovalRequestDetail = () => {
                 <div>
                   <p className="text-sm text-muted-foreground">Data de Criação</p>
                   <p className="font-medium">
-                    {format(new Date(request.created_at), 'dd/MM/yyyy HH:mm', {
+                    {format(new Date(solicitacao.data_criacao), 'dd/MM/yyyy HH:mm', {
                       locale: ptBR,
                     })}
                   </p>
@@ -455,7 +424,7 @@ const ClientApprovalRequestDetail = () => {
                 <div>
                   <p className="text-sm text-muted-foreground">Etapa Atual</p>
                   <p className="font-medium">
-                    {request.current_step} de {request.total_steps}
+                    {solicitacao.etapa_atual}
                   </p>
                 </div>
               </div>
@@ -468,30 +437,25 @@ const ClientApprovalRequestDetail = () => {
               <CardTitle>Histórico de Aprovações</CardTitle>
             </CardHeader>
             <CardContent>
-              {request.approval_history && request.approval_history.length > 0 ? (
+              {historico && historico.length > 0 ? (
                 <div className="space-y-4">
-                  {request.approval_history
-                    .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                  {historico
+                    .sort((a: any, b: any) => new Date(b.data_acao).getTime() - new Date(a.data_acao).getTime())
                     .map((history: any) => (
                       <div key={history.id} className="border-l-2 border-primary pl-4 pb-4">
                         <div className="flex items-center justify-between mb-1">
-                          <p className="font-medium text-sm">{history.approver_name}</p>
+                          <p className="font-medium text-sm">{history.nome_usuario}</p>
                           <Badge variant="outline" className="text-xs">
-                            Etapa {history.step_order}
+                            {history.acao}
                           </Badge>
                         </div>
-                        <p className="text-sm text-muted-foreground mb-1">
-                          {history.action === 'approve' ? 'Aprovado' :
-                           history.action === 'reject' ? 'Rejeitado' :
-                           'Solicitou ajuste'}
-                        </p>
-                        {history.comments && (
+                        {history.comentario && (
                           <p className="text-sm bg-muted p-2 rounded">
-                            {history.comments}
+                            {history.comentario}
                           </p>
                         )}
                         <p className="text-xs text-muted-foreground mt-1">
-                          {format(new Date(history.created_at), 'dd/MM/yyyy HH:mm', {
+                          {format(new Date(history.data_acao), 'dd/MM/yyyy HH:mm', {
                             locale: ptBR,
                           })}
                         </p>
