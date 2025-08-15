@@ -109,6 +109,33 @@ export type Database = {
         }
         Relationships: []
       }
+      cargos: {
+        Row: {
+          created_at: string | null
+          descricao: string | null
+          id: string
+          nivel: number
+          nome: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          nivel: number
+          nome: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          nivel?: number
+          nome?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           chat_room_id: string | null
@@ -285,6 +312,7 @@ export type Database = {
       }
       client_profiles: {
         Row: {
+          cargo_id: string | null
           cnpj: string | null
           company: string | null
           created_at: string
@@ -292,9 +320,11 @@ export type Database = {
           id: string
           is_primary_contact: boolean | null
           name: string
+          pode_aprovar: boolean | null
           updated_at: string
         }
         Insert: {
+          cargo_id?: string | null
           cnpj?: string | null
           company?: string | null
           created_at?: string
@@ -302,9 +332,11 @@ export type Database = {
           id: string
           is_primary_contact?: boolean | null
           name: string
+          pode_aprovar?: boolean | null
           updated_at?: string
         }
         Update: {
+          cargo_id?: string | null
           cnpj?: string | null
           company?: string | null
           created_at?: string
@@ -312,9 +344,18 @@ export type Database = {
           id?: string
           is_primary_contact?: boolean | null
           name?: string
+          pode_aprovar?: boolean | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "client_profiles_cargo_id_fkey"
+            columns: ["cargo_id"]
+            isOneToOne: false
+            referencedRelation: "cargos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       collaborators: {
         Row: {
@@ -476,6 +517,58 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "document_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      empresa_funcionarios: {
+        Row: {
+          cargo_id: string
+          created_at: string | null
+          empresa_id: string
+          funcionario_id: string
+          id: string
+          pode_aprovar: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          cargo_id: string
+          created_at?: string | null
+          empresa_id: string
+          funcionario_id: string
+          id?: string
+          pode_aprovar?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          cargo_id?: string
+          created_at?: string | null
+          empresa_id?: string
+          funcionario_id?: string
+          id?: string
+          pode_aprovar?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empresa_funcionarios_cargo_id_fkey"
+            columns: ["cargo_id"]
+            isOneToOne: false
+            referencedRelation: "cargos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empresa_funcionarios_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empresa_funcionarios_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1961,6 +2054,8 @@ export type Database = {
       solicitacoes: {
         Row: {
           aprovador_atual_id: string | null
+          aprovadores_completos: Json | null
+          aprovadores_necessarios: Json | null
           data_criacao: string | null
           data_ultima_modificacao: string | null
           descricao: string
@@ -1973,6 +2068,8 @@ export type Database = {
         }
         Insert: {
           aprovador_atual_id?: string | null
+          aprovadores_completos?: Json | null
+          aprovadores_necessarios?: Json | null
           data_criacao?: string | null
           data_ultima_modificacao?: string | null
           descricao: string
@@ -1985,6 +2082,8 @@ export type Database = {
         }
         Update: {
           aprovador_atual_id?: string | null
+          aprovadores_completos?: Json | null
+          aprovadores_necessarios?: Json | null
           data_criacao?: string | null
           data_ultima_modificacao?: string | null
           descricao?: string

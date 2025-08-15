@@ -1,18 +1,27 @@
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Plus, Upload, X, FileText, Save, Send } from 'lucide-react';
-import { useCreateSolicitacao } from '@/hooks/useSolicitacoes';
+import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import { useCreateSolicitacao } from '@/hooks/useSolicitacoes';
+import { FileUploadSolicitacao } from './FileUploadSolicitacao';
+import { SeletorAprovadores } from './SeletorAprovadores';
+import { Loader2 } from 'lucide-react';
 
 interface CriarSolicitacaoDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+interface Aprovador {
+  id: string;
+  name: string;
+  email: string;
+  cargo: string;
+  nivel: number;
 }
 
 export const CriarSolicitacaoDialog: React.FC<CriarSolicitacaoDialogProps> = ({
@@ -21,140 +30,159 @@ export const CriarSolicitacaoDialog: React.FC<CriarSolicitacaoDialogProps> = ({
 }) => {
   const { user } = useAuth();
   const createSolicitacao = useCreateSolicitacao();
+
   const [formData, setFormData] = useState({
     titulo: '',
     periodo_referencia: '',
     descricao: ''
   });
 
-  const handleSubmit = async (isDraft: boolean = false) => {
-    if (!user) {
-      toast.error('Usuário not autenticado');
+  const [files, setFiles] = useState<File[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<Array<{ id: string; name: string; url: string; size: number }>>([]);
+  const [aprovadores, setAprovadores] = useState<Aprovador[]>([]);
+
+  const resetForm = () => {
+    setFormData({
+      titulo: '',
+      periodo_referencia: '',
+      descricao: ''
+    });
+    setFiles([]);
+    setUploadedFiles([]);
+    setAprovadores([]);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!user?.id) {
       return;
     }
 
-    if (!formData.titulo.trim() || !formData.periodo_referencia.trim()) {
-      toast.error('Título e período de referência são obrigatórios');
+    if (!formData.titulo.trim()) {
       return;
     }
 
     try {
       await createSolicitacao.mutateAsync({
-        titulo: formData.titulo,
-        periodo_referencia: formData.periodo_referencia,
-        descricao: formData.descricao,
-        status: isDraft ? 'Em Elaboração' : 'Pendente',
-        solicitante_id: user.id,
-        etapa_atual: 1,
-        // Definir um aprovador padrão para teste - em produção isso viria do fluxo
-        aprovador_atual_id: isDraft ? undefined : user.id // Por enquanto, para teste
+        solicitacao: {
+          titulo: formData.titulo,
+          periodo_referencia: formData.periodo_referencia,
+          descricao: formData.descricao,
+          status: aprovadores.length > 0 ? 'Pendente' : 'Em Elaboração',
+          solicitante_id: user.id,
+          aprovador_atual_id: aprovadores.length > 0 
+            ? aprovadores.sort((a, b) => b.nivel - a.nivel)[0].id 
+            : null,
+          etapa_atual: 1
+        },
+        files,
+        aprovadores
       });
 
-      setFormData({ titulo: '', periodo_referencia: '', descricao: '' });
+      resetForm();
       onOpenChange(false);
-      
-      if (isDraft) {
-        toast.success('Rascunho salvo com sucesso!');
-      } else {
-        toast.success('Solicitação enviada para aprovação!');
-      }
     } catch (error) {
-      console.error('Erro ao criar solicitação:', error);
-      toast.error('Erro ao processar solicitação');
+      console.error('Error creating solicitacao:', error);
     }
   };
 
-  const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const handleFileChange = (newFiles: File[]) => {
+    setFiles(newFiles);
+  };
+
+  const handleFileRemove = (index: number) => {
+    setFiles(files.filter((_, i) => i !== index));
+  };
+
+  const handleUploadedFileRemove = (id: string) => {
+    setUploadedFiles(uploadedFiles.filter(f => f.id !== id));
+  };
+
+  const handleAprovadoresChange = (novosAprovadores: Aprovador[]) => {
+    setAprovadores(novosAprovadores);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nova Solicitação de Aprovação</DialogTitle>
-          <DialogDescription>
-            Preencha os dados da sua solicitação de aprovação
-          </DialogDescription>
+          <DialogTitle>Criar Nova Solicitação</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Informações Básicas */}
-          <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="titulo">Título da Solicitação *</Label>
+              <Label htmlFor="titulo">Título *</Label>
               <Input
                 id="titulo"
                 value={formData.titulo}
-                onChange={(e) => handleChange('titulo', e.target.value)}
-                placeholder="Ex: Aprovação de Relatório Mensal - Janeiro 2024"
+                onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
+                placeholder="Título da solicitação"
+                required
               />
             </div>
 
             <div>
-              <Label htmlFor="periodo">Período de Referência *</Label>
+              <Label htmlFor="periodo">Período de Referência</Label>
               <Input
                 id="periodo"
                 value={formData.periodo_referencia}
-                onChange={(e) => handleChange('periodo_referencia', e.target.value)}
-                placeholder="Ex: Janeiro 2024"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="descricao">Descrição</Label>
-              <Textarea
-                id="descricao"
-                value={formData.descricao}
-                onChange={(e) => handleChange('descricao', e.target.value)}
-                placeholder="Descreva os detalhes da sua solicitação..."
-                rows={4}
+                onChange={(e) => setFormData({ ...formData, periodo_referencia: e.target.value })}
+                placeholder="Ex: Janeiro/2024"
               />
             </div>
           </div>
 
-          {/* Seção de Anexos - Simplificada por enquanto */}
-          <div className="border-t pt-4">
-            <h3 className="text-lg font-medium mb-4">Documentos</h3>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500 mb-2">Funcionalidade de upload será implementada em breve</p>
-              <p className="text-sm text-gray-400">Por enquanto, você pode criar a solicitação sem anexos</p>
-            </div>
+          <div>
+            <Label htmlFor="descricao">Descrição</Label>
+            <Textarea
+              id="descricao"
+              value={formData.descricao}
+              onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+              placeholder="Descreva os detalhes da solicitação..."
+              rows={4}
+            />
           </div>
 
-          {/* Botões de Ação */}
-          <div className="flex justify-between pt-4 border-t">
+          <SeletorAprovadores
+            aprovadoresSelecionados={aprovadores}
+            onAprovadoresChange={handleAprovadoresChange}
+          />
+
+          <FileUploadSolicitacao
+            files={files}
+            onFileChange={handleFileChange}
+            onFileRemove={handleFileRemove}
+            uploadedFiles={uploadedFiles}
+            onUploadedFileRemove={handleUploadedFileRemove}
+          />
+
+          <div className="flex gap-3 pt-4">
             <Button
+              type="submit"
+              disabled={createSolicitacao.isPending || !formData.titulo.trim()}
+              className="flex-1"
+            >
+              {createSolicitacao.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Criando...
+                </>
+              ) : (
+                'Criar Solicitação'
+              )}
+            </Button>
+            <Button
+              type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              disabled={createSolicitacao.isPending}
             >
               Cancelar
             </Button>
-            
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => handleSubmit(true)}
-                disabled={createSolicitacao.isPending}
-              >
-                <Save className="h-4 w-4 mr-2" />
-                Salvar Rascunho
-              </Button>
-              
-              <Button
-                onClick={() => handleSubmit(false)}
-                disabled={createSolicitacao.isPending}
-              >
-                <Send className="h-4 w-4 mr-2" />
-                Enviar para Aprovação
-              </Button>
-            </div>
           </div>
-        </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

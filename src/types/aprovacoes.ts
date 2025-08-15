@@ -8,6 +8,23 @@ export interface Solicitacao {
   solicitante_id: string;
   aprovador_atual_id?: string;
   etapa_atual: number;
+  aprovadores_necessarios?: Array<{
+    id: string;
+    name: string;
+    email: string;
+    nivel: number;
+    aprovado: boolean;
+    data_aprovacao?: string;
+  }>;
+  aprovadores_completos?: Array<{
+    id: string;
+    name: string;
+    email: string;
+    nivel: number;
+    aprovado: boolean;
+    data_aprovacao: string;
+    comentario?: string;
+  }>;
   data_criacao: string;
   data_ultima_modificacao: string;
 }
@@ -40,4 +57,23 @@ export interface FluxoAprovador {
   nome_aprovador: string;
   email_aprovador: string;
   created_at: string;
+}
+
+export interface Cargo {
+  id: string;
+  nome: string;
+  nivel: number;
+  descricao?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmpresaFuncionario {
+  id: string;
+  empresa_id: string;
+  funcionario_id: string;
+  cargo_id: string;
+  pode_aprovar: boolean;
+  created_at: string;
+  updated_at: string;
 }
