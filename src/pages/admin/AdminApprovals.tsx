@@ -16,27 +16,84 @@ import {
   Eye
 } from 'lucide-react';
 import { Solicitacao } from '@/types/aprovacoes';
+import { ConfigurarFluxosDialog } from '@/components/admin/aprovacoes/ConfigurarFluxosDialog';
+import { FiltrosAprovacaoDialog } from '@/components/admin/aprovacoes/FiltrosAprovacaoDialog';
+
+interface FiltrosSolicitacao {
+  status: string;
+  periodo: string;
+  solicitante: string;
+  dataInicio: string;
+  dataFim: string;
+}
 
 const AdminApprovals = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [filtros, setFiltros] = useState<FiltrosSolicitacao>({
+    status: '',
+    periodo: '',
+    solicitante: '',
+    dataInicio: '',
+    dataFim: ''
+  });
   
   const { data: solicitacoes, isLoading } = useQuery({
-    queryKey: ['admin-solicitacoes'],
+    queryKey: ['admin-solicitacoes', filtros, searchTerm],
     queryFn: async () => {
-      console.log('Fetching all solicitacoes for admin');
+      console.log('Fetching all solicitacoes for admin with filters:', filtros);
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('solicitacoes')
-        .select('*')
+        .select(`
+          *,
+          client_profiles!solicitacoes_solicitante_id_fkey(name, email)
+        `)
         .order('data_criacao', { ascending: false });
+
+      // Aplicar filtros
+      if (filtros.status) {
+        query = query.eq('status', filtros.status);
+      }
+
+      if (filtros.dataInicio) {
+        query = query.gte('data_criacao', filtros.dataInicio);
+      }
+
+      if (filtros.dataFim) {
+        query = query.lte('data_criacao', filtros.dataFim + 'T23:59:59');
+      }
+
+      const { data, error } = await query;
       
       if (error) {
         console.error('Error fetching admin solicitacoes:', error);
         throw error;
       }
       
-      console.log('Admin solicitacoes fetched:', data);
-      return data as Solicitacao[];
+      let filteredData = data || [];
+
+      // Filtrar por termo de busca
+      if (searchTerm) {
+        filteredData = filteredData.filter(solicitacao =>
+          solicitacao.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          solicitacao.periodo_referencia.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (solicitacao.client_profiles?.name && 
+           solicitacao.client_profiles.name.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+      }
+
+      // Filtrar por solicitante
+      if (filtros.solicitante) {
+        filteredData = filteredData.filter(solicitacao =>
+          (solicitacao.client_profiles?.name && 
+           solicitacao.client_profiles.name.toLowerCase().includes(filtros.solicitante.toLowerCase())) ||
+          (solicitacao.client_profiles?.email && 
+           solicitacao.client_profiles.email.toLowerCase().includes(filtros.solicitante.toLowerCase()))
+        );
+      }
+      
+      console.log('Admin solicitacoes fetched:', filteredData);
+      return filteredData as (Solicitacao & { client_profiles: { name: string; email: string } })[];
     }
   });
 
@@ -68,12 +125,6 @@ const AdminApprovals = () => {
     }
   };
 
-  // Filtrar solicitações baseado na busca
-  const filteredSolicitacoes = solicitacoes?.filter(solicitacao =>
-    solicitacao.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    solicitacao.periodo_referencia.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -94,10 +145,12 @@ const AdminApprovals = () => {
             Visualize e gerencie todas as solicitações de aprovação
           </p>
         </div>
-        <Button onClick={() => console.log('Configurar fluxos - funcionalidade futura')}>
-          <Settings className="h-4 w-4 mr-2" />
-          Configurar Fluxos
-        </Button>
+        <ConfigurarFluxosDialog>
+          <Button>
+            <Settings className="h-4 w-4 mr-2" />
+            Configurar Fluxos
+          </Button>
+        </ConfigurarFluxosDialog>
       </div>
 
       {/* Estatísticas */}
@@ -162,10 +215,20 @@ const AdminApprovals = () => {
                 />
               </div>
             </div>
-            <Button variant="outline" onClick={() => console.log('Filtros - funcionalidade futura')}>
-              <Filter className="h-4 w-4 mr-2" />
-              Filtros
-            </Button>
+            <FiltrosAprovacaoDialog 
+              currentFilters={filtros}
+              onApplyFilters={setFiltros}
+            >
+              <Button variant="outline">
+                <Filter className="h-4 w-4 mr-2" />
+                Filtros
+                {Object.values(filtros).filter(v => v !== '').length > 0 && (
+                  <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 text-xs">
+                    {Object.values(filtros).filter(v => v !== '').length}
+                  </Badge>
+                )}
+              </Button>
+            </FiltrosAprovacaoDialog>
           </div>
         </CardContent>
       </Card>
@@ -176,9 +239,9 @@ const AdminApprovals = () => {
           <CardTitle>Todas as Solicitações</CardTitle>
         </CardHeader>
         <CardContent>
-          {filteredSolicitacoes && filteredSolicitacoes.length > 0 ? (
+          {solicitacoes && solicitacoes.length > 0 ? (
             <div className="space-y-4">
-              {filteredSolicitacoes.map((solicitacao) => (
+              {solicitacoes.map((solicitacao) => (
                 <div
                   key={solicitacao.id}
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
@@ -191,7 +254,7 @@ const AdminApprovals = () => {
                         Período: {solicitacao.periodo_referencia} • Criado em {new Date(solicitacao.data_criacao).toLocaleDateString('pt-BR')}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Solicitante: {solicitacao.solicitante_id}
+                        Solicitante: {solicitacao.client_profiles?.name || 'Usuário não encontrado'} ({solicitacao.client_profiles?.email})
                       </p>
                     </div>
                   </div>
@@ -213,7 +276,9 @@ const AdminApprovals = () => {
             <div className="text-center py-8">
               <CheckCircle2 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
               <p className="text-muted-foreground">
-                {searchTerm ? 'Nenhuma solicitação encontrada para a busca' : 'Nenhuma solicitação de aprovação encontrada'}
+                {searchTerm || Object.values(filtros).some(v => v !== '') 
+                  ? 'Nenhuma solicitação encontrada para os filtros aplicados' 
+                  : 'Nenhuma solicitação de aprovação encontrada'}
               </p>
             </div>
           )}
