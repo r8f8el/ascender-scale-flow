@@ -16,7 +16,9 @@ import {
   FolderOpen,
   LogOut,
   BarChart3,
-  Kanban
+  Kanban,
+  CheckCircle,
+  ClipboardList
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -28,6 +30,11 @@ const mainNavigationItems = [
   { path: '/cliente/gantt', icon: BarChart3, label: 'Cronogramas Gantt' },
   { path: '/cliente/cronograma', icon: Calendar, label: 'Cronograma' },
   { path: '/cliente/contato', icon: Mail, label: 'Contato' }
+];
+
+const approvalNavigationItems = [
+  { path: '/cliente/aprovacoes', icon: CheckCircle, label: 'Minhas Solicitações' },
+  { path: '/cliente/aprovacoes/nova', icon: ClipboardList, label: 'Nova Solicitação' }
 ];
 
 const fpaNavigationItems = [
@@ -80,6 +87,31 @@ export const ClientNavigation: React.FC = () => {
                     to={item.path}
                     className={`flex items-center px-3 py-2 rounded-lg transition-colors ${
                       location.pathname === item.path
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <item.icon className="h-5 w-5 mr-3" />
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Fluxos de Aprovação */}
+          <div className="mb-6">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+              FLUXOS DE APROVAÇÃO
+            </h3>
+            <ul className="space-y-1">
+              {approvalNavigationItems.map((item) => (
+                <li key={item.path}>
+                  <Link
+                    to={item.path}
+                    className={`flex items-center px-3 py-2 rounded-lg transition-colors ${
+                      location.pathname === item.path || location.pathname.startsWith(item.path)
                         ? 'bg-blue-50 text-blue-700'
                         : 'text-gray-700 hover:bg-gray-100'
                     }`}
