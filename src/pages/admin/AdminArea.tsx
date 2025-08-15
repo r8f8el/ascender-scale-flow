@@ -46,7 +46,7 @@ const AdminArea = () => {
             <Route path="/meus-chamados" element={<MyTickets />} />
             <Route path="/arquivos" element={<ArquivosAdmin />} />
             <Route path="/documentos" element={<AdminDocuments />} />
-            <Route path="/workflows" element={<AdminApprovalFlows />} />
+            <Route path="/aprovacoes" element={<AdminApprovalFlows />} />
             <Route path="/logs" element={<LogsAdmin />} />
             <Route path="/configuracoes" element={<ConfiguracoesAdmin />} />
             <Route path="/testing" element={<TestingDashboard />} />

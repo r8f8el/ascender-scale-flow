@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocation } from 'react-router-dom';
 
-console.log('🔥 ClientApprovalRequests arquivo carregado!');
+
 
 const ClientApprovalRequests = () => {
   const { user } = useAuth();
