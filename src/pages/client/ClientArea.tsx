@@ -65,6 +65,7 @@ const ClientArea = () => {
           <Route path="/chamados/:id" element={<ClientTicketDetail />} />
           <Route path="/equipe" element={<ClientTeam />} />
           <Route path="/aprovacoes" element={<ClientApprovalRequests />} />
+          <Route path="/aprovacoes/nova" element={<ClientApprovalRequests />} />
           <Route path="/aprovacoes/:id" element={<ClientApprovalRequestDetail />} />
           <Route path="/kanban" element={<ClientKanban />} />
           <Route path="/gantt" element={<ClientGantt />} />
