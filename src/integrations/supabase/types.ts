@@ -1995,7 +1995,22 @@ export type Database = {
           status?: string
           titulo?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_solicitacoes_aprovador"
+            columns: ["aprovador_atual_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_solicitacoes_solicitante"
+            columns: ["solicitante_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       system_logs: {
         Row: {

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +26,13 @@ interface FiltrosSolicitacao {
   dataFim: string;
 }
 
+interface SolicitacaoWithProfile extends Solicitacao {
+  client_profiles: {
+    name: string;
+    email: string;
+  } | null;
+}
+
 const AdminApprovals = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filtros, setFiltros] = useState<FiltrosSolicitacao>({
@@ -46,7 +52,7 @@ const AdminApprovals = () => {
         .from('solicitacoes')
         .select(`
           *,
-          client_profiles!solicitacoes_solicitante_id_fkey(name, email)
+          client_profiles(name, email)
         `)
         .order('data_criacao', { ascending: false });
 
@@ -93,7 +99,7 @@ const AdminApprovals = () => {
       }
       
       console.log('Admin solicitacoes fetched:', filteredData);
-      return filteredData as (Solicitacao & { client_profiles: { name: string; email: string } })[];
+      return filteredData as SolicitacaoWithProfile[];
     }
   });
 
@@ -254,7 +260,7 @@ const AdminApprovals = () => {
                         Período: {solicitacao.periodo_referencia} • Criado em {new Date(solicitacao.data_criacao).toLocaleDateString('pt-BR')}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Solicitante: {solicitacao.client_profiles?.name || 'Usuário não encontrado'} ({solicitacao.client_profiles?.email})
+                        Solicitante: {solicitacao.client_profiles?.name || 'Usuário não encontrado'} ({solicitacao.client_profiles?.email || 'Email não disponível'})
                       </p>
                     </div>
                   </div>
