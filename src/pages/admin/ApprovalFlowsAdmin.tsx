@@ -60,6 +60,8 @@ interface ApprovalStats {
   avgProcessingTime: number;
 }
 
+console.log('🔥 ApprovalFlowsAdmin arquivo carregado!');
+
 const ApprovalFlowsAdmin = () => {
   const [selectedTab, setSelectedTab] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');

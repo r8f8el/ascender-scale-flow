@@ -13,6 +13,8 @@ import {
   AlertTriangle
 } from 'lucide-react';
 
+console.log('🔥 ApprovalOverview arquivo carregado!');
+
 export const ApprovalOverview = () => {
   const { user } = useAuth();
 
