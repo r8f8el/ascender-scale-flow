@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NewApprovalRequestForm } from '@/components/client/approval/NewApprovalRequestForm';
 import { MyApprovalRequests } from '@/components/client/approval/MyApprovalRequests';
 import { PendingApprovalTasks } from '@/components/client/approval/PendingApprovalTasks';
+import { ApprovalOverview } from '@/components/client/approval/ApprovalOverview';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -35,14 +36,19 @@ const ClientApprovalRequests = () => {
         </p>
       </div>
 
-      <Tabs defaultValue="my-requests" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="my-requests">Minhas Solicitações</TabsTrigger>
           <TabsTrigger value="new-request">Nova Solicitação</TabsTrigger>
           {isApprover && (
             <TabsTrigger value="pending-tasks">Tarefas Pendentes</TabsTrigger>
           )}
         </TabsList>
+
+        <TabsContent value="overview">
+          <ApprovalOverview />
+        </TabsContent>
 
         <TabsContent value="my-requests">
           <Card>

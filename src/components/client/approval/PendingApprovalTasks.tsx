@@ -2,18 +2,18 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Eye, Clock, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useNavigate } from 'react-router-dom';
+import { CheckCircle, Clock, AlertCircle } from 'lucide-react';
 
+// Priority configuration
 const priorityConfig = {
   low: { label: 'Baixa', variant: 'secondary' as const },
-  medium: { label: 'Média', variant: 'default' as const },
+  medium: { label: 'Média', variant: 'outline' as const },
   high: { label: 'Alta', variant: 'destructive' as const },
 };
 
@@ -21,136 +21,155 @@ export const PendingApprovalTasks = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const { data: pendingTasks = [], isLoading } = useQuery({
+  const { data: pendingTasks, isLoading } = useQuery({
     queryKey: ['pending-approval-tasks', user?.id],
     queryFn: async () => {
       if (!user) return [];
 
-      // First get approval steps where user is an approver
-      const { data: userSteps, error: stepsError } = await supabase
+      // First get the approval steps where current user is an approver
+      const { data: mySteps, error: stepsError } = await supabase
         .from('approval_steps')
         .select('flow_type_id, step_order')
         .or(`approver_user_id.eq.${user.id},approver_email.eq.${user.email}`);
 
       if (stepsError) throw stepsError;
-      if (!userSteps || userSteps.length === 0) return [];
+      if (!mySteps?.length) return [];
 
-      // Get requests where user is current step approver
-      const { data, error } = await supabase
-        .from('approval_requests')
-        .select(`
-          *,
-          approval_flow_types (name)
-        `)
-        .eq('status', 'pending')
-        .in('flow_type_id', userSteps.map(s => s.flow_type_id))
-        .order('created_at', { ascending: false });
+      // Then get approval requests that are at those steps
+      const pendingRequests = [];
+      for (const step of mySteps) {
+        const { data: requests, error: requestsError } = await supabase
+          .from('approval_requests')
+          .select(`
+            *,
+            approval_flow_types (name)
+          `)
+          .eq('flow_type_id', step.flow_type_id)
+          .eq('current_step', step.step_order)
+          .eq('status', 'pending');
 
-      if (error) throw error;
+        if (requestsError) throw requestsError;
+        if (requests) {
+          pendingRequests.push(...requests);
+        }
+      }
 
-      // Filter to only include tasks where the user is the current step approver
-      const filteredData = data?.filter(request => {
-        const userStepForFlow = userSteps.find(s => s.flow_type_id === request.flow_type_id);
-        return userStepForFlow && userStepForFlow.step_order === request.current_step;
-      }) || [];
-
-      return filteredData;
+      return pendingRequests;
     },
     enabled: !!user,
   });
 
   const handleViewDetails = (requestId: string) => {
-    navigate(`/client/approval-requests/${requestId}`);
+    navigate(`/cliente/aprovacoes/${requestId}`);
   };
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        {[...Array(3)].map((_, i) => (
-          <Card key={i}>
-            <CardContent className="p-6">
-              <div className="animate-pulse space-y-3">
-                <div className="h-4 bg-muted rounded w-3/4"></div>
-                <div className="h-3 bg-muted rounded w-1/2"></div>
-                <div className="h-3 bg-muted rounded w-1/4"></div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
-  if (pendingTasks.length === 0) {
+  if (!pendingTasks || pendingTasks.length === 0) {
     return (
-      <Card>
-        <CardContent className="p-6 text-center">
-          <Clock className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-          <p className="text-muted-foreground">
-            Não há tarefas de aprovação pendentes no momento.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="text-center py-12">
+        <CheckCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+        <h3 className="text-lg font-medium mb-2">Nenhuma aprovação pendente</h3>
+        <p className="text-muted-foreground">
+          Você não possui solicitações aguardando sua aprovação no momento.
+        </p>
+      </div>
     );
   }
 
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 mb-6">
-        <div className="flex items-center space-x-2">
-          <Clock className="h-5 w-5 text-primary" />
-          <span className="font-medium text-primary">
-            {pendingTasks.length} tarefa{pendingTasks.length !== 1 ? 's' : ''} pendente{pendingTasks.length !== 1 ? 's' : ''}
-          </span>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <Clock className="h-6 w-6 text-orange-500" />
+            Tarefas Pendentes de Aprovação
+          </h2>
+          <p className="text-muted-foreground">
+            Solicitações aguardando sua análise e aprovação
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 text-orange-500" />
+          <span className="text-sm font-medium">{pendingTasks.length} pendente(s)</span>
         </div>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Título da Solicitação</TableHead>
-            <TableHead>Tipo</TableHead>
-            <TableHead>Solicitante</TableHead>
-            <TableHead>Data de Recebimento</TableHead>
-            <TableHead>Prioridade</TableHead>
-            <TableHead>Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {pendingTasks.map((request) => (
-            <TableRow key={request.id}>
-              <TableCell className="font-medium">{request.title}</TableCell>
-              <TableCell>{request.approval_flow_types?.name}</TableCell>
-              <TableCell>
-                <div className="flex items-center space-x-2">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  <span>{request.requested_by_name}</span>
-                </div>
-              </TableCell>
-              <TableCell>
-                {format(new Date(request.created_at), 'dd/MM/yyyy HH:mm', {
-                  locale: ptBR,
-                })}
-              </TableCell>
-              <TableCell>
-                <Badge variant={priorityConfig[request.priority as keyof typeof priorityConfig]?.variant}>
-                  {priorityConfig[request.priority as keyof typeof priorityConfig]?.label}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => handleViewDetails(request.id)}
-                >
-                  <Eye className="h-4 w-4 mr-2" />
-                  Revisar
-                </Button>
-              </TableCell>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Título</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead>Solicitante</TableHead>
+              <TableHead>Valor</TableHead>
+              <TableHead>Data</TableHead>
+              <TableHead>Prioridade</TableHead>
+              <TableHead>Ações</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {pendingTasks.map((task) => (
+              <TableRow key={task.id} className="hover:bg-muted/50">
+                <TableCell>
+                  <div className="font-medium">{task.title}</div>
+                  <div className="text-sm text-muted-foreground line-clamp-1">
+                    {task.description}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="text-sm">{task.approval_flow_types?.name}</div>
+                </TableCell>
+                <TableCell>
+                  <div className="text-sm font-medium">{task.requested_by_name}</div>
+                  <div className="text-xs text-muted-foreground">{task.requested_by_email}</div>
+                </TableCell>
+                <TableCell>
+                  <div className="font-mono text-sm">
+                    {task.amount ? formatCurrency(task.amount) : '-'}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="text-sm">
+                    {format(new Date(task.created_at), 'dd/MM/yyyy', { locale: ptBR })}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {format(new Date(task.created_at), 'HH:mm', { locale: ptBR })}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={priorityConfig[task.priority as keyof typeof priorityConfig]?.variant}>
+                    {priorityConfig[task.priority as keyof typeof priorityConfig]?.label}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleViewDetails(task.id)}
+                    className="hover:bg-primary hover:text-primary-foreground"
+                  >
+                    Revisar
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 };

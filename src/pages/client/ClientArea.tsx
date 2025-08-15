@@ -66,6 +66,8 @@ const ClientArea = () => {
           <Route path="/equipe" element={<ClientTeam />} />
           <Route path="/aprovacoes" element={<ClientApprovalRequests />} />
           <Route path="/aprovacoes/:id" element={<ClientApprovalRequestDetail />} />
+          <Route path="/kanban" element={<ClientKanban />} />
+          <Route path="/gantt" element={<ClientGantt />} />
           
           {/* FP&A Routes */}
           <Route path="/fpa" element={<ClientFPADashboard />} />
