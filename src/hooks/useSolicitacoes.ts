@@ -8,6 +8,8 @@ export const useSolicitacoes = (userId?: string) => {
   return useQuery({
     queryKey: ['solicitacoes', userId],
     queryFn: async () => {
+      console.log('Fetching solicitacoes for user:', userId);
+      
       let query = supabase
         .from('solicitacoes')
         .select('*')
@@ -18,7 +20,13 @@ export const useSolicitacoes = (userId?: string) => {
       }
 
       const { data, error } = await query;
-      if (error) throw error;
+      
+      if (error) {
+        console.error('Error fetching solicitacoes:', error);
+        throw error;
+      }
+      
+      console.log('Solicitacoes fetched:', data);
       return data as Solicitacao[];
     }
   });
@@ -28,6 +36,8 @@ export const useSolicitacaoPendentes = (aprovadorId: string) => {
   return useQuery({
     queryKey: ['solicitacoes-pendentes', aprovadorId],
     queryFn: async () => {
+      console.log('Fetching pending solicitacoes for approver:', aprovadorId);
+      
       const { data, error } = await supabase
         .from('solicitacoes')
         .select('*')
@@ -35,7 +45,12 @@ export const useSolicitacaoPendentes = (aprovadorId: string) => {
         .eq('status', 'Pendente')
         .order('data_criacao', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching pending solicitacoes:', error);
+        throw error;
+      }
+      
+      console.log('Pending solicitacoes fetched:', data);
       return data as Solicitacao[];
     }
   });
@@ -46,13 +61,20 @@ export const useCreateSolicitacao = () => {
 
   return useMutation({
     mutationFn: async (data: Omit<Solicitacao, 'id' | 'data_criacao' | 'data_ultima_modificacao'>) => {
+      console.log('Creating solicitacao:', data);
+      
       const { data: solicitacao, error } = await supabase
         .from('solicitacoes')
         .insert([data])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating solicitacao:', error);
+        throw error;
+      }
+      
+      console.log('Solicitacao created:', solicitacao);
       return solicitacao;
     },
     onSuccess: () => {
@@ -71,6 +93,8 @@ export const useUpdateSolicitacao = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...data }: Partial<Solicitacao> & { id: string }) => {
+      console.log('Updating solicitacao:', id, data);
+      
       const { data: solicitacao, error } = await supabase
         .from('solicitacoes')
         .update(data)
@@ -78,7 +102,12 @@ export const useUpdateSolicitacao = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating solicitacao:', error);
+        throw error;
+      }
+      
+      console.log('Solicitacao updated:', solicitacao);
       return solicitacao;
     },
     onSuccess: () => {
@@ -96,13 +125,20 @@ export const useAnexos = (solicitacaoId: string) => {
   return useQuery({
     queryKey: ['anexos', solicitacaoId],
     queryFn: async () => {
+      console.log('Fetching anexos for solicitacao:', solicitacaoId);
+      
       const { data, error } = await supabase
         .from('anexos')
         .select('*')
         .eq('solicitacao_id', solicitacaoId)
         .order('data_upload', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching anexos:', error);
+        throw error;
+      }
+      
+      console.log('Anexos fetched:', data);
       return data as Anexo[];
     },
     enabled: !!solicitacaoId
@@ -113,13 +149,20 @@ export const useHistoricoAprovacao = (solicitacaoId: string) => {
   return useQuery({
     queryKey: ['historico-aprovacao', solicitacaoId],
     queryFn: async () => {
+      console.log('Fetching approval history for solicitacao:', solicitacaoId);
+      
       const { data, error } = await supabase
         .from('historico_aprovacao')
         .select('*')
         .eq('solicitacao_id', solicitacaoId)
         .order('data_acao', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching approval history:', error);
+        throw error;
+      }
+      
+      console.log('Approval history fetched:', data);
       return data as HistoricoAprovacao[];
     },
     enabled: !!solicitacaoId
@@ -131,13 +174,20 @@ export const useCreateHistorico = () => {
 
   return useMutation({
     mutationFn: async (data: Omit<HistoricoAprovacao, 'id' | 'data_acao'>) => {
+      console.log('Creating approval history entry:', data);
+      
       const { data: historico, error } = await supabase
         .from('historico_aprovacao')
         .insert([data])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating approval history:', error);
+        throw error;
+      }
+      
+      console.log('Approval history created:', historico);
       return historico;
     },
     onSuccess: (_, variables) => {

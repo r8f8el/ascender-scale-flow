@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, CheckCircle2 } from 'lucide-react';
@@ -10,11 +10,22 @@ import DashboardAprovacoes from './DashboardAprovacoes';
 
 const ClientApprovals = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Verificar se o usuário é aprovador
-  // TODO: Implementar lógica para identificar se o usuário é aprovador
-  const isAprovador = true; // Temporário
+  // Verificar se o usuário é aprovador - por enquanto assumindo que sim
+  const isAprovador = true;
 
+  // Se estamos em uma sub-rota, renderizar o componente correspondente
+  if (location.pathname.includes('/solicitacoes')) {
+    return <MinhasSolicitacoes />;
+  }
+  
+  if (location.pathname.includes('/dashboard')) {
+    return <DashboardAprovacoes />;
+  }
+
+  // Página inicial de aprovações
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -40,7 +51,7 @@ const ClientApprovals = () => {
               Crie e acompanhe suas solicitações de aprovação
             </p>
             <Button 
-              onClick={() => window.location.href = '/cliente/solicitacoes'}
+              onClick={() => navigate('/cliente/aprovacoes/solicitacoes')}
               className="w-full"
             >
               Acessar Solicitações
@@ -61,7 +72,7 @@ const ClientApprovals = () => {
                 Revise e aprove solicitações pendentes
               </p>
               <Button 
-                onClick={() => window.location.href = '/cliente/aprovacoes-dashboard'}
+                onClick={() => navigate('/cliente/aprovacoes/dashboard')}
                 className="w-full"
                 variant="outline"
               >
@@ -75,7 +86,7 @@ const ClientApprovals = () => {
       {/* Rotas aninhadas */}
       <Routes>
         <Route path="/solicitacoes" element={<MinhasSolicitacoes />} />
-        <Route path="/aprovacoes-dashboard" element={<DashboardAprovacoes />} />
+        <Route path="/dashboard" element={<DashboardAprovacoes />} />
       </Routes>
     </div>
   );

@@ -19,6 +19,11 @@ import ClientTickets from './client/ClientTickets';
 import ClientTicketDetail from './client/ClientTicketDetail';
 import ClientTeam from './client/ClientTeam';
 
+// Approval pages
+import ClientApprovals from './client/ClientApprovals';
+import MinhasSolicitacoes from './client/MinhasSolicitacoes';
+import DashboardAprovacoes from './client/DashboardAprovacoes';
+
 // Project management
 import ClientKanban from './client/ClientKanban';
 import ClientGantt from './client/ClientGantt';
@@ -71,6 +76,11 @@ const ClientArea = () => {
               <Route path="/chamados" element={<ClientTickets />} />
               <Route path="/chamados/:id" element={<ClientTicketDetail />} />
               <Route path="/equipe" element={<ClientTeam />} />
+              
+              {/* Approval Routes */}
+              <Route path="/aprovacoes" element={<ClientApprovals />} />
+              <Route path="/aprovacoes/solicitacoes" element={<MinhasSolicitacoes />} />
+              <Route path="/aprovacoes/dashboard" element={<DashboardAprovacoes />} />
               
               {/* Project Management */}
               <Route path="/kanban" element={<ClientKanban />} />

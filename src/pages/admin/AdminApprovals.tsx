@@ -1,8 +1,9 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -11,20 +12,31 @@ import {
   XCircle, 
   Filter,
   Search,
-  Settings
+  Settings,
+  Eye
 } from 'lucide-react';
+import { Solicitacao } from '@/types/aprovacoes';
 
 const AdminApprovals = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+  
   const { data: solicitacoes, isLoading } = useQuery({
     queryKey: ['admin-solicitacoes'],
     queryFn: async () => {
+      console.log('Fetching all solicitacoes for admin');
+      
       const { data, error } = await supabase
         .from('solicitacoes')
         .select('*')
         .order('data_criacao', { ascending: false });
       
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error('Error fetching admin solicitacoes:', error);
+        throw error;
+      }
+      
+      console.log('Admin solicitacoes fetched:', data);
+      return data as Solicitacao[];
     }
   });
 
@@ -56,6 +68,12 @@ const AdminApprovals = () => {
     }
   };
 
+  // Filtrar solicitações baseado na busca
+  const filteredSolicitacoes = solicitacoes?.filter(solicitacao =>
+    solicitacao.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    solicitacao.periodo_referencia.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -76,7 +94,7 @@ const AdminApprovals = () => {
             Visualize e gerencie todas as solicitações de aprovação
           </p>
         </div>
-        <Button>
+        <Button onClick={() => console.log('Configurar fluxos - funcionalidade futura')}>
           <Settings className="h-4 w-4 mr-2" />
           Configurar Fluxos
         </Button>
@@ -135,14 +153,16 @@ const AdminApprovals = () => {
             <div className="flex-1">
               <div className="relative">
                 <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
-                <input
+                <Input
                   type="text"
                   placeholder="Buscar aprovações..."
-                  className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
                 />
               </div>
             </div>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => console.log('Filtros - funcionalidade futura')}>
               <Filter className="h-4 w-4 mr-2" />
               Filtros
             </Button>
@@ -156,9 +176,9 @@ const AdminApprovals = () => {
           <CardTitle>Todas as Solicitações</CardTitle>
         </CardHeader>
         <CardContent>
-          {solicitacoes && solicitacoes.length > 0 ? (
+          {filteredSolicitacoes && filteredSolicitacoes.length > 0 ? (
             <div className="space-y-4">
-              {solicitacoes.map((solicitacao) => (
+              {filteredSolicitacoes.map((solicitacao) => (
                 <div
                   key={solicitacao.id}
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
@@ -170,11 +190,19 @@ const AdminApprovals = () => {
                       <p className="text-sm text-muted-foreground">
                         Período: {solicitacao.periodo_referencia} • Criado em {new Date(solicitacao.data_criacao).toLocaleDateString('pt-BR')}
                       </p>
+                      <p className="text-xs text-muted-foreground">
+                        Solicitante: {solicitacao.solicitante_id}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     {getStatusBadge(solicitacao.status)}
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => console.log('Ver detalhes da solicitação:', solicitacao.id)}
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
                       Ver Detalhes
                     </Button>
                   </div>
@@ -185,7 +213,7 @@ const AdminApprovals = () => {
             <div className="text-center py-8">
               <CheckCircle2 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
               <p className="text-muted-foreground">
-                Nenhuma solicitação de aprovação encontrada
+                {searchTerm ? 'Nenhuma solicitação encontrada para a busca' : 'Nenhuma solicitação de aprovação encontrada'}
               </p>
             </div>
           )}
