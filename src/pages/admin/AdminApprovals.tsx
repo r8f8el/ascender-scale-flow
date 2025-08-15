@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSolicitacoes, useSolicitacaoPendentes } from '@/hooks/useSolicitacoes';
 import { useAuth } from '@/contexts/AuthContext';
 import { DetalheSolicitacaoDialog } from '@/components/aprovacoes/DetalheSolicitacaoDialog';
+import { Solicitacao } from '@/types/aprovacoes';
 import { 
   FileText, 
   Clock, 
@@ -22,34 +23,7 @@ import {
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-interface SolicitacaoWithProfile {
-  id: string;
-  titulo: string;
-  periodo_referencia: string;
-  descricao: string;
-  status: string;
-  solicitante_id: string;
-  aprovador_atual_id?: string;
-  etapa_atual: number;
-  aprovadores_necessarios?: Array<{
-    id: string;
-    name: string;
-    email: string;
-    nivel: number;
-    aprovado: boolean;
-    data_aprovacao?: string;
-  }>;
-  aprovadores_completos?: Array<{
-    id: string;
-    name: string;
-    email: string;
-    nivel: number;
-    aprovado: boolean;
-    data_aprovacao: string;
-    comentario?: string;
-  }>;
-  data_criacao: string;
-  data_ultima_modificacao: string;
+interface SolicitacaoWithProfile extends Solicitacao {
   client_profiles: { name: string; email: string };
 }
 
