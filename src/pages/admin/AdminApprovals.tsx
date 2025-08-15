@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -58,7 +57,7 @@ const AdminApprovals: React.FC = () => {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedSolicitacao, setSelectedSolicitacao] = useState<string | null>(null);
+  const [selectedSolicitacao, setSelectedSolicitacao] = useState<SolicitacaoWithProfile | null>(null);
 
   // Buscar todas as solicitações
   const { data: allSolicitacoes = [], isLoading: loadingAll, refetch: refetchAll } = useSolicitacoes();
@@ -126,7 +125,7 @@ const AdminApprovals: React.FC = () => {
 
   const SolicitacaoCard = ({ solicitacao }: { solicitacao: SolicitacaoWithProfile }) => (
     <Card className="hover:shadow-md transition-shadow cursor-pointer" 
-          onClick={() => setSelectedSolicitacao(solicitacao.id)}>
+          onClick={() => setSelectedSolicitacao(solicitacao)}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
@@ -293,7 +292,7 @@ const AdminApprovals: React.FC = () => {
 
       {selectedSolicitacao && (
         <DetalheSolicitacaoDialog
-          solicitacaoId={selectedSolicitacao}
+          solicitacao={selectedSolicitacao}
           open={!!selectedSolicitacao}
           onOpenChange={(open) => {
             if (!open) {
