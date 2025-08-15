@@ -38,6 +38,10 @@ const ClientApprovalRequests = () => {
     enabled: !!user,
   });
 
+  console.log('🔍 ClientApprovalRequests renderizando - activeTab:', activeTab);
+  console.log('🔍 ClientApprovalRequests - user:', user);
+  console.log('🔍 ClientApprovalRequests - isApprover data:', isApprover);
+
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6">

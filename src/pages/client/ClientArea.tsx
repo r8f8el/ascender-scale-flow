@@ -2,6 +2,7 @@
 import React from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { ClientHeader } from '@/components/client/ClientHeader';
+import { ClientNavigation } from '@/components/client/ClientNavigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import ClientDocuments from './ClientDocuments';
@@ -51,7 +52,12 @@ const ClientArea = () => {
       {/* Componente de sincronização em tempo real */}
       <ClientDocumentSync />
       
-      <main className="container mx-auto px-4 py-8">
+      <div className="flex">
+        {/* Sidebar de Navegação */}
+        <ClientNavigation />
+        
+        {/* Conteúdo Principal */}
+        <main className="flex-1 container mx-auto px-4 py-8">
         <Routes>
           <Route path="/" element={<ClientDocuments />} />
           <Route path="/dashboard" element={<ClientDocuments />} />
@@ -80,7 +86,8 @@ const ClientArea = () => {
           {/* Relative route to ensure nested matching */}
           <Route path="fpa/bi" element={<ClientBIDashboard />} />
         </Routes>
-      </main>
+        </main>
+      </div>
     </div>
   );
 };

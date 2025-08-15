@@ -160,6 +160,9 @@ export const NewApprovalRequestForm = () => {
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
+  console.log('🔍 NewApprovalRequestForm renderizando');
+  console.log('🔍 NewApprovalRequestForm - flowTypes:', flowTypes);
+
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>

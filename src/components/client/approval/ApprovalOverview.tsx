@@ -97,6 +97,10 @@ export const ApprovalOverview = () => {
     }
   };
 
+  console.log('🔍 ApprovalOverview renderizando');
+  console.log('🔍 ApprovalOverview - stats:', stats);
+  console.log('🔍 ApprovalOverview - recentRequests:', recentRequests);
+
   return (
     <div className="space-y-6">
       {/* Cards de Estatísticas */}
