@@ -57,7 +57,7 @@ const ClientLogin = () => {
         <div className="text-center mb-8">
           <Logo className="h-16 mx-auto mb-6" />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Área do Cliente
+            Painel Administrativo
           </h1>
           <p className="text-sm text-gray-600 flex items-center justify-center">
             <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
@@ -119,7 +119,7 @@ const ClientLogin = () => {
                 type="submit"
                 className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium"
                 disabled={loading}
-              />
+              >
                 {loading ? 'Entrando...' : 'Entrar'}
               </Button>
             </form>
