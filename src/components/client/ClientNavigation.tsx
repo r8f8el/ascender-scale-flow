@@ -13,7 +13,11 @@ import {
   BarChart3,
   Kanban,
   GanttChart,
-  CheckCircle2
+  CheckCircle2,
+  Monitor,
+  Database,
+  TrendingUp,
+  PieChart
 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
@@ -90,6 +94,26 @@ export const ClientNavigation = () => {
           </CollapsibleContent>
         </Collapsible>
 
+        {/* Business Intelligence Section */}
+        <Collapsible 
+          open={expandedSections.includes('bi')} 
+          onOpenChange={() => toggleSection('bi')}
+        >
+          <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">
+            <div className="flex items-center">
+              <Monitor className="mr-2 h-4 w-4" />
+              Business Intelligence
+            </div>
+            {expandedSections.includes('bi') ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-1 mt-1">
+            <Link to="/cliente/fpa/bi" className={getSubLinkClass('/fpa/bi')}>
+              <PieChart className="mr-3 h-4 w-4" />
+              Dashboards BI
+            </Link>
+          </CollapsibleContent>
+        </Collapsible>
+
         {/* Approval Flows */}
         <Collapsible 
           open={expandedSections.includes('aprovacoes')} 
@@ -151,7 +175,7 @@ export const ClientNavigation = () => {
               Dashboard
             </Link>
             <Link to="/cliente/fpa/dados" className={getSubLinkClass('/fpa/dados')}>
-              <FileText className="mr-3 h-4 w-4" />
+              <Database className="mr-3 h-4 w-4" />
               Dados
             </Link>
             <Link to="/cliente/fpa/relatorios" className={getSubLinkClass('/fpa/relatorios')}>
@@ -159,7 +183,7 @@ export const ClientNavigation = () => {
               Relatórios
             </Link>
             <Link to="/cliente/fpa/cenarios" className={getSubLinkClass('/fpa/cenarios')}>
-              <BarChart3 className="mr-3 h-4 w-4" />
+              <TrendingUp className="mr-3 h-4 w-4" />
               Cenários
             </Link>
             <Link to="/cliente/fpa/comunicacao" className={getSubLinkClass('/fpa/comunicacao')}>
