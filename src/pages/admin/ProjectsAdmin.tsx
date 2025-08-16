@@ -67,14 +67,14 @@ const ProjectsAdmin = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      // Map the data to match our Task interface
+      // Map the data to match our Task interface using correct field names
       return data.map(task => ({
         id: task.id,
         project_id: task.project_id,
-        title: task.title || task.name || 'Untitled Task',
-        status: task.status === 'completed' ? 'completed' : 
-               task.status === 'in_progress' ? 'in_progress' : 'todo',
-        assigned_to: task.assigned_to,
+        title: task.name || 'Untitled Task', // Use 'name' field from database
+        status: task.progress === 100 ? 'completed' : 
+               task.progress > 0 ? 'in_progress' : 'todo', // Map based on progress
+        assigned_to: task.assigned_to || '',
         created_at: task.created_at
       })) as Task[];
     },
