@@ -1,98 +1,116 @@
 
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 interface ValidationRule {
   field: string;
-  validator: (value: string) => boolean;
+  validator: (value: any) => boolean;
   message: string;
 }
 
 interface ValidationOptions {
-  required?: string[];
-  maxLength?: Record<string, number>;
   sanitize?: boolean;
+  maxLength?: { [key: string]: number };
+  required?: string[];
 }
 
 export const useSecureValidation = () => {
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  const validateInput = useCallback((value: string, fieldType: string): string => {
-    if (!value || typeof value !== 'string') {
-      return '';
-    }
-
-    // Basic sanitization - remove dangerous characters
-    const sanitized = value.trim();
+  const sanitizeInput = (input: string): string => {
+    if (typeof input !== 'string') return '';
     
-    switch (fieldType) {
-      case 'email':
-        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-        return emailRegex.test(sanitized) ? sanitized : '';
-        
-      case 'password':
-        // Allow passwords with reasonable characters
-        return sanitized.length >= 6 ? sanitized : '';
-        
-      default:
-        // For other fields, just return sanitized value
-        return sanitized;
-    }
-  }, []);
+    // Remove potential XSS vectors
+    return input
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/javascript:/gi, '')
+      .replace(/on\w+\s*=/gi, '')
+      .trim();
+  };
 
-  const sanitizeInput = useCallback((value: string): string => {
-    if (!value || typeof value !== 'string') {
-      return '';
-    }
-    
-    // Basic sanitization - remove dangerous characters and trim
-    return value.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-  }, []);
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+    return emailRegex.test(email);
+  };
 
-  const validateForm = useCallback((
-    data: Record<string, any>,
+  const validateRequired = (value: any): boolean => {
+    if (typeof value === 'string') return value.trim().length > 0;
+    return value !== null && value !== undefined;
+  };
+
+  const validateLength = (value: string, min: number = 0, max: number = Infinity): boolean => {
+    const length = value ? value.length : 0;
+    return length >= min && length <= max;
+  };
+
+  const validateForm = (
+    data: { [key: string]: any },
     rules: ValidationRule[],
     options: ValidationOptions = {}
   ): boolean => {
-    const newErrors: Record<string, string> = {};
-    
+    const newErrors: { [key: string]: string } = {};
+    let isValid = true;
+
     // Check required fields
     if (options.required) {
-      for (const field of options.required) {
-        if (!data[field] || (typeof data[field] === 'string' && !data[field].trim())) {
+      options.required.forEach(field => {
+        if (!validateRequired(data[field])) {
           newErrors[field] = `${field} é obrigatório`;
+          isValid = false;
         }
-      }
+      });
     }
-    
-    // Check max length
-    if (options.maxLength) {
-      for (const [field, maxLen] of Object.entries(options.maxLength)) {
-        if (data[field] && data[field].length > maxLen) {
-          newErrors[field] = `${field} deve ter no máximo ${maxLen} caracteres`;
-        }
-      }
-    }
-    
+
     // Apply custom validation rules
-    for (const rule of rules) {
-      if (data[rule.field] && !rule.validator(data[rule.field])) {
+    rules.forEach(rule => {
+      const value = data[rule.field];
+      if (value && !rule.validator(value)) {
         newErrors[rule.field] = rule.message;
+        isValid = false;
       }
+    });
+
+    // Check maximum lengths
+    if (options.maxLength) {
+      Object.entries(options.maxLength).forEach(([field, maxLen]) => {
+        const value = data[field];
+        if (typeof value === 'string' && value.length > maxLen) {
+          newErrors[field] = `${field} deve ter no máximo ${maxLen} caracteres`;
+          isValid = false;
+        }
+      });
     }
-    
+
+    // Sanitize inputs if requested
+    if (options.sanitize) {
+      Object.keys(data).forEach(key => {
+        if (typeof data[key] === 'string') {
+          data[key] = sanitizeInput(data[key]);
+        }
+      });
+    }
+
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  }, []);
 
-  const clearErrors = useCallback(() => {
+    if (!isValid) {
+      const firstError = Object.values(newErrors)[0];
+      toast.error(firstError || 'Erro de validação');
+    }
+
+    return isValid;
+  };
+
+  const clearErrors = () => {
     setErrors({});
-  }, []);
+  };
 
-  return { 
-    validateInput, 
-    sanitizeInput, 
-    validateForm, 
-    errors, 
-    clearErrors 
+  return {
+    errors,
+    validateForm,
+    validateEmail,
+    validateRequired,
+    validateLength,
+    sanitizeInput,
+    clearErrors
   };
 };

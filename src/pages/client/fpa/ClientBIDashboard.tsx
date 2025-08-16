@@ -70,14 +70,7 @@ const ClientBIDashboard: React.FC = () => {
 
         {/* Área principal com o embed selecionado */}
         <div className="lg:col-span-3">
-          <BIEmbedViewer
-            title={selectedEmbed?.title || undefined}
-            description={selectedEmbed?.description || undefined}
-            embedUrl={selectedEmbed?.embed_url || undefined}
-            iframeHtml={selectedEmbed?.iframe_html || undefined}
-            provider={selectedEmbed?.provider}
-            category={selectedEmbed?.category}
-          />
+          <BIEmbedViewer embed={selectedEmbed} />
         </div>
       </div>
     </div>
