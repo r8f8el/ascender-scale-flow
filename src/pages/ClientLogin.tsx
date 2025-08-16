@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Eye, EyeOff, Lock, Mail, ArrowLeft } from 'lucide-react';
+import { Logo } from '@/components/Logo';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -50,27 +51,24 @@ const ClientLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
+        {/* Logo Section */}
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center text-primary hover:text-primary/80 mb-4">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar ao site
-          </Link>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <Logo className="h-16 mx-auto mb-6" />
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
             Área do Cliente
           </h1>
-          <p className="text-gray-600">
-            Acesse sua conta para visualizar documentos e acompanhar projetos
+          <p className="text-sm text-gray-600 flex items-center justify-center">
+            <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+            Acesso restrito à equipe Ascalate
           </p>
         </div>
 
-        <Card className="shadow-lg">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">Entrar</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Login Card */}
+        <Card className="shadow-sm border border-gray-200">
+          <CardContent className="p-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
                 <Alert variant="destructive">
                   <AlertDescription>{error}</AlertDescription>
@@ -81,18 +79,15 @@ const ClientLogin = () => {
                 <label htmlFor="email" className="text-sm font-medium text-gray-700">
                   Email
                 </label>
-                <div className="relative">
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10"
-                    disabled={loading}
-                  />
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                </div>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu.email@ascalate.com.br"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  disabled={loading}
+                />
               </div>
 
               <div className="space-y-2">
@@ -103,13 +98,12 @@ const ClientLogin = () => {
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Sua senha"
+                    placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10"
+                    className="h-12 pr-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     disabled={loading}
                   />
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
@@ -123,20 +117,46 @@ const ClientLogin = () => {
 
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium"
                 disabled={loading}
-              >
+              />
                 {loading ? 'Entrando...' : 'Entrar'}
               </Button>
             </form>
+
+            <div className="mt-6 text-center">
+              <button
+                type="button"
+                className="text-sm text-gray-600 hover:text-gray-800"
+              >
+                Esqueci minha senha
+              </button>
+            </div>
           </CardContent>
         </Card>
 
-        <div className="text-center mt-6 text-sm text-gray-600">
-          Não tem uma conta?{' '}
-          <span className="text-primary">
-            Entre em contato conosco para criar sua conta
-          </span>
+        {/* Footer Text */}
+        <div className="mt-6 text-center text-sm text-gray-600 space-y-2">
+          <p>Entre com suas credenciais de administrador.</p>
+          <p>Apenas usuários com email @ascalate.com.br podem acessar.</p>
+          <p className="mt-4">
+            Não tem uma conta?{' '}
+            <button className="text-blue-600 hover:text-blue-700">
+              Cadastre-se aqui
+            </button>
+          </p>
+        </div>
+
+        <div className="mt-8 text-center text-xs text-gray-500">
+          Área restrita a administradores. Em caso de problemas, contate o suporte técnico.
+        </div>
+
+        {/* Back to site link */}
+        <div className="mt-4 text-center">
+          <Link to="/" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-800">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Voltar ao site
+          </Link>
         </div>
       </div>
     </div>
