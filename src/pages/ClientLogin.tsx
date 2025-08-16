@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useSecurityContext } from '@/components/security/SecureAuthWrapper';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,6 @@ const ClientLogin: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login, loading } = useAuth();
-  const { logSecurityEvent } = useSecurityContext();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,17 +29,14 @@ const ClientLogin: React.FC = () => {
       
       if (!error) {
         console.log('Login bem-sucedido');
-        await logSecurityEvent('client_login_success', 'auth', { email });
         toast.success('Login realizado com sucesso!');
         navigate('/cliente');
       } else {
         console.error('Erro de login:', error);
-        await logSecurityEvent('client_login_failed', 'auth', { email });
         toast.error('Credenciais inválidas');
       }
     } catch (error) {
       console.error('Erro inesperado no login:', error);
-      await logSecurityEvent('client_login_error', 'auth', { email, error: String(error) });
       toast.error('Erro ao fazer login');
     } finally {
       setIsLoading(false);
@@ -68,7 +63,7 @@ const ClientLogin: React.FC = () => {
       </div>
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-6 shadow-sm rounded-lg border">
+        <div className="bg-white py-8 px-6 shadow rounded-lg">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <Label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -115,7 +110,7 @@ const ClientLogin: React.FC = () => {
             <div className="text-center">
               <button
                 type="button"
-                className="text-sm text-gray-600 hover:text-gray-900 border border-gray-300 px-4 py-2 rounded-md w-full"
+                className="text-sm text-blue-600 hover:text-blue-800"
               >
                 Esqueci minha senha
               </button>

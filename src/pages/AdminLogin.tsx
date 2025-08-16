@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { useSecurityContext } from '@/components/security/SecureAuthWrapper';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,6 @@ const AdminLogin: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { adminLogin, loading } = useAdminAuth();
-  const { logSecurityEvent } = useSecurityContext();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,17 +29,14 @@ const AdminLogin: React.FC = () => {
       
       if (success) {
         console.log('Login de admin bem-sucedido');
-        await logSecurityEvent('admin_login_success', 'auth', { email });
         toast.success('Login realizado com sucesso!');
         navigate('/admin');
       } else {
         console.error('Falha no login de admin');
-        await logSecurityEvent('admin_login_failed', 'auth', { email });
         toast.error('Credenciais inválidas');
       }
     } catch (error) {
       console.error('Erro inesperado no login de admin:', error);
-      await logSecurityEvent('admin_login_error', 'auth', { email, error: String(error) });
       toast.error('Erro ao fazer login');
     } finally {
       setIsLoading(false);
@@ -75,7 +70,7 @@ const AdminLogin: React.FC = () => {
       </div>
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-6 shadow-sm rounded-lg border">
+        <div className="bg-white py-8 px-6 shadow rounded-lg">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <Label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -122,7 +117,7 @@ const AdminLogin: React.FC = () => {
             <div className="text-center">
               <button
                 type="button"
-                className="text-sm text-gray-600 hover:text-gray-900 border border-gray-300 px-4 py-2 rounded-md w-full"
+                className="text-sm text-blue-600 hover:text-blue-800"
               >
                 Esqueci minha senha
               </button>
