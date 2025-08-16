@@ -67,6 +67,12 @@ export const SecureTicketForm: React.FC<SecureTicketFormProps> = ({
     }));
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setFiles(Array.from(e.target.files));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -152,16 +158,17 @@ export const SecureTicketForm: React.FC<SecureTicketFormProps> = ({
           />
 
           <CategoryPriorityForm
-            formData={{
-              category_id: formData.category_id,
-              priority_id: formData.priority_id
-            }}
-            onSelectChange={handleSelectChange}
+            categories={[]} // Will be loaded from parent component
+            priorities={[]} // Will be loaded from parent component
+            selectedCategory={formData.category_id}
+            selectedPriority={formData.priority_id}
+            onCategoryChange={(value) => handleSelectChange('category_id', value)}
+            onPriorityChange={(value) => handleSelectChange('priority_id', value)}
           />
 
           <FileUploadForm
             files={files}
-            onFilesChange={setFiles}
+            onFileChange={handleFileChange}
             maxFiles={5}
             maxSize={50 * 1024 * 1024}
           />

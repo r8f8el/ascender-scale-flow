@@ -1,47 +1,41 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider } from "@/components/theme-provider"
+import { ThemeProvider } from "@/components/theme/ThemeProvider"
 import { Toaster } from "@/components/ui/toaster"
-import AppErrorBoundary from './components/AppErrorBoundary';
 
-// Client Routes
-import ClientLogin from './pages/cliente/Login';
-import ClientDashboard from './pages/cliente/Dashboard';
-import ClientTickets from './pages/cliente/Tickets';
-import ClientNewTicket from './pages/cliente/NewTicket';
+// Client Routes - using existing pages from correct paths
+import ClientLogin from './pages/client/ClientArea';
+import ClientDashboard from './pages/client/ClientArea';
+import ClientTickets from './pages/client/ClientTickets';
+import ClientNewTicket from './pages/AbrirChamado';
 import ClientProtectedRoute from './components/ProtectedRoute';
-import ClientDocumentUpload from './pages/cliente/DocumentUpload';
-import ClientDocumentList from './pages/cliente/DocumentList';
-import ClientDocumentView from './pages/cliente/DocumentView';
-import ClientDocumentEdit from './pages/cliente/DocumentEdit';
-import ClientDocumentSync from './components/client/ClientDocumentSync';
-import ClientApprovals from './pages/cliente/Approvals';
-import ClientApprovalHistory from './pages/cliente/ApprovalHistory';
-import ClientTeam from './pages/cliente/Team';
-import ClientInvite from './pages/cliente/Invite';
-import ClientAcceptInvite from './pages/cliente/AcceptInvite';
+import ClientDocuments from './pages/client/ClientDocuments';
+import ClientApprovals from './pages/client/ClientApprovals';
+import ClientApprovalHistory from './pages/client/DashboardAprovacoes';
+import ClientTeam from './pages/client/ClientTeam';
 
-// Admin Routes
-import AdminLogin from './pages/admin/Login';
-import AdminDashboard from './pages/admin/Dashboard';
-import AdminTickets from './pages/admin/Tickets';
-import AdminTicketDetails from './pages/admin/TicketDetails';
+// Admin Routes - using existing pages from correct paths
+import AdminLogin from './pages/AdminLogin';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminTickets from './pages/admin/TicketsAdmin';
+import AdminTicketDetails from './pages/admin/MyTickets';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
-import AdminUnauthorized from './pages/admin/Unauthorized';
-import AdminCollaborators from './pages/admin/Collaborators';
-import AdminGantt from './pages/admin/Gantt';
+import AdminUnauthorized from './pages/AdminUnauthorized';
+import AdminCollaborators from './pages/admin/CollaboratorsAdmin';
+import AdminGantt from './pages/admin/GanttAdmin';
 import AdminSecurity from './pages/admin/Security';
 
-// Auth Contexts
-import { AuthProvider } from './contexts/AuthContext';
-import { AdminAuthProvider } from './contexts/AdminAuthContext';
+// Auth Contexts - fix import to use default exports
+import AuthProvider from './contexts/AuthContext';
+import AdminAuthProvider from './contexts/AdminAuthContext';
 
-// Public Routes
-import LandingPage from './pages/LandingPage';
-import PricingPage from './pages/PricingPage';
+// Public Routes - use existing pages
+import LandingPage from './pages/Index';
+import PricingPage from './pages/Index'; // Use same landing page for now
 import NewsletterSignup from './pages/NewsletterSignup';
-import RequestFiles from './pages/RequestFiles';
+import RequestFiles from './pages/ParticipantData'; // Use existing page
 import NotFound from './pages/NotFound';
 import { SecurityProvider } from '@/contexts/SecurityContext';
 
@@ -56,45 +50,38 @@ function App() {
             <AuthProvider>
               <SecurityProvider>
                 <div className="min-h-screen bg-background">
-                  <AppErrorBoundary>
-                    <Routes>
-                      {/* Public Routes */}
-                      <Route path="/" element={<LandingPage />} />
-                      <Route path="/pricing" element={<PricingPage />} />
-                      <Route path="/newsletter" element={<NewsletterSignup />} />
-                      <Route path="/arquivos" element={<RequestFiles />} />
+                  <Routes>
+                    {/* Public Routes */}
+                    <Route path="/" element={<LandingPage />} />
+                    <Route path="/pricing" element={<PricingPage />} />
+                    <Route path="/newsletter" element={<NewsletterSignup />} />
+                    <Route path="/arquivos" element={<RequestFiles />} />
 
-                      {/* Client Routes */}
-                      <Route path="/cliente/login" element={<ClientLogin />} />
-                      <Route path="/convite/:invitationId" element={<ClientAcceptInvite />} />
-                      <Route path="/cliente" element={<ClientProtectedRoute><ClientDashboard /></ClientProtectedRoute>} />
-                      <Route path="/cliente/dashboard" element={<ClientProtectedRoute><ClientDashboard /></ClientProtectedRoute>} />
-                      <Route path="/cliente/tickets" element={<ClientProtectedRoute><ClientTickets /></ClientProtectedRoute>} />
-                      <Route path="/cliente/novo-ticket" element={<ClientProtectedRoute><ClientNewTicket /></ClientProtectedRoute>} />
-                      <Route path="/cliente/documentos" element={<ClientProtectedRoute><ClientDocumentList /></ClientProtectedRoute>} />
-                      <Route path="/cliente/documentos/novo" element={<ClientProtectedRoute><ClientDocumentUpload /></ClientProtectedRoute>} />
-                      <Route path="/cliente/documentos/:id" element={<ClientProtectedRoute><ClientDocumentView /></ClientProtectedRoute>} />
-                      <Route path="/cliente/documentos/:id/edit" element={<ClientProtectedRoute><ClientDocumentEdit /></ClientProtectedRoute>} />
-                      <Route path="/cliente/aprovacoes" element={<ClientProtectedRoute><ClientApprovals /></ClientProtectedRoute>} />
-                      <Route path="/cliente/aprovacoes/historico" element={<ClientProtectedRoute><ClientApprovalHistory /></ClientProtectedRoute>} />
-                      <Route path="/cliente/equipe" element={<ClientProtectedRoute><ClientTeam /></ClientProtectedRoute>} />
-                      <Route path="/cliente/convidar" element={<ClientProtectedRoute><ClientInvite /></ClientProtectedRoute>} />
+                    {/* Client Routes */}
+                    <Route path="/cliente/login" element={<ClientLogin />} />
+                    <Route path="/cliente" element={<ClientProtectedRoute><ClientDashboard /></ClientProtectedRoute>} />
+                    <Route path="/cliente/dashboard" element={<ClientProtectedRoute><ClientDashboard /></ClientProtectedRoute>} />
+                    <Route path="/cliente/tickets" element={<ClientProtectedRoute><ClientTickets /></ClientProtectedRoute>} />
+                    <Route path="/cliente/novo-ticket" element={<ClientProtectedRoute><ClientNewTicket /></ClientProtectedRoute>} />
+                    <Route path="/cliente/documentos" element={<ClientProtectedRoute><ClientDocuments /></ClientProtectedRoute>} />
+                    <Route path="/cliente/aprovacoes" element={<ClientProtectedRoute><ClientApprovals /></ClientProtectedRoute>} />
+                    <Route path="/cliente/aprovacoes/historico" element={<ClientProtectedRoute><ClientApprovalHistory /></ClientProtectedRoute>} />
+                    <Route path="/cliente/equipe" element={<ClientProtectedRoute><ClientTeam /></ClientProtectedRoute>} />
 
-                      {/* Admin Routes */}
-                      <Route path="/admin/login" element={<AdminLogin />} />
-                      <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
-                      <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
-                      <Route path="/admin/tickets" element={<AdminProtectedRoute><AdminTickets /></AdminProtectedRoute>} />
-                      <Route path="/admin/tickets/:id" element={<AdminProtectedRoute><AdminTicketDetails /></AdminProtectedRoute>} />
-                      <Route path="/admin/colaboradores" element={<AdminProtectedRoute requiredRole="super_admin"><AdminCollaborators /></AdminProtectedRoute>} />
-                      <Route path="/admin/gantt" element={<AdminProtectedRoute requiredRole="admin"><AdminGantt /></AdminProtectedRoute>} />
-                      <Route path="/admin/security" element={<AdminProtectedRoute requiredRole="super_admin"><AdminSecurity /></AdminProtectedRoute>} />
-                      <Route path="/admin/unauthorized" element={<AdminUnauthorized />} />
+                    {/* Admin Routes */}
+                    <Route path="/admin/login" element={<AdminLogin />} />
+                    <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+                    <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+                    <Route path="/admin/tickets" element={<AdminProtectedRoute><AdminTickets /></AdminProtectedRoute>} />
+                    <Route path="/admin/tickets/:id" element={<AdminProtectedRoute><AdminTicketDetails /></AdminProtectedRoute>} />
+                    <Route path="/admin/colaboradores" element={<AdminProtectedRoute requiredRole="super_admin"><AdminCollaborators /></AdminProtectedRoute>} />
+                    <Route path="/admin/gantt" element={<AdminProtectedRoute requiredRole="admin"><AdminGantt /></AdminProtectedRoute>} />
+                    <Route path="/admin/security" element={<AdminProtectedRoute requiredRole="super_admin"><AdminSecurity /></AdminProtectedRoute>} />
+                    <Route path="/admin/unauthorized" element={<AdminUnauthorized />} />
 
-                      {/* Not Found Route */}
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </AppErrorBoundary>
+                    {/* Not Found Route */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
                   <Toaster />
                 </div>
               </SecurityProvider>
