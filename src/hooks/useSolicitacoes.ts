@@ -1,8 +1,9 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Solicitacao, Anexo, HistoricoAprovacao } from '@/types/aprovacoes';
-import { useUploadManager } from '@/hooks/useUploadManager';
+import { useSecureFileUpload } from '@/hooks/useSecureFileUpload';
 
 export const useSolicitacoes = (userId?: string) => {
   return useQuery({
@@ -64,7 +65,7 @@ export const useSolicitacaoPendentes = (aprovadorId: string) => {
 
 export const useCreateSolicitacao = () => {
   const queryClient = useQueryClient();
-  const { uploadFile } = useUploadManager();
+  const { uploadFile } = useSecureFileUpload();
 
   return useMutation({
     mutationFn: async (data: {
@@ -74,6 +75,19 @@ export const useCreateSolicitacao = () => {
     }) => {
       console.log('Creating solicitacao with data:', data);
       
+      // Input validation
+      if (!data.solicitacao.titulo?.trim()) {
+        throw new Error('Título é obrigatório');
+      }
+      
+      if (!data.solicitacao.periodo_referencia?.trim()) {
+        throw new Error('Período de referência é obrigatório');
+      }
+
+      if (data.aprovadores.length === 0) {
+        throw new Error('Pelo menos um aprovador deve ser selecionado');
+      }
+
       // 1. Criar a solicitação
       const solicitacaoData = {
         ...data.solicitacao,
@@ -106,13 +120,13 @@ export const useCreateSolicitacao = () => {
 
       console.log('Solicitacao created:', solicitacao);
 
-      // 2. Upload dos arquivos se houver
+      // 2. Upload dos arquivos se houver (usando método seguro)
       if (data.files.length > 0) {
         console.log('Uploading files:', data.files.length);
         
         for (const file of data.files) {
           try {
-            // Upload do arquivo
+            // Upload do arquivo usando método seguro
             const uploadResult = await uploadFile(file, {
               bucket: 'documents',
               folder: `solicitacoes/${solicitacao.id}`,
@@ -122,9 +136,12 @@ export const useCreateSolicitacao = () => {
                 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                 'application/vnd.ms-excel',
                 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'image/*'
+                'image/jpeg',
+                'image/png',
+                'text/plain',
+                'text/csv'
               ],
-              maxSizeBytes: 10 * 1024 * 1024 // 10MB
+              maxSizeBytes: 50 * 1024 * 1024 // 50MB
             });
 
             // Salvar registro do anexo
