@@ -14,11 +14,15 @@ import { useSecurityContext } from '@/contexts/SecurityContext';
 interface SecureTicketFormProps {
   onSubmit: (formData: FormData) => Promise<void>;
   isSubmitting: boolean;
+  categories?: any[];
+  priorities?: any[];
 }
 
 export const SecureTicketForm: React.FC<SecureTicketFormProps> = ({
   onSubmit,
-  isSubmitting
+  isSubmitting,
+  categories = [],
+  priorities = []
 }) => {
   const { logActivity, monitorSuspiciousActivity } = useSecurityContext();
   const [formData, setFormData] = useState({
@@ -158,19 +162,14 @@ export const SecureTicketForm: React.FC<SecureTicketFormProps> = ({
           />
 
           <CategoryPriorityForm
-            categories={[]} // Will be loaded from parent component
-            priorities={[]} // Will be loaded from parent component
-            selectedCategory={formData.category_id}
-            selectedPriority={formData.priority_id}
-            onCategoryChange={(value) => handleSelectChange('category_id', value)}
-            onPriorityChange={(value) => handleSelectChange('priority_id', value)}
+            categories={categories}
+            priorities={priorities}
+            onSelectChange={handleSelectChange}
           />
 
           <FileUploadForm
             files={files}
             onFileChange={handleFileChange}
-            maxFiles={5}
-            maxSize={50 * 1024 * 1024}
           />
 
           <Button
