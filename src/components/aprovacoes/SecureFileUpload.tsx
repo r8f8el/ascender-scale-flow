@@ -9,6 +9,7 @@ import { useSecureFileUpload } from '@/hooks/useSecureFileUpload';
 import { toast } from 'sonner';
 
 interface SecureFileUploadProps {
+  files: File[];
   onFilesChange: (files: File[]) => void;
   maxFiles?: number;
   acceptedTypes?: string[];
@@ -16,6 +17,7 @@ interface SecureFileUploadProps {
 }
 
 export const SecureFileUpload: React.FC<SecureFileUploadProps> = ({
+  files,
   onFilesChange,
   maxFiles = 10,
   acceptedTypes = [
@@ -31,7 +33,6 @@ export const SecureFileUpload: React.FC<SecureFileUploadProps> = ({
   ],
   maxSizeBytes = 50 * 1024 * 1024 // 50MB
 }) => {
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
   const { validateFile } = useSecureFileUpload();
 
@@ -60,18 +61,17 @@ export const SecureFileUpload: React.FC<SecureFileUploadProps> = ({
     });
 
     // Check total file count
-    const totalFiles = selectedFiles.length + validFiles.length;
+    const totalFiles = files.length + validFiles.length;
     if (totalFiles > maxFiles) {
       toast.error(`Máximo de ${maxFiles} arquivos permitidos`);
       return;
     }
 
     // Add valid files
-    const newFiles = [...selectedFiles, ...validFiles];
-    setSelectedFiles(newFiles);
+    const newFiles = [...files, ...validFiles];
     onFilesChange(newFiles);
 
-  }, [selectedFiles, maxFiles, acceptedTypes, maxSizeBytes, onFilesChange, validateFile]);
+  }, [files, maxFiles, acceptedTypes, maxSizeBytes, onFilesChange, validateFile]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -95,13 +95,12 @@ export const SecureFileUpload: React.FC<SecureFileUploadProps> = ({
       return acc;
     }, {} as { [key: string]: string[] }),
     maxSize: maxSizeBytes,
-    maxFiles: maxFiles - selectedFiles.length,
+    maxFiles: maxFiles - files.length,
     multiple: true
   });
 
   const removeFile = (index: number) => {
-    const newFiles = selectedFiles.filter((_, i) => i !== index);
-    setSelectedFiles(newFiles);
+    const newFiles = files.filter((_, i) => i !== index);
     onFilesChange(newFiles);
   };
 
@@ -175,14 +174,14 @@ export const SecureFileUpload: React.FC<SecureFileUploadProps> = ({
       </div>
 
       {/* Selected Files */}
-      {selectedFiles.length > 0 && (
+      {files.length > 0 && (
         <div className="space-y-2">
           <h4 className="font-medium text-gray-700">
-            Arquivos selecionados ({selectedFiles.length}/{maxFiles})
+            Arquivos selecionados ({files.length}/{maxFiles})
           </h4>
           
           <div className="space-y-2">
-            {selectedFiles.map((file, index) => (
+            {files.map((file, index) => (
               <div key={`${file.name}-${index}`} className="flex items-center gap-3 p-3 bg-gray-50 rounded-md">
                 <span className="text-lg">{getFileIcon(file)}</span>
                 

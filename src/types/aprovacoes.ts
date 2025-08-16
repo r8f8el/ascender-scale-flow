@@ -2,8 +2,13 @@
 export interface Solicitacao {
   id: string;
   titulo: string;
-  periodo_referencia: string;
   descricao: string;
+  tipo_solicitacao: string;
+  periodo_referencia: string;
+  valor_solicitado?: number;
+  justificativa?: string;
+  data_limite?: string;
+  prioridade: 'Baixa' | 'Media' | 'Alta';
   status: 'Em Elaboração' | 'Pendente' | 'Aprovado' | 'Rejeitado' | 'Requer Ajuste';
   solicitante_id: string;
   aprovador_atual_id?: string;

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,6 +29,18 @@ import {
   Calendar
 } from 'lucide-react';
 
+interface Project {
+  status: string;
+  priority: string;
+  budget: number;
+  progress: number;
+}
+
+interface Task {
+  status: string;
+  due_date: string;
+}
+
 interface DashboardStats {
   totalProjects: number;
   activeProjects: number;
@@ -55,42 +68,36 @@ const ProjectDashboard: React.FC = () => {
   const { logUserAction } = useActivityLogger();
 
   // Optimized data fetching for dashboard
-  const projectStatsQuery = useOptimizedQuery(
-    'project-stats',
-    async () => {
+  const projectStatsQuery = useOptimizedQuery({
+    queryKey: ['project-stats'],
+    queryFn: async (): Promise<Project[]> => {
       const { data, error } = await supabase
         .from('projects')
         .select('status, priority, budget, progress');
       if (error) throw error;
       return data || [];
     },
-    {
-      staleTime: 60000, // 1 minute
-      cacheTime: 300000 // 5 minutes
-    }
-  );
+    cacheTTL: 1 // 1 minute cache
+  });
 
-  const taskStatsQuery = useOptimizedQuery(
-    'task-stats',
-    async () => {
+  const taskStatsQuery = useOptimizedQuery({
+    queryKey: ['task-stats'],
+    queryFn: async (): Promise<Task[]> => {
       const { data, error } = await supabase
         .from('tasks')
         .select('status, due_date');
       if (error) throw error;
       return data || [];
     },
-    {
-      staleTime: 60000, // 1 minute
-      cacheTime: 300000 // 5 minutes
-    }
-  );
+    cacheTTL: 1 // 1 minute cache
+  });
 
   useEffect(() => {
     logUserAction('access_project_dashboard', 'Admin acessou dashboard de projetos');
   }, [logUserAction]);
 
   // Memoized calculations
-  const stats = useMemo(() => {
+  const stats = useMemo((): DashboardStats => {
     const projects = projectStatsQuery.data || [];
     const tasks = taskStatsQuery.data || [];
 
@@ -121,7 +128,7 @@ const ProjectDashboard: React.FC = () => {
   }, [projectStatsQuery.data, taskStatsQuery.data]);
 
   // Memoized chart data
-  const statusData = useMemo(() => {
+  const statusData = useMemo((): ProjectStatus[] => {
     const projects = projectStatsQuery.data || [];
     const statusCounts = projects.reduce((acc, project) => {
       acc[project.status] = (acc[project.status] || 0) + 1;
@@ -141,7 +148,7 @@ const ProjectDashboard: React.FC = () => {
     }));
   }, [projectStatsQuery.data]);
 
-  const priorityData = useMemo(() => {
+  const priorityData = useMemo((): ProjectPriority[] => {
     const projects = projectStatsQuery.data || [];
     const priorityCounts = projects.reduce((acc, project) => {
       acc[project.priority] = (acc[project.priority] || 0) + 1;
