@@ -84,12 +84,17 @@ export const CriarSolicitacaoSecura: React.FC<CriarSolicitacaoSecuraProps> = ({
         titulo: titulo.trim(),
         periodo_referencia: periodoReferencia.trim(),
         descricao: descricao.trim(),
+        tipo_solicitacao: 'Geral', // Valor padrão
+        prioridade: 'Media', // Valor padrão
         status: 'Em Elaboração',
         solicitante_id: user.id,
         etapa_atual: 1,
         aprovador_atual_id: undefined,
         aprovadores_necessarios: [],
-        aprovadores_completos: []
+        aprovadores_completos: [],
+        valor_solicitado: undefined,
+        justificativa: undefined,
+        data_limite: undefined
       };
 
       await createSolicitacao.mutateAsync({
@@ -186,6 +191,7 @@ export const CriarSolicitacaoSecura: React.FC<CriarSolicitacaoSecuraProps> = ({
           <div>
             <Label>Arquivos Anexos</Label>
             <SecureFileUpload
+              files={files}
               onFilesChange={setFiles}
               maxFiles={10}
               maxSizeBytes={50 * 1024 * 1024} // 50MB

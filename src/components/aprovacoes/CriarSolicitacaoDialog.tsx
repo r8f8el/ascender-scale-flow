@@ -69,6 +69,8 @@ export const CriarSolicitacaoDialog: React.FC<CriarSolicitacaoDialogProps> = ({
           titulo: formData.titulo,
           periodo_referencia: formData.periodo_referencia,
           descricao: formData.descricao,
+          tipo_solicitacao: 'Geral', // Valor padrão
+          prioridade: 'Media', // Valor padrão
           status: aprovadores.length > 0 ? 'Pendente' : 'Em Elaboração',
           solicitante_id: user.id,
           aprovador_atual_id: aprovadores.length > 0 
