@@ -1,209 +1,131 @@
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Logo } from '../components/Logo';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { Shield } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Eye, EyeOff, Shield, AlertTriangle } from 'lucide-react';
+import { SecureForm } from '@/components/security/SecureForm';
+import { useSecurityContext } from '@/components/security/SecureAuthWrapper';
 
 const AdminLogin = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isResettingPassword, setIsResettingPassword] = useState(false);
-  const { toast } = useToast();
+  const { signIn } = useAdminAuth();
   const navigate = useNavigate();
-  const { adminLogin } = useAdminAuth();
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { logSecurityEvent } = useSecurityContext();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!email || !password) {
-      toast({
-        title: "Campos vazios",
-        description: "Por favor, preencha todos os campos.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
+  const handleSubmit = async (data: any) => {
+    setError('');
     setIsLoading(true);
-    
+
     try {
-      const success = await adminLogin(email, password);
-      
-      if (success) {
-        toast({
-          title: "Login realizado com sucesso",
-          description: "Bem-vindo ao Painel Administrativo Ascalate."
-        });
-        navigate('/admin');
-      } else {
-        toast({
-          title: "Falha no login",
-          description: "Email ou senha inválidos. Verifique suas credenciais ou redefina sua senha.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('Error during login:', error);
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao realizar o login. Tente novamente mais tarde.",
-        variant: "destructive"
+      await signIn(data.email, data.password);
+      await logSecurityEvent('admin_login_success', 'admin_auth', {
+        email: data.email,
+        timestamp: new Date().toISOString()
       });
+      navigate('/admin');
+    } catch (error: any) {
+      console.error('Login error:', error);
+      await logSecurityEvent('admin_login_failed', 'admin_auth', {
+        email: data.email,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+      setError('Email ou senha inválidos. Verifique suas credenciais.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handlePasswordReset = async () => {
-    if (!email) {
-      toast({
-        title: "Email necessário",
-        description: "Por favor, informe seu email para redefinir a senha.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!email.endsWith('@ascalate.com.br')) {
-      toast({
-        title: "Email inválido",
-        description: "Apenas emails @ascalate.com.br são permitidos.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsResettingPassword(true);
-    
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/admin/login`
-      });
-
-      if (error) {
-        console.error('Password reset error:', error);
-        toast({
-          title: "Erro ao redefinir senha",
-          description: error.message,
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Email enviado",
-          description: "Verifique sua caixa de entrada para redefinir sua senha."
-        });
-      }
-    } catch (error) {
-      console.error('Error during password reset:', error);
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao enviar o email. Tente novamente mais tarde.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsResettingPassword(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8">
-        <div className="flex flex-col items-center">
-          <Logo className="h-12 w-auto" />
-          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-            Painel Administrativo
-          </h2>
-          <div className="flex items-center gap-2 mt-2">
-            <Shield size={18} className="text-red-600" />
-            <p className="text-center text-sm text-gray-600">
-              Acesso restrito à equipe Ascalate
-            </p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1 text-center">
+          <div className="flex justify-center mb-4">
+            <div className="bg-blue-600 p-3 rounded-full">
+              <Shield className="h-6 w-6 text-white" />
+            </div>
           </div>
-        </div>
-        
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4 rounded-md shadow-sm">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email
-              </label>
-              <div className="mt-1">
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="seu.email@ascalate.com.br"
-                  className="mt-1"
-                />
-              </div>
+          <CardTitle className="text-2xl font-bold">Área Administrativa</CardTitle>
+          <CardDescription>
+            Acesse o painel administrativo do sistema
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <SecureForm onSubmit={handleSubmit} formType="login" className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="admin@ascalate.com.br"
+                required
+                autoComplete="email"
+                className="transition-all duration-200"
+              />
             </div>
             
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Senha
-              </label>
-              <div className="mt-1">
+            <div className="space-y-2">
+              <Label htmlFor="password">Senha</Label>
+              <div className="relative">
                 <Input
                   id="password"
                   name="password"
-                  type="password"
-                  autoComplete="current-password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Digite sua senha"
                   required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="mt-1"
+                  autoComplete="current-password"
+                  className="pr-10 transition-all duration-200"
                 />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
+                </Button>
               </div>
             </div>
-          </div>
-          
-          <div className="space-y-3">
-            <Button
-              type="submit"
-              className="w-full bg-[#0056b3] hover:bg-[#003d7f]"
+            
+            <Button 
+              type="submit" 
+              className="w-full bg-blue-600 hover:bg-blue-700"
               disabled={isLoading}
             >
-              {isLoading ? "Entrando..." : "Entrar"}
+              {isLoading ? 'Entrando...' : 'Entrar'}
             </Button>
-            
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              onClick={handlePasswordReset}
-              disabled={isResettingPassword}
-            >
-              {isResettingPassword ? "Enviando..." : "Esqueci minha senha"}
-            </Button>
-          </div>
-
-          <div className="mt-4 text-center text-sm text-gray-600">
-            <p>Entre com suas credenciais de administrador.</p>
-            <p>Apenas usuários com email @ascalate.com.br podem acessar.</p>
-            <p className="mt-2">
-              Não tem uma conta? 
-              <a href="/admin/register" className="text-blue-600 hover:text-blue-500 ml-1">
-                Cadastre-se aqui
-              </a>
+          </SecureForm>
+          
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              Não é administrador?{' '}
+              <Link to="/cliente/login" className="text-blue-600 hover:underline">
+                Acesse a área do cliente
+              </Link>
             </p>
           </div>
-        </form>
-        
-        <p className="mt-4 text-center text-sm text-gray-600">
-          Área restrita a administradores. Em caso de problemas, contate o suporte técnico.
-        </p>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
