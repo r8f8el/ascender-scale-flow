@@ -2,6 +2,7 @@
 import React, { useState, useCallback } from 'react';
 import { useSecurityContext } from './SecureAuthWrapper';
 import { useSecureValidation } from '@/hooks/useSecureValidation';
+import { toast } from 'sonner';
 
 interface SecureFormProps {
   children: React.ReactNode;
@@ -16,7 +17,7 @@ export const SecureForm: React.FC<SecureFormProps> = ({
   formType,
   className
 }) => {
-  const { checkAuthRateLimit, logSecurityEvent } = useSecurityContext();
+  const { logSecurityEvent } = useSecurityContext();
   const { validateInput } = useSecureValidation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [csrfToken] = useState(() => crypto.randomUUID());
@@ -35,28 +36,14 @@ export const SecureForm: React.FC<SecureFormProps> = ({
         form_type: formType,
         timestamp: new Date().toISOString()
       });
-      throw new Error('Security validation failed');
-    }
-
-    // Check rate limits for auth forms
-    if (['login', 'signup', 'password_reset'].includes(formType)) {
-      const email = data.email as string;
-      if (!email || !validateInput(email, 'email')) {
-        await logSecurityEvent('invalid_email_format', 'form', {
-          form_type: formType,
-          timestamp: new Date().toISOString()
-        });
-        throw new Error('Invalid email format');
-      }
-
-      const allowed = await checkAuthRateLimit(email, formType as any);
-      if (!allowed) {
-        return; // Rate limit message already shown
-      }
+      toast.error('Erro de segurança. Tente novamente.');
+      return;
     }
 
     // Validate all inputs
     const validatedData: Record<string, any> = {};
+    let hasValidationError = false;
+
     for (const [key, value] of Object.entries(data)) {
       if (key === 'csrf_token') continue;
       
@@ -67,10 +54,21 @@ export const SecureForm: React.FC<SecureFormProps> = ({
           field: key,
           timestamp: new Date().toISOString()
         });
-        throw new Error(`Invalid ${key} format`);
+        
+        if (key === 'email') {
+          toast.error('Por favor, insira um email válido');
+        } else if (key === 'password') {
+          toast.error('A senha deve ter pelo menos 6 caracteres');
+        } else {
+          toast.error(`Campo ${key} inválido`);
+        }
+        hasValidationError = true;
+        break;
       }
       validatedData[key] = validatedValue;
     }
+
+    if (hasValidationError) return;
 
     setIsSubmitting(true);
     try {
@@ -78,7 +76,7 @@ export const SecureForm: React.FC<SecureFormProps> = ({
     } finally {
       setIsSubmitting(false);
     }
-  }, [csrfToken, formType, checkAuthRateLimit, logSecurityEvent, validateInput, isSubmitting, onSubmit]);
+  }, [csrfToken, formType, logSecurityEvent, validateInput, isSubmitting, onSubmit]);
 
   return (
     <form onSubmit={handleSubmit} className={className}>

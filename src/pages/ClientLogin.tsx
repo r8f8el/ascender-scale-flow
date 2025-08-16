@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,22 +12,14 @@ import { toast } from 'sonner';
 import { Mail, Key } from 'lucide-react';
 
 const ClientLogin: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login, loading } = useAuth();
-  const { checkAuthRateLimit, logSecurityEvent } = useSecurityContext();
+  const { logSecurityEvent } = useSecurityContext();
   const navigate = useNavigate();
 
   const handleSubmit = async (data: any) => {
     const { email, password } = data;
     
-    // Check rate limit before attempting login
-    const allowed = await checkAuthRateLimit(email, 'login');
-    if (!allowed) {
-      return;
-    }
-
     setIsLoading(true);
     try {
       const { error } = await login(email, password);
@@ -48,60 +41,64 @@ const ClientLogin: React.FC = () => {
   };
 
   return (
-    <div className="container relative flex h-[calc(100vh-80px)] flex-col items-center justify-center md:grid lg:max-w-none lg:px-0">
-      <div className="relative hidden h-full flex-col bg-muted p-10 text-white lg:flex">
-        <div className="absolute inset-0 bg-zinc-900/80" />
+    <div className="container relative flex h-screen flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
+      <div className="relative hidden h-full flex-col bg-muted p-10 text-white lg:flex dark:border-r">
+        <div className="absolute inset-0 bg-zinc-900" />
+        <div className="relative z-20 flex items-center text-lg font-medium">
+          Ascalate FP&A
+        </div>
         <div className="relative z-20 mt-auto">
-          <div className="text-lg font-medium">
-            Ascalate FP&A
-          </div>
-          <h2 className="mt-2 text-3xl font-bold text-white">
-            Bem-vindo de volta
-          </h2>
-          <p className="mt-2 text-muted-foreground">
-            Gerencie suas finanças com facilidade e segurança.
-          </p>
+          <blockquote className="space-y-2">
+            <p className="text-lg">
+              &ldquo;Gerencie suas finanças com facilidade e segurança.&rdquo;
+            </p>
+          </blockquote>
         </div>
       </div>
       <div className="lg:p-8">
-        <Card className="w-[350px]">
-          <CardHeader className="space-y-1">
-            <CardTitle>Acessar conta</CardTitle>
-            <CardDescription>
+        <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
+          <div className="flex flex-col space-y-2 text-center">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Acessar conta
+            </h1>
+            <p className="text-sm text-muted-foreground">
               Entre com seu email e senha
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4">
+            </p>
+          </div>
+          <div className="grid gap-6">
             <SecureForm onSubmit={handleSubmit} formType="login">
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  placeholder="seuemail@exemplo.com"
-                  type="email"
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  disabled={isLoading || loading}
-                />
-                <Mail className="absolute left-2.5 top-0.5 h-5 w-5 text-zinc-500 peer-focus:text-zinc-900" />
+                <div className="grid gap-1">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    placeholder="seuemail@exemplo.com"
+                    type="email"
+                    autoCapitalize="none"
+                    autoComplete="email"
+                    autoCorrect="off"
+                    disabled={isLoading || loading}
+                  />
+                </div>
+                <div className="grid gap-1">
+                  <Label htmlFor="password">Senha</Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    placeholder="Senha"
+                    type="password"
+                    autoComplete="current-password"
+                    disabled={isLoading || loading}
+                  />
+                </div>
+                <Button disabled={isLoading || loading} type="submit" className="w-full">
+                  {isLoading || loading ? 'Entrando...' : 'Entrar'}
+                </Button>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="password">Senha</Label>
-                <Input
-                  id="password"
-                  placeholder="Senha"
-                  type="password"
-                  autoComplete="current-password"
-                  disabled={isLoading || loading}
-                />
-                <Key className="absolute left-2.5 top-0.5 h-5 w-5 text-zinc-500 peer-focus:text-zinc-900" />
-              </div>
-              <Button disabled={isLoading || loading} type="submit" className="w-full">
-                {isLoading || loading ? 'Entrando...' : 'Entrar'}
-              </Button>
             </SecureForm>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -9,22 +10,14 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 const AdminLogin: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { adminLogin, loading } = useAdminAuth();
-  const { checkAuthRateLimit, logSecurityEvent } = useSecurityContext();
+  const { logSecurityEvent } = useSecurityContext();
   const navigate = useNavigate();
 
   const handleSubmit = async (data: any) => {
     const { email, password } = data;
     
-    // Check rate limit before attempting login
-    const allowed = await checkAuthRateLimit(email, 'login');
-    if (!allowed) {
-      return;
-    }
-
     setIsLoading(true);
     try {
       const success = await adminLogin(email, password);
@@ -46,7 +39,7 @@ const AdminLogin: React.FC = () => {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-100">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <div className="bg-white p-8 rounded shadow-md w-96">
         <h2 className="text-2xl font-semibold mb-4 text-center">Login Administrativo</h2>
         <SecureForm onSubmit={handleSubmit} formType="login">
@@ -60,9 +53,7 @@ const AdminLogin: React.FC = () => {
                 placeholder="admin@ascalate.com.br"
                 autoComplete="email"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={loading}
+                disabled={isLoading || loading}
               />
             </div>
             <div>
@@ -74,14 +65,12 @@ const AdminLogin: React.FC = () => {
                 placeholder="Senha"
                 autoComplete="current-password"
                 required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
+                disabled={isLoading || loading}
               />
             </div>
             <div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? 'Entrando...' : 'Entrar'}
+              <Button type="submit" className="w-full" disabled={isLoading || loading}>
+                {isLoading || loading ? 'Entrando...' : 'Entrar'}
               </Button>
             </div>
           </div>
