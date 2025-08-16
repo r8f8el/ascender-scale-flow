@@ -103,25 +103,26 @@ export const useTicketForm = () => {
 
       // Preparar dados para envio
       let requestBody;
+      let requestOptions: any = {};
 
       if (files.length > 0) {
         // Se há arquivos, usar FormData
-        const formDataObj = new FormData();
+        const formData = new FormData();
         
         // Adicionar dados do ticket
         Object.entries(ticketData).forEach(([key, value]) => {
           if (value !== null && value !== undefined) {
-            formDataObj.append(key, String(value));
+            formData.append(key, String(value));
           }
         });
         
         // Adicionar arquivos
         files.forEach((file, index) => {
-          formDataObj.append(`file_${index}`, file);
+          formData.append(`file_${index}`, file);
         });
-        formDataObj.append('file_count', files.length.toString());
+        formData.append('file_count', files.length.toString());
         
-        requestBody = formDataObj;
+        requestBody = formData;
       } else {
         // Se não há arquivos, usar JSON
         requestBody = ticketData;
@@ -168,8 +169,6 @@ export const useTicketForm = () => {
         }));
       }
 
-      return true; // Return success indicator
-
     } catch (error: any) {
       console.error('Erro completo ao criar chamado:', error);
       toast({
@@ -177,7 +176,6 @@ export const useTicketForm = () => {
         description: error.message || "Ocorreu um erro ao processar sua solicitação. Tente novamente.",
         variant: "destructive",
       });
-      return false; // Return failure indicator
     } finally {
       setIsLoading(false);
     }
@@ -193,7 +191,6 @@ export const useTicketForm = () => {
     handleInputChange,
     handleSelectChange,
     handleFileChange,
-    handleSubmit,
-    setFiles // Add this for direct file manipulation if needed
+    handleSubmit
   };
 };

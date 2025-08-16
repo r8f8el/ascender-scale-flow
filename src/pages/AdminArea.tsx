@@ -33,40 +33,38 @@ const AdminArea = () => {
   const isMobile = useResponsive();
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-gray-50 flex">
       <AdminSidebar />
       
       <div className="flex-1 flex flex-col">
         <AdminHeader />
         
-        <main className="flex-1 p-4 md:p-6 overflow-auto">
-          <div className="max-w-7xl mx-auto">
-            <Routes>
-              <Route index element={<AdminDashboard />} />
-              <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="clientes" element={<ClientesAdmin />} />
-              <Route path="colaboradores" element={<CollaboratorsAdmin />} />
-              <Route path="projetos" element={<ProjectsAdmin />} />
-              <Route path="tarefas" element={<TasksAdmin />} />
-              <Route path="chamados" element={<TicketsAdmin />} />
-              <Route path="meus-chamados" element={<MyTickets />} />
-              <Route path="arquivos" element={<ClientDocumentsAdmin />} />
-              <Route path="documentos" element={<ClientDocumentsAdmin />} />
-              <Route path="configuracoes" element={<ConfiguracoesAdmin />} />
-              <Route path="logs" element={<LogsAdmin />} />
-              <Route path="aprovacoes" element={<AdminApprovals />} />
-              <Route path="testing" element={<TestingDashboard />} />
-              
-              {/* FP&A Admin Routes */}
-              <Route path="fpa" element={<AdminFPADashboard />} />
-              <Route path="fpa/dashboard" element={<AdminFPADashboard />} />
-              <Route path="fpa/clientes" element={<AdminFPAClientManagement />} />
-              <Route path="fpa/integracao" element={<AdminFPADataIntegrationReal />} />
-              <Route path="fpa/relatorios" element={<AdminFPAReportBuilder />} />
-              <Route path="fpa/variancia" element={<AdminFPAVarianceAnalysis />} />
-              <Route path="fpa/modelagem" element={<AdminFPAModeling />} />
-            </Routes>
-          </div>
+        <main className="flex-1 p-4 md:p-8 overflow-auto">
+          <Routes>
+            <Route index element={<AdminDashboard />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="clientes" element={<ClientesAdmin />} />
+            <Route path="colaboradores" element={<CollaboratorsAdmin />} />
+            <Route path="projetos" element={<ProjectsAdmin />} />
+            <Route path="tarefas" element={<TasksAdmin />} />
+            <Route path="chamados" element={<TicketsAdmin />} />
+            <Route path="meus-chamados" element={<MyTickets />} />
+            <Route path="arquivos" element={<ClientDocumentsAdmin />} />
+            <Route path="documentos" element={<ClientDocumentsAdmin />} />
+            <Route path="configuracoes" element={<ConfiguracoesAdmin />} />
+            <Route path="logs" element={<LogsAdmin />} />
+            <Route path="aprovacoes" element={<AdminApprovals />} />
+            <Route path="testing" element={<TestingDashboard />} />
+            
+            {/* FP&A Admin Routes */}
+            <Route path="fpa" element={<AdminFPADashboard />} />
+            <Route path="fpa/dashboard" element={<AdminFPADashboard />} />
+            <Route path="fpa/clientes" element={<AdminFPAClientManagement />} />
+            <Route path="fpa/integracao" element={<AdminFPADataIntegrationReal />} />
+            <Route path="fpa/relatorios" element={<AdminFPAReportBuilder />} />
+            <Route path="fpa/variancia" element={<AdminFPAVarianceAnalysis />} />
+            <Route path="fpa/modelagem" element={<AdminFPAModeling />} />
+          </Routes>
         </main>
       </div>
     </div>

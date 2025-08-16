@@ -47,7 +47,7 @@ const ClientArea = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <ClientHeader 
         clientName={client?.name}
         isMobile={isMobile}
@@ -62,40 +62,38 @@ const ClientArea = () => {
         <ClientNavigation />
         
         {/* Main Content */}
-        <main className="flex-1 p-4 md:p-6 overflow-auto">
-          <div className="max-w-7xl mx-auto">
-            <div className="bg-card rounded-lg border shadow-sm p-6">
-              <Routes>
-                <Route path="/" element={<ClientDocuments />} />
-                <Route path="/dashboard" element={<ClientDocuments />} />
-                <Route path="/documentos" element={<ClientDocuments />} />
-                <Route path="/documents-advanced" element={<ClientDocumentsAdvanced />} />
-                <Route path="/documents-new" element={<ClientDocumentsNew />} />
-                <Route path="/requests" element={<ClientRequests />} />
-                <Route path="/cronograma" element={<ClientSchedule />} />
-                <Route path="/contato" element={<ClientContact />} />
-                <Route path="/chamados" element={<ClientTickets />} />
-                <Route path="/chamados/:id" element={<ClientTicketDetail />} />
-                <Route path="/equipe" element={<ClientTeam />} />
-                
-                {/* Approval Routes */}
-                <Route path="/aprovacoes" element={<ClientApprovals />} />
-                <Route path="/aprovacoes/solicitacoes" element={<MinhasSolicitacoes />} />
-                <Route path="/aprovacoes/dashboard" element={<DashboardAprovacoes />} />
-                
-                {/* Project Management */}
-                <Route path="/kanban" element={<ClientKanban />} />
-                <Route path="/gantt" element={<ClientGantt />} />
-                
-                {/* FP&A Routes */}
-                <Route path="/fpa" element={<ClientFPADashboard />} />
-                <Route path="/fpa/dashboard" element={<ClientFPADashboardReal />} />
-                <Route path="/fpa/dados" element={<ClientFPAData />} />
-                <Route path="/fpa/relatorios" element={<ClientFPAReports />} />
-                <Route path="/fpa/cenarios" element={<ClientFPAScenarios />} />
-                <Route path="/fpa/comunicacao" element={<ClientFPACommunication />} />
-              </Routes>
-            </div>
+        <main className="flex-1 p-4 md:p-8 overflow-auto">
+          <div className="bg-white rounded-lg shadow p-6">
+            <Routes>
+              <Route path="/" element={<ClientDocuments />} />
+              <Route path="/dashboard" element={<ClientDocuments />} />
+              <Route path="/documentos" element={<ClientDocuments />} />
+              <Route path="/documents-advanced" element={<ClientDocumentsAdvanced />} />
+              <Route path="/documents-new" element={<ClientDocumentsNew />} />
+              <Route path="/requests" element={<ClientRequests />} />
+              <Route path="/cronograma" element={<ClientSchedule />} />
+              <Route path="/contato" element={<ClientContact />} />
+              <Route path="/chamados" element={<ClientTickets />} />
+              <Route path="/chamados/:id" element={<ClientTicketDetail />} />
+              <Route path="/equipe" element={<ClientTeam />} />
+              
+              {/* Approval Routes */}
+              <Route path="/aprovacoes" element={<ClientApprovals />} />
+              <Route path="/aprovacoes/solicitacoes" element={<MinhasSolicitacoes />} />
+              <Route path="/aprovacoes/dashboard" element={<DashboardAprovacoes />} />
+              
+              {/* Project Management */}
+              <Route path="/kanban" element={<ClientKanban />} />
+              <Route path="/gantt" element={<ClientGantt />} />
+              
+              {/* FP&A Routes */}
+              <Route path="/fpa" element={<ClientFPADashboard />} />
+              <Route path="/fpa/dashboard" element={<ClientFPADashboardReal />} />
+              <Route path="/fpa/dados" element={<ClientFPAData />} />
+              <Route path="/fpa/relatorios" element={<ClientFPAReports />} />
+              <Route path="/fpa/cenarios" element={<ClientFPAScenarios />} />
+              <Route path="/fpa/comunicacao" element={<ClientFPACommunication />} />
+            </Routes>
           </div>
         </main>
       </div>
