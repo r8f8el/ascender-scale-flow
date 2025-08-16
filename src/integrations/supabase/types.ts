@@ -2684,6 +2684,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_user_company: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       invite_team_member: {
         Args:
           | { p_company_id: string; p_email: string }
@@ -2698,11 +2702,19 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      is_admin_user_secure: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       is_current_user_super_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
       is_super_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_super_admin_secure: {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
@@ -2716,6 +2728,17 @@ export type Database = {
           p_user_name: string
         }
         Returns: string
+      }
+      validate_invitation_token: {
+        Args: { p_token: string }
+        Returns: {
+          company_id: string
+          email: string
+          invitation_id: string
+          inviter_name: string
+          is_valid: boolean
+          message: string
+        }[]
       }
     }
     Enums: {
