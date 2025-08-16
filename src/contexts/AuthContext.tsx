@@ -1,178 +1,107 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface Client {
   id: string;
   name: string;
   email: string;
+  company?: string;
+  cnpj?: string;
+  is_primary_contact?: boolean;
 }
 
 interface AuthContextType {
-  isAuthenticated: boolean;
-  client: Client | null;
   user: User | null;
   session: Session | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  signup: (email: string, password: string, name: string, companyData?: { company: string; cnpj: string }) => Promise<{ success: boolean; error?: string }>;
-  logout: () => void;
+  client: Client | null;
   loading: boolean;
+  isAuthenticated: boolean;
+  login: (email: string, password: string) => Promise<{ error: any }>;
+  logout: () => Promise<void>;
+  signup: (email: string, password: string, userData?: any) => Promise<{ error: any }>;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  isAuthenticated: false,
-  client: null,
-  user: null,
-  session: null,
-  login: async () => false,
-  signup: async () => ({ success: false }),
-  logout: () => {},
-  loading: true,
-});
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
 
-const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [client, setClient] = useState<Client | null>(null);
+const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
-  
-  useEffect(() => {
-    let mounted = true;
-    let profileLoaded = false;
 
-    const initializeAuth = async () => {
-      try {
-        setLoading(true);
-        
-        // Get current session
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        
-        if (!mounted) return;
+  const fetchClientProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('client_profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-        if (currentSession?.user) {
-          console.log('Found existing session:', currentSession.user.email);
-          setSession(currentSession);
-          setUser(currentSession.user);
-          setIsAuthenticated(true);
-          
-          // Load client profile only once
-          if (!profileLoaded) {
-            profileLoaded = true;
-            await loadClientProfile(currentSession.user);
-          }
-        }
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+      if (error) {
+        console.error('Error fetching client profile:', error);
+        return null;
       }
-    };
 
+      return data;
+    } catch (error) {
+      console.error('Error in fetchClientProfile:', error);
+      return null;
+    }
+  };
+
+  useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (!mounted) return;
-        
-        console.log('Auth state changed:', event, session?.user?.email);
+      async (event, session) => {
+        console.log('Auth state change:', event, session?.user?.id);
         
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          setIsAuthenticated(true);
-          // Load profile only if not already loaded and avoid infinite loops
-          if (!profileLoaded && event === 'SIGNED_IN') {
-            profileLoaded = true;
-            setTimeout(() => {
-              if (mounted) {
-                loadClientProfile(session.user);
-              }
-            }, 100);
-          }
+          // Fetch client profile asynchronously
+          setTimeout(async () => {
+            const profile = await fetchClientProfile(session.user.id);
+            setClient(profile);
+          }, 0);
         } else {
-          setIsAuthenticated(false);
           setClient(null);
-          profileLoaded = false;
         }
         
         setLoading(false);
       }
     );
 
-    initializeAuth();
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check:', session?.user?.id);
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        fetchClientProfile(session.user.id).then(setClient);
+      }
+      
+      setLoading(false);
+    });
 
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
-  const loadClientProfile = async (user: User) => {
-    try {
-      // Não criar perfil de cliente para e-mails de admin
-      if (user.email?.endsWith('@ascalate.com.br')) {
-        console.log('Admin user detected, skipping client profile creation');
-        return;
-      }
-
-      // Buscar perfil existente sem criar automaticamente
-      const { data: profile, error } = await supabase
-        .from('client_profiles')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error loading client profile:', error);
-        // Se for erro de política, não tentar criar perfil
-        if (error.code === '42P17') {
-          console.warn('Database policy issue, using fallback client data');
-          setClient({
-            id: user.id,
-            name: (user.user_metadata as any)?.name || user.email?.split('@')[0] || 'Cliente',
-            email: user.email || '',
-          });
-        }
-        return;
-      }
-
-      if (profile) {
-        setClient({
-          id: profile.id,
-          name: profile.name,
-          email: profile.email,
-        });
-        console.log('Client profile loaded successfully:', profile.name);
-      } else {
-        // Usar dados do user metadata como fallback
-        setClient({
-          id: user.id,
-          name: (user.user_metadata as any)?.name || user.email?.split('@')[0] || 'Cliente',
-          email: user.email || '',
-        });
-        console.log('Using fallback client data from user metadata');
-      }
-    } catch (error) {
-      console.error('Error loading client profile:', error);
-      // Fallback para dados básicos do usuário
-      setClient({
-        id: user.id,
-        name: (user.user_metadata as any)?.name || user.email?.split('@')[0] || 'Cliente',
-        email: user.email || '',
-      });
-    }
-  };
-  
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string) => {
     try {
       setLoading(true);
-      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -180,86 +109,88 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
 
       if (error) {
         console.error('Login error:', error);
-        return false;
+        toast.error('Erro ao fazer login: ' + error.message);
+        return { error };
       }
 
       if (data.user) {
-        console.log('Login successful');
-        return true;
+        const profile = await fetchClientProfile(data.user.id);
+        setClient(profile);
+        toast.success('Login realizado com sucesso!');
       }
-      
-      return false;
-    } catch (error) {
-      console.error('Login error:', error);
-      return false;
+
+      return { error: null };
+    } catch (error: any) {
+      console.error('Login exception:', error);
+      toast.error('Erro inesperado ao fazer login');
+      return { error };
     } finally {
       setLoading(false);
     }
   };
 
-  const signup = async (email: string, password: string, name: string, companyData?: { company: string; cnpj: string }): Promise<{ success: boolean; error?: string }> => {
+  const signup = async (email: string, password: string, userData?: any) => {
     try {
       setLoading(true);
-      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/cliente`,
-          data: {
-            name: name,
-            company: companyData?.company,
-            cnpj: companyData?.cnpj
-          }
+          emailRedirectTo: `${window.location.origin}/cliente/login`,
+          data: userData || {}
         }
       });
 
       if (error) {
         console.error('Signup error:', error);
-        return { success: false, error: error.message };
+        toast.error('Erro ao criar conta: ' + error.message);
+        return { error };
       }
 
-      if (data.user) {
-        console.log('Signup successful:', data.user.email);
-        return { success: true };
+      if (data.user && !data.user.email_confirmed_at) {
+        toast.success('Conta criada! Verifique seu email para confirmar.');
       }
-      
-      return { success: false, error: 'Erro inesperado' };
-    } catch (error) {
-      console.error('Signup error:', error);
-      return { success: false, error: 'Erro inesperado' };
+
+      return { error: null };
+    } catch (error: any) {
+      console.error('Signup exception:', error);
+      toast.error('Erro inesperado ao criar conta');
+      return { error };
     } finally {
       setLoading(false);
     }
   };
-  
+
   const logout = async () => {
     try {
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Logout error:', error);
+        toast.error('Erro ao fazer logout');
+      } else {
+        setUser(null);
+        setSession(null);
+        setClient(null);
+        toast.success('Logout realizado com sucesso!');
+      }
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('Logout exception:', error);
+      toast.error('Erro inesperado ao fazer logout');
     }
-    
-    setClient(null);
-    setUser(null);
-    setSession(null);
-    setIsAuthenticated(false);
   };
-  
-  return (
-    <AuthContext.Provider value={{ 
-      isAuthenticated, 
-      client, 
-      user, 
-      session, 
-      login,
-      signup,
-      logout, 
-      loading 
-    }}>
-      {children}
-    </AuthContext.Provider>
-  );
+
+  const value = {
+    user,
+    session,
+    client,
+    loading,
+    isAuthenticated: !!user,
+    login,
+    logout,
+    signup,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export default AuthProvider;

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -17,30 +18,6 @@ export interface GanttProject {
   is_active: boolean;
   created_at: string;
   updated_at: string;
-}
-
-export interface GanttTask {
-  id: string;
-  project_id: string;
-  name: string;
-  description?: string;
-  start_date: string;
-  end_date: string;
-  progress: number;
-  assigned_to?: string;
-  created_by?: string;
-  priority: string;
-  estimated_hours?: number;
-  actual_hours: number;
-  is_milestone: boolean;
-  dependencies: any;
-  created_at: string;
-  updated_at: string;
-  collaborators?: {
-    id: string;
-    name: string;
-    email: string;
-  };
 }
 
 export const useGanttProjects = (clientId?: string) => {
@@ -138,122 +115,5 @@ export const useGanttProjects = (clientId?: string) => {
     updateProject,
     deleteProject,
     refetch: fetchProjects
-  };
-};
-
-export const useGanttTasks = (projectId: string) => {
-  const [tasks, setTasks] = useState<GanttTask[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchTasks = async () => {
-    if (!projectId) return;
-    
-    try {
-      setLoading(true);
-      
-      const { data, error } = await supabase
-        .from('gantt_tasks')
-        .select(`
-          *,
-          collaborators (
-            id,
-            name,
-            email
-          )
-        `)
-        .eq('project_id', projectId)
-        .order('start_date');
-
-      if (error) throw error;
-      setTasks(data || []);
-    } catch (error) {
-      console.error('Error fetching gantt tasks:', error);
-      toast.error('Erro ao carregar tarefas');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const createTask = async (task: Omit<GanttTask, 'id' | 'created_at' | 'updated_at' | 'collaborators'>) => {
-    try {
-      const { data, error } = await supabase
-        .from('gantt_tasks')
-        .insert([task])
-        .select(`
-          *,
-          collaborators (
-            id,
-            name,
-            email
-          )
-        `)
-        .single();
-
-      if (error) throw error;
-      
-      setTasks(prev => [...prev, data]);
-      toast.success('Tarefa criada');
-      return data;
-    } catch (error) {
-      console.error('Error creating gantt task:', error);
-      toast.error('Erro ao criar tarefa');
-    }
-  };
-
-  const updateTask = async (id: string, updates: Partial<GanttTask>) => {
-    try {
-      const { data, error } = await supabase
-        .from('gantt_tasks')
-        .update(updates)
-        .eq('id', id)
-        .select(`
-          *,
-          collaborators (
-            id,
-            name,
-            email
-          )
-        `)
-        .single();
-
-      if (error) throw error;
-      
-      setTasks(prev => prev.map(task => task.id === id ? data : task));
-      toast.success('Tarefa atualizada');
-      return data;
-    } catch (error) {
-      console.error('Error updating gantt task:', error);
-      toast.error('Erro ao atualizar tarefa');
-    }
-  };
-
-  const deleteTask = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('gantt_tasks')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      
-      setTasks(prev => prev.filter(task => task.id !== id));
-      toast.success('Tarefa excluída');
-    } catch (error) {
-      console.error('Error deleting gantt task:', error);
-      toast.error('Erro ao excluir tarefa');
-    }
-  };
-
-  useEffect(() => {
-    fetchTasks();
-  }, [projectId]);
-
-  return {
-    tasks,
-    loading,
-    createTask,
-    updateTask,
-    deleteTask,
-    refetch: fetchTasks
   };
 };
