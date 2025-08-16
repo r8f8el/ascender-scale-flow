@@ -57,12 +57,8 @@ const ClientLogin = () => {
         <div className="text-center mb-8">
           <Logo className="h-16 mx-auto mb-6" />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Painel Administrativo
+            Área do Cliente
           </h1>
-          <p className="text-sm text-gray-600 flex items-center justify-center">
-            <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-            Acesso restrito à equipe Ascalate
-          </p>
         </div>
 
         {/* Login Card */}
@@ -82,7 +78,7 @@ const ClientLogin = () => {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="seu.email@ascalate.com.br"
+                  placeholder="seu.email@exemplo.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
@@ -137,18 +133,13 @@ const ClientLogin = () => {
 
         {/* Footer Text */}
         <div className="mt-6 text-center text-sm text-gray-600 space-y-2">
-          <p>Entre com suas credenciais de administrador.</p>
-          <p>Apenas usuários com email @ascalate.com.br podem acessar.</p>
+          <p>Entre com suas credenciais de cliente.</p>
           <p className="mt-4">
             Não tem uma conta?{' '}
             <button className="text-blue-600 hover:text-blue-700">
-              Cadastre-se aqui
+              Entre em contato
             </button>
           </p>
-        </div>
-
-        <div className="mt-8 text-center text-xs text-gray-500">
-          Área restrita a administradores. Em caso de problemas, contate o suporte técnico.
         </div>
 
         {/* Back to site link */}
