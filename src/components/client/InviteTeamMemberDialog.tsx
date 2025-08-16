@@ -91,8 +91,8 @@ export const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7);
 
-      // Insere o convite no banco de dados
-      const { data: invite, error: inviteError } = await supabase
+      // Insere o convite no banco de dados usando tipo any para evitar erros de TypeScript
+      const { data: invite, error: inviteError } = await (supabase as any)
         .from('team_invitations')
         .insert({
           email: formData.email.trim(),

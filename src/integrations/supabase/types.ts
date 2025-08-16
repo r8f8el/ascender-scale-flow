@@ -2293,6 +2293,62 @@ export type Database = {
           },
         ]
       }
+      team_invitations: {
+        Row: {
+          accepted_at: string | null
+          company_id: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_name: string | null
+          inviter_id: string
+          inviter_name: string
+          message: string | null
+          status: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          company_id: string
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          invited_name?: string | null
+          inviter_id: string
+          inviter_name: string
+          message?: string | null
+          status?: string
+          token: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          company_id?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_name?: string | null
+          inviter_id?: string
+          inviter_name?: string
+          message?: string | null
+          status?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_invitations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_members: {
         Row: {
           company_id: string

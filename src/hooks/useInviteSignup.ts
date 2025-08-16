@@ -21,7 +21,7 @@ interface InviteData {
 interface CompanyData {
   id: string;
   name: string;
-  logo_url?: string;
+  company?: string;
 }
 
 /**
@@ -69,8 +69,8 @@ export const useInviteSignup = (token: string | null, inviteId: string | null) =
       setLoading(true);
       setError(null);
 
-      // Busca dados do convite
-      let query = supabase
+      // Busca dados do convite usando supabase.from() com tipo any para evitar erros de TypeScript
+      let query = (supabase as any)
         .from('team_invitations')
         .select(`
           id,
@@ -110,16 +110,20 @@ export const useInviteSignup = (token: string | null, inviteId: string | null) =
 
       setInviteData(invite);
 
-      // Busca dados da empresa
+      // Busca dados da empresa usando client_profiles
       if (invite.company_id) {
         const { data: company, error: companyError } = await supabase
-          .from('companies')
-          .select('id, name, logo_url')
+          .from('client_profiles')
+          .select('id, name, company')
           .eq('id', invite.company_id)
           .single();
 
         if (!companyError && company) {
-          setCompanyData(company);
+          setCompanyData({
+            id: company.id,
+            name: company.company || company.name,
+            company: company.company
+          });
         }
       }
 
@@ -168,8 +172,8 @@ export const useInviteSignup = (token: string | null, inviteId: string | null) =
         return { success: false, error: 'Erro ao criar usuário' };
       }
 
-      // Atualiza o status do convite para aceito
-      const { error: updateError } = await supabase
+      // Atualiza o status do convite para aceito usando tipo any
+      const { error: updateError } = await (supabase as any)
         .from('team_invitations')
         .update({ 
           status: 'accepted',
@@ -182,15 +186,15 @@ export const useInviteSignup = (token: string | null, inviteId: string | null) =
         // Não falha a operação, apenas loga o erro
       }
 
-      // Cria o perfil do usuário na tabela profiles
+      // Cria o perfil do usuário na tabela client_profiles
       const { error: profileError } = await supabase
-        .from('profiles')
+        .from('client_profiles')
         .insert({
           id: authData.user.id,
-          full_name: signupData.name,
+          name: signupData.name,
           email: signupData.email,
-          company_id: inviteData.company_id,
-          created_at: new Date().toISOString()
+          company: companyData?.company || companyData?.name,
+          is_primary_contact: false
         });
 
       if (profileError) {
@@ -198,16 +202,17 @@ export const useInviteSignup = (token: string | null, inviteId: string | null) =
         // Não falha a operação, o perfil pode ser criado via trigger
       }
 
-      // Adiciona o usuário à equipe da empresa
+      // Adiciona o usuário à equipe da empresa usando team_members
       const { error: teamError } = await supabase
         .from('team_members')
         .insert({
           user_id: authData.user.id,
           company_id: inviteData.company_id,
-          role: 'member',
           status: 'active',
           invited_by: inviteData.inviter_name,
-          joined_at: new Date().toISOString()
+          joined_at: new Date().toISOString(),
+          invited_email: signupData.email,
+          name: signupData.name
         });
 
       if (teamError) {
