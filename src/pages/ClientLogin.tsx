@@ -19,19 +19,28 @@ const ClientLogin: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!email || !password) {
+      toast.error('Por favor, preencha todos os campos');
+      return;
+    }
+
     setIsLoading(true);
     try {
+      console.log('Tentando login com:', email);
       const { error } = await login(email, password);
       
       if (!error) {
+        console.log('Login bem-sucedido');
         await logSecurityEvent('client_login_success', 'auth', { email });
+        toast.success('Login realizado com sucesso!');
         navigate('/cliente');
       } else {
+        console.error('Erro de login:', error);
         await logSecurityEvent('client_login_failed', 'auth', { email });
         toast.error('Credenciais inválidas');
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Erro inesperado no login:', error);
       await logSecurityEvent('client_login_error', 'auth', { email, error: String(error) });
       toast.error('Erro ao fazer login');
     } finally {

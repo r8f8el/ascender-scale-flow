@@ -19,19 +19,28 @@ const AdminLogin: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!email || !password) {
+      toast.error('Por favor, preencha todos os campos');
+      return;
+    }
+
     setIsLoading(true);
     try {
+      console.log('Tentando login de admin com:', email);
       const success = await adminLogin(email, password);
       
       if (success) {
+        console.log('Login de admin bem-sucedido');
         await logSecurityEvent('admin_login_success', 'auth', { email });
+        toast.success('Login realizado com sucesso!');
         navigate('/admin');
       } else {
+        console.error('Falha no login de admin');
         await logSecurityEvent('admin_login_failed', 'auth', { email });
         toast.error('Credenciais inválidas');
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Erro inesperado no login de admin:', error);
       await logSecurityEvent('admin_login_error', 'auth', { email, error: String(error) });
       toast.error('Erro ao fazer login');
     } finally {
