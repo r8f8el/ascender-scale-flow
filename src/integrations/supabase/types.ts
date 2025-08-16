@@ -204,9 +204,11 @@ export type Database = {
       client_bi_embeds: {
         Row: {
           access_mode: string
+          category: string | null
           created_at: string
           created_by: string | null
           description: string | null
+          display_order: number | null
           embed_url: string | null
           external_dashboard_id: string | null
           filters: Json | null
@@ -214,15 +216,18 @@ export type Database = {
           id: string
           iframe_html: string | null
           is_active: boolean
+          is_featured: boolean | null
           provider: string
           title: string | null
           updated_at: string
         }
         Insert: {
           access_mode?: string
+          category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
+          display_order?: number | null
           embed_url?: string | null
           external_dashboard_id?: string | null
           filters?: Json | null
@@ -230,15 +235,18 @@ export type Database = {
           id?: string
           iframe_html?: string | null
           is_active?: boolean
+          is_featured?: boolean | null
           provider: string
           title?: string | null
           updated_at?: string
         }
         Update: {
           access_mode?: string
+          category?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
+          display_order?: number | null
           embed_url?: string | null
           external_dashboard_id?: string | null
           filters?: Json | null
@@ -246,6 +254,7 @@ export type Database = {
           id?: string
           iframe_html?: string | null
           is_active?: boolean
+          is_featured?: boolean | null
           provider?: string
           title?: string | null
           updated_at?: string
@@ -2711,6 +2720,21 @@ export type Database = {
       generate_ticket_number: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_client_bi_embeds: {
+        Args: { p_client_id: string }
+        Returns: {
+          category: string
+          created_at: string
+          description: string
+          display_order: number
+          embed_url: string
+          id: string
+          iframe_html: string
+          is_featured: boolean
+          provider: string
+          title: string
+        }[]
       }
       get_client_dashboard_data: {
         Args: { client_id: string }

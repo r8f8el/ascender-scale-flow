@@ -17,6 +17,9 @@ export type ClientBIEmbed = {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  display_order: number;
+  category: string;
+  is_featured: boolean;
 };
 
 export const useClientBIEmbeds = (clientId?: string) => {
@@ -29,6 +32,8 @@ export const useClientBIEmbeds = (clientId?: string) => {
         .select('*')
         .eq('fpa_client_id', clientId)
         .eq('is_active', true)
+        .order('is_featured', { ascending: false })
+        .order('display_order', { ascending: true })
         .order('updated_at', { ascending: false });
       if (error) throw error;
       return (data as ClientBIEmbed[]) || [];
@@ -57,6 +62,9 @@ export const useUpsertClientBIEmbed = () => {
             is_active: payload.is_active,
             external_dashboard_id: payload.external_dashboard_id,
             access_mode: payload.access_mode,
+            display_order: payload.display_order,
+            category: payload.category,
+            is_featured: payload.is_featured,
           })
           .eq('id', (payload as any).id)
           .select()
@@ -78,6 +86,9 @@ export const useUpsertClientBIEmbed = () => {
           is_active: payload.is_active ?? true,
           external_dashboard_id: payload.external_dashboard_id,
           access_mode: payload.access_mode || 'secure',
+          display_order: payload.display_order || 0,
+          category: payload.category || 'dashboard',
+          is_featured: payload.is_featured || false,
           created_by: user?.id || null,
         })
         .select()
@@ -88,5 +99,42 @@ export const useUpsertClientBIEmbed = () => {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['client-bi-embeds', variables.fpa_client_id] });
     },
+  });
+};
+
+export const useDeleteClientBIEmbed = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, clientId }: { id: string; clientId: string }) => {
+      const { error } = await (supabase as any)
+        .from('client_bi_embeds')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      return { id, clientId };
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['client-bi-embeds', variables.clientId] });
+    },
+  });
+};
+
+export const useCurrentClientId = () => {
+  return useQuery({
+    queryKey: ['current-client-id'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      
+      const { data, error } = await (supabase as any)
+        .from('fpa_clients')
+        .select('id')
+        .eq('client_profile_id', user.id)
+        .single();
+      
+      if (error) return null;
+      return data?.id || null;
+    },
+    staleTime: 1000 * 60 * 10,
   });
 };
