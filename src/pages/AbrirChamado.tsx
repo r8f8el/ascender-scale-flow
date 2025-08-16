@@ -24,7 +24,8 @@ const AbrirChamado = () => {
     handleInputChange,
     handleSelectChange,
     handleFileChange,
-    handleSubmit
+    handleSubmit,
+    setFiles
   } = useTicketForm();
 
   // Load form data on component mount
@@ -75,13 +76,8 @@ const AbrirChamado = () => {
   };
 
   const handleFilesUpdate = (newFiles: File[]) => {
-    const syntheticEvent = {
-      target: {
-        files: newFiles
-      }
-    } as React.ChangeEvent<HTMLInputElement>;
-
-    handleFileChange(syntheticEvent);
+    // Instead of creating a synthetic event, use setFiles directly
+    setFiles(newFiles);
   };
 
   return (
