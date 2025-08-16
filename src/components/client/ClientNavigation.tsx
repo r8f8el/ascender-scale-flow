@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -94,25 +93,11 @@ export const ClientNavigation = () => {
           </CollapsibleContent>
         </Collapsible>
 
-        {/* Business Intelligence Section */}
-        <Collapsible 
-          open={expandedSections.includes('bi')} 
-          onOpenChange={() => toggleSection('bi')}
-        >
-          <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">
-            <div className="flex items-center">
-              <Monitor className="mr-2 h-4 w-4" />
-              Business Intelligence
-            </div>
-            {expandedSections.includes('bi') ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-1 mt-1">
-            <Link to="/cliente/fpa/bi" className={getSubLinkClass('/fpa/bi')}>
-              <PieChart className="mr-3 h-4 w-4" />
-              Dashboards BI
-            </Link>
-          </CollapsibleContent>
-        </Collapsible>
+        {/* Dashboards BI */}
+        <Link to="/cliente/fpa/bi" className={getLinkClass('/fpa/bi')}>
+          <PieChart className="mr-3 h-4 w-4" />
+          Dashboards BI
+        </Link>
 
         {/* Approval Flows */}
         <Collapsible 
