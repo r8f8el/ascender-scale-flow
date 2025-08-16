@@ -53,16 +53,9 @@ const ClientLogin: React.FC = () => {
           </div>
         </div>
         
-        <h2 className="text-center text-2xl font-bold text-gray-900 mb-2">
+        <h2 className="text-center text-2xl font-bold text-gray-900 mb-8">
           Área do Cliente
         </h2>
-        
-        <div className="flex items-center justify-center text-sm text-blue-600 mb-8">
-          <div className="w-4 h-4 border border-blue-600 rounded-full flex items-center justify-center mr-2">
-            <div className="w-1 h-1 bg-blue-600 rounded-full"></div>
-          </div>
-          Gerencie suas finanças com facilidade e segurança
-        </div>
       </div>
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
