@@ -68,7 +68,17 @@ export const useSecureInviteSignup = (token: string | null) => {
         return;
       }
 
-      setInviteData(invite);
+      // Map database response to expected interface
+      const mappedInvite: SecureInviteData = {
+        id: invite.invitation_id,
+        email: invite.email,
+        inviter_name: invite.inviter_name,
+        company_id: invite.company_id,
+        message: invite.message,
+        is_valid: invite.is_valid
+      };
+
+      setInviteData(mappedInvite);
 
       // Fetch company data
       if (invite.company_id) {
