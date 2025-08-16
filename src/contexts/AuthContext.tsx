@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
@@ -116,9 +117,11 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
     try {
       // Não criar perfil de cliente para e-mails de admin
       if (user.email?.endsWith('@ascalate.com.br')) {
+        console.log('Admin user detected, skipping client profile creation');
         return;
       }
 
+      // Buscar perfil existente sem criar automaticamente
       const { data: profile, error } = await supabase
         .from('client_profiles')
         .select('*')
@@ -127,44 +130,42 @@ const AuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error loading client profile:', error);
+        // Se for erro de política, não tentar criar perfil
+        if (error.code === '42P17') {
+          console.warn('Database policy issue, using fallback client data');
+          setClient({
+            id: user.id,
+            name: (user.user_metadata as any)?.name || user.email?.split('@')[0] || 'Cliente',
+            email: user.email || '',
+          });
+        }
         return;
       }
 
-      let profileData = profile as any | null;
-
-      // Se não existir (usuário antigo), cria automaticamente o perfil
-      if (!profileData) {
-        const defaultName = (user.user_metadata as any)?.name || user.email?.split('@')[0] || 'Cliente';
-        const { data: inserted, error: insertError } = await supabase
-          .from('client_profiles')
-          .insert({
-            id: user.id,
-            name: defaultName,
-            email: user.email!,
-            company: (user.user_metadata as any)?.company || null,
-            cnpj: (user.user_metadata as any)?.cnpj || null,
-            is_primary_contact: true,
-          })
-          .select()
-          .maybeSingle();
-
-        if (insertError) {
-          console.error('Error auto-creating client profile:', insertError);
-          return;
-        }
-
-        profileData = inserted as any;
-      }
-
-      if (profileData) {
+      if (profile) {
         setClient({
-          id: profileData.id,
-          name: profileData.name,
-          email: profileData.email,
+          id: profile.id,
+          name: profile.name,
+          email: profile.email,
         });
+        console.log('Client profile loaded successfully:', profile.name);
+      } else {
+        // Usar dados do user metadata como fallback
+        setClient({
+          id: user.id,
+          name: (user.user_metadata as any)?.name || user.email?.split('@')[0] || 'Cliente',
+          email: user.email || '',
+        });
+        console.log('Using fallback client data from user metadata');
       }
     } catch (error) {
       console.error('Error loading client profile:', error);
+      // Fallback para dados básicos do usuário
+      setClient({
+        id: user.id,
+        name: (user.user_metadata as any)?.name || user.email?.split('@')[0] || 'Cliente',
+        email: user.email || '',
+      });
     }
   };
   

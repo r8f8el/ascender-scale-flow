@@ -1,7 +1,6 @@
 
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut } from 'lucide-react';
 import { Chat } from '@/components/Chat';
 import { ClientHeader } from '../components/client/ClientHeader';
 import { ClientNavigation } from '../components/client/ClientNavigation';
@@ -35,6 +34,7 @@ import ClientFPAData from './client/fpa/ClientFPAData';
 import ClientFPAReports from './client/fpa/ClientFPAReports';
 import ClientFPAScenarios from './client/fpa/ClientFPAScenarios';
 import ClientFPACommunication from './client/fpa/ClientFPACommunication';
+import ClientBIDashboard from './client/fpa/ClientBIDashboard';
 
 const ClientArea = () => {
   const { client, logout } = useAuth();
@@ -77,10 +77,8 @@ const ClientArea = () => {
               <Route path="/chamados/:id" element={<ClientTicketDetail />} />
               <Route path="/equipe" element={<ClientTeam />} />
               
-              {/* Approval Routes */}
-              <Route path="/aprovacoes" element={<ClientApprovals />} />
-              <Route path="/aprovacoes/solicitacoes" element={<MinhasSolicitacoes />} />
-              <Route path="/aprovacoes/dashboard" element={<DashboardAprovacoes />} />
+              {/* Approval Routes - removendo conflito de roteamento */}
+              <Route path="/aprovacoes/*" element={<ClientApprovals />} />
               
               {/* Project Management */}
               <Route path="/kanban" element={<ClientKanban />} />
@@ -93,6 +91,7 @@ const ClientArea = () => {
               <Route path="/fpa/relatorios" element={<ClientFPAReports />} />
               <Route path="/fpa/cenarios" element={<ClientFPAScenarios />} />
               <Route path="/fpa/comunicacao" element={<ClientFPACommunication />} />
+              <Route path="/fpa/bi" element={<ClientBIDashboard />} />
             </Routes>
           </div>
         </main>

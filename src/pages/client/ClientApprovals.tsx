@@ -16,16 +16,18 @@ const ClientApprovals = () => {
   // Verificar se o usuário é aprovador - por enquanto assumindo que sim
   const isAprovador = true;
 
-  // Se estamos em uma sub-rota, renderizar o componente correspondente
-  if (location.pathname.includes('/solicitacoes')) {
-    return <MinhasSolicitacoes />;
-  }
-  
-  if (location.pathname.includes('/dashboard')) {
-    return <DashboardAprovacoes />;
+  // Página inicial de aprovações - mostrar quando estamos exatamente em /aprovacoes
+  const isMainApprovalPage = location.pathname === '/cliente/aprovacoes' || location.pathname === '/cliente/aprovacoes/';
+
+  if (!isMainApprovalPage) {
+    return (
+      <Routes>
+        <Route path="/solicitacoes" element={<MinhasSolicitacoes />} />
+        <Route path="/dashboard" element={<DashboardAprovacoes />} />
+      </Routes>
+    );
   }
 
-  // Página inicial de aprovações
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -82,12 +84,6 @@ const ClientApprovals = () => {
           </Card>
         )}
       </div>
-
-      {/* Rotas aninhadas */}
-      <Routes>
-        <Route path="/solicitacoes" element={<MinhasSolicitacoes />} />
-        <Route path="/dashboard" element={<DashboardAprovacoes />} />
-      </Routes>
     </div>
   );
 };
