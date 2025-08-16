@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import AuthProvider from "@/contexts/AuthContext";
 import AdminAuthProvider from "@/contexts/AdminAuthContext";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { useMonitoring } from "@/hooks/useMonitoring";
 
 // Pages
@@ -12,7 +13,7 @@ import Index from "@/pages/Index";
 import ClientLogin from "@/pages/ClientLogin";
 import AdminLogin from "@/pages/AdminLogin";
 import ClientArea from "@/pages/ClientArea";
-import AdminArea from "@/pages/admin/AdminArea";
+import AdminArea from "@/pages/AdminArea";
 import AbrirChamado from "@/pages/AbrirChamado";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminProtectedRoute from "@/components/AdminProtectedRoute";
@@ -44,43 +45,45 @@ const NavigationTracker = () => {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <NavigationTracker />
-        <AuthProvider>
-          <AdminAuthProvider>
-            <div className="min-h-screen">
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/" element={<Index />} />
-                <Route path="/cliente/login" element={<ClientLogin />} />
-                <Route path="/admin/login" element={<AdminLogin />} />
-                
-                {/* Public ticket route */}
-                <Route path="/abrir-chamado" element={<AbrirChamado />} />
-                
-                {/* Client Protected Routes */}
-                <Route path="/cliente/*" element={
-                  <ProtectedRoute>
-                    <ClientArea />
-                  </ProtectedRoute>
-                } />
-                
-                {/* Admin Protected Routes */}
-                <Route path="/admin/*" element={
-                  <AdminProtectedRoute>
-                    <AdminArea />
-                  </AdminProtectedRoute>
-                } />
-                
-                {/* Fallback */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </div>
-            <Toaster />
-            <Sonner />
-          </AdminAuthProvider>
-        </AuthProvider>
-      </BrowserRouter>
+      <ThemeProvider>
+        <BrowserRouter>
+          <NavigationTracker />
+          <AuthProvider>
+            <AdminAuthProvider>
+              <div className="min-h-screen">
+                <Routes>
+                  {/* Public Routes */}
+                  <Route path="/" element={<Index />} />
+                  <Route path="/cliente/login" element={<ClientLogin />} />
+                  <Route path="/admin/login" element={<AdminLogin />} />
+                  
+                  {/* Public ticket route */}
+                  <Route path="/abrir-chamado" element={<AbrirChamado />} />
+                  
+                  {/* Client Protected Routes */}
+                  <Route path="/cliente/*" element={
+                    <ProtectedRoute>
+                      <ClientArea />
+                    </ProtectedRoute>
+                  } />
+                  
+                  {/* Admin Protected Routes */}
+                  <Route path="/admin/*" element={
+                    <AdminProtectedRoute>
+                      <AdminArea />
+                    </AdminProtectedRoute>
+                  } />
+                  
+                  {/* Fallback */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </div>
+              <Toaster />
+              <Sonner />
+            </AdminAuthProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

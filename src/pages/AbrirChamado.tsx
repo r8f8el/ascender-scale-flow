@@ -1,108 +1,92 @@
 
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TicketFormHeader } from '@/components/ticket/TicketFormHeader';
-import { PersonalInfoForm } from '@/components/ticket/PersonalInfoForm';
-import { TicketDetailsForm } from '@/components/ticket/TicketDetailsForm';
-import { CategoryPriorityForm } from '@/components/ticket/CategoryPriorityForm';
-import { FileUploadForm } from '@/components/ticket/FileUploadForm';
+import React, { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTicketForm } from '@/hooks/useTicketForm';
-import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft } from 'lucide-react';
-import { Link, Navigate } from 'react-router-dom';
+import { ModernTicketForm } from '@/components/ticket/ModernTicketForm';
+import { ThemeProvider } from '@/components/theme/ThemeProvider';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Headphones } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const AbrirChamado = () => {
-  const { isAuthenticated, loading } = useAuth();
+  const navigate = useNavigate();
   const {
     formData,
     files,
     isLoading,
     categories,
     priorities,
-    loadFormData,
-    handleInputChange,
-    handleSelectChange,
-    handleFileChange,
-    handleSubmit
+    updateField,
+    updateSelectField,
+    setFiles,
+    submitTicket
   } = useTicketForm();
 
-  React.useEffect(() => {
-    loadFormData();
-  }, []);
-
-  // Show loading while checking authentication
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Carregando...</div>
-      </div>
-    );
-  }
-
-  // Redirect to login if not authenticated
-  if (!isAuthenticated) {
-    return <Navigate to="/cliente/login" replace />;
-  }
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    const success = await submitTicket();
+    if (success) {
+      navigate('/');
+    }
+  }, [submitTicket, navigate]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <Link to="/cliente">
-            <Button variant="outline" className="mb-4">
-              <ArrowLeft size={16} className="mr-2" />
-              Voltar à Área do Cliente
-            </Button>
-          </Link>
+    <ThemeProvider>
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        
+        {/* Header Section */}
+        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-background border-b">
+          <div className="container mx-auto px-4 py-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <Link to="/">
+                  <Button variant="ghost" size="sm">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Voltar
+                  </Button>
+                </Link>
+                <div className="flex items-center space-x-2">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <Headphones className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold">Abrir Chamado</h1>
+                    <p className="text-muted-foreground">
+                      Relate seu problema e nossa equipe entrará em contato
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <ThemeToggle />
+            </div>
+          </div>
         </div>
 
-        <TicketFormHeader />
-
-        <div className="max-w-2xl mx-auto">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-[#003366]">Dados do Chamado</CardTitle>
-              <CardDescription>
-                Preencha todas as informações para que possamos ajudá-lo da melhor forma
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <PersonalInfoForm 
-                  formData={formData}
-                  onInputChange={handleInputChange}
-                />
-
-                <TicketDetailsForm 
-                  formData={formData}
-                  onInputChange={handleInputChange}
-                />
-
-                <CategoryPriorityForm 
-                  categories={categories}
-                  priorities={priorities}
-                  onSelectChange={handleSelectChange}
-                />
-
-                <FileUploadForm 
-                  files={files}
-                  onFileChange={handleFileChange}
-                />
-
-                <Button 
-                  type="submit" 
-                  className="w-full bg-[#f07c00] hover:bg-[#e56b00] text-white text-lg py-3"
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Criando Chamado...' : 'Abrir Chamado'}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+        {/* Main Content */}
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto">
+            <ModernTicketForm
+              formData={formData}
+              files={files}
+              isLoading={isLoading}
+              categories={categories}
+              priorities={priorities}
+              onInputChange={updateField}
+              onSelectChange={updateSelectField}
+              onFileChange={setFiles}
+              onSubmit={handleSubmit}
+            />
+          </div>
         </div>
+
+        <Footer />
       </div>
-    </div>
+    </ThemeProvider>
   );
 };
 

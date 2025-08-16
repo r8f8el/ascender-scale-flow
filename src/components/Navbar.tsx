@@ -14,15 +14,19 @@ const Navbar = () => {
   };
 
   const getLinkClasses = (path: string) => {
-    return `text-gray-700 hover:text-[#f07c00] px-3 py-2 text-sm font-medium transition-colors rounded-md ${location.pathname === path ? 'bg-gray-100 text-[#f07c00]' : ''}`;
+    return `text-foreground/80 hover:text-primary px-3 py-2 text-sm font-medium transition-colors rounded-md ${
+      location.pathname === path ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50'
+    }`;
   };
 
   const getMobileLinkClasses = (path: string) => {
-    return `text-gray-700 hover:text-[#f07c00] block px-3 py-2 text-base font-medium transition-colors rounded-md ${location.pathname === path ? 'bg-gray-100 text-[#f07c00]' : ''}`;
+    return `text-foreground/80 hover:text-primary block px-3 py-2 text-base font-medium transition-colors rounded-md ${
+      location.pathname === path ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50'
+    }`;
   };
 
   return (
-    <nav className="bg-white shadow-lg sticky top-0 z-50">
+    <nav className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm sticky top-0 z-50 border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
@@ -32,25 +36,25 @@ const Navbar = () => {
           </div>
 
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-1">
             <Link to="/" className={getLinkClasses('/')}>
               Início
             </Link>
-            <a href="#services" className="text-gray-700 hover:text-[#f07c00] px-3 py-2 text-sm font-medium transition-colors">
+            <a href="#services" className="text-foreground/80 hover:text-primary px-3 py-2 text-sm font-medium transition-colors hover:bg-accent/50 rounded-md">
               Serviços
             </a>
-            <a href="#about" className="text-gray-700 hover:text-[#f07c00] px-3 py-2 text-sm font-medium transition-colors">
+            <a href="#about" className="text-foreground/80 hover:text-primary px-3 py-2 text-sm font-medium transition-colors hover:bg-accent/50 rounded-md">
               Sobre
             </a>
             <Link to="/abrir-chamado" className={getLinkClasses('/abrir-chamado')}>
               Suporte
             </Link>
-            <a href="#contact" className="text-gray-700 hover:text-[#f07c00] px-3 py-2 text-sm font-medium transition-colors">
+            <a href="#contact" className="text-foreground/80 hover:text-primary px-3 py-2 text-sm font-medium transition-colors hover:bg-accent/50 rounded-md">
               Contato
             </a>
             <Link 
               to="/cliente/login" 
-              className="bg-blue hover:bg-blue/90 text-blue-foreground px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-md text-sm font-medium transition-colors ml-4"
             >
               Área do Cliente
             </Link>
@@ -61,11 +65,11 @@ const Navbar = () => {
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" onClick={toggleMobileMenu}>
-                  <Menu className="h-5 w-5 text-gray-700 hover:text-[#f07c00]" />
+                  <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
               <SheetContent side="bottom">
-                <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
+                <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-background border-t">
                   <Link 
                     to="/" 
                     className={getMobileLinkClasses('/')}
@@ -75,14 +79,14 @@ const Navbar = () => {
                   </Link>
                   <a 
                     href="#services" 
-                    className="text-gray-700 hover:text-[#f07c00] block px-3 py-2 text-base font-medium transition-colors"
+                    className="text-foreground/80 hover:text-primary block px-3 py-2 text-base font-medium transition-colors hover:bg-accent/50 rounded-md"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Serviços
                   </a>
                   <a 
                     href="#about" 
-                    className="text-gray-700 hover:text-[#f07c00] block px-3 py-2 text-base font-medium transition-colors"
+                    className="text-foreground/80 hover:text-primary block px-3 py-2 text-base font-medium transition-colors hover:bg-accent/50 rounded-md"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Sobre
@@ -96,14 +100,14 @@ const Navbar = () => {
                   </Link>
                   <a 
                     href="#contact" 
-                    className="text-gray-700 hover:text-[#f07c00] block px-3 py-2 text-base font-medium transition-colors"
+                    className="text-foreground/80 hover:text-primary block px-3 py-2 text-base font-medium transition-colors hover:bg-accent/50 rounded-md"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Contato
                   </a>
                   <Link 
                     to="/cliente/login" 
-                    className="bg-blue hover:bg-blue/90 text-blue-foreground block px-3 py-2 text-base font-medium transition-colors rounded-md"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground block px-3 py-2 text-base font-medium transition-colors rounded-md"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Área do Cliente
@@ -117,7 +121,7 @@ const Navbar = () => {
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
           <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
+            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-background border-t">
               <Link 
                 to="/" 
                 className={getMobileLinkClasses('/')}
@@ -127,14 +131,14 @@ const Navbar = () => {
               </Link>
               <a 
                 href="#services" 
-                className="text-gray-700 hover:text-[#f07c00] block px-3 py-2 text-base font-medium transition-colors"
+                className="text-foreground/80 hover:text-primary block px-3 py-2 text-base font-medium transition-colors hover:bg-accent/50 rounded-md"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Serviços
               </a>
               <a 
                 href="#about" 
-                className="text-gray-700 hover:text-[#f07c00] block px-3 py-2 text-base font-medium transition-colors"
+                className="text-foreground/80 hover:text-primary block px-3 py-2 text-base font-medium transition-colors hover:bg-accent/50 rounded-md"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Sobre
@@ -148,14 +152,14 @@ const Navbar = () => {
               </Link>
               <a 
                 href="#contact" 
-                className="text-gray-700 hover:text-[#f07c00] block px-3 py-2 text-base font-medium transition-colors"
+                className="text-foreground/80 hover:text-primary block px-3 py-2 text-base font-medium transition-colors hover:bg-accent/50 rounded-md"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Contato
               </a>
               <Link 
                 to="/cliente/login" 
-                className="bg-blue hover:bg-blue/90 text-blue-foreground block px-3 py-2 text-base font-medium transition-colors rounded-md"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground block px-3 py-2 text-base font-medium transition-colors rounded-md"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Área do Cliente
