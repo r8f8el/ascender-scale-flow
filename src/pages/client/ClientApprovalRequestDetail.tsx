@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -7,13 +6,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { ArrowLeft, Download, Check, X, Edit, FileText, User, Calendar, Clock } from 'lucide-react';
+import { ArrowLeft, Download, FileText, User, Calendar, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { Solicitacao } from '@/types/aprovacoes';
+import { SecureApprovalActions } from '@/components/aprovacoes/SecureApprovalActions';
+import { useRateLimit } from '@/hooks/useRateLimit';
 
 const statusConfig = {
   'Em Elaboração': { label: 'Em Elaboração', variant: 'secondary' as const },
@@ -28,9 +27,7 @@ const ClientApprovalRequestDetail = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [comments, setComments] = useState('');
-  const [showCommentsField, setShowCommentsField] = useState(false);
-  const [actionType, setActionType] = useState<'approve' | 'reject' | 'request_adjustment' | null>(null);
+  const { checkRateLimit } = useRateLimit();
 
   // Fetch solicitacao details
   const { data: solicitacao, isLoading } = useQuery({
@@ -167,9 +164,6 @@ const ClientApprovalRequestDetail = () => {
     },
     onSuccess: () => {
       toast.success('Ação processada com sucesso!');
-      setComments('');
-      setShowCommentsField(false);
-      setActionType(null);
       queryClient.invalidateQueries({ queryKey: ['solicitacao-detail', id] });
       queryClient.invalidateQueries({ queryKey: ['historico-aprovacao', id] });
       queryClient.invalidateQueries({ queryKey: ['solicitacoes-pendentes'] });
@@ -179,31 +173,29 @@ const ClientApprovalRequestDetail = () => {
     },
   });
 
-  const handleAction = (action: 'approve' | 'reject' | 'request_adjustment') => {
-    if (action === 'reject' || action === 'request_adjustment') {
-      setActionType(action);
-      setShowCommentsField(true);
-    } else {
-      processApprovalMutation.mutate({ action });
-    }
+  const handleApprove = async (comments?: string) => {
+    processApprovalMutation.mutate({ action: 'approve', comments });
   };
 
-  const handleSubmitWithComments = () => {
-    if (!actionType) return;
-    
-    if ((actionType === 'reject' || actionType === 'request_adjustment') && !comments.trim()) {
-      toast.error('Comentários são obrigatórios para esta ação');
-      return;
-    }
+  const handleReject = async (comments: string) => {
+    processApprovalMutation.mutate({ action: 'reject', comments });
+  };
 
-    processApprovalMutation.mutate({ 
-      action: actionType, 
-      comments: comments.trim() || undefined 
-    });
+  const handleRequestAdjustment = async (comments: string) => {
+    processApprovalMutation.mutate({ action: 'request_adjustment', comments });
   };
 
   const downloadAttachment = async (attachment: any) => {
     try {
+      // Check rate limit for downloads
+      const allowed = await checkRateLimit({
+        action: 'file_download',
+        maxAttempts: 50,
+        windowMinutes: 60
+      });
+
+      if (!allowed) return;
+
       window.open(attachment.url_arquivo, '_blank');
     } catch (error: any) {
       toast.error('Erro ao abrir arquivo: ' + error.message);
@@ -317,80 +309,14 @@ const ClientApprovalRequestDetail = () => {
             </Card>
           )}
 
-          {/* Approval Actions */}
-          {canApprove && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Ações de Aprovação</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {!showCommentsField ? (
-                  <div className="flex space-x-3">
-                    <Button
-                      onClick={() => handleAction('approve')}
-                      disabled={processApprovalMutation.isPending}
-                    >
-                      <Check className="h-4 w-4 mr-2" />
-                      Aprovar
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => handleAction('reject')}
-                      disabled={processApprovalMutation.isPending}
-                    >
-                      <X className="h-4 w-4 mr-2" />
-                      Rejeitar
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => handleAction('request_adjustment')}
-                      disabled={processApprovalMutation.isPending}
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Solicitar Ajuste
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="comments">
-                        Comentários * 
-                        <span className="text-sm text-muted-foreground ml-2">
-                          (Obrigatório para {actionType === 'reject' ? 'rejeição' : 'solicitação de ajuste'})
-                        </span>
-                      </Label>
-                      <Textarea
-                        id="comments"
-                        value={comments}
-                        onChange={(e) => setComments(e.target.value)}
-                        placeholder="Digite seus comentários..."
-                        rows={4}
-                      />
-                    </div>
-                    <div className="flex space-x-3">
-                      <Button
-                        onClick={handleSubmitWithComments}
-                        disabled={processApprovalMutation.isPending}
-                      >
-                        Confirmar
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setShowCommentsField(false);
-                          setActionType(null);
-                          setComments('');
-                        }}
-                        disabled={processApprovalMutation.isPending}
-                      >
-                        Cancelar
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
+          {/* Secure Approval Actions */}
+          <SecureApprovalActions
+            onApprove={handleApprove}
+            onReject={handleReject}
+            onRequestAdjustment={handleRequestAdjustment}
+            isLoading={processApprovalMutation.isPending}
+            canApprove={canApprove}
+          />
         </div>
 
         {/* Sidebar */}

@@ -1975,6 +1975,33 @@ export type Database = {
           },
         ]
       }
+      rate_limits: {
+        Row: {
+          action_type: string
+          attempts: number | null
+          created_at: string | null
+          id: string
+          last_attempt: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          attempts?: number | null
+          created_at?: string | null
+          id?: string
+          last_attempt?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          attempts?: number | null
+          created_at?: string | null
+          id?: string
+          last_attempt?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       requests: {
         Row: {
           created_at: string
@@ -2668,6 +2695,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_rate_limit: {
+        Args: {
+          p_action_type: string
+          p_max_attempts?: number
+          p_user_id: string
+          p_window_minutes?: number
+        }
+        Returns: boolean
+      }
       generate_period_name: {
         Args: { period_type: string; start_date: string }
         Returns: string
