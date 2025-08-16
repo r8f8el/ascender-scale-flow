@@ -69,8 +69,8 @@ export const useInviteSignup = (token: string | null, inviteId: string | null) =
       setLoading(true);
       setError(null);
 
-      // Busca dados do convite usando supabase.from() com tipo any para evitar erros de TypeScript
-      let query = (supabase as any)
+      // Busca dados do convite
+      let query = supabase
         .from('team_invitations')
         .select(`
           id,
@@ -144,6 +144,19 @@ export const useInviteSignup = (token: string | null, inviteId: string | null) =
     }
 
     try {
+      // Busca um nível hierárquico padrão (nível mais baixo disponível)
+      const { data: hierarchyLevels, error: hierarchyError } = await supabase
+        .from('hierarchy_levels')
+        .select('id, level')
+        .order('level', { ascending: true })
+        .limit(1);
+
+      const defaultHierarchyLevelId = hierarchyLevels?.[0]?.id;
+
+      if (!defaultHierarchyLevelId) {
+        console.warn('Nenhum nível hierárquico encontrado, continuando sem ele');
+      }
+
       // Cria a conta do usuário no Supabase Auth
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: signupData.email,
@@ -172,8 +185,8 @@ export const useInviteSignup = (token: string | null, inviteId: string | null) =
         return { success: false, error: 'Erro ao criar usuário' };
       }
 
-      // Atualiza o status do convite para aceito usando tipo any
-      const { error: updateError } = await (supabase as any)
+      // Atualiza o status do convite para aceito
+      const { error: updateError } = await supabase
         .from('team_invitations')
         .update({ 
           status: 'accepted',
@@ -194,7 +207,8 @@ export const useInviteSignup = (token: string | null, inviteId: string | null) =
           name: signupData.name,
           email: signupData.email,
           company: companyData?.company || companyData?.name,
-          is_primary_contact: false
+          is_primary_contact: false,
+          hierarchy_level_id: defaultHierarchyLevelId
         });
 
       if (profileError) {
@@ -203,17 +217,24 @@ export const useInviteSignup = (token: string | null, inviteId: string | null) =
       }
 
       // Adiciona o usuário à equipe da empresa usando team_members
+      const teamMemberData: any = {
+        user_id: authData.user.id,
+        company_id: inviteData.company_id,
+        status: 'active',
+        invited_by: inviteData.inviter_name,
+        joined_at: new Date().toISOString(),
+        invited_email: signupData.email,
+        name: signupData.name
+      };
+
+      // Adiciona hierarchy_level_id apenas se encontrado
+      if (defaultHierarchyLevelId) {
+        teamMemberData.hierarchy_level_id = defaultHierarchyLevelId;
+      }
+
       const { error: teamError } = await supabase
         .from('team_members')
-        .insert({
-          user_id: authData.user.id,
-          company_id: inviteData.company_id,
-          status: 'active',
-          invited_by: inviteData.inviter_name,
-          joined_at: new Date().toISOString(),
-          invited_email: signupData.email,
-          name: signupData.name
-        });
+        .insert(teamMemberData);
 
       if (teamError) {
         console.error('Erro ao adicionar à equipe:', teamError);
