@@ -32,7 +32,7 @@ export const SeletorAprovadoresEquipe: React.FC<SeletorAprovadoresEquipeProps> =
 
   // Filtrar apenas membros que podem aprovar (excluindo o próprio usuário)
   const aprovadoresDisponiveis = teamMembers.filter(member => 
-    member.hierarchy_levels?.can_approve && member.id !== user?.id
+    member.hierarchy_levels?.can_approve && member.user_id !== user?.id
   );
 
   const adicionarAprovador = () => {
@@ -47,7 +47,7 @@ export const SeletorAprovadoresEquipe: React.FC<SeletorAprovadoresEquipeProps> =
     const novoAprovador: Aprovador = {
       id: membro.id,
       name: membro.name,
-      email: membro.email,
+      email: membro.invited_email,
       cargo: membro.hierarchy_levels.name,
       nivel: membro.hierarchy_levels.level
     };
@@ -89,7 +89,7 @@ export const SeletorAprovadoresEquipe: React.FC<SeletorAprovadoresEquipeProps> =
                   <div className="flex flex-col">
                     <span className="font-medium">{membro.name}</span>
                     <span className="text-xs text-muted-foreground">
-                      {membro.hierarchy_levels?.name} - {membro.email}
+                      {membro.hierarchy_levels?.name} - {membro.invited_email}
                     </span>
                   </div>
                 </SelectItem>
