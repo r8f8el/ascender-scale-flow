@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCreateSolicitacao } from '@/hooks/useSolicitacoes';
 import { FileUploadSolicitacao } from './FileUploadSolicitacao';
-import { SeletorAprovadores } from './SeletorAprovadores';
+import { SeletorAprovadoresEquipe } from './SeletorAprovadoresEquipe';
 import { Loader2 } from 'lucide-react';
 
 interface CriarSolicitacaoDialogProps {
@@ -147,7 +147,7 @@ export const CriarSolicitacaoDialog: React.FC<CriarSolicitacaoDialogProps> = ({
             />
           </div>
 
-          <SeletorAprovadores
+          <SeletorAprovadoresEquipe
             aprovadoresSelecionados={aprovadores}
             onAprovadoresChange={handleAprovadoresChange}
           />
