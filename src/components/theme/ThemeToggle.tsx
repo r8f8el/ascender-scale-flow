@@ -5,7 +5,6 @@ import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 
 export const ThemeToggle: React.FC = () => {
-  const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
 
   // useEffect only runs on the client, so now we can safely show the UI
@@ -13,8 +12,32 @@ export const ThemeToggle: React.FC = () => {
     setMounted(true);
   }, []);
 
+  // Don't render anything on the server or before mounting
   if (!mounted) {
-    // Return a placeholder button that matches the size to prevent layout shift
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-9 w-9 p-0"
+        disabled
+      >
+        <Sun className="h-4 w-4" />
+        <span className="sr-only">Toggle theme</span>
+      </Button>
+    );
+  }
+
+  // Wrap useTheme in a try-catch and provide fallback
+  let theme: string | undefined;
+  let setTheme: ((theme: string) => void) | undefined;
+
+  try {
+    const themeHook = useTheme();
+    theme = themeHook.theme;
+    setTheme = themeHook.setTheme;
+  } catch (error) {
+    console.error('Theme context not available:', error);
+    // Return a disabled button if theme context is not available
     return (
       <Button
         variant="outline"
@@ -29,7 +52,9 @@ export const ThemeToggle: React.FC = () => {
   }
 
   const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
+    if (setTheme) {
+      setTheme(theme === 'dark' ? 'light' : 'dark');
+    }
   };
 
   return (

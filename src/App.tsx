@@ -42,48 +42,77 @@ const NavigationTracker = () => {
   return null;
 };
 
+// Error boundary for theme-related errors
+class ThemeErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('Theme error caught by boundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.children;
+    }
+
+    return this.props.children;
+  }
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <BrowserRouter>
-          <NavigationTracker />
-          <AuthProvider>
-            <AdminAuthProvider>
-              <div className="min-h-screen">
-                <Routes>
-                  {/* Public Routes */}
-                  <Route path="/" element={<Index />} />
-                  <Route path="/cliente/login" element={<ClientLogin />} />
-                  <Route path="/admin/login" element={<AdminLogin />} />
-                  
-                  {/* Public ticket route */}
-                  <Route path="/abrir-chamado" element={<AbrirChamado />} />
-                  
-                  {/* Client Protected Routes */}
-                  <Route path="/cliente/*" element={
-                    <ProtectedRoute>
-                      <ClientArea />
-                    </ProtectedRoute>
-                  } />
-                  
-                  {/* Admin Protected Routes */}
-                  <Route path="/admin/*" element={
-                    <AdminProtectedRoute>
-                      <AdminArea />
-                    </AdminProtectedRoute>
-                  } />
-                  
-                  {/* Fallback */}
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </div>
-              <Toaster />
-              <Sonner />
-            </AdminAuthProvider>
-          </AuthProvider>
-        </BrowserRouter>
-      </ThemeProvider>
+      <ThemeErrorBoundary>
+        <ThemeProvider>
+          <BrowserRouter>
+            <NavigationTracker />
+            <AuthProvider>
+              <AdminAuthProvider>
+                <div className="min-h-screen">
+                  <Routes>
+                    {/* Public Routes */}
+                    <Route path="/" element={<Index />} />
+                    <Route path="/cliente/login" element={<ClientLogin />} />
+                    <Route path="/admin/login" element={<AdminLogin />} />
+                    
+                    {/* Public ticket route */}
+                    <Route path="/abrir-chamado" element={<AbrirChamado />} />
+                    
+                    {/* Client Protected Routes */}
+                    <Route path="/cliente/*" element={
+                      <ProtectedRoute>
+                        <ClientArea />
+                      </ProtectedRoute>
+                    } />
+                    
+                    {/* Admin Protected Routes */}
+                    <Route path="/admin/*" element={
+                      <AdminProtectedRoute>
+                        <AdminArea />
+                      </AdminProtectedRoute>
+                    } />
+                    
+                    {/* Fallback */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </div>
+                <Toaster />
+                <Sonner />
+              </AdminAuthProvider>
+            </AuthProvider>
+          </BrowserRouter>
+        </ThemeProvider>
+      </ThemeErrorBoundary>
     </QueryClientProvider>
   );
 }
