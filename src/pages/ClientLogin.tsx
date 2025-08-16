@@ -3,22 +3,21 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSecurityContext } from '@/components/security/SecureAuthWrapper';
-import { SecureForm } from '@/components/security/SecureForm';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Mail, Key } from 'lucide-react';
 
 const ClientLogin: React.FC = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login, loading } = useAuth();
   const { logSecurityEvent } = useSecurityContext();
   const navigate = useNavigate();
 
-  const handleSubmit = async (data: any) => {
-    const { email, password } = data;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
     setIsLoading(true);
     try {
@@ -41,62 +40,99 @@ const ClientLogin: React.FC = () => {
   };
 
   return (
-    <div className="container relative flex h-screen flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
-      <div className="relative hidden h-full flex-col bg-muted p-10 text-white lg:flex dark:border-r">
-        <div className="absolute inset-0 bg-zinc-900" />
-        <div className="relative z-20 flex items-center text-lg font-medium">
-          Ascalate FP&A
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="flex justify-center mb-6">
+          <div className="flex items-center space-x-2">
+            <div className="flex">
+              <div className="w-4 h-4 bg-blue-600 rounded-full"></div>
+              <div className="w-4 h-4 bg-blue-500 rounded-full -ml-2"></div>
+              <div className="w-4 h-4 bg-blue-700 rounded-full -ml-2"></div>
+            </div>
+            <span className="text-2xl font-bold text-gray-900">Ascalate</span>
+          </div>
         </div>
-        <div className="relative z-20 mt-auto">
-          <blockquote className="space-y-2">
-            <p className="text-lg">
-              &ldquo;Gerencie suas finanças com facilidade e segurança.&rdquo;
-            </p>
-          </blockquote>
+        
+        <h2 className="text-center text-2xl font-bold text-gray-900 mb-2">
+          Área do Cliente
+        </h2>
+        
+        <div className="flex items-center justify-center text-sm text-blue-600 mb-8">
+          <div className="w-4 h-4 border border-blue-600 rounded-full flex items-center justify-center mr-2">
+            <div className="w-1 h-1 bg-blue-600 rounded-full"></div>
+          </div>
+          Gerencie suas finanças com facilidade e segurança
         </div>
       </div>
-      <div className="lg:p-8">
-        <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
-          <div className="flex flex-col space-y-2 text-center">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Acessar conta
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Entre com seu email e senha
+
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-6 shadow-sm rounded-lg border">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <Label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                Email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="seuemail@exemplo.com"
+                className="w-full"
+                required
+                disabled={isLoading || loading}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                Senha
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="........"
+                className="w-full"
+                required
+                disabled={isLoading || loading}
+              />
+            </div>
+
+            <div>
+              <Button 
+                type="submit" 
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-base font-medium"
+                disabled={isLoading || loading}
+              >
+                {isLoading || loading ? 'Entrando...' : 'Entrar'}
+              </Button>
+            </div>
+            
+            <div className="text-center">
+              <button
+                type="button"
+                className="text-sm text-gray-600 hover:text-gray-900 border border-gray-300 px-4 py-2 rounded-md w-full"
+              >
+                Esqueci minha senha
+              </button>
+            </div>
+          </form>
+          
+          <div className="mt-8 text-center text-sm text-gray-600">
+            <p>Entre com suas credenciais de cliente.</p>
+            <p>Acesse sua área personalizada de gestão financeira.</p>
+          </div>
+          
+          <div className="mt-6 text-center">
+            <p className="text-sm text-blue-600">
+              Não tem uma conta? <a href="#" className="underline">Cadastre-se aqui</a>
             </p>
           </div>
-          <div className="grid gap-6">
-            <SecureForm onSubmit={handleSubmit} formType="login">
-              <div className="grid gap-2">
-                <div className="grid gap-1">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    placeholder="seuemail@exemplo.com"
-                    type="email"
-                    autoCapitalize="none"
-                    autoComplete="email"
-                    autoCorrect="off"
-                    disabled={isLoading || loading}
-                  />
-                </div>
-                <div className="grid gap-1">
-                  <Label htmlFor="password">Senha</Label>
-                  <Input
-                    id="password"
-                    name="password"
-                    placeholder="Senha"
-                    type="password"
-                    autoComplete="current-password"
-                    disabled={isLoading || loading}
-                  />
-                </div>
-                <Button disabled={isLoading || loading} type="submit" className="w-full">
-                  {isLoading || loading ? 'Entrando...' : 'Entrar'}
-                </Button>
-              </div>
-            </SecureForm>
+          
+          <div className="mt-8 text-center text-xs text-gray-500">
+            Área exclusiva para clientes. Suas informações estão protegidas e seguras.
           </div>
         </div>
       </div>
