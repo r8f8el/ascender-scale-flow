@@ -108,7 +108,13 @@ export const useInviteSignup = (token: string | null, inviteId: string | null) =
         return;
       }
 
-      setInviteData(invite);
+      // Cast the status to the correct type
+      const inviteDataWithCorrectTypes: InviteData = {
+        ...invite,
+        status: invite.status as 'pending' | 'accepted' | 'expired'
+      };
+
+      setInviteData(inviteDataWithCorrectTypes);
 
       // Busca dados da empresa usando client_profiles
       if (invite.company_id) {
