@@ -317,6 +317,7 @@ export type Database = {
           company: string | null
           created_at: string
           email: string
+          hierarchy_level_id: string | null
           id: string
           is_primary_contact: boolean | null
           name: string
@@ -329,6 +330,7 @@ export type Database = {
           company?: string | null
           created_at?: string
           email: string
+          hierarchy_level_id?: string | null
           id: string
           is_primary_contact?: boolean | null
           name: string
@@ -341,6 +343,7 @@ export type Database = {
           company?: string | null
           created_at?: string
           email?: string
+          hierarchy_level_id?: string | null
           id?: string
           is_primary_contact?: boolean | null
           name?: string
@@ -353,6 +356,13 @@ export type Database = {
             columns: ["cargo_id"]
             isOneToOne: false
             referencedRelation: "cargos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_profiles_hierarchy_level_id_fkey"
+            columns: ["hierarchy_level_id"]
+            isOneToOne: false
+            referencedRelation: "hierarchy_levels"
             referencedColumns: ["id"]
           },
         ]
@@ -1447,6 +1457,42 @@ export type Database = {
           },
         ]
       }
+      hierarchy_levels: {
+        Row: {
+          can_approve: boolean | null
+          can_invite_members: boolean | null
+          can_manage_permissions: boolean | null
+          created_at: string | null
+          description: string | null
+          id: string
+          level: number
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          can_approve?: boolean | null
+          can_invite_members?: boolean | null
+          can_manage_permissions?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          level: number
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          can_approve?: boolean | null
+          can_invite_members?: boolean | null
+          can_manage_permissions?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          level?: number
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       historico_aprovacao: {
         Row: {
           acao: string
@@ -2247,6 +2293,66 @@ export type Database = {
           },
         ]
       }
+      team_members: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          hierarchy_level_id: string
+          id: string
+          invited_at: string | null
+          invited_by: string
+          invited_email: string
+          joined_at: string | null
+          name: string
+          status: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          hierarchy_level_id: string
+          id?: string
+          invited_at?: string | null
+          invited_by: string
+          invited_email: string
+          joined_at?: string | null
+          name: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          hierarchy_level_id?: string
+          id?: string
+          invited_at?: string | null
+          invited_by?: string
+          invited_email?: string
+          joined_at?: string | null
+          name?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_members_hierarchy_level_id_fkey"
+            columns: ["hierarchy_level_id"]
+            isOneToOne: false
+            referencedRelation: "hierarchy_levels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ticket_attachments: {
         Row: {
           content_type: string | null
@@ -2523,7 +2629,9 @@ export type Database = {
         Returns: string
       }
       invite_team_member: {
-        Args: { p_company_id: string; p_email: string }
+        Args:
+          | { p_company_id: string; p_email: string }
+          | { p_email: string; p_hierarchy_level_id: string; p_name: string }
         Returns: string
       }
       is_admin_user: {
