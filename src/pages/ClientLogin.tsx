@@ -16,7 +16,7 @@ const ClientLogin = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const { loginClient } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,7 +31,7 @@ const ClientLogin = () => {
     }
 
     try {
-      const result = await loginClient(email, password);
+      const result = await login(email, password);
       
       if (result?.error) {
         setError('Email ou senha incorretos');
