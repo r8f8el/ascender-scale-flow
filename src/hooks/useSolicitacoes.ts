@@ -1,7 +1,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Solicitacao } from '@/types/aprovacoes';
+import { Solicitacao, Anexo, HistoricoAprovacao } from '@/types/aprovacoes';
 import { toast } from 'sonner';
 
 interface CreateSolicitacaoParams {
@@ -13,6 +13,21 @@ interface CreateSolicitacaoParams {
     email: string;
     nivel: number;
   }>;
+}
+
+interface UpdateSolicitacaoParams {
+  id: string;
+  status?: string;
+  aprovador_atual_id?: string;
+  etapa_atual?: number;
+}
+
+interface CreateHistoricoParams {
+  solicitacao_id: string;
+  usuario_id: string;
+  nome_usuario: string;
+  acao: 'Criação' | 'Aprovação' | 'Rejeição' | 'Solicitação de Ajuste';
+  comentario?: string;
 }
 
 export const useSolicitacoes = (userId?: string) => {
@@ -107,6 +122,68 @@ export const useSolicitacaoPendentes = (userId?: string) => {
   });
 };
 
+export const useAnexos = (solicitacaoId?: string) => {
+  return useQuery({
+    queryKey: ['anexos', solicitacaoId],
+    queryFn: async () => {
+      if (!solicitacaoId) {
+        return [];
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('anexos')
+          .select('*')
+          .eq('solicitacao_id', solicitacaoId)
+          .order('data_upload', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching anexos:', error);
+          return [];
+        }
+
+        return (data || []) as Anexo[];
+      } catch (error) {
+        console.error('Error in anexos query:', error);
+        return [];
+      }
+    },
+    enabled: !!solicitacaoId,
+    staleTime: 1000 * 60 * 5,
+  });
+};
+
+export const useHistoricoAprovacao = (solicitacaoId?: string) => {
+  return useQuery({
+    queryKey: ['historico-aprovacao', solicitacaoId],
+    queryFn: async () => {
+      if (!solicitacaoId) {
+        return [];
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('historico_aprovacao')
+          .select('*')
+          .eq('solicitacao_id', solicitacaoId)
+          .order('data_acao', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching historico:', error);
+          return [];
+        }
+
+        return (data || []) as HistoricoAprovacao[];
+      } catch (error) {
+        console.error('Error in historico query:', error);
+        return [];
+      }
+    },
+    enabled: !!solicitacaoId,
+    staleTime: 1000 * 60 * 5,
+  });
+};
+
 export const useCreateSolicitacao = () => {
   const queryClient = useQueryClient();
 
@@ -171,6 +248,80 @@ export const useCreateSolicitacao = () => {
     onError: (error: any) => {
       console.error('Mutation error:', error);
       toast.error('Erro ao criar solicitação: ' + (error.message || 'Erro desconhecido'));
+    },
+  });
+};
+
+export const useUpdateSolicitacao = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: UpdateSolicitacaoParams) => {
+      try {
+        const { data, error } = await supabase
+          .from('solicitacoes')
+          .update({
+            ...updates,
+            data_ultima_modificacao: new Date().toISOString()
+          })
+          .eq('id', id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error updating solicitacao:', error);
+          throw error;
+        }
+
+        return data;
+      } catch (error) {
+        console.error('Error in updateSolicitacao mutation:', error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['solicitacoes'] });
+      queryClient.invalidateQueries({ queryKey: ['solicitacoes-pendentes'] });
+    },
+    onError: (error: any) => {
+      console.error('Update mutation error:', error);
+      toast.error('Erro ao atualizar solicitação: ' + (error.message || 'Erro desconhecido'));
+    },
+  });
+};
+
+export const useCreateHistorico = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: CreateHistoricoParams) => {
+      try {
+        const { data, error } = await supabase
+          .from('historico_aprovacao')
+          .insert([{
+            ...params,
+            data_acao: new Date().toISOString()
+          }])
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error creating historico:', error);
+          throw error;
+        }
+
+        return data;
+      } catch (error) {
+        console.error('Error in createHistorico mutation:', error);
+        throw error;
+      }
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['historico-aprovacao', variables.solicitacao_id] });
+    },
+    onError: (error: any) => {
+      console.error('Historico mutation error:', error);
+      toast.error('Erro ao criar histórico: ' + (error.message || 'Erro desconhecido'));
     },
   });
 };
