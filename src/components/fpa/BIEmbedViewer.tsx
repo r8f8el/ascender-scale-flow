@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -14,7 +13,7 @@ interface BIEmbedViewerProps {
   category?: string;
 }
 
-export const BIEmbedViewer: React.FC<BIEmbedViewerProps> = ({
+const BIEmbedViewer: React.FC<BIEmbedViewerProps> = ({
   title,
   description,
   embedUrl,
@@ -183,3 +182,5 @@ export const BIEmbedViewer: React.FC<BIEmbedViewerProps> = ({
     </Card>
   );
 };
+
+export default BIEmbedViewer;

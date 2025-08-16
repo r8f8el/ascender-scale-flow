@@ -43,6 +43,27 @@ export const useSecureValidation = () => {
     return length >= min && length <= max;
   };
 
+  const validateInput = (value: string, type: string): string | null => {
+    if (typeof value !== 'string') return null;
+    
+    // Sanitize first
+    const sanitized = sanitizeInput(value);
+    
+    // Validate based on type
+    switch (type) {
+      case 'email':
+        return validateEmail(sanitized) ? sanitized : null;
+      case 'password':
+        return validateLength(sanitized, 6, 128) ? sanitized : null;
+      case 'name':
+        return validateLength(sanitized, 1, 100) ? sanitized : null;
+      case 'csrf_token':
+        return sanitized; // CSRF tokens are validated separately
+      default:
+        return sanitized.length <= 1000 ? sanitized : null; // General max length
+    }
+  };
+
   const validateForm = (
     data: { [key: string]: any },
     rules: ValidationRule[],
@@ -110,6 +131,7 @@ export const useSecureValidation = () => {
     validateEmail,
     validateRequired,
     validateLength,
+    validateInput,
     sanitizeInput,
     clearErrors
   };

@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -13,55 +13,44 @@ interface RateLimitOptions {
 
 export const useAuthRateLimit = () => {
   const [isBlocked, setIsBlocked] = useState(false);
-  const [checking, setChecking] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
 
-  const checkRateLimit = useCallback(async ({
-    identifier,
-    attemptType,
-    maxAttempts = 5,
-    windowMinutes = 15,
-    blockMinutes = 30
-  }: RateLimitOptions): Promise<boolean> => {
-    setChecking(true);
-    
+  const checkRateLimit = async (options: RateLimitOptions): Promise<boolean> => {
     try {
+      setIsChecking(true);
+      
       const { data, error } = await supabase.rpc('check_auth_rate_limit', {
-        p_identifier: identifier.toLowerCase(),
-        p_attempt_type: attemptType,
-        p_max_attempts: maxAttempts,
-        p_window_minutes: windowMinutes,
-        p_block_minutes: blockMinutes
+        p_identifier: options.identifier,
+        p_attempt_type: options.attemptType,
+        p_max_attempts: options.maxAttempts || 5,
+        p_window_minutes: options.windowMinutes || 15,
+        p_block_minutes: options.blockMinutes || 30
       });
 
       if (error) {
-        console.error('Rate limit check error:', error);
-        return true; // Allow on error to prevent lockout
+        console.error('Error checking rate limit:', error);
+        return true; // Allow on error to prevent blocking legitimate users
       }
 
-      const allowed = data as boolean;
+      const allowed = Boolean(data);
+      setIsBlocked(!allowed);
       
       if (!allowed) {
-        setIsBlocked(true);
-        toast.error(`Muitas tentativas de ${attemptType}. Tente novamente em ${blockMinutes} minutos.`);
-        
-        // Reset blocked status after block period
-        setTimeout(() => {
-          setIsBlocked(false);
-        }, blockMinutes * 60 * 1000);
+        toast.error('Muitas tentativas de login. Tente novamente em alguns minutos.');
       }
 
       return allowed;
     } catch (error) {
-      console.error('Rate limit check failed:', error);
+      console.error('Exception in checkRateLimit:', error);
       return true; // Allow on error
     } finally {
-      setChecking(false);
+      setIsChecking(false);
     }
-  }, []);
+  };
 
   return {
     checkRateLimit,
     isBlocked,
-    checking
+    isChecking
   };
 };
