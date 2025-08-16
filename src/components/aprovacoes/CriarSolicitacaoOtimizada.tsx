@@ -16,8 +16,11 @@ interface Aprovador {
   id: string;
   name: string;
   email: string;
-  cargo: string;
-  nivel: number;
+  hierarchy_level: {
+    name: string;
+    level: number;
+    can_approve: boolean;
+  };
 }
 
 interface CriarSolicitacaoOtimizadaProps {
@@ -106,7 +109,7 @@ export const CriarSolicitacaoOtimizada: React.FC<CriarSolicitacaoOtimizadaProps>
           id: a.id,
           name: a.name,
           email: a.email,
-          nivel: a.nivel
+          nivel: a.hierarchy_level.level
         }))
       });
 

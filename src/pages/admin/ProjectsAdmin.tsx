@@ -55,7 +55,7 @@ const ProjectsAdmin = () => {
 
   // Fetch tasks with optimized caching
   const { 
-    data: tasks = [], 
+    data: tasksData = [], 
     isLoading: tasksLoading,
     refetch: refetchTasks 
   } = useOptimizedQuery({
@@ -67,10 +67,21 @@ const ProjectsAdmin = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as Task[];
+      // Map the data to match our Task interface
+      return data.map(task => ({
+        id: task.id,
+        project_id: task.project_id,
+        title: task.title || task.name || 'Untitled Task',
+        status: task.status === 'completed' ? 'completed' : 
+               task.status === 'in_progress' ? 'in_progress' : 'todo',
+        assigned_to: task.assigned_to,
+        created_at: task.created_at
+      })) as Task[];
     },
     cacheTTL: 2
   });
+
+  const tasks = tasksData as Task[];
 
   // Filter projects based on search and status
   const filteredProjects = Array.isArray(projects) ? projects.filter(project => {
@@ -85,8 +96,8 @@ const ProjectsAdmin = () => {
     total: Array.isArray(projects) ? projects.length : 0,
     active: Array.isArray(projects) ? projects.filter(p => p.status === 'active').length : 0,
     completed: Array.isArray(projects) ? projects.filter(p => p.status === 'completed').length : 0,
-    totalTasks: Array.isArray(tasks) ? tasks.reduce((acc, task) => acc + 1, 0) : 0,
-    completedTasks: Array.isArray(tasks) ? tasks.length : 0,
+    totalTasks: Array.isArray(tasks) ? tasks.length : 0,
+    completedTasks: Array.isArray(tasks) ? tasks.filter(t => t.status === 'completed').length : 0,
     completionRate: Array.isArray(tasks) && tasks.length > 0 
       ? Math.round((tasks.filter(t => t.status === 'completed').length / tasks.length) * 100) 
       : 0
@@ -96,19 +107,19 @@ const ProjectsAdmin = () => {
   const getProjectStats = () => {
     if (!Array.isArray(projects)) return { byStatus: {}, byMonth: {} };
     
-    const byStatus = Array.isArray(projects) ? projects.reduce((acc, project) => {
+    const byStatus = projects.reduce((acc, project) => {
       acc[project.status] = (acc[project.status] || 0) + 1;
       return acc;
-    }, {} as Record<string, number>) : {};
+    }, {} as Record<string, number>);
 
-    const byMonth = Array.isArray(projects) ? projects.reduce((acc, project) => {
+    const byMonth = projects.reduce((acc, project) => {
       const month = new Date(project.created_at).toLocaleDateString('pt-BR', { 
         month: 'short', 
         year: 'numeric' 
       });
       acc[month] = (acc[month] || 0) + 1;
       return acc;
-    }, {} as Record<string, number>) : {};
+    }, {} as Record<string, number>);
 
     return { byStatus, byMonth };
   };
