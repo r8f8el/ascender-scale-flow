@@ -14,6 +14,7 @@ import AdminLogin from "@/pages/AdminLogin";
 import ClientArea from "@/pages/ClientArea";
 import AdminArea from "@/pages/admin/AdminArea";
 import AbrirChamado from "@/pages/AbrirChamado";
+import TeamInviteSignup from "@/pages/TeamInviteSignup";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminProtectedRoute from "@/components/AdminProtectedRoute";
 import { Toaster } from "@/components/ui/toaster";
@@ -57,6 +58,9 @@ function App() {
                 
                 {/* Public ticket route */}
                 <Route path="/abrir-chamado" element={<AbrirChamado />} />
+                
+                {/* Team invite signup route */}
+                <Route path="/convite/inscrever" element={<TeamInviteSignup />} />
                 
                 {/* Client Protected Routes */}
                 <Route path="/cliente/*" element={
