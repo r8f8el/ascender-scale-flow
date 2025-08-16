@@ -3,7 +3,6 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTicketForm } from '@/hooks/useTicketForm';
 import { ModernTicketForm } from '@/components/ticket/ModernTicketForm';
-import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -81,58 +80,56 @@ const AbrirChamado = () => {
   };
 
   return (
-    <ThemeProvider>
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        
-        {/* Header Section */}
-        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-background border-b">
-          <div className="container mx-auto px-4 py-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <Link to="/">
-                  <Button variant="ghost" size="sm">
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Voltar
-                  </Button>
-                </Link>
-                <div className="flex items-center space-x-2">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <Headphones className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold">Abrir Chamado</h1>
-                    <p className="text-muted-foreground">
-                      Relate seu problema e nossa equipe entrará em contato
-                    </p>
-                  </div>
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      
+      {/* Header Section */}
+      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-background border-b">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Link to="/">
+                <Button variant="ghost" size="sm">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Voltar
+                </Button>
+              </Link>
+              <div className="flex items-center space-x-2">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Headphones className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold">Abrir Chamado</h1>
+                  <p className="text-muted-foreground">
+                    Relate seu problema e nossa equipe entrará em contato
+                  </p>
                 </div>
               </div>
-              <ThemeToggle />
             </div>
+            <ThemeToggle />
           </div>
         </div>
-
-        {/* Main Content */}
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-4xl mx-auto">
-            <ModernTicketForm
-              formData={transformedFormData}
-              files={files}
-              isLoading={isLoading}
-              categories={categories}
-              priorities={priorities}
-              onInputChange={handleInputUpdate}
-              onSelectChange={handleSelectUpdate}
-              onFileChange={handleFilesUpdate}
-              onSubmit={onSubmit}
-            />
-          </div>
-        </div>
-
-        <Footer />
       </div>
-    </ThemeProvider>
+
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          <ModernTicketForm
+            formData={transformedFormData}
+            files={files}
+            isLoading={isLoading}
+            categories={categories}
+            priorities={priorities}
+            onInputChange={handleInputUpdate}
+            onSelectChange={handleSelectUpdate}
+            onFileChange={handleFilesUpdate}
+            onSubmit={onSubmit}
+          />
+        </div>
+      </div>
+
+      <Footer />
+    </div>
   );
 };
 

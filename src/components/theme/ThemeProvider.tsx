@@ -14,6 +14,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       enableSystem={false}
       themes={['light', 'dark']}
       storageKey="ascender-theme"
+      disableTransitionOnChange={false}
     >
       {children}
     </NextThemesProvider>
