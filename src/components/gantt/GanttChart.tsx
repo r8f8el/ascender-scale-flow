@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useGanttTasks, GanttTask } from '@/hooks/useGanttProjects';
+import { useGanttTasks, GanttTask } from '@/hooks/useGanttTasks';
 import { useCollaborators } from '@/hooks/useCollaborators';
 import { Calendar as CalendarIcon, Plus, BarChart3, List, Eye } from 'lucide-react';
 import { format, parseISO, addDays } from 'date-fns';
