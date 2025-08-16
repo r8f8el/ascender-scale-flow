@@ -1,112 +1,108 @@
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/toaster"
+import AppErrorBoundary from './components/AppErrorBoundary';
 
-import * as React from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "sonner";
+// Client Routes
+import ClientLogin from './pages/cliente/Login';
+import ClientDashboard from './pages/cliente/Dashboard';
+import ClientTickets from './pages/cliente/Tickets';
+import ClientNewTicket from './pages/cliente/NewTicket';
+import ClientProtectedRoute from './components/ProtectedRoute';
+import ClientDocumentUpload from './pages/cliente/DocumentUpload';
+import ClientDocumentList from './pages/cliente/DocumentList';
+import ClientDocumentView from './pages/cliente/DocumentView';
+import ClientDocumentEdit from './pages/cliente/DocumentEdit';
+import ClientDocumentSync from './components/client/ClientDocumentSync';
+import ClientApprovals from './pages/cliente/Approvals';
+import ClientApprovalHistory from './pages/cliente/ApprovalHistory';
+import ClientTeam from './pages/cliente/Team';
+import ClientInvite from './pages/cliente/Invite';
+import ClientAcceptInvite from './pages/cliente/AcceptInvite';
 
-// Import contexts with error handling
-import AuthProvider from "@/contexts/AuthContext";
-import AdminAuthProvider from "@/contexts/AdminAuthContext";
+// Admin Routes
+import AdminLogin from './pages/admin/Login';
+import AdminDashboard from './pages/admin/Dashboard';
+import AdminTickets from './pages/admin/Tickets';
+import AdminTicketDetails from './pages/admin/TicketDetails';
+import AdminProtectedRoute from './components/AdminProtectedRoute';
+import AdminUnauthorized from './pages/admin/Unauthorized';
+import AdminCollaborators from './pages/admin/Collaborators';
+import AdminGantt from './pages/admin/Gantt';
+import AdminSecurity from './pages/admin/Security';
 
-// Import theme components
-import { ThemeProvider } from "@/components/theme/ThemeProvider";
+// Auth Contexts
+import { AuthProvider } from './contexts/AuthContext';
+import { AdminAuthProvider } from './contexts/AdminAuthContext';
 
-// Import pages  
-import Index from "@/pages/Index";
-import ClientLogin from "@/pages/ClientLogin";
-import AdminLogin from "@/pages/AdminLogin";
-import ClientArea from "@/pages/ClientArea";
-import AdminArea from "@/pages/AdminArea";
-import AbrirChamado from "@/pages/AbrirChamado";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import AdminProtectedRoute from "@/components/AdminProtectedRoute";
+// Public Routes
+import LandingPage from './pages/LandingPage';
+import PricingPage from './pages/PricingPage';
+import NewsletterSignup from './pages/NewsletterSignup';
+import RequestFiles from './pages/RequestFiles';
+import NotFound from './pages/NotFound';
+import { SecurityProvider } from '@/contexts/SecurityContext';
 
-// Create a client
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 10, // 10 minutes
-    },
-  },
-});
-
-// Simple error boundary component
-const AppErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [hasError, setHasError] = React.useState(false);
-
-  if (hasError) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Something went wrong</h1>
-          <button 
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Reload Page
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  try {
-    return <>{children}</>;
-  } catch (error) {
-    console.error('App Error:', error);
-    setHasError(true);
-    return null;
-  }
-};
+const queryClient = new QueryClient();
 
 function App() {
-  console.log('App: Starting render');
-
   return (
-    <AppErrorBoundary>
+    <BrowserRouter>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <BrowserRouter>
+          <AdminAuthProvider>
             <AuthProvider>
-              <AdminAuthProvider>
-                <div className="min-h-screen">
-                  <Routes>
-                    {/* Public Routes */}
-                    <Route path="/" element={<Index />} />
-                    <Route path="/cliente/login" element={<ClientLogin />} />
-                    <Route path="/admin/login" element={<AdminLogin />} />
-                    
-                    {/* Public ticket route */}
-                    <Route path="/abrir-chamado" element={<AbrirChamado />} />
-                    
-                    {/* Client Protected Routes */}
-                    <Route path="/cliente/*" element={
-                      <ProtectedRoute>
-                        <ClientArea />
-                      </ProtectedRoute>
-                    } />
-                    
-                    {/* Admin Protected Routes */}
-                    <Route path="/admin/*" element={
-                      <AdminProtectedRoute>
-                        <AdminArea />
-                      </AdminProtectedRoute>
-                    } />
-                    
-                    {/* Fallback */}
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                  </Routes>
+              <SecurityProvider>
+                <div className="min-h-screen bg-background">
+                  <AppErrorBoundary>
+                    <Routes>
+                      {/* Public Routes */}
+                      <Route path="/" element={<LandingPage />} />
+                      <Route path="/pricing" element={<PricingPage />} />
+                      <Route path="/newsletter" element={<NewsletterSignup />} />
+                      <Route path="/arquivos" element={<RequestFiles />} />
+
+                      {/* Client Routes */}
+                      <Route path="/cliente/login" element={<ClientLogin />} />
+                      <Route path="/convite/:invitationId" element={<ClientAcceptInvite />} />
+                      <Route path="/cliente" element={<ClientProtectedRoute><ClientDashboard /></ClientProtectedRoute>} />
+                      <Route path="/cliente/dashboard" element={<ClientProtectedRoute><ClientDashboard /></ClientProtectedRoute>} />
+                      <Route path="/cliente/tickets" element={<ClientProtectedRoute><ClientTickets /></ClientProtectedRoute>} />
+                      <Route path="/cliente/novo-ticket" element={<ClientProtectedRoute><ClientNewTicket /></ClientProtectedRoute>} />
+                      <Route path="/cliente/documentos" element={<ClientProtectedRoute><ClientDocumentList /></ClientProtectedRoute>} />
+                      <Route path="/cliente/documentos/novo" element={<ClientProtectedRoute><ClientDocumentUpload /></ClientProtectedRoute>} />
+                      <Route path="/cliente/documentos/:id" element={<ClientProtectedRoute><ClientDocumentView /></ClientProtectedRoute>} />
+                      <Route path="/cliente/documentos/:id/edit" element={<ClientProtectedRoute><ClientDocumentEdit /></ClientProtectedRoute>} />
+                      <Route path="/cliente/aprovacoes" element={<ClientProtectedRoute><ClientApprovals /></ClientProtectedRoute>} />
+                      <Route path="/cliente/aprovacoes/historico" element={<ClientProtectedRoute><ClientApprovalHistory /></ClientProtectedRoute>} />
+                      <Route path="/cliente/equipe" element={<ClientProtectedRoute><ClientTeam /></ClientProtectedRoute>} />
+                      <Route path="/cliente/convidar" element={<ClientProtectedRoute><ClientInvite /></ClientProtectedRoute>} />
+
+                      {/* Admin Routes */}
+                      <Route path="/admin/login" element={<AdminLogin />} />
+                      <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+                      <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+                      <Route path="/admin/tickets" element={<AdminProtectedRoute><AdminTickets /></AdminProtectedRoute>} />
+                      <Route path="/admin/tickets/:id" element={<AdminProtectedRoute><AdminTicketDetails /></AdminProtectedRoute>} />
+                      <Route path="/admin/colaboradores" element={<AdminProtectedRoute requiredRole="super_admin"><AdminCollaborators /></AdminProtectedRoute>} />
+                      <Route path="/admin/gantt" element={<AdminProtectedRoute requiredRole="admin"><AdminGantt /></AdminProtectedRoute>} />
+                      <Route path="/admin/security" element={<AdminProtectedRoute requiredRole="super_admin"><AdminSecurity /></AdminProtectedRoute>} />
+                      <Route path="/admin/unauthorized" element={<AdminUnauthorized />} />
+
+                      {/* Not Found Route */}
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </AppErrorBoundary>
+                  <Toaster />
                 </div>
-                <Toaster />
-                <Sonner />
-              </AdminAuthProvider>
+              </SecurityProvider>
             </AuthProvider>
-          </BrowserRouter>
+          </AdminAuthProvider>
         </ThemeProvider>
       </QueryClientProvider>
-    </AppErrorBoundary>
+    </BrowserRouter>
   );
 }
 
