@@ -1,14 +1,18 @@
 
-import React from "react";
+import * as React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "sonner";
+
+// Import contexts with error handling
 import AuthProvider from "@/contexts/AuthContext";
 import AdminAuthProvider from "@/contexts/AdminAuthContext";
-import { ThemeProvider } from "@/components/theme/ThemeProvider";
-import { useMonitoring } from "@/hooks/useMonitoring";
 
-// Pages
+// Import theme components
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
+
+// Import pages  
 import Index from "@/pages/Index";
 import ClientLogin from "@/pages/ClientLogin";
 import AdminLogin from "@/pages/AdminLogin";
@@ -17,8 +21,6 @@ import AdminArea from "@/pages/AdminArea";
 import AbrirChamado from "@/pages/AbrirChamado";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminProtectedRoute from "@/components/AdminProtectedRoute";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "sonner";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -30,52 +32,43 @@ const queryClient = new QueryClient({
   },
 });
 
-// Component to track navigation
-const NavigationTracker = () => {
-  const { logClick } = useMonitoring();
-  
-  useEffect(() => {
-    // Log navigation event using logClick since trackEvent doesn't exist
-    logClick('navigation', { path: window.location.pathname });
-  }, [logClick]);
-  
-  return null;
+// Simple error boundary component
+const AppErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [hasError, setHasError] = React.useState(false);
+
+  if (hasError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Something went wrong</h1>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Reload Page
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  try {
+    return <>{children}</>;
+  } catch (error) {
+    console.error('App Error:', error);
+    setHasError(true);
+    return null;
+  }
 };
 
-// Error boundary for theme-related errors
-class ThemeErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean }
-> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Theme error caught by boundary:', error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return this.props.children;
-    }
-
-    return this.props.children;
-  }
-}
-
 function App() {
+  console.log('App: Starting render');
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeErrorBoundary>
+    <AppErrorBoundary>
+      <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <BrowserRouter>
-            <NavigationTracker />
             <AuthProvider>
               <AdminAuthProvider>
                 <div className="min-h-screen">
@@ -112,8 +105,8 @@ function App() {
             </AuthProvider>
           </BrowserRouter>
         </ThemeProvider>
-      </ThemeErrorBoundary>
-    </QueryClientProvider>
+      </QueryClientProvider>
+    </AppErrorBoundary>
   );
 }
 
