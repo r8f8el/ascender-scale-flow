@@ -9,7 +9,9 @@ import {
   BarChart3,
   Plus,
   Search,
-  RefreshCw
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useResponsive } from '@/hooks/useResponsive';
 
@@ -90,14 +92,14 @@ export const GanttHeader: React.FC<GanttHeaderProps> = ({
           </Badge>
         </div>
 
-        {/* Mobile View Mode Selector - Expanded */}
+        {/* Mobile View Mode - Horizontal Scroll */}
         <div className="w-full">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
             {viewModeOptions.map((option) => (
               <button
                 key={option.value}
                 onClick={() => onViewModeChange(option.value)}
-                className={`p-3 rounded-lg text-sm font-medium transition-colors border ${
+                className={`flex-shrink-0 px-4 py-3 rounded-lg text-sm font-medium transition-colors border min-w-[100px] ${
                   viewMode === option.value
                     ? 'bg-primary text-primary-foreground border-primary'
                     : 'bg-white text-gray-600 hover:bg-gray-50 border-gray-200'
@@ -161,7 +163,7 @@ export const GanttHeader: React.FC<GanttHeaderProps> = ({
       </div>
 
       <div className="flex items-center justify-between gap-6">
-        <div className="flex items-center gap-4 flex-1">
+        <div className="flex items-center gap-4 flex-1 min-w-0">
           {/* Search */}
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -174,7 +176,7 @@ export const GanttHeader: React.FC<GanttHeaderProps> = ({
           </div>
 
           {/* Filters */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-shrink-0">
             <Select
               value={filters.status}
               onValueChange={(value) => onFiltersChange({ ...filters, status: value })}
@@ -229,26 +231,28 @@ export const GanttHeader: React.FC<GanttHeaderProps> = ({
           </div>
         </div>
 
-        {/* View Mode - Com mais espaçamento */}
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-500">Visualização:</span>
-          <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
-            {viewModeOptions.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => onViewModeChange(option.value)}
-                className={`px-4 py-2.5 rounded-md text-sm font-medium transition-all duration-200 min-w-[100px] ${
-                  viewMode === option.value
-                    ? 'bg-white text-primary shadow-sm'
-                    : 'text-gray-600 hover:text-primary hover:bg-white/50'
-                }`}
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <span>{option.icon}</span>
-                  <span>{option.label}</span>
-                </div>
-              </button>
-            ))}
+        {/* View Mode - Sistema de rolagem horizontal */}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <span className="text-sm text-gray-500 whitespace-nowrap">Visualização:</span>
+          <div className="flex items-center bg-gray-100 rounded-lg p-1">
+            <div className="flex gap-1 overflow-x-auto scrollbar-none max-w-[400px]">
+              {viewModeOptions.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => onViewModeChange(option.value)}
+                  className={`flex-shrink-0 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 min-w-[80px] ${
+                    viewMode === option.value
+                      ? 'bg-white text-primary shadow-sm'
+                      : 'text-gray-600 hover:text-primary hover:bg-white/50'
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    <span className="text-xs">{option.icon}</span>
+                    <span className="text-xs">{option.label}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
