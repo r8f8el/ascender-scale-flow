@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, Copy, ExternalLink, Monitor, Maximize2, RefreshCw } from 'lucide-react';
 import { ClientBIEmbed } from '@/hooks/useClientBIEmbeds';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface BIEmbedViewerProps {
   embed: ClientBIEmbed | null;
@@ -49,10 +49,11 @@ const BIEmbedViewer: React.FC<BIEmbedViewerProps> = ({ embed }) => {
   const { toast } = useToast();
   const [iframeError, setIframeError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   if (!embed) {
     return (
-      <Card>
+      <Card className="h-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Monitor className="h-5 w-5" />
@@ -60,13 +61,13 @@ const BIEmbedViewer: React.FC<BIEmbedViewerProps> = ({ embed }) => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-12">
-            <Monitor className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <div className="text-center py-16">
+            <Monitor className="h-20 w-20 text-gray-300 mx-auto mb-6" />
+            <h3 className="text-xl font-medium text-gray-700 mb-2">
               Nenhum dashboard selecionado
             </h3>
-            <p className="text-gray-600">
-              Selecione um dashboard da lista ao lado para visualizar
+            <p className="text-gray-500 max-w-md mx-auto">
+              Selecione um dashboard da lista ao lado para visualizar seus relatórios e análises
             </p>
           </div>
         </CardContent>
@@ -92,102 +93,154 @@ const BIEmbedViewer: React.FC<BIEmbedViewerProps> = ({ embed }) => {
     setIframeError(null);
   };
 
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Monitor className="h-5 w-5" />
-          {embed.title || 'Dashboard de BI'}
-        </CardTitle>
+    <Card className={`${isFullscreen ? 'fixed inset-0 z-50 rounded-none' : 'h-full'}`}>
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Monitor className="h-5 w-5 text-blue-600" />
+            <span className="truncate">{embed.title || 'Dashboard de BI'}</span>
+            {embed.is_featured && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                Destaque
+              </span>
+            )}
+          </CardTitle>
+          
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={refreshIframe}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+            <Button size="sm" variant="outline" onClick={toggleFullscreen}>
+              <Maximize2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        
         {embed.description && (
-          <p className="text-gray-600 text-sm">{embed.description}</p>
+          <p className="text-sm text-gray-600 mt-2">{embed.description}</p>
         )}
       </CardHeader>
-      <CardContent>
+
+      <CardContent className="p-0">
         {!isValidUrl ? (
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              <div className="space-y-2">
-                <p className="font-medium">URL inválida ou host não permitido</p>
-                <p className="text-sm">
-                  O embed configurado não possui uma URL válida ou o host não está na lista de provedores permitidos.
-                </p>
-                <div className="mt-3">
-                  <p className="text-sm font-medium">Hosts permitidos:</p>
-                  <ul className="text-sm ml-5 space-y-1">
-                    <li>• app.powerbi.com (Power BI)</li>
-                    <li>• lookerstudio.google.com (Looker Studio)</li>
-                    <li>• tableau.com (Tableau)</li>
-                    <li>• metabase.com (Metabase)</li>
-                  </ul>
+          <div className="p-6">
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                <div className="space-y-3">
+                  <p className="font-medium">URL inválida ou host não permitido</p>
+                  <p className="text-sm">
+                    O embed configurado não possui uma URL válida ou o host não está na lista de provedores permitidos.
+                  </p>
+                  <div className="mt-4">
+                    <p className="text-sm font-medium mb-2">Hosts permitidos:</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-1 text-sm">
+                      <div>• app.powerbi.com (Power BI)</div>
+                      <div>• lookerstudio.google.com (Looker Studio)</div>
+                      <div>• tableau.com (Tableau)</div>
+                      <div>• metabase.com (Metabase)</div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </AlertDescription>
-          </Alert>
+              </AlertDescription>
+            </Alert>
+          </div>
         ) : iframeError ? (
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              <div className="space-y-3">
-                <p className="font-medium">Erro ao carregar o dashboard</p>
-                <p className="text-sm">{iframeError}</p>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={refreshIframe}>
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Tentar Novamente
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => copyToClipboard(sanitizedUrl!)}>
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copiar URL
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => openInNewTab(sanitizedUrl!)}>
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Abrir em nova aba
-                  </Button>
+          <div className="p-6">
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                <div className="space-y-4">
+                  <p className="font-medium">Erro ao carregar o dashboard</p>
+                  <p className="text-sm">{iframeError}</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant="outline" onClick={refreshIframe}>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Tentar Novamente
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => copyToClipboard(sanitizedUrl!)}>
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copiar URL
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => openInNewTab(sanitizedUrl!)}>
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Abrir em nova aba
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </AlertDescription>
-          </Alert>
+              </AlertDescription>
+            </Alert>
+          </div>
         ) : (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
+          <div className="space-y-0">
+            {/* Quick Actions Bar */}
+            <div className="flex justify-between items-center px-4 py-2 bg-gray-50 border-b">
               <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={refreshIframe}>
-                  <RefreshCw className="h-4 w-4 mr-2" />
+                <Button size="sm" variant="ghost" onClick={refreshIframe}>
+                  <RefreshCw className="h-4 w-4 mr-1" />
                   Atualizar
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => copyToClipboard(sanitizedUrl!)}>
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copiar URL
+                <Button size="sm" variant="ghost" onClick={() => copyToClipboard(sanitizedUrl!)}>
+                  <Copy className="h-4 w-4 mr-1" />
+                  Copiar
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => openInNewTab(sanitizedUrl!)}>
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Abrir em nova aba
+                <Button size="sm" variant="ghost" onClick={() => openInNewTab(sanitizedUrl!)}>
+                  <ExternalLink className="h-4 w-4 mr-1" />
+                  Nova Aba
                 </Button>
               </div>
-              <div className="text-sm text-gray-500">
-                Provedor: {embed.provider || 'Não especificado'}
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <span className="px-2 py-1 bg-white rounded border">
+                  {embed.provider || 'Não especificado'}
+                </span>
               </div>
             </div>
 
-            <div className="relative border rounded-lg overflow-hidden bg-gray-50">
+            {/* Iframe Container */}
+            <div className="relative bg-white">
               <iframe
                 key={refreshKey}
                 src={sanitizedUrl}
-                className="w-full h-[700px] border-0"
+                className={`w-full border-0 ${isFullscreen ? 'h-[calc(100vh-120px)]' : 'h-[700px]'}`}
                 title={embed.title || 'Dashboard de BI'}
                 allowFullScreen
                 loading="lazy"
-                onError={() => setIframeError('Falha ao carregar o conteúdo. Verifique se a URL está correta.')}
+                onError={() => setIframeError('Falha ao carregar o conteúdo. Verifique se a URL está correta e se você tem permissão para acessá-la.')}
                 onLoad={() => setIframeError(null)}
-                sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+                sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation"
+                style={{
+                  background: 'linear-gradient(45deg, #f0f0f0 25%, transparent 25%), linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f0f0f0 75%), linear-gradient(-45deg, transparent 75%, #f0f0f0 75%)',
+                  backgroundSize: '20px 20px',
+                  backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px'
+                }}
               />
+              
+              {/* Loading overlay */}
+              <div className="absolute inset-0 flex items-center justify-center bg-white/80 opacity-0 transition-opacity duration-300 pointer-events-none">
+                <div className="flex items-center gap-2 text-gray-600">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                  <span className="text-sm">Carregando dashboard...</span>
+                </div>
+              </div>
             </div>
 
-            <div className="text-xs text-gray-500 space-y-1">
-              <p>💡 <strong>Dica:</strong> Se o dashboard não carregar, tente clicar em "Atualizar" ou "Abrir em nova aba".</p>
-              <p>🔒 <strong>Segurança:</strong> Este conteúdo é carregado diretamente do provedor de BI configurado.</p>
+            {/* Help Text */}
+            <div className="px-4 py-3 bg-blue-50 border-t">
+              <div className="text-xs text-blue-700 space-y-1">
+                <div className="flex items-center gap-1">
+                  <span>💡</span>
+                  <strong>Dica:</strong> Se o dashboard não carregar, tente clicar em "Atualizar" ou "Abrir em nova aba".
+                </div>
+                <div className="flex items-center gap-1">
+                  <span>🔒</span>
+                  <strong>Segurança:</strong> Este conteúdo é carregado diretamente do provedor de BI configurado.
+                </div>
+              </div>
             </div>
           </div>
         )}

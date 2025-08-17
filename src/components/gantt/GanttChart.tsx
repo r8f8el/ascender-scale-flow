@@ -145,8 +145,12 @@ export const GanttChart: React.FC<GanttChartProps> = ({
     }
   }, [updateTask, isAdmin]);
 
-  const handleProgressChange = useCallback(async (task: Task, progress: number) => {
+  // Fix the progress change handler to match the expected signature
+  const handleProgressChange = useCallback(async (task: Task) => {
     if (!isAdmin) return;
+
+    // Extract progress from task object since the library passes the updated task
+    const progress = task.progress;
     
     try {
       await updateTask(task.id, { progress });
