@@ -1,62 +1,47 @@
 
 import React from 'react';
-import { Bell, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { LogOut, User } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarTrigger } from '@/components/ui/sidebar';
 
 interface ClientHeaderProps {
   clientName?: string;
   onLogout: () => void;
 }
 
-export function ClientHeader({ clientName, onLogout }: ClientHeaderProps) {
+export const ClientHeader: React.FC<ClientHeaderProps> = ({ 
+  clientName, 
+  onLogout 
+}) => {
   return (
-    <header className="bg-white border-b border-gray-200 px-6 py-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <SidebarTrigger />
-          <div>
-            <h1 className="text-xl font-semibold text-gray-900">
-              Portal do Cliente
-            </h1>
-            <p className="text-sm text-gray-500">
-              Bem-vindo, {clientName || 'Cliente'}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon">
-            <Bell className="h-5 w-5" />
-          </Button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <User className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                <span>Perfil</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Sair</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+    <header className="border-b bg-background px-6 py-3 flex items-center justify-between">
+      <div className="flex items-center gap-4">
+        <SidebarTrigger />
+        <h1 className="text-xl font-semibold">Área do Cliente</h1>
+      </div>
+      
+      <div className="flex items-center gap-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              {clientName || 'Cliente'}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onLogout}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Sair
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );
-}
+};
