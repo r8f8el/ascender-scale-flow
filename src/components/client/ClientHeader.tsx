@@ -1,68 +1,62 @@
 
 import React from 'react';
-import { LogOut, Menu, Bell } from 'lucide-react';
+import { Bell, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import NotificationCenter from '@/components/NotificationCenter';
-import { Logo } from '@/components/Logo';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 interface ClientHeaderProps {
   clientName?: string;
-  isMobile: boolean;
   onLogout: () => void;
 }
 
-export const ClientHeader: React.FC<ClientHeaderProps> = ({ 
-  clientName, 
-  isMobile, 
-  onLogout 
-}) => {
+export function ClientHeader({ clientName, onLogout }: ClientHeaderProps) {
   return (
-    <header className="bg-white border-b shadow-sm">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <Logo className="h-8 w-auto" />
+    <header className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <SidebarTrigger />
+          <div>
+            <h1 className="text-xl font-semibold text-gray-900">
+              Portal do Cliente
+            </h1>
+            <p className="text-sm text-gray-500">
+              Bem-vindo, {clientName || 'Cliente'}
+            </p>
           </div>
+        </div>
 
-          {/* User Info & Actions */}
-          <div className="flex items-center gap-3">
-            {/* Notification Center */}
-            <NotificationCenter />
-            
-            {/* User Info */}
-            <div className="hidden md:flex items-center gap-2">
-              <div className="text-sm">
-                <div className="font-medium text-gray-900">
-                  {clientName || 'Cliente'}
-                </div>
-                <div className="text-gray-500">Área do Cliente</div>
-              </div>
-            </div>
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon">
+            <Bell className="h-5 w-5" />
+          </Button>
 
-            {/* Logout Button */}
-            {!isMobile && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onLogout}
-                className="flex items-center gap-2"
-              >
-                <LogOut className="h-4 w-4" />
-                Sair
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <User className="h-5 w-5" />
               </Button>
-            )}
-
-            {/* Mobile Menu */}
-            {isMobile && (
-              <Button variant="ghost" size="sm">
-                <Menu className="h-5 w-5" />
-              </Button>
-            )}
-          </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem>
+                <User className="mr-2 h-4 w-4" />
+                <span>Perfil</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Sair</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>
   );
-};
+}

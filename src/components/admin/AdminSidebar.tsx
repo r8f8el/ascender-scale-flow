@@ -21,7 +21,18 @@ import {
   Layers,
   Kanban
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 
 const navigation = [
   {
@@ -157,68 +168,57 @@ export function AdminSidebar() {
 
   const renderNavItems = (items: typeof navigation) => (
     items.map((item) => (
-      <Link
-        key={item.name}
-        to={item.href}
-        className={cn(
-          'flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg mx-2 transition-all duration-200',
-          isCurrentPath(item.href)
-            ? 'bg-gray-100 text-gray-900'
-            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-        )}
-      >
-        <item.icon className="h-5 w-5 flex-shrink-0" />
-        <span className="truncate">{item.name}</span>
-      </Link>
+      <SidebarMenuItem key={item.name}>
+        <SidebarMenuButton asChild isActive={isCurrentPath(item.href)}>
+          <Link to={item.href}>
+            <item.icon className="h-4 w-4" />
+            <span>{item.name}</span>
+          </Link>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
     ))
   );
 
   return (
-    <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 z-50">
-      <div className="flex flex-col flex-1 min-h-0 bg-white border-r border-gray-200">
-        {/* Header com Logo */}
-        <div className="flex items-center justify-center h-16 px-4 bg-white border-b border-gray-100">
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="border-b">
+        <div className="flex items-center justify-center p-2">
           <img 
             src="/lovable-uploads/770511e1-4eca-4d48-9bf0-ba1d8072c723.png" 
             alt="Ascalate Logo" 
             className="h-8 w-auto"
           />
         </div>
+      </SidebarHeader>
 
-        {/* Navigation */}
-        <div className="flex-1 flex flex-col overflow-y-auto py-4">
-          <nav className="flex-1">
-            {/* General Section */}
-            <div className="space-y-1">
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Geral</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
               {renderNavItems(navigation)}
-            </div>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
-            {/* FP&A Analytics Section */}
-            <div className="mt-8">
-              <div className="px-4 py-2">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  FP&A ANALYTICS
-                </h3>
-              </div>
-              <div className="space-y-1">
-                {renderNavItems(fpaNavigation)}
-              </div>
-            </div>
+        <SidebarGroup>
+          <SidebarGroupLabel>FP&A Analytics</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {renderNavItems(fpaNavigation)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
-            {/* System Section */}
-            <div className="mt-8">
-              <div className="px-4 py-2">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  SISTEMA
-                </h3>
-              </div>
-              <div className="space-y-1">
-                {renderNavItems(systemNavigation)}
-              </div>
-            </div>
-          </nav>
-        </div>
-      </div>
-    </div>
+        <SidebarGroup>
+          <SidebarGroupLabel>Sistema</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {renderNavItems(systemNavigation)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+    </Sidebar>
   );
 }

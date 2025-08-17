@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Chat } from '@/components/Chat';
 import { ClientHeader } from '../components/client/ClientHeader';
 import { ClientNavigation } from '../components/client/ClientNavigation';
-import { useResponsive } from '../hooks/useResponsive';
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import ClientDocumentSync from '@/components/client/ClientDocumentSync';
 
 // Client pages
@@ -37,7 +37,6 @@ import ClientBIDashboard from './client/fpa/ClientBIDashboard';
 const ClientArea = () => {
   const { client, logout } = useAuth();
   const navigate = useNavigate();
-  const isMobile = useResponsive();
 
   const handleLogout = () => {
     logout();
@@ -45,23 +44,20 @@ const ClientArea = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <ClientHeader 
-        clientName={client?.name}
-        isMobile={isMobile}
-        onLogout={handleLogout}
-      />
-      
-      {/* Componente de sincronização em tempo real */}
-      <ClientDocumentSync />
-      
-      <div className="flex flex-1 container mx-auto">
-        {/* Sidebar Navigation */}
+    <SidebarProvider>
+      <div className="min-h-screen w-full flex">
         <ClientNavigation />
         
-        {/* Main Content */}
-        <main className="flex-1 p-4 md:p-8 overflow-auto">
-          <div className="bg-white rounded-lg shadow p-6">
+        <SidebarInset className="flex-1">
+          <ClientHeader 
+            clientName={client?.name}
+            onLogout={handleLogout}
+          />
+          
+          {/* Componente de sincronização em tempo real */}
+          <ClientDocumentSync />
+          
+          <main className="flex-1 p-6 overflow-auto">
             <Routes>
               <Route path="/" element={<ClientDocuments />} />
               <Route path="/dashboard" element={<ClientDocuments />} />
@@ -91,13 +87,13 @@ const ClientArea = () => {
               <Route path="/fpa/comunicacao" element={<ClientFPACommunication />} />
               <Route path="/fpa/bi" element={<ClientBIDashboard />} />
             </Routes>
-          </div>
-        </main>
+          </main>
+        </SidebarInset>
       </div>
       
       {/* Chat Component */}
       <Chat />
-    </div>
+    </SidebarProvider>
   );
 };
 
