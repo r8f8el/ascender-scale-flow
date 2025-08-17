@@ -9,12 +9,6 @@ import {
   BarChart3,
   Plus,
   Search,
-  Filter,
-  ZoomIn,
-  ZoomOut,
-  Calendar,
-  Users,
-  Settings,
   RefreshCw
 } from 'lucide-react';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -53,18 +47,11 @@ export const GanttHeader: React.FC<GanttHeaderProps> = ({
   const isMobile = useResponsive();
 
   const viewModeOptions = [
-    { value: ViewMode.Hour, label: isMobile ? 'H' : 'Horas', icon: '⏰' },
-    { value: ViewMode.Day, label: isMobile ? 'D' : 'Dias', icon: '📅' },
-    { value: ViewMode.Week, label: isMobile ? 'S' : 'Semanas', icon: '📆' },
-    { value: ViewMode.Month, label: isMobile ? 'M' : 'Meses', icon: '🗓️' }
+    { value: ViewMode.Hour, label: 'Horas', icon: '⏰' },
+    { value: ViewMode.Day, label: 'Dias', icon: '📅' },
+    { value: ViewMode.Week, label: 'Semanas', icon: '📆' },
+    { value: ViewMode.Month, label: 'Meses', icon: '🗓️' }
   ];
-
-  const priorityColors = {
-    low: 'bg-blue-100 text-blue-800 border-blue-200',
-    medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    high: 'bg-orange-100 text-orange-800 border-orange-200',
-    urgent: 'bg-red-100 text-red-800 border-red-200'
-  };
 
   if (isMobile) {
     return (
@@ -103,21 +90,23 @@ export const GanttHeader: React.FC<GanttHeaderProps> = ({
           </Badge>
         </div>
 
-        {/* Mobile View Mode Selector */}
-        <div className="flex justify-center">
-          <div className="flex bg-gray-100 rounded-lg p-1">
+        {/* Mobile View Mode Selector - Expanded */}
+        <div className="w-full">
+          <div className="grid grid-cols-2 gap-2">
             {viewModeOptions.map((option) => (
               <button
                 key={option.value}
                 onClick={() => onViewModeChange(option.value)}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`p-3 rounded-lg text-sm font-medium transition-colors border ${
                   viewMode === option.value
-                    ? 'bg-white text-primary shadow-sm'
-                    : 'text-gray-600 hover:text-primary'
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-white text-gray-600 hover:bg-gray-50 border-gray-200'
                 }`}
               >
-                <span className="mr-1">{option.icon}</span>
-                {option.label}
+                <div className="flex items-center justify-center gap-2">
+                  <span>{option.icon}</span>
+                  <span>{option.label}</span>
+                </div>
               </button>
             ))}
           </div>
@@ -171,7 +160,7 @@ export const GanttHeader: React.FC<GanttHeaderProps> = ({
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-6">
         <div className="flex items-center gap-4 flex-1">
           {/* Search */}
           <div className="relative flex-1 max-w-md">
@@ -185,7 +174,7 @@ export const GanttHeader: React.FC<GanttHeaderProps> = ({
           </div>
 
           {/* Filters */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Select
               value={filters.status}
               onValueChange={(value) => onFiltersChange({ ...filters, status: value })}
@@ -240,22 +229,24 @@ export const GanttHeader: React.FC<GanttHeaderProps> = ({
           </div>
         </div>
 
-        {/* View Mode */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500 mr-2">Visualização:</span>
-          <div className="flex bg-gray-100 rounded-lg p-1">
+        {/* View Mode - Com mais espaçamento */}
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-500">Visualização:</span>
+          <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
             {viewModeOptions.map((option) => (
               <button
                 key={option.value}
                 onClick={() => onViewModeChange(option.value)}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`px-4 py-2.5 rounded-md text-sm font-medium transition-all duration-200 min-w-[100px] ${
                   viewMode === option.value
-                    ? 'bg-white text-primary shadow-sm scale-105'
+                    ? 'bg-white text-primary shadow-sm'
                     : 'text-gray-600 hover:text-primary hover:bg-white/50'
                 }`}
               >
-                <span className="mr-2">{option.icon}</span>
-                {option.label}
+                <div className="flex items-center justify-center gap-2">
+                  <span>{option.icon}</span>
+                  <span>{option.label}</span>
+                </div>
               </button>
             ))}
           </div>

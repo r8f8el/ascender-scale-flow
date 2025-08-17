@@ -8,7 +8,7 @@ import { GanttHeader } from './GanttHeader';
 import { GanttStats } from './GanttStats';
 import { GanttTaskModal } from './GanttTaskModal';
 import { useResponsive } from '@/hooks/useResponsive';
-import { BarChart3, Plus, RefreshCw } from 'lucide-react';
+import { BarChart3, Plus } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import 'gantt-task-react/dist/index.css';
@@ -61,7 +61,6 @@ export const GanttChart: React.FC<GanttChartProps> = ({
     });
   }, [tasks, searchTerm, filters]);
 
-  // Convert tasks to Gantt format
   const ganttTasks: Task[] = useMemo(() => {
     return filteredTasks.map((task, index) => ({
       start: parseISO(task.start_date),
@@ -76,7 +75,6 @@ export const GanttChart: React.FC<GanttChartProps> = ({
         backgroundSelectedColor: priorityColors[task.priority] || priorityColors.medium,
         progressColor: '#ffffff',
         progressSelectedColor: '#ffffff',
-        // Add mobile optimizations
         ...(isMobile && {
           fontSize: '12px',
           height: 35
@@ -145,11 +143,9 @@ export const GanttChart: React.FC<GanttChartProps> = ({
     }
   }, [updateTask, isAdmin]);
 
-  // Fix the progress change handler to match the expected signature
   const handleProgressChange = useCallback(async (task: Task) => {
     if (!isAdmin) return;
 
-    // Extract progress from task object since the library passes the updated task
     const progress = task.progress;
     
     try {
@@ -195,92 +191,99 @@ export const GanttChart: React.FC<GanttChartProps> = ({
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header with controls */}
-      <GanttHeader
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        onCreateTask={handleCreateTask}
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        filters={filters}
-        onFiltersChange={setFilters}
-        isAdmin={isAdmin}
-        taskCount={filteredTasks.length}
-        completedCount={filteredTasks.filter(t => t.progress === 100).length}
-        onRefresh={refetch}
-      />
+    <div className="w-full min-h-screen flex flex-col">
+      {/* Header fixo */}
+      <div className="flex-shrink-0">
+        <GanttHeader
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          onCreateTask={handleCreateTask}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          filters={filters}
+          onFiltersChange={setFilters}
+          isAdmin={isAdmin}
+          taskCount={filteredTasks.length}
+          completedCount={filteredTasks.filter(t => t.progress === 100).length}
+          onRefresh={refetch}
+        />
+      </div>
 
       {/* Statistics */}
-      <GanttStats tasks={filteredTasks} isAdmin={isAdmin} />
+      <div className="flex-shrink-0 px-6 py-4">
+        <GanttStats tasks={filteredTasks} isAdmin={isAdmin} />
+      </div>
 
-      {/* Gantt Chart */}
-      <Card>
-        <CardContent className="p-0">
-          {ganttTasks.length === 0 ? (
-            <div className="text-center py-12">
-              <BarChart3 className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium text-muted-foreground mb-2">
-                Nenhuma tarefa encontrada
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                Ajuste os filtros para ver mais tarefas
-              </p>
-            </div>
-          ) : (
-            <div 
-              className="gantt-container" 
-              style={{ 
-                height: isMobile ? '300px' : '500px', 
-                overflow: 'auto',
-                backgroundColor: '#fafafa'
-              }}
-            >
-              <Gantt
-                tasks={ganttTasks}
-                viewMode={viewMode}
-                onDateChange={handleDateChange}
-                onProgressChange={handleProgressChange}
-                onDoubleClick={(task) => isAdmin && handleEditTask(task.id)}
-                onDelete={(task) => isAdmin && handleDeleteTask(task.id)}
-                listCellWidth={isMobile ? "150px" : "250px"}
-                columnWidth={
-                  viewMode === ViewMode.Month ? 300 :
-                  viewMode === ViewMode.Week ? (isMobile ? 80 : 150) :
-                  viewMode === ViewMode.Day ? (isMobile ? 50 : 100) : 60
-                }
-                rowHeight={isMobile ? 35 : 50}
-                barCornerRadius={4}
-                handleWidth={8}
-                fontSize="12px"
-                arrowColor="#6B7280"
-                arrowIndent={20}
-                todayColor="rgba(59, 130, 246, 0.3)"
-                TooltipContent={({ task }) => {
-                  const taskData = tasks.find(t => t.id === task.id);
-                  return (
-                    <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 max-w-xs">
-                      <h4 className="font-semibold text-sm mb-2">{task.name}</h4>
-                      {taskData && (
-                        <div className="space-y-1 text-xs text-gray-600">
-                          <div>Progresso: {task.progress}%</div>
-                          <div>Prioridade: {taskData.priority}</div>
-                          <div>Início: {format(task.start, 'dd/MM/yyyy')}</div>
-                          <div>Fim: {format(task.end, 'dd/MM/yyyy')}</div>
-                          {taskData.assigned_to && (
-                            <div>Responsável: {taskData.collaborators?.name || 'N/A'}</div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
+      {/* Gantt Chart - Ocupa todo o espaço restante */}
+      <div className="flex-1 px-6 pb-6">
+        <Card className="h-full">
+          <CardContent className="p-0 h-full">
+            {ganttTasks.length === 0 ? (
+              <div className="text-center py-12">
+                <BarChart3 className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium text-muted-foreground mb-2">
+                  Nenhuma tarefa encontrada
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Ajuste os filtros para ver mais tarefas
+                </p>
+              </div>
+            ) : (
+              <div 
+                className="gantt-container w-full" 
+                style={{ 
+                  height: isMobile ? '400px' : 'calc(100vh - 320px)', 
+                  minHeight: '400px',
+                  overflow: 'auto',
+                  backgroundColor: '#fafafa'
                 }}
-                locale="pt-BR"
-              />
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              >
+                <Gantt
+                  tasks={ganttTasks}
+                  viewMode={viewMode}
+                  onDateChange={handleDateChange}
+                  onProgressChange={handleProgressChange}
+                  onDoubleClick={(task) => isAdmin && handleEditTask(task.id)}
+                  onDelete={(task) => isAdmin && handleDeleteTask(task.id)}
+                  listCellWidth={isMobile ? "150px" : "280px"}
+                  columnWidth={
+                    viewMode === ViewMode.Month ? 350 :
+                    viewMode === ViewMode.Week ? (isMobile ? 100 : 180) :
+                    viewMode === ViewMode.Day ? (isMobile ? 60 : 120) : 80
+                  }
+                  rowHeight={isMobile ? 40 : 55}
+                  barCornerRadius={6}
+                  handleWidth={10}
+                  fontSize="13px"
+                  arrowColor="#6B7280"
+                  arrowIndent={20}
+                  todayColor="rgba(59, 130, 246, 0.3)"
+                  TooltipContent={({ task }) => {
+                    const taskData = tasks.find(t => t.id === task.id);
+                    return (
+                      <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 max-w-xs z-50">
+                        <h4 className="font-semibold text-sm mb-2">{task.name}</h4>
+                        {taskData && (
+                          <div className="space-y-1 text-xs text-gray-600">
+                            <div>Progresso: {task.progress}%</div>
+                            <div>Prioridade: {taskData.priority}</div>
+                            <div>Início: {format(task.start, 'dd/MM/yyyy')}</div>
+                            <div>Fim: {format(task.end, 'dd/MM/yyyy')}</div>
+                            {taskData.assigned_to && (
+                              <div>Responsável: {taskData.collaborators?.name || 'N/A'}</div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }}
+                  locale="pt-BR"
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Task Modal */}
       <GanttTaskModal
