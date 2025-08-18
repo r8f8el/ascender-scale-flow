@@ -20,6 +20,7 @@ interface Category {
   id: string;
   name: string;
   color: string;
+  description?: string;
 }
 
 interface Priority {
@@ -55,7 +56,7 @@ export const useTicketForm = () => {
         ...prev,
         user_name: client.name || '',
         user_email: client.email || '',
-        user_phone: client.phone || ''
+        user_phone: client.company || '' // Using company field for phone since phone doesn't exist
       }));
     }
 
@@ -65,8 +66,21 @@ export const useTicketForm = () => {
         supabase.from('ticket_priorities').select('*').order('urgency_level')
       ]);
 
-      if (categoriesRes.data) setCategories(categoriesRes.data);
-      if (prioritiesRes.data) setPriorities(prioritiesRes.data);
+      if (categoriesRes.data) {
+        const categoriesWithColor = categoriesRes.data.map(cat => ({
+          ...cat,
+          color: cat.color || '#3B82F6' // Default color if not set
+        }));
+        setCategories(categoriesWithColor);
+      }
+      
+      if (prioritiesRes.data) {
+        const prioritiesWithUrgency = prioritiesRes.data.map(priority => ({
+          ...priority,
+          urgency_level: priority.level || priority.urgency_level || 1
+        }));
+        setPriorities(prioritiesWithUrgency);
+      }
     } catch (error) {
       console.error('Error loading form data:', error);
     }
@@ -82,6 +96,12 @@ export const useTicketForm = () => {
 
   const handleFileChange = (newFiles: File[]) => {
     setFiles(newFiles);
+  };
+
+  const generateTicketNumber = () => {
+    const timestamp = Date.now().toString();
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `TK-${timestamp.slice(-6)}${random}`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -101,10 +121,13 @@ export const useTicketForm = () => {
         .eq('name', 'Novo')
         .single();
 
+      const ticketNumber = generateTicketNumber();
+
       const { data: ticket, error: ticketError } = await supabase
         .from('tickets')
         .insert({
           ...formData,
+          ticket_number: ticketNumber,
           status_id: statusData?.id,
           user_id: client?.id
         })

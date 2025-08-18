@@ -9,7 +9,7 @@ interface TicketDetailsFormProps {
     title: string;
     description: string;
   };
-  onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  onInputChange: (field: string, value: string) => void;
 }
 
 export const TicketDetailsForm: React.FC<TicketDetailsFormProps> = ({
@@ -24,7 +24,7 @@ export const TicketDetailsForm: React.FC<TicketDetailsFormProps> = ({
           id="title"
           name="title"
           value={formData.title}
-          onChange={onInputChange}
+          onChange={(e) => onInputChange('title', e.target.value)}
           required
           placeholder="Resumo do seu problema ou solicitação"
         />
@@ -36,7 +36,7 @@ export const TicketDetailsForm: React.FC<TicketDetailsFormProps> = ({
           id="description"
           name="description"
           value={formData.description}
-          onChange={onInputChange}
+          onChange={(e) => onInputChange('description', e.target.value)}
           required
           rows={5}
           placeholder="Descreva detalhadamente seu problema ou solicitação..."

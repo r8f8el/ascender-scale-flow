@@ -1,40 +1,98 @@
 
-import React from 'react';
+import React, { useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
 import { Label } from '@/components/ui/label';
-import { Paperclip } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { X, Upload, File } from 'lucide-react';
 
 interface FileUploadFormProps {
   files: File[];
-  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onFileChange: (files: File[]) => void;
 }
 
 export const FileUploadForm: React.FC<FileUploadFormProps> = ({
   files,
   onFileChange
 }) => {
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    onFileChange([...files, ...acceptedFiles]);
+  }, [files, onFileChange]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'image/*': [],
+      'application/pdf': [],
+      'application/msword': [],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': [],
+      'text/plain': []
+    },
+    maxSize: 10 * 1024 * 1024, // 10MB
+  });
+
+  const removeFile = (index: number) => {
+    const newFiles = files.filter((_, i) => i !== index);
+    onFileChange(newFiles);
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   return (
-    <div>
-      <Label htmlFor="files">Anexar Arquivos (opcional)</Label>
-      <div className="mt-1">
-        <input
-          type="file"
-          id="files"
-          multiple
-          onChange={onFileChange}
-          className="block w-full text-sm text-muted-foreground
-            file:mr-4 file:py-2 file:px-4 file:rounded-md
-            file:border-0 file:text-sm file:font-medium
-            file:bg-muted file:text-primary
-            hover:file:bg-muted/80"
-        />
-      </div>
-      {files.length > 0 && (
-        <div className="mt-2 space-y-1">
-          {files.map((file, index) => (
-            <p key={index} className="text-sm text-muted-foreground flex items-center">
-              <Paperclip size={16} className="mr-1" />
-              {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+    <div className="space-y-4">
+      <Label>Anexos (Opcional)</Label>
+      
+      <div
+        {...getRootProps()}
+        className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+          isDragActive 
+            ? 'border-[#f07c00] bg-orange-50' 
+            : 'border-gray-300 hover:border-[#f07c00]'
+        }`}
+      >
+        <input {...getInputProps()} />
+        <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+        {isDragActive ? (
+          <p className="text-[#f07c00]">Solte os arquivos aqui...</p>
+        ) : (
+          <div>
+            <p className="text-gray-600 mb-2">
+              Arraste arquivos aqui ou clique para selecionar
             </p>
+            <p className="text-sm text-gray-500">
+              Máximo 10MB por arquivo. Formatos: PDF, DOC, DOCX, TXT, Imagens
+            </p>
+          </div>
+        )}
+      </div>
+
+      {files.length > 0 && (
+        <div className="space-y-2">
+          <Label>Arquivos Selecionados:</Label>
+          {files.map((file, index) => (
+            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-3">
+                <File className="h-5 w-5 text-gray-500" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{file.name}</p>
+                  <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => removeFile(index)}
+                className="text-red-500 hover:text-red-700"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           ))}
         </div>
       )}
