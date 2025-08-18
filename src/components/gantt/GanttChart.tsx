@@ -85,8 +85,11 @@ export const GanttChart: React.FC<GanttChartProps> = ({
   }, [filteredTasks, isMobile]);
 
   const handleCreateTask = useCallback(() => {
+    console.log('🔍 handleCreateTask chamado!');
+    console.log('🔍 isTaskModalOpen antes:', isTaskModalOpen);
     setSelectedTask(null);
     setIsTaskModalOpen(true);
+    console.log('🔍 isTaskModalOpen depois:', true);
   }, []);
 
   const handleEditTask = useCallback((taskId: string) => {
@@ -297,6 +300,18 @@ export const GanttChart: React.FC<GanttChartProps> = ({
         onDelete={handleDeleteTask}
         isAdmin={isAdmin}
       />
+      {isAdmin && (
+        <div className="mb-4 p-4 bg-yellow-100 border border-yellow-300 rounded">
+          <p className="text-sm text-yellow-800 mb-2">Debug: Teste o modal</p>
+          <Button onClick={() => {
+            console.log('🔍 Teste manual do modal');
+            setIsTaskModalOpen(true);
+          }}>
+            Abrir Modal Manualmente
+          </Button>
+          <span className="ml-2 text-xs">Estado: {isTaskModalOpen ? 'ABERTO' : 'FECHADO'}</span>
+        </div>
+      )}
     </div>
   );
 };

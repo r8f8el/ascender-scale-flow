@@ -115,7 +115,7 @@ export default function GanttAdmin() {
 
         <div className="lg:col-span-3">
           {selectedProjectId ? (
-            <GanttChart projectId={selectedProjectId} />
+            <GanttChart projectId={selectedProjectId} isAdmin={true} />
           ) : (
             <Card className="h-96 flex items-center justify-center">
               <div className="text-center">
