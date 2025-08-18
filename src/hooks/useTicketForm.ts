@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -63,14 +62,14 @@ export const useTicketForm = () => {
     try {
       const [categoriesRes, prioritiesRes] = await Promise.all([
         supabase.from('ticket_categories').select('*').order('name'),
-        supabase.from('ticket_priorities').select('*').order('urgency_level')
+        supabase.from('ticket_priorities').select('*').order('level')
       ]);
 
       if (categoriesRes.data) {
         const categoriesWithColor: Category[] = categoriesRes.data.map(cat => ({
           id: cat.id,
           name: cat.name,
-          color: cat.color || '#3B82F6', // Default color if not set
+          color: '#3B82F6', // Default color since it doesn't exist in the database
           description: cat.description
         }));
         setCategories(categoriesWithColor);
@@ -80,8 +79,8 @@ export const useTicketForm = () => {
         const prioritiesWithUrgency: Priority[] = prioritiesRes.data.map(priority => ({
           id: priority.id,
           name: priority.name,
-          color: priority.color || '#F59E0B',
-          urgency_level: priority.level || priority.urgency_level || 1
+          color: '#F59E0B', // Default color
+          urgency_level: priority.level || 1 // Map 'level' to 'urgency_level'
         }));
         setPriorities(prioritiesWithUrgency);
       }
