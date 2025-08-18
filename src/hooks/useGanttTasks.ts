@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useTaskNotifications } from './useTaskNotifications';
 
 export interface GanttTask {
   id: string;
@@ -30,6 +31,7 @@ export interface GanttTask {
 export const useGanttTasks = (projectId: string) => {
   const [tasks, setTasks] = useState<GanttTask[]>([]);
   const [loading, setLoading] = useState(true);
+  const { notifyTaskAssignment } = useTaskNotifications();
 
   const fetchTasks = async () => {
     if (!projectId) return;
@@ -79,6 +81,23 @@ export const useGanttTasks = (projectId: string) => {
       
       setTasks(prev => [...prev, data]);
       toast.success('Tarefa criada');
+
+      // Enviar notificação se tarefa foi atribuída
+      if (data.assigned_to && data.collaborators) {
+        const { data: projectData } = await supabase
+          .from('gantt_projects')
+          .select('name')
+          .eq('id', projectId)
+          .single();
+
+        await notifyTaskAssignment.mutateAsync({
+          taskName: data.name,
+          assignedToEmail: data.collaborators.email,
+          assignedToName: data.collaborators.name,
+          projectName: projectData?.name || 'Projeto'
+        });
+      }
+
       return data;
     } catch (error) {
       console.error('Error creating gantt task:', error);
@@ -88,6 +107,8 @@ export const useGanttTasks = (projectId: string) => {
 
   const updateTask = async (id: string, updates: Partial<GanttTask>) => {
     try {
+      const oldTask = tasks.find(t => t.id === id);
+      
       const { data, error } = await supabase
         .from('gantt_tasks')
         .update(updates)
@@ -106,6 +127,26 @@ export const useGanttTasks = (projectId: string) => {
       
       setTasks(prev => prev.map(task => task.id === id ? data : task));
       toast.success('Tarefa atualizada');
+
+      // Enviar notificação se a atribuição mudou
+      if (updates.assigned_to && 
+          updates.assigned_to !== oldTask?.assigned_to && 
+          data.collaborators) {
+        
+        const { data: projectData } = await supabase
+          .from('gantt_projects')
+          .select('name')
+          .eq('id', projectId)
+          .single();
+
+        await notifyTaskAssignment.mutateAsync({
+          taskName: data.name,
+          assignedToEmail: data.collaborators.email,
+          assignedToName: data.collaborators.name,
+          projectName: projectData?.name || 'Projeto'
+        });
+      }
+
       return data;
     } catch (error) {
       console.error('Error updating gantt task:', error);
