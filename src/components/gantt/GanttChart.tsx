@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback } from 'react';
 import { Gantt, Task, ViewMode } from 'gantt-task-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,6 +11,7 @@ import { BarChart3, Lightbulb } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import 'gantt-task-react/dist/index.css';
+import './gantt-custom.css';
 
 interface GanttChartProps {
   projectId: string;
@@ -19,10 +19,17 @@ interface GanttChartProps {
 }
 
 const priorityColors = {
-  low: '#10B981',     // Verde
+  low: '#22C55E',     // Verde mais vibrante
   medium: '#F59E0B',  // Amarelo
   high: '#EF4444',    // Vermelho
   urgent: '#DC2626'   // Vermelho escuro
+};
+
+const statusColors = {
+  completed: '#9CA3AF',    // Cinza para completo
+  on_track: '#22C55E',     // Verde para no prazo
+  at_risk: '#F59E0B',      // Amarelo para em risco
+  delayed: '#EF4444'       // Vermelho para atrasado
 };
 
 export const GanttChart: React.FC<GanttChartProps> = ({ 
@@ -61,28 +68,103 @@ export const GanttChart: React.FC<GanttChartProps> = ({
     });
   }, [tasks, searchTerm, filters]);
 
+  // Group tasks by phases/categories for better organization
+  const organizedTasks = useMemo(() => {
+    const phases = {
+      'Iniciação': [],
+      'Planejamento': [],
+      'Execução': [],
+      'Monitoramento': [],
+      'Encerramento': []
+    };
+
+    filteredTasks.forEach(task => {
+      // Categorize tasks based on keywords or phase indicators
+      const taskName = task.name.toLowerCase();
+      if (taskName.includes('kick') || taskName.includes('início') || taskName.includes('iniciação')) {
+        phases['Iniciação'].push(task);
+      } else if (taskName.includes('plan') || taskName.includes('análise') || taskName.includes('design')) {
+        phases['Planejamento'].push(task);
+      } else if (taskName.includes('execu') || taskName.includes('desenvolv') || taskName.includes('implement')) {
+        phases['Execução'].push(task);
+      } else if (taskName.includes('teste') || taskName.includes('review') || taskName.includes('validação')) {
+        phases['Monitoramento'].push(task);
+      } else if (taskName.includes('entrega') || taskName.includes('fechamento') || taskName.includes('deploy')) {
+        phases['Encerramento'].push(task);
+      } else {
+        phases['Execução'].push(task); // Default phase
+      }
+    });
+
+    return phases;
+  }, [filteredTasks]);
+
   const ganttTasks: Task[] = useMemo(() => {
-    return filteredTasks.map((task, index) => ({
-      start: parseISO(task.start_date),
-      end: parseISO(task.end_date),
-      name: task.name,
-      id: task.id,
-      progress: task.progress,
-      type: task.is_milestone ? 'milestone' : 'task',
-      dependencies: Array.isArray(task.dependencies) ? task.dependencies : [],
-      styles: {
-        backgroundColor: priorityColors[task.priority as keyof typeof priorityColors] || priorityColors.medium,
-        backgroundSelectedColor: priorityColors[task.priority as keyof typeof priorityColors] || priorityColors.medium,
-        progressColor: '#ffffff',
-        progressSelectedColor: '#ffffff',
-        ...(isMobile && {
-          fontSize: '12px',
-          height: 35
-        })
-      },
-      displayOrder: index
-    }));
-  }, [filteredTasks, isMobile]);
+    const allTasks: Task[] = [];
+    let displayOrder = 0;
+
+    // Add phase headers and tasks
+    Object.entries(organizedTasks).forEach(([phase, phaseTasks]) => {
+      if (phaseTasks.length > 0) {
+        // Add phase header as a group task
+        allTasks.push({
+          start: new Date(Math.min(...phaseTasks.map(t => new Date(t.start_date).getTime()))),
+          end: new Date(Math.max(...phaseTasks.map(t => new Date(t.end_date).getTime()))),
+          name: phase,
+          id: `phase-${phase}`,
+          progress: Math.round(phaseTasks.reduce((sum, t) => sum + t.progress, 0) / phaseTasks.length),
+          type: 'project',
+          dependencies: [],
+          styles: {
+            backgroundColor: '#E5E7EB',
+            backgroundSelectedColor: '#D1D5DB',
+            progressColor: '#6B7280',
+            progressSelectedColor: '#6B7280',
+            fontSize: '14px',
+            fontWeight: 'bold'
+          },
+          displayOrder: displayOrder++
+        });
+
+        // Add phase tasks
+        phaseTasks.forEach((task) => {
+          const taskStatus = task.progress === 100 ? 'completed' : 
+                           task.progress > 50 ? 'on_track' : 
+                           task.progress > 0 ? 'at_risk' : 'delayed';
+
+          allTasks.push({
+            start: parseISO(task.start_date),
+            end: parseISO(task.end_date),
+            name: `  ${task.name}`, // Indent to show hierarchy
+            id: task.id,
+            progress: task.progress,
+            type: task.is_milestone ? 'milestone' : 'task',
+            dependencies: Array.isArray(task.dependencies) ? task.dependencies : [],
+            styles: {
+              backgroundColor: task.is_milestone ? '#8B5CF6' : 
+                             statusColors[taskStatus as keyof typeof statusColors],
+              backgroundSelectedColor: task.is_milestone ? '#7C3AED' : 
+                                     statusColors[taskStatus as keyof typeof statusColors],
+              progressColor: '#ffffff',
+              progressSelectedColor: '#ffffff',
+              ...(isMobile && {
+                fontSize: '12px',
+                height: 35
+              }),
+              ...(task.is_milestone && {
+                borderRadius: '50%',
+                height: isMobile ? 20 : 25,
+                width: isMobile ? 20 : 25
+              })
+            },
+            displayOrder: displayOrder++
+          });
+        });
+      }
+    });
+
+    return allTasks;
+  }, [organizedTasks, isMobile]);
 
   const handleCreateTask = useCallback(async (taskData: any) => {
     try {
@@ -124,7 +206,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({
   }, [deleteTask]);
 
   const handleDateChange = useCallback(async (task: Task) => {
-    if (!isAdmin) return;
+    if (!isAdmin || task.id.startsWith('phase-')) return;
     
     try {
       await updateTask(task.id, {
@@ -139,7 +221,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({
   }, [updateTask, isAdmin]);
 
   const handleProgressChange = useCallback(async (task: Task) => {
-    if (!isAdmin) return;
+    if (!isAdmin || task.id.startsWith('phase-')) return;
 
     const progress = task.progress;
     
@@ -259,9 +341,38 @@ export const GanttChart: React.FC<GanttChartProps> = ({
         <GanttStats tasks={filteredTasks} isAdmin={isAdmin} />
       </div>
 
-      {/* Gantt Chart - Ocupa todo o espaço restante */}
+      {/* Legend */}
+      <div className="flex-shrink-0 px-6 pb-4">
+        <Card className="p-4">
+          <div className="flex flex-wrap items-center gap-4 text-sm">
+            <span className="font-medium">Legenda:</span>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-gray-400 rounded"></div>
+              <span>Completo</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-green-500 rounded"></div>
+              <span>No prazo</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-yellow-500 rounded"></div>
+              <span>Em risco</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-red-500 rounded"></div>
+              <span>Atrasado</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-purple-500 rounded-full"></div>
+              <span>Marco</span>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Gantt Chart */}
       <div className="flex-1 px-6 pb-6">
-        <Card className="h-full">
+        <Card className="h-full shadow-lg border-0">
           <CardContent className="p-0 h-full">
             {ganttTasks.length === 0 ? (
               <div className="text-center py-12">
@@ -275,11 +386,10 @@ export const GanttChart: React.FC<GanttChartProps> = ({
               </div>
             ) : (
               <div 
-                className="gantt-container w-full" 
+                className="gantt-container w-full border border-gray-200 rounded-lg overflow-hidden" 
                 style={{ 
-                  height: isMobile ? '400px' : 'calc(100vh - 320px)', 
+                  height: isMobile ? '400px' : 'calc(100vh - 420px)', 
                   minHeight: '400px',
-                  overflow: 'auto',
                   backgroundColor: '#fafafa'
                 }}
               >
@@ -288,22 +398,40 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                   viewMode={viewMode}
                   onDateChange={handleDateChange}
                   onProgressChange={handleProgressChange}
-                  onDoubleClick={(task) => isAdmin && handleEditTask(task.id)}
-                  onDelete={(task) => isAdmin && handleDeleteTask(task.id)}
-                  listCellWidth={isMobile ? "150px" : "280px"}
+                  onDoubleClick={(task) => isAdmin && !task.id.startsWith('phase-') && handleEditTask(task.id)}
+                  onDelete={(task) => isAdmin && !task.id.startsWith('phase-') && handleDeleteTask(task.id)}
+                  listCellWidth={isMobile ? "220px" : "320px"}
                   columnWidth={
-                    viewMode === ViewMode.Month ? 350 :
-                    viewMode === ViewMode.Week ? (isMobile ? 100 : 180) :
-                    viewMode === ViewMode.Day ? (isMobile ? 60 : 120) : 80
+                    viewMode === ViewMode.Month ? 380 :
+                    viewMode === ViewMode.Week ? (isMobile ? 140 : 220) :
+                    viewMode === ViewMode.Day ? (isMobile ? 90 : 160) : 120
                   }
-                  rowHeight={isMobile ? 40 : 55}
-                  barCornerRadius={6}
-                  handleWidth={10}
+                  rowHeight={isMobile ? 50 : 65}
+                  barCornerRadius={3}
+                  handleWidth={14}
                   fontSize="13px"
+                  fontFamily="system-ui, -apple-system, sans-serif"
                   arrowColor="#6B7280"
                   arrowIndent={20}
-                  todayColor="rgba(59, 130, 246, 0.3)"
+                  todayColor="rgba(59, 130, 246, 0.15)"
+                  gridProps={{
+                    onMouseEnter: () => {},
+                    onMouseLeave: () => {}
+                  }}
                   TooltipContent={({ task }) => {
+                    if (task.id.startsWith('phase-')) {
+                      return (
+                        <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 max-w-xs z-50">
+                          <h4 className="font-semibold text-sm mb-2">{task.name}</h4>
+                          <div className="space-y-1 text-xs text-gray-600">
+                            <div>Progresso da fase: {task.progress}%</div>
+                            <div>Início: {format(task.start, 'dd/MM/yyyy')}</div>
+                            <div>Fim: {format(task.end, 'dd/MM/yyyy')}</div>
+                          </div>
+                        </div>
+                      );
+                    }
+
                     const taskData = tasks.find(t => t.id === task.id);
                     return (
                       <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 max-w-xs z-50">
@@ -316,6 +444,9 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                             <div>Fim: {format(task.end, 'dd/MM/yyyy')}</div>
                             {taskData.assigned_to && (
                               <div>Responsável: {taskData.collaborators?.name || 'N/A'}</div>
+                            )}
+                            {taskData.is_milestone && (
+                              <div className="text-purple-600 font-medium">📌 Marco</div>
                             )}
                           </div>
                         )}
