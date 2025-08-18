@@ -56,7 +56,7 @@ export const useTicketForm = () => {
         ...prev,
         user_name: client.name || '',
         user_email: client.email || '',
-        user_phone: client.company || '' // Using company field for phone since phone doesn't exist
+        user_phone: client.company || '' // Using company field since phone doesn't exist in client type
       }));
     }
 
@@ -67,16 +67,20 @@ export const useTicketForm = () => {
       ]);
 
       if (categoriesRes.data) {
-        const categoriesWithColor = categoriesRes.data.map(cat => ({
-          ...cat,
-          color: cat.color || '#3B82F6' // Default color if not set
+        const categoriesWithColor: Category[] = categoriesRes.data.map(cat => ({
+          id: cat.id,
+          name: cat.name,
+          color: cat.color || '#3B82F6', // Default color if not set
+          description: cat.description
         }));
         setCategories(categoriesWithColor);
       }
       
       if (prioritiesRes.data) {
-        const prioritiesWithUrgency = prioritiesRes.data.map(priority => ({
-          ...priority,
+        const prioritiesWithUrgency: Priority[] = prioritiesRes.data.map(priority => ({
+          id: priority.id,
+          name: priority.name,
+          color: priority.color || '#F59E0B',
           urgency_level: priority.level || priority.urgency_level || 1
         }));
         setPriorities(prioritiesWithUrgency);
