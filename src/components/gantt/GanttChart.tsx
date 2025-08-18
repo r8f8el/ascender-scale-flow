@@ -19,17 +19,17 @@ interface GanttChartProps {
 }
 
 const priorityColors = {
-  low: '#3B82F6',
-  medium: '#F59E0B', 
-  high: '#EF4444',
-  urgent: '#DC2626'
+  low: '#10B981',     // Verde
+  medium: '#F59E0B',  // Amarelo
+  high: '#EF4444',    // Vermelho
+  urgent: '#DC2626'   // Vermelho escuro
 };
 
 export const GanttChart: React.FC<GanttChartProps> = ({ 
   projectId, 
   isAdmin = true 
 }) => {
-  const { tasks, loading, createTask, updateTask, deleteTask, refetch } = useGanttTasks(projectId);
+  const { tasks, loading, creating, createTask, updateTask, deleteTask, refetch } = useGanttTasks(projectId);
   const isMobile = useResponsive();
   
   const [viewMode, setViewMode] = useState<ViewMode>(isMobile ? ViewMode.Week : ViewMode.Day);
@@ -71,8 +71,8 @@ export const GanttChart: React.FC<GanttChartProps> = ({
       type: task.is_milestone ? 'milestone' : 'task',
       dependencies: Array.isArray(task.dependencies) ? task.dependencies : [],
       styles: {
-        backgroundColor: priorityColors[task.priority] || priorityColors.medium,
-        backgroundSelectedColor: priorityColors[task.priority] || priorityColors.medium,
+        backgroundColor: priorityColors[task.priority as keyof typeof priorityColors] || priorityColors.medium,
+        backgroundSelectedColor: priorityColors[task.priority as keyof typeof priorityColors] || priorityColors.medium,
         progressColor: '#ffffff',
         progressSelectedColor: '#ffffff',
         ...(isMobile && {
@@ -87,19 +87,11 @@ export const GanttChart: React.FC<GanttChartProps> = ({
   const handleCreateTask = useCallback(async (taskData: any) => {
     try {
       console.log('GanttChart: Creating task with data:', taskData);
-      
-      await createTask({
-        ...taskData,
-        project_id: projectId
-      });
-      
-      // Recarregar tasks após criação
-      await refetch();
-      
+      await createTask(taskData);
     } catch (error) {
       console.error('GanttChart: Error creating task:', error);
     }
-  }, [createTask, projectId, refetch]);
+  }, [createTask]);
 
   const handleEditTask = useCallback((taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
@@ -126,10 +118,8 @@ export const GanttChart: React.FC<GanttChartProps> = ({
   const handleDeleteTask = useCallback(async (taskId: string) => {
     try {
       await deleteTask(taskId);
-      toast.success('Tarefa excluída com sucesso!');
     } catch (error) {
       console.error('Error deleting task:', error);
-      toast.error('Erro ao excluir tarefa');
     }
   }, [deleteTask]);
 
@@ -209,7 +199,11 @@ export const GanttChart: React.FC<GanttChartProps> = ({
             
             {isAdmin && (
               <div className="space-y-4">
-                <GanttTaskCreator onCreateTask={handleCreateTask} />
+                <GanttTaskCreator 
+                  onCreateTask={handleCreateTask} 
+                  loading={creating}
+                  disabled={!projectId}
+                />
                 
                 <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <div className="flex items-start gap-3">
@@ -251,7 +245,11 @@ export const GanttChart: React.FC<GanttChartProps> = ({
           completedCount={filteredTasks.filter(t => t.progress === 100).length}
           onRefresh={refetch}
           customCreateButton={
-            <GanttTaskCreator onCreateTask={handleCreateTask} />
+            <GanttTaskCreator 
+              onCreateTask={handleCreateTask} 
+              loading={creating}
+              disabled={!projectId}
+            />
           }
         />
       </div>

@@ -31,6 +31,7 @@ export interface GanttTask {
 export const useGanttTasks = (projectId: string) => {
   const [tasks, setTasks] = useState<GanttTask[]>([]);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
   const { notifyTaskAssignment } = useTaskNotifications();
 
   const fetchTasks = async () => {
@@ -72,17 +73,28 @@ export const useGanttTasks = (projectId: string) => {
   };
 
   const createTask = async (task: Omit<GanttTask, 'id' | 'created_at' | 'updated_at' | 'collaborators'>) => {
+    if (!projectId) {
+      toast.error('Projeto não selecionado');
+      throw new Error('No project selected');
+    }
+
     try {
+      setCreating(true);
       console.log('Creating task with data:', task);
+      
+      // Garantir que o project_id está correto
+      const taskData = {
+        ...task,
+        project_id: projectId,
+        actual_hours: task.actual_hours || 0,
+        dependencies: task.dependencies || []
+      };
+
+      console.log('Final task data being sent:', taskData);
       
       const { data, error } = await supabase
         .from('gantt_tasks')
-        .insert([{
-          ...task,
-          project_id: projectId,
-          actual_hours: 0,
-          dependencies: task.dependencies || []
-        }])
+        .insert([taskData])
         .select(`
           *,
           collaborators (
@@ -95,12 +107,22 @@ export const useGanttTasks = (projectId: string) => {
 
       if (error) {
         console.error('Supabase error creating task:', error);
+        toast.error(`Erro ao criar tarefa: ${error.message}`);
         throw error;
       }
       
       console.log('Task created successfully:', data);
+      
+      // Atualizar estado local imediatamente
       setTasks(prev => [...prev, data]);
       
+      // Recarregar tasks para garantir sincronização
+      await fetchTasks();
+      
+      toast.success('Tarefa criada com sucesso!', {
+        description: `A tarefa "${data.name}" foi adicionada ao cronograma.`
+      });
+
       // Enviar notificação se tarefa foi atribuída
       if (data.assigned_to && data.collaborators) {
         try {
@@ -124,8 +146,9 @@ export const useGanttTasks = (projectId: string) => {
       return data;
     } catch (error) {
       console.error('Error creating gantt task:', error);
-      toast.error('Erro ao criar tarefa');
       throw error;
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -203,6 +226,7 @@ export const useGanttTasks = (projectId: string) => {
       
       console.log('Task deleted successfully');
       setTasks(prev => prev.filter(task => task.id !== id));
+      toast.success('Tarefa excluída com sucesso');
     } catch (error) {
       console.error('Error deleting gantt task:', error);
       toast.error('Erro ao excluir tarefa');
@@ -217,6 +241,7 @@ export const useGanttTasks = (projectId: string) => {
   return {
     tasks,
     loading,
+    creating,
     createTask,
     updateTask,
     deleteTask,

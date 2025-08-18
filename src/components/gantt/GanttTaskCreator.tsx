@@ -18,16 +18,21 @@ import { toast } from 'sonner';
 interface TaskCreatorProps {
   onCreateTask: (taskData: any) => Promise<void>;
   loading?: boolean;
+  disabled?: boolean;
 }
 
 const priorityOptions = [
-  { value: 'low', label: 'Baixa', color: 'bg-blue-500', icon: '🔵' },
+  { value: 'low', label: 'Baixa', color: 'bg-green-500', icon: '🟢' },
   { value: 'medium', label: 'Média', color: 'bg-yellow-500', icon: '🟡' },
   { value: 'high', label: 'Alta', color: 'bg-orange-500', icon: '🟠' },
   { value: 'urgent', label: 'Urgente', color: 'bg-red-500', icon: '🔴' }
 ];
 
-export const GanttTaskCreator: React.FC<TaskCreatorProps> = ({ onCreateTask, loading = false }) => {
+export const GanttTaskCreator: React.FC<TaskCreatorProps> = ({ 
+  onCreateTask, 
+  loading = false, 
+  disabled = false 
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -85,21 +90,15 @@ export const GanttTaskCreator: React.FC<TaskCreatorProps> = ({ onCreateTask, loa
         dependencies: []
       };
 
-      console.log('Criando tarefa com dados:', taskData);
+      console.log('GanttTaskCreator: Submitting task data:', taskData);
       
       await onCreateTask(taskData);
       
-      toast.success('Tarefa criada com sucesso!', {
-        description: `A tarefa "${formData.name}" foi adicionada ao cronograma.`
-      });
-      
       setIsOpen(false);
       resetForm();
+      
     } catch (error) {
-      console.error('Erro ao criar tarefa:', error);
-      toast.error('Erro ao criar tarefa', {
-        description: 'Tente novamente ou contate o suporte.'
-      });
+      console.error('GanttTaskCreator: Error creating task:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -110,7 +109,10 @@ export const GanttTaskCreator: React.FC<TaskCreatorProps> = ({ onCreateTask, loa
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2 bg-primary hover:bg-primary/90">
+        <Button 
+          className="gap-2 bg-primary hover:bg-primary/90" 
+          disabled={disabled || loading}
+        >
           <Plus className="h-4 w-4" />
           Nova Tarefa
         </Button>
