@@ -7,8 +7,9 @@ import { useGanttTasks, GanttTask } from '@/hooks/useGanttTasks';
 import { GanttHeader } from './GanttHeader';
 import { GanttStats } from './GanttStats';
 import { GanttTaskModal } from './GanttTaskModal';
+import { GanttTaskCreator } from './GanttTaskCreator';
 import { useResponsive } from '@/hooks/useResponsive';
-import { BarChart3, Plus } from 'lucide-react';
+import { BarChart3, Plus, Lightbulb } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import 'gantt-task-react/dist/index.css';
@@ -27,7 +28,7 @@ const priorityColors = {
 
 export const GanttChart: React.FC<GanttChartProps> = ({ 
   projectId, 
-  isAdmin = false 
+  isAdmin = true 
 }) => {
   const { tasks, loading, createTask, updateTask, deleteTask, refetch } = useGanttTasks(projectId);
   const isMobile = useResponsive();
@@ -84,10 +85,25 @@ export const GanttChart: React.FC<GanttChartProps> = ({
     }));
   }, [filteredTasks, isMobile]);
 
-  const handleCreateTask = useCallback(() => {
-    setSelectedTask(null);
-    setIsTaskModalOpen(true);
-  }, []);
+  const handleCreateTask = useCallback(async (taskData: any) => {
+    try {
+      const fullTaskData = {
+        ...taskData,
+        project_id: projectId,
+        actual_hours: 0
+      };
+
+      await createTask(fullTaskData);
+      toast.success('Tarefa criada com sucesso!', {
+        description: `A tarefa "${taskData.name}" foi adicionada ao cronograma.`
+      });
+    } catch (error) {
+      console.error('Error creating task:', error);
+      toast.error('Erro ao criar tarefa', {
+        description: 'Tente novamente ou contate o suporte.'
+      });
+    }
+  }, [createTask, projectId]);
 
   const handleEditTask = useCallback((taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
@@ -171,20 +187,41 @@ export const GanttChart: React.FC<GanttChartProps> = ({
   if (tasks.length === 0) {
     return (
       <Card className="text-center py-12">
-        <CardContent>
-          <BarChart3 className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium text-muted-foreground mb-2">
-            Nenhuma tarefa encontrada
-          </h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            {isAdmin ? 'Crie sua primeira tarefa para começar o cronograma' : 'Aguarde as tarefas serem criadas'}
-          </p>
-          {isAdmin && (
-            <Button onClick={handleCreateTask}>
-              <Plus className="w-4 h-4 mr-2" />
-              Criar Primeira Tarefa
-            </Button>
-          )}
+        <CardContent className="space-y-6">
+          <div className="max-w-md mx-auto">
+            <BarChart3 className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+            <h3 className="text-xl font-semibold text-foreground mb-2">
+              Nenhuma tarefa encontrada
+            </h3>
+            <p className="text-sm text-muted-foreground mb-6">
+              {isAdmin 
+                ? 'Comece criando sua primeira tarefa para montar o cronograma do projeto' 
+                : 'Aguarde as tarefas serem criadas pela equipe'
+              }
+            </p>
+            
+            {isAdmin && (
+              <div className="space-y-4">
+                <GanttTaskCreator onCreateTask={handleCreateTask} />
+                
+                <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-start gap-3">
+                    <Lightbulb className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div className="text-left">
+                      <h4 className="text-sm font-medium text-blue-900">
+                        Dicas para começar
+                      </h4>
+                      <ul className="text-sm text-blue-700 mt-2 space-y-1">
+                        <li>• Crie marcos importantes como "Kick-off" e "Entrega Final"</li>
+                        <li>• Defina fases como "Coleta de Dados" e "Análise"</li>
+                        <li>• Use prioridades para destacar tarefas críticas</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     );
@@ -197,7 +234,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({
         <GanttHeader
           viewMode={viewMode}
           onViewModeChange={setViewMode}
-          onCreateTask={handleCreateTask}
+          onCreateTask={() => setIsTaskModalOpen(true)}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           filters={filters}
@@ -206,6 +243,9 @@ export const GanttChart: React.FC<GanttChartProps> = ({
           taskCount={filteredTasks.length}
           completedCount={filteredTasks.filter(t => t.progress === 100).length}
           onRefresh={refetch}
+          customCreateButton={
+            <GanttTaskCreator onCreateTask={handleCreateTask} />
+          }
         />
       </div>
 
