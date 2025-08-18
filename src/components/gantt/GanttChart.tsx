@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback } from 'react';
 import { Gantt, Task, ViewMode } from 'gantt-task-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -119,9 +120,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({
             backgroundColor: '#E5E7EB',
             backgroundSelectedColor: '#D1D5DB',
             progressColor: '#6B7280',
-            progressSelectedColor: '#6B7280',
-            fontSize: '14px',
-            fontWeight: 'bold'
+            progressSelectedColor: '#6B7280'
           },
           displayOrder: displayOrder++
         });
@@ -146,16 +145,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({
               backgroundSelectedColor: task.is_milestone ? '#7C3AED' : 
                                      statusColors[taskStatus as keyof typeof statusColors],
               progressColor: '#ffffff',
-              progressSelectedColor: '#ffffff',
-              ...(isMobile && {
-                fontSize: '12px',
-                height: 35
-              }),
-              ...(task.is_milestone && {
-                borderRadius: '50%',
-                height: isMobile ? 20 : 25,
-                width: isMobile ? 20 : 25
-              })
+              progressSelectedColor: '#ffffff'
             },
             displayOrder: displayOrder++
           });
@@ -164,7 +154,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({
     });
 
     return allTasks;
-  }, [organizedTasks, isMobile]);
+  }, [organizedTasks]);
 
   const handleCreateTask = useCallback(async (taskData: any) => {
     try {
@@ -414,10 +404,6 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                   arrowColor="#6B7280"
                   arrowIndent={20}
                   todayColor="rgba(59, 130, 246, 0.15)"
-                  gridProps={{
-                    onMouseEnter: () => {},
-                    onMouseLeave: () => {}
-                  }}
                   TooltipContent={({ task }) => {
                     if (task.id.startsWith('phase-')) {
                       return (
