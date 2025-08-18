@@ -87,6 +87,20 @@ export const SecureInviteTeamMemberDialog: React.FC<SecureInviteTeamMemberDialog
         return;
       }
 
+      // Buscar hierarchy_level padrão (nível mais baixo)
+      const { data: hierarchyLevel, error: hierarchyError } = await supabase
+        .from('hierarchy_levels')
+        .select('id')
+        .order('level', { ascending: true })
+        .limit(1)
+        .single();
+
+      if (hierarchyError) {
+        console.error('Erro ao buscar hierarchy level:', hierarchyError);
+        toast.error('Erro ao configurar permissões');
+        return;
+      }
+
       // Criar convite seguro na tabela team_invitations
       const inviteToken = crypto.randomUUID() + '-' + Date.now();
       const expiresAt = new Date();
@@ -97,7 +111,9 @@ export const SecureInviteTeamMemberDialog: React.FC<SecureInviteTeamMemberDialog
         .insert({
           company_id: user.id,
           email: formData.email.trim().toLowerCase(),
+          inviter_id: user.id,
           inviter_name: profile.name || user.email || 'Administrador',
+          invited_name: formData.name.trim(),
           token: inviteToken,
           message: formData.message.trim() || null,
           expires_at: expiresAt.toISOString(),
@@ -123,6 +139,7 @@ export const SecureInviteTeamMemberDialog: React.FC<SecureInviteTeamMemberDialog
           company_id: user.id,
           invited_email: formData.email.trim().toLowerCase(),
           name: formData.name.trim(),
+          hierarchy_level_id: hierarchyLevel.id,
           invited_by: user.id,
           status: 'pending'
         });
