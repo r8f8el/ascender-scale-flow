@@ -11,6 +11,7 @@ import { useMonitoring } from "@/hooks/useMonitoring";
 import Index from "@/pages/Index";
 import ClientLogin from "@/pages/ClientLogin";
 import AdminLogin from "@/pages/AdminLogin";
+import AdminRegister from "@/pages/AdminRegister";
 import ClientArea from "@/pages/ClientArea";
 import AdminArea from "@/pages/admin/AdminArea";
 import AbrirChamado from "@/pages/AbrirChamado";
@@ -55,6 +56,7 @@ function App() {
                 <Route path="/" element={<Index />} />
                 <Route path="/cliente/login" element={<ClientLogin />} />
                 <Route path="/admin/login" element={<AdminLogin />} />
+                <Route path="/admin/register" element={<AdminRegister />} />
                 
                 {/* Public ticket route */}
                 <Route path="/abrir-chamado" element={<AbrirChamado />} />
