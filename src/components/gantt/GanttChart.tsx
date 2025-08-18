@@ -2,14 +2,13 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Gantt, Task, ViewMode } from 'gantt-task-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { useGanttTasks, GanttTask } from '@/hooks/useGanttTasks';
 import { GanttHeader } from './GanttHeader';
 import { GanttStats } from './GanttStats';
 import { GanttTaskModal } from './GanttTaskModal';
 import { GanttTaskCreator } from './GanttTaskCreator';
 import { useResponsive } from '@/hooks/useResponsive';
-import { BarChart3, Plus, Lightbulb } from 'lucide-react';
+import { BarChart3, Lightbulb } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import 'gantt-task-react/dist/index.css';
@@ -87,23 +86,20 @@ export const GanttChart: React.FC<GanttChartProps> = ({
 
   const handleCreateTask = useCallback(async (taskData: any) => {
     try {
-      const fullTaskData = {
+      console.log('GanttChart: Creating task with data:', taskData);
+      
+      await createTask({
         ...taskData,
-        project_id: projectId,
-        actual_hours: 0
-      };
-
-      await createTask(fullTaskData);
-      toast.success('Tarefa criada com sucesso!', {
-        description: `A tarefa "${taskData.name}" foi adicionada ao cronograma.`
+        project_id: projectId
       });
+      
+      // Recarregar tasks após criação
+      await refetch();
+      
     } catch (error) {
-      console.error('Error creating task:', error);
-      toast.error('Erro ao criar tarefa', {
-        description: 'Tente novamente ou contate o suporte.'
-      });
+      console.error('GanttChart: Error creating task:', error);
     }
-  }, [createTask, projectId]);
+  }, [createTask, projectId, refetch]);
 
   const handleEditTask = useCallback((taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
@@ -115,24 +111,17 @@ export const GanttChart: React.FC<GanttChartProps> = ({
 
   const handleSaveTask = useCallback(async (taskData: any) => {
     try {
-      const fullTaskData = {
-        ...taskData,
-        project_id: projectId,
-        actual_hours: selectedTask ? selectedTask.actual_hours : 0
-      };
-
       if (selectedTask) {
-        await updateTask(selectedTask.id, fullTaskData);
+        await updateTask(selectedTask.id, taskData);
         toast.success('Tarefa atualizada com sucesso!');
       } else {
-        await createTask(fullTaskData);
-        toast.success('Tarefa criada com sucesso!');
+        await handleCreateTask(taskData);
       }
     } catch (error) {
       console.error('Error saving task:', error);
       toast.error('Erro ao salvar tarefa');
     }
-  }, [selectedTask, createTask, updateTask, projectId]);
+  }, [selectedTask, updateTask, handleCreateTask]);
 
   const handleDeleteTask = useCallback(async (taskId: string) => {
     try {
@@ -181,6 +170,24 @@ export const GanttChart: React.FC<GanttChartProps> = ({
           <p className="text-sm text-gray-500">Carregando cronograma...</p>
         </div>
       </div>
+    );
+  }
+
+  if (!projectId) {
+    return (
+      <Card className="text-center py-12">
+        <CardContent className="space-y-6">
+          <div className="max-w-md mx-auto">
+            <BarChart3 className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
+            <h3 className="text-xl font-semibold text-foreground mb-2">
+              Selecione um projeto
+            </h3>
+            <p className="text-sm text-muted-foreground mb-6">
+              Escolha um projeto para visualizar e gerenciar o cronograma
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 

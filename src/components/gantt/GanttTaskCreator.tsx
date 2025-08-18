@@ -9,10 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
-import { CalendarIcon, Plus, Target, Clock, User } from 'lucide-react';
+import { CalendarIcon, Plus, Target, Clock } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface TaskCreatorProps {
   onCreateTask: (taskData: any) => Promise<void>;
@@ -26,14 +27,9 @@ const priorityOptions = [
   { value: 'urgent', label: 'Urgente', color: 'bg-red-500', icon: '🔴' }
 ];
 
-const statusOptions = [
-  { value: 'pending', label: 'Pendente', color: 'text-gray-600' },
-  { value: 'in_progress', label: 'Em Andamento', color: 'text-blue-600' },
-  { value: 'completed', label: 'Concluído', color: 'text-green-600' }
-];
-
 export const GanttTaskCreator: React.FC<TaskCreatorProps> = ({ onCreateTask, loading = false }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -62,20 +58,50 @@ export const GanttTaskCreator: React.FC<TaskCreatorProps> = ({ onCreateTask, loa
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name.trim()) return;
+    if (!formData.name.trim()) {
+      toast.error('Nome da tarefa é obrigatório');
+      return;
+    }
+
+    if (startDate >= endDate && !formData.is_milestone) {
+      toast.error('Data de fim deve ser posterior à data de início');
+      return;
+    }
+
+    setIsSubmitting(true);
 
     try {
-      await onCreateTask({
-        ...formData,
+      const taskData = {
+        name: formData.name.trim(),
+        description: formData.description.trim() || null,
         start_date: format(startDate, 'yyyy-MM-dd'),
-        end_date: format(endDate, 'yyyy-MM-dd'),
-        progress: 0
+        end_date: format(formData.is_milestone ? startDate : endDate, 'yyyy-MM-dd'),
+        priority: formData.priority,
+        estimated_hours: formData.estimated_hours,
+        is_milestone: formData.is_milestone,
+        assigned_to: formData.assigned_to || null,
+        progress: 0,
+        actual_hours: 0,
+        dependencies: []
+      };
+
+      console.log('Criando tarefa com dados:', taskData);
+      
+      await onCreateTask(taskData);
+      
+      toast.success('Tarefa criada com sucesso!', {
+        description: `A tarefa "${formData.name}" foi adicionada ao cronograma.`
       });
       
       setIsOpen(false);
       resetForm();
     } catch (error) {
       console.error('Erro ao criar tarefa:', error);
+      toast.error('Erro ao criar tarefa', {
+        description: 'Tente novamente ou contate o suporte.'
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -278,16 +304,16 @@ export const GanttTaskCreator: React.FC<TaskCreatorProps> = ({ onCreateTask, loa
               type="button" 
               variant="outline" 
               onClick={() => setIsOpen(false)}
-              disabled={loading}
+              disabled={isSubmitting}
             >
               Cancelar
             </Button>
             <Button 
               type="submit" 
-              disabled={loading || !formData.name.trim()}
+              disabled={isSubmitting || !formData.name.trim()}
               className="min-w-[120px]"
             >
-              {loading ? (
+              {isSubmitting ? (
                 <div className="flex items-center gap-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                   Criando...

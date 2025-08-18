@@ -34,10 +34,14 @@ export const useGanttTasks = (projectId: string) => {
   const { notifyTaskAssignment } = useTaskNotifications();
 
   const fetchTasks = async () => {
-    if (!projectId) return;
+    if (!projectId) {
+      setLoading(false);
+      return;
+    }
     
     try {
       setLoading(true);
+      console.log('Fetching tasks for project:', projectId);
       
       const { data, error } = await supabase
         .from('gantt_tasks')
@@ -52,7 +56,12 @@ export const useGanttTasks = (projectId: string) => {
         .eq('project_id', projectId)
         .order('start_date');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      console.log('Tasks fetched successfully:', data);
       setTasks(data || []);
     } catch (error) {
       console.error('Error fetching gantt tasks:', error);
@@ -64,9 +73,16 @@ export const useGanttTasks = (projectId: string) => {
 
   const createTask = async (task: Omit<GanttTask, 'id' | 'created_at' | 'updated_at' | 'collaborators'>) => {
     try {
+      console.log('Creating task with data:', task);
+      
       const { data, error } = await supabase
         .from('gantt_tasks')
-        .insert([task])
+        .insert([{
+          ...task,
+          project_id: projectId,
+          actual_hours: 0,
+          dependencies: task.dependencies || []
+        }])
         .select(`
           *,
           collaborators (
@@ -77,37 +93,46 @@ export const useGanttTasks = (projectId: string) => {
         `)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error creating task:', error);
+        throw error;
+      }
       
+      console.log('Task created successfully:', data);
       setTasks(prev => [...prev, data]);
-      toast.success('Tarefa criada');
-
+      
       // Enviar notificação se tarefa foi atribuída
       if (data.assigned_to && data.collaborators) {
-        const { data: projectData } = await supabase
-          .from('gantt_projects')
-          .select('name')
-          .eq('id', projectId)
-          .single();
+        try {
+          const { data: projectData } = await supabase
+            .from('gantt_projects')
+            .select('name')
+            .eq('id', projectId)
+            .single();
 
-        await notifyTaskAssignment.mutateAsync({
-          taskName: data.name,
-          assignedToEmail: data.collaborators.email,
-          assignedToName: data.collaborators.name,
-          projectName: projectData?.name || 'Projeto'
-        });
+          await notifyTaskAssignment.mutateAsync({
+            taskName: data.name,
+            assignedToEmail: data.collaborators.email,
+            assignedToName: data.collaborators.name,
+            projectName: projectData?.name || 'Projeto'
+          });
+        } catch (notificationError) {
+          console.warn('Error sending notification:', notificationError);
+        }
       }
 
       return data;
     } catch (error) {
       console.error('Error creating gantt task:', error);
       toast.error('Erro ao criar tarefa');
+      throw error;
     }
   };
 
   const updateTask = async (id: string, updates: Partial<GanttTask>) => {
     try {
       const oldTask = tasks.find(t => t.id === id);
+      console.log('Updating task:', id, updates);
       
       const { data, error } = await supabase
         .from('gantt_tasks')
@@ -123,51 +148,65 @@ export const useGanttTasks = (projectId: string) => {
         `)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error updating task:', error);
+        throw error;
+      }
       
+      console.log('Task updated successfully:', data);
       setTasks(prev => prev.map(task => task.id === id ? data : task));
-      toast.success('Tarefa atualizada');
 
       // Enviar notificação se a atribuição mudou
       if (updates.assigned_to && 
           updates.assigned_to !== oldTask?.assigned_to && 
           data.collaborators) {
         
-        const { data: projectData } = await supabase
-          .from('gantt_projects')
-          .select('name')
-          .eq('id', projectId)
-          .single();
+        try {
+          const { data: projectData } = await supabase
+            .from('gantt_projects')
+            .select('name')
+            .eq('id', projectId)
+            .single();
 
-        await notifyTaskAssignment.mutateAsync({
-          taskName: data.name,
-          assignedToEmail: data.collaborators.email,
-          assignedToName: data.collaborators.name,
-          projectName: projectData?.name || 'Projeto'
-        });
+          await notifyTaskAssignment.mutateAsync({
+            taskName: data.name,
+            assignedToEmail: data.collaborators.email,
+            assignedToName: data.collaborators.name,
+            projectName: projectData?.name || 'Projeto'
+          });
+        } catch (notificationError) {
+          console.warn('Error sending notification:', notificationError);
+        }
       }
 
       return data;
     } catch (error) {
       console.error('Error updating gantt task:', error);
       toast.error('Erro ao atualizar tarefa');
+      throw error;
     }
   };
 
   const deleteTask = async (id: string) => {
     try {
+      console.log('Deleting task:', id);
+      
       const { error } = await supabase
         .from('gantt_tasks')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error deleting task:', error);
+        throw error;
+      }
       
+      console.log('Task deleted successfully');
       setTasks(prev => prev.filter(task => task.id !== id));
-      toast.success('Tarefa excluída');
     } catch (error) {
       console.error('Error deleting gantt task:', error);
       toast.error('Erro ao excluir tarefa');
+      throw error;
     }
   };
 
