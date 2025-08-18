@@ -1,179 +1,220 @@
 
-/* Custom Gantt Chart Styles */
-.gantt-container .react-flow__node {
-  border-radius: 4px;
+/* Custom Gantt Chart Styles - Otimizado para visualização limpa */
+
+/* Container principal do Gantt */
+.gantt-container {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-/* Phase header styling */
-.gantt-container .react-flow__node[data-type="project"] {
-  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-  border: 1px solid #d1d5db;
+/* Remover bordas desnecessárias e melhorar layout */
+.gantt-container .gantt-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+/* Header da lista de tarefas - mais limpo */
+.gantt-container .gantt-task-list-header {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 2px solid #e2e8f0;
   font-weight: 600;
-  color: #374151;
+  color: #334155;
+  padding: 12px 16px;
+  font-size: 14px;
 }
 
-/* Task styling based on status */
-.gantt-container .react-flow__node[data-progress="100"] {
-  background: #9ca3af !important;
-  border: 1px solid #6b7280;
-}
-
-.gantt-container .react-flow__node[data-status="on_track"] {
-  background: #22c55e !important;
-  border: 1px solid #16a34a;
-}
-
-.gantt-container .react-flow__node[data-status="at_risk"] {
-  background: #f59e0b !important;
-  border: 1px solid #d97706;
-}
-
-.gantt-container .react-flow__node[data-status="delayed"] {
-  background: #ef4444 !important;
-  border: 1px solid #dc2626;
-}
-
-/* Milestone styling */
-.gantt-container .react-flow__node[data-type="milestone"] {
-  background: #8b5cf6 !important;
-  border: 2px solid #7c3aed;
-  border-radius: 50% !important;
-  position: relative;
-}
-
-.gantt-container .react-flow__node[data-type="milestone"]:after {
-  content: "♦";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: white;
-  font-size: 12px;
-  font-weight: bold;
-}
-
-/* Grid improvements */
-.gantt-container .react-flow__background {
-  background-color: #fafafa;
-}
-
-.gantt-container .react-flow__controls {
-  display: none;
-}
-
-/* Enhance task list area */
-.gantt-container .gantt-task-list-wrapper {
-  border-right: 1px solid #e5e7eb;
-  background: #ffffff;
-}
-
-.gantt-container .gantt-task-list-table {
-  font-size: 13px;
-}
-
-.gantt-container .gantt-task-list-header-item {
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
-  font-weight: 600;
-  color: #374151;
-}
-
+/* Linhas das tarefas - mais espaçadas e organizadas */
 .gantt-container .gantt-task-list-row {
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background-color 0.2s ease;
 }
 
 .gantt-container .gantt-task-list-row:hover {
-  background: #f9fafb;
+  background-color: #f8fafc;
 }
 
-/* Timeline improvements */
+/* Estilo para fases (headers de grupo) */
+.gantt-container .phase-row {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%) !important;
+  border-top: 2px solid #d1d5db;
+  border-bottom: 1px solid #d1d5db;
+  font-weight: 600;
+  color: #374151;
+}
+
+/* Estilo para tarefas individuais */
+.gantt-container .task-row {
+  background: #ffffff;
+  position: relative;
+}
+
+.gantt-container .task-row:before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  width: 2px;
+  height: 20px;
+  background: #e5e7eb;
+  transform: translateY(-50%);
+}
+
+/* Área do timeline - mais limpa */
 .gantt-container .gantt-timeline-wrapper {
   background: #ffffff;
+  border-left: 1px solid #e5e7eb;
 }
 
+/* Header do timeline */
 .gantt-container .gantt-timeline-header {
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 2px solid #e2e8f0;
+  font-weight: 500;
+  color: #475569;
 }
 
-.gantt-container .gantt-timeline-grid {
-  stroke: #f3f4f6;
-  stroke-width: 1;
+/* Grid do timeline */
+.gantt-container .gantt-timeline-grid-row {
+  border-bottom: 1px solid #f8fafc;
 }
 
+.gantt-container .gantt-timeline-grid-row:nth-child(even) {
+  background: #fdfdfd;
+}
+
+/* Linha de hoje */
 .gantt-container .gantt-today-line {
   stroke: #3b82f6;
   stroke-width: 2;
   stroke-dasharray: 4,4;
+  opacity: 0.7;
 }
 
-/* Progress bar styling */
-.gantt-container .gantt-task-progress {
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 2px;
+/* Barras de tarefas - melhor visual */
+.gantt-container .gantt-bar {
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
 }
 
-/* Dependency arrow styling */
+.gantt-container .gantt-bar:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+/* Barras de progresso */
+.gantt-container .gantt-bar-progress {
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.9) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Marcos - visual de diamante */
+.gantt-container .gantt-bar[data-type="milestone"] {
+  transform: rotate(45deg);
+  border-radius: 2px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Dependências - setas mais elegantes */
 .gantt-container .gantt-arrow {
   stroke: #6b7280;
   stroke-width: 2;
   fill: #6b7280;
+  opacity: 0.8;
 }
 
-/* Tooltip improvements */
+/* Tooltips mais elegantes */
 .gantt-container .gantt-tooltip {
-  background: white;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(8px);
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
   font-size: 12px;
   z-index: 1000;
+  padding: 0;
 }
 
-/* Scrollbar styling */
+/* Scrollbars customizadas */
 .gantt-container::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 .gantt-container::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 4px;
+  background: #f8fafc;
+  border-radius: 3px;
 }
 
 .gantt-container::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 4px;
+  border-radius: 3px;
+  transition: background 0.2s ease;
 }
 
 .gantt-container::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
 
-/* Phase grouping visual separation */
-.gantt-container .gantt-task-list-row[data-type="project"] {
-  background: #f8fafc;
+/* Cores específicas para status das tarefas */
+.gantt-container .gantt-bar[data-status="completed"] {
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+  border: 1px solid #6b7280;
+}
+
+.gantt-container .gantt-bar[data-status="on_track"] {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  border: 1px solid #16a34a;
+}
+
+.gantt-container .gantt-bar[data-status="at_risk"] {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  border: 1px solid #d97706;
+}
+
+.gantt-container .gantt-bar[data-status="delayed"] {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border: 1px solid #dc2626;
+}
+
+/* Responsividade para mobile */
+@media (max-width: 768px) {
+  .gantt-container .gantt-task-list-header {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  
+  .gantt-container .task-row,
+  .gantt-container .phase-row {
+    font-size: 12px;
+    padding: 6px 8px;
+  }
+  
+  .gantt-container .gantt-bar {
+    border-radius: 4px;
+  }
+}
+
+/* Melhorar legibilidade do texto */
+.gantt-container .gantt-task-list-cell {
+  font-size: 13px;
+  line-height: 1.4;
+  color: #374151;
+}
+
+.gantt-container .phase-row .gantt-task-list-cell {
   font-weight: 600;
-  border-top: 2px solid #e2e8f0;
-  border-bottom: 1px solid #e2e8f0;
+  color: #1f2937;
 }
 
-.gantt-container .gantt-task-list-row[data-type="project"] + .gantt-task-list-row {
-  border-top: none;
+/* Animações suaves */
+.gantt-container .gantt-bar,
+.gantt-container .gantt-task-list-row {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Indentation for hierarchical tasks */
-.gantt-container .gantt-task-list-cell[data-indented="true"] {
-  padding-left: 24px;
-  position: relative;
-}
-
-.gantt-container .gantt-task-list-cell[data-indented="true"]:before {
-  content: "";
-  position: absolute;
-  left: 12px;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background: #e5e7eb;
+/* Destaque para tarefas selecionadas */
+.gantt-container .gantt-bar-selected {
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  transform: scale(1.02);
 }

@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback } from 'react';
 import { Gantt, Task, ViewMode } from 'gantt-task-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -134,7 +133,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({
           allTasks.push({
             start: parseISO(task.start_date),
             end: parseISO(task.end_date),
-            name: `  ${task.name}`, // Indent to show hierarchy
+            name: task.name,
             id: task.id,
             progress: task.progress,
             type: task.is_milestone ? 'milestone' : 'task',
@@ -390,20 +389,54 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                   onProgressChange={handleProgressChange}
                   onDoubleClick={(task) => isAdmin && !task.id.startsWith('phase-') && handleEditTask(task.id)}
                   onDelete={(task) => isAdmin && !task.id.startsWith('phase-') && handleDeleteTask(task.id)}
-                  listCellWidth={isMobile ? "220px" : "320px"}
+                  listCellWidth={isMobile ? "180px" : "220px"}
                   columnWidth={
-                    viewMode === ViewMode.Month ? 380 :
-                    viewMode === ViewMode.Week ? (isMobile ? 140 : 220) :
-                    viewMode === ViewMode.Day ? (isMobile ? 90 : 160) : 120
+                    viewMode === ViewMode.Month ? 300 :
+                    viewMode === ViewMode.Week ? (isMobile ? 120 : 180) :
+                    viewMode === ViewMode.Day ? (isMobile ? 80 : 140) : 100
                   }
-                  rowHeight={isMobile ? 50 : 65}
-                  barCornerRadius={3}
-                  handleWidth={14}
-                  fontSize="13px"
-                  fontFamily="system-ui, -apple-system, sans-serif"
+                  rowHeight={isMobile ? 45 : 55}
+                  barCornerRadius={4}
+                  handleWidth={12}
                   arrowColor="#6B7280"
-                  arrowIndent={20}
-                  todayColor="rgba(59, 130, 246, 0.15)"
+                  arrowIndent={16}
+                  todayColor="rgba(59, 130, 246, 0.2)"
+                  TaskListHeader={() => (
+                    <div className="gantt-task-list-header bg-gray-50 border-b border-gray-200 p-2">
+                      <div className="text-sm font-semibold text-gray-700">
+                        Tarefas do Projeto
+                      </div>
+                    </div>
+                  )}
+                  TaskListTable={({ tasks }) => (
+                    <div className="gantt-task-list-table">
+                      {tasks.map((task, index) => (
+                        <div 
+                          key={task.id} 
+                          className={`gantt-task-list-row ${
+                            task.id.startsWith('phase-') 
+                              ? 'phase-row bg-gray-50 font-semibold' 
+                              : 'task-row hover:bg-gray-50'
+                          }`}
+                          style={{ 
+                            height: isMobile ? 45 : 55,
+                            padding: '8px 12px',
+                            borderBottom: '1px solid #f3f4f6',
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}
+                        >
+                          <div className={`text-sm ${
+                            task.id.startsWith('phase-') 
+                              ? 'text-gray-800 font-semibold' 
+                              : 'text-gray-600 pl-4'
+                          }`}>
+                            {task.name}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   TooltipContent={({ task }) => {
                     if (task.id.startsWith('phase-')) {
                       return (
