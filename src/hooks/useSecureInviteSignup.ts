@@ -46,41 +46,41 @@ export const useSecureInviteSignup = (token: string | null) => {
       setLoading(true);
       setError(null);
 
-      // Use secure validation function
-      const { data: validationResult, error: validationError } = await supabase
-        .rpc('validate_invitation_token', { p_token: token });
+      // Buscar convite usando o token
+      const { data: invite, error: inviteError } = await supabase
+        .from('team_invitations')
+        .select('*')
+        .eq('token', token)
+        .eq('status', 'pending')
+        .single();
 
-      if (validationError) {
-        console.error('Erro ao validar convite:', validationError);
-        setError('Erro ao validar convite');
+      if (inviteError || !invite) {
+        console.error('Erro ao validar convite:', inviteError);
+        setError('Convite não encontrado ou inválido');
         return;
       }
 
-      if (!validationResult || validationResult.length === 0) {
-        setError('Convite não encontrado');
+      // Verificar se o convite não expirou
+      const now = new Date();
+      const expiresAt = new Date(invite.expires_at);
+      
+      if (now > expiresAt) {
+        setError('Este convite expirou');
         return;
       }
 
-      const invite = validationResult[0];
-
-      if (!invite.is_valid) {
-        setError('Este convite expirou ou é inválido');
-        return;
-      }
-
-      // Map database response to expected interface
       const mappedInvite: SecureInviteData = {
-        id: invite.invitation_id,
+        id: invite.id,
         email: invite.email,
         inviter_name: invite.inviter_name,
         company_id: invite.company_id,
         message: invite.message,
-        is_valid: invite.is_valid
+        is_valid: true
       };
 
       setInviteData(mappedInvite);
 
-      // Fetch company data
+      // Buscar dados da empresa
       if (invite.company_id) {
         const { data: company, error: companyError } = await supabase
           .from('client_profiles')
@@ -111,25 +111,14 @@ export const useSecureInviteSignup = (token: string | null) => {
     }
 
     try {
-      // Input validation and sanitization
-      const sanitizedData = {
-        email: signupData.email.trim().toLowerCase(),
-        name: signupData.name.trim(),
-        password: signupData.password
-      };
-
-      if (sanitizedData.password.length < 8) {
-        return { success: false, error: 'Senha deve ter pelo menos 8 caracteres' };
-      }
-
-      // Create user account
+      // Criar a conta do usuário
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: sanitizedData.email,
-        password: sanitizedData.password,
+        email: signupData.email,
+        password: signupData.password,
         options: {
           emailRedirectTo: `${window.location.origin}/cliente/login`,
           data: {
-            full_name: sanitizedData.name,
+            full_name: signupData.name,
             company_id: inviteData.company_id
           }
         }
@@ -149,7 +138,7 @@ export const useSecureInviteSignup = (token: string | null) => {
         return { success: false, error: 'Erro ao criar usuário' };
       }
 
-      // Update invitation status securely
+      // Atualizar o status do convite para aceito
       const { error: updateError } = await supabase
         .from('team_invitations')
         .update({ 
@@ -160,6 +149,21 @@ export const useSecureInviteSignup = (token: string | null) => {
 
       if (updateError) {
         console.error('Erro ao atualizar convite:', updateError);
+      }
+
+      // Atualizar team_members com o user_id
+      const { error: teamUpdateError } = await supabase
+        .from('team_members')
+        .update({
+          user_id: authData.user.id,
+          status: 'active',
+          joined_at: new Date().toISOString()
+        })
+        .eq('invited_email', signupData.email)
+        .eq('company_id', inviteData.company_id);
+
+      if (teamUpdateError) {
+        console.error('Erro ao atualizar membro da equipe:', teamUpdateError);
       }
 
       return { 

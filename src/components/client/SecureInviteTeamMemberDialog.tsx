@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Mail, User, MessageCircle, Send, Shield } from 'lucide-react';
+import { Mail, User, MessageCircle, Shield, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
@@ -27,7 +27,7 @@ export const SecureInviteTeamMemberDialog: React.FC<SecureInviteTeamMemberDialog
   open,
   onOpenChange,
 }) => {
-  const { user, userRole } = useSecureAuth();
+  const { user } = useSecureAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -39,36 +39,25 @@ export const SecureInviteTeamMemberDialog: React.FC<SecureInviteTeamMemberDialog
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    // Enhanced email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.email.trim()) {
       newErrors.email = 'Email é obrigatório';
     } else if (!emailRegex.test(formData.email.trim())) {
       newErrors.email = 'Email inválido';
-    } else if (formData.email.length > 254) {
-      newErrors.email = 'Email muito longo';
     }
 
-    // Enhanced name validation
     if (!formData.name.trim()) {
       newErrors.name = 'Nome é obrigatório';
     } else if (formData.name.trim().length < 2) {
       newErrors.name = 'Nome deve ter pelo menos 2 caracteres';
-    } else if (formData.name.trim().length > 100) {
-      newErrors.name = 'Nome muito longo';
     }
 
-    // Message validation
     if (formData.message.length > 500) {
-      newErrors.message = 'Mensagem muito longa';
+      newErrors.message = 'Mensagem muito longa (máximo 500 caracteres)';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
-
-  const sanitizeInput = (input: string): string => {
-    return input.trim().replace(/[<>'"]/g, '');
   };
 
   const handleSendInvite = async () => {
@@ -85,43 +74,75 @@ export const SecureInviteTeamMemberDialog: React.FC<SecureInviteTeamMemberDialog
     setLoading(true);
 
     try {
-      // Sanitize inputs
-      const sanitizedData = {
-        email: formData.email.trim().toLowerCase(),
-        name: sanitizeInput(formData.name),
-        message: sanitizeInput(formData.message)
-      };
+      // Buscar dados da empresa atual
+      const { data: profile, error: profileError } = await supabase
+        .from('client_profiles')
+        .select('company, name')
+        .eq('id', user.id)
+        .single();
 
-      // Use secure RPC function
-      const { data: invitationId, error: inviteError } = await supabase
-        .rpc('invite_team_member', {
-          p_email: sanitizedData.email,
-          p_name: sanitizedData.name,
-          p_hierarchy_level_id: null // Will need to be updated based on your hierarchy system
-        });
+      if (profileError) {
+        console.error('Erro ao buscar perfil:', profileError);
+        toast.error('Erro ao buscar dados da empresa');
+        return;
+      }
+
+      // Criar convite seguro na tabela team_invitations
+      const inviteToken = crypto.randomUUID() + '-' + Date.now();
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7); // 7 dias para expirar
+
+      const { data: inviteData, error: inviteError } = await supabase
+        .from('team_invitations')
+        .insert({
+          company_id: user.id,
+          email: formData.email.trim().toLowerCase(),
+          inviter_name: profile.name || user.email || 'Administrador',
+          token: inviteToken,
+          message: formData.message.trim() || null,
+          expires_at: expiresAt.toISOString(),
+          status: 'pending'
+        })
+        .select()
+        .single();
 
       if (inviteError) {
         console.error('Erro ao criar convite:', inviteError);
-        
-        if (inviteError.message.includes('já existe um convite pendente')) {
+        if (inviteError.code === '23505') {
           toast.error('Este email já foi convidado');
-        } else if (inviteError.message.includes('Apenas contatos primários')) {
-          toast.error('Apenas contatos primários podem convidar membros');
         } else {
           toast.error('Erro ao criar convite');
         }
         return;
       }
 
-      // Send invitation email via edge function
+      // Criar entrada na tabela team_members
+      const { error: teamError } = await supabase
+        .from('team_members')
+        .insert({
+          company_id: user.id,
+          invited_email: formData.email.trim().toLowerCase(),
+          name: formData.name.trim(),
+          invited_by: user.id,
+          status: 'pending'
+        });
+
+      if (teamError) {
+        console.error('Erro ao criar membro da equipe:', teamError);
+        // Continua mesmo com erro, pois o convite principal foi criado
+      }
+
+      // Enviar email de convite
+      const inviteUrl = `${window.location.origin}/convite/inscrever?token=${inviteToken}`;
+      
       const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
         body: {
-          to: sanitizedData.email,
-          inviterName: user.email || 'Administrador',
-          invitedName: sanitizedData.name,
-          message: sanitizedData.message,
-          inviteUrl: `${window.location.origin}/convite/inscrever?token=${invitationId}`,
-          companyName: userRole.company || 'Ascalate'
+          to: formData.email.trim().toLowerCase(),
+          inviterName: profile.name || user.email || 'Administrador',
+          invitedName: formData.name.trim(),
+          companyName: profile.company || 'Ascalate',
+          inviteUrl: inviteUrl,
+          message: formData.message.trim() || undefined
         }
       });
 
@@ -170,12 +191,11 @@ export const SecureInviteTeamMemberDialog: React.FC<SecureInviteTeamMemberDialog
             Convidar Membro da Equipe
           </DialogTitle>
           <DialogDescription>
-            Envie um convite seguro por email para que a pessoa se cadastre na plataforma.
+            Envie um convite seguro por email para que a pessoa se cadastre e tenha acesso ao painel da empresa.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Email Field */}
           <div className="space-y-2">
             <Label htmlFor="secure-invite-email" className="text-sm font-medium">
               Email *
@@ -190,7 +210,6 @@ export const SecureInviteTeamMemberDialog: React.FC<SecureInviteTeamMemberDialog
                 onChange={(e) => handleInputChange('email', e.target.value)}
                 className={`pl-10 ${errors.email ? 'border-red-500' : ''}`}
                 disabled={loading}
-                maxLength={254}
               />
             </div>
             {errors.email && (
@@ -198,10 +217,9 @@ export const SecureInviteTeamMemberDialog: React.FC<SecureInviteTeamMemberDialog
             )}
           </div>
 
-          {/* Name Field */}
           <div className="space-y-2">
             <Label htmlFor="secure-invite-name" className="text-sm font-medium">
-              Nome *
+              Nome Completo *
             </Label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -213,7 +231,6 @@ export const SecureInviteTeamMemberDialog: React.FC<SecureInviteTeamMemberDialog
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 className={`pl-10 ${errors.name ? 'border-red-500' : ''}`}
                 disabled={loading}
-                maxLength={100}
               />
             </div>
             {errors.name && (
@@ -221,7 +238,6 @@ export const SecureInviteTeamMemberDialog: React.FC<SecureInviteTeamMemberDialog
             )}
           </div>
 
-          {/* Message Field */}
           <div className="space-y-2">
             <Label htmlFor="secure-invite-message" className="text-sm font-medium">
               Mensagem Personalizada (Opcional)
@@ -246,30 +262,38 @@ export const SecureInviteTeamMemberDialog: React.FC<SecureInviteTeamMemberDialog
             </p>
           </div>
 
-          {/* Security Notice */}
           <Alert>
             <Shield className="h-4 w-4" />
             <AlertDescription className="text-sm">
-              O convite expira em 7 dias e usa tokens seguros para proteção contra acesso não autorizado.
+              O convite expira em 7 dias e usa tokens seguros. O novo membro terá acesso ao mesmo painel da sua empresa.
             </AlertDescription>
           </Alert>
         </div>
 
-        <DialogFooter className="flex-col sm:flex-row gap-2">
+        <DialogFooter>
           <Button
             variant="outline"
             onClick={() => handleOpenChange(false)}
             disabled={loading}
-            className="w-full sm:w-auto"
           >
             Cancelar
           </Button>
           <Button
             onClick={handleSendInvite}
             disabled={loading}
-            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
+            className="bg-blue-600 hover:bg-blue-700"
           >
-            {loading ? 'Enviando...' : 'Enviar Convite Seguro'}
+            {loading ? (
+              <>
+                <Send className="w-4 h-4 mr-2 animate-spin" />
+                Enviando...
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4 mr-2" />
+                Enviar Convite
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

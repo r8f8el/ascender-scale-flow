@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -42,16 +43,12 @@ const SecureTeamInviteSignup = () => {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    // Enhanced name validation
     if (!formData.name.trim()) {
       newErrors.name = 'Nome é obrigatório';
     } else if (formData.name.trim().length < 2) {
       newErrors.name = 'Nome deve ter pelo menos 2 caracteres';
-    } else if (formData.name.trim().length > 100) {
-      newErrors.name = 'Nome muito longo';
     }
 
-    // Enhanced email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.email.trim()) {
       newErrors.email = 'Email é obrigatório';
@@ -59,7 +56,6 @@ const SecureTeamInviteSignup = () => {
       newErrors.email = 'Email inválido';
     }
 
-    // Enhanced password validation
     if (!formData.password) {
       newErrors.password = 'Senha é obrigatória';
     } else if (formData.password.length < 8) {
@@ -68,7 +64,6 @@ const SecureTeamInviteSignup = () => {
       newErrors.password = 'Senha deve conter pelo menos: 1 minúscula, 1 maiúscula e 1 número';
     }
 
-    // Confirm password validation
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = 'Confirmação de senha é obrigatória';
     } else if (formData.password !== formData.confirmPassword) {
@@ -105,7 +100,7 @@ const SecureTeamInviteSignup = () => {
       });
 
       if (result.success) {
-        toast.success('Inscrição realizada com sucesso!');
+        toast.success('Conta criada com sucesso! Redirecionando para o login...');
         setTimeout(() => {
           navigate('/cliente/login');
         }, 2000);
@@ -179,7 +174,7 @@ const SecureTeamInviteSignup = () => {
             <User className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
             <div className="ml-3">
               <p className="text-sm text-blue-800">
-                <strong>Você foi convidado por {inviteData.inviter_name}</strong> para se inscrever em nossa plataforma.
+                <strong>Você foi convidado por {inviteData.inviter_name}</strong> para se juntar à equipe da {companyData?.name || 'empresa'}.
               </p>
               {inviteData.message && (
                 <p className="text-xs text-blue-600 mt-1">
@@ -200,8 +195,6 @@ const SecureTeamInviteSignup = () => {
           
           <CardContent className="p-6 pt-0">
             <form onSubmit={handleSubmit} className="space-y-4">
-              
-              
               <div className="space-y-2">
                 <label htmlFor="name" className="text-sm font-medium text-gray-700">
                   Nome Completo
@@ -214,11 +207,8 @@ const SecureTeamInviteSignup = () => {
                     placeholder="Seu nome completo"
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
-                    className={`h-12 pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500 ${
-                      errors.name ? 'border-red-500' : ''
-                    }`}
+                    className={`h-12 pl-10 ${errors.name ? 'border-red-500' : ''}`}
                     disabled={loading}
-                    maxLength={100}
                   />
                 </div>
                 {errors.name && (
@@ -238,9 +228,7 @@ const SecureTeamInviteSignup = () => {
                     placeholder="seu.email@exemplo.com"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
-                    className={`h-12 pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500 ${
-                      errors.email ? 'border-red-500' : ''
-                    }`}
+                    className={`h-12 pl-10 ${errors.email ? 'border-red-500' : ''}`}
                     disabled={loading || !!inviteData?.email}
                   />
                 </div>
@@ -261,9 +249,7 @@ const SecureTeamInviteSignup = () => {
                     placeholder="Mínimo 8 caracteres com maiúscula, minúscula e número"
                     value={formData.password}
                     onChange={(e) => handleInputChange('password', e.target.value)}
-                    className={`h-12 pl-10 pr-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500 ${
-                      errors.password ? 'border-red-500' : ''
-                    }`}
+                    className={`h-12 pl-10 pr-10 ${errors.password ? 'border-red-500' : ''}`}
                     disabled={loading}
                   />
                   <button
@@ -292,9 +278,7 @@ const SecureTeamInviteSignup = () => {
                     placeholder="Confirme sua senha"
                     value={formData.confirmPassword}
                     onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                    className={`h-12 pl-10 pr-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500 ${
-                      errors.confirmPassword ? 'border-red-500' : ''
-                    }`}
+                    className={`h-12 pl-10 pr-10 ${errors.confirmPassword ? 'border-red-500' : ''}`}
                     disabled={loading}
                   />
                   <button
