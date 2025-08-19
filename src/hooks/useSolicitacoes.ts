@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Solicitacao, Anexo, HistoricoAprovacao } from '@/types/aprovacoes';
@@ -45,7 +44,11 @@ export const useSolicitacoes = (userId?: string) => {
         const { data, error } = await supabase
           .from('solicitacoes')
           .select(`
-            *
+            *,
+            client_profiles!solicitacoes_solicitante_id_fkey (
+              name,
+              email
+            )
           `)
           .eq('solicitante_id', userId)
           .order('data_criacao', { ascending: false });
@@ -81,6 +84,41 @@ export const useSolicitacoes = (userId?: string) => {
   });
 };
 
+// Nova query para admins verem todas as solicitações
+export const useAllSolicitacoes = () => {
+  return useQuery({
+    queryKey: ['all-solicitacoes'],
+    queryFn: async () => {
+      console.log('Fetching all solicitacoes for admin');
+      
+      try {
+        const { data, error } = await supabase
+          .from('solicitacoes')
+          .select(`
+            *,
+            client_profiles!solicitacoes_solicitante_id_fkey (
+              name,
+              email
+            )
+          `)
+          .order('data_criacao', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching all solicitacoes:', error);
+          throw error;
+        }
+
+        console.log('All solicitacoes fetched successfully:', data?.length || 0);
+        return (data || []) as Solicitacao[];
+      } catch (error) {
+        console.error('Error in all solicitacoes query:', error);
+        return [];
+      }
+    },
+    staleTime: 1000 * 60 * 2, // 2 minutos
+  });
+};
+
 export const useSolicitacaoPendentes = (userId?: string) => {
   return useQuery({
     queryKey: ['solicitacoes-pendentes', userId],
@@ -92,7 +130,13 @@ export const useSolicitacaoPendentes = (userId?: string) => {
       try {
         const { data, error } = await supabase
           .from('solicitacoes')
-          .select('*')
+          .select(`
+            *,
+            client_profiles!solicitacoes_solicitante_id_fkey (
+              name,
+              email
+            )
+          `)
           .eq('aprovador_atual_id', userId)
           .eq('status', 'Pendente')
           .order('data_criacao', { ascending: false });
@@ -190,11 +234,34 @@ export const useCreateSolicitacao = () => {
   return useMutation({
     mutationFn: async ({ solicitacao, files, aprovadores }: CreateSolicitacaoParams) => {
       try {
+        console.log('Creating solicitacao with data:', solicitacao);
+        
+        // Garantir que os valores obrigatórios estão presentes
+        const solicitacaoData = {
+          ...solicitacao,
+          prioridade: solicitacao.prioridade || 'Media',
+          etapa_atual: solicitacao.etapa_atual || 1,
+          status: solicitacao.status || 'Em Elaboração',
+          aprovadores_necessarios: aprovadores.map(ap => ({
+            id: ap.id,
+            name: ap.name,
+            email: ap.email,
+            nivel: ap.nivel,
+            aprovado: false
+          }))
+        };
+
         // Criar solicitação
-        const { data: solicitacaoData, error: solicitacaoError } = await supabase
+        const { data: solicitacaoResult, error: solicitacaoError } = await supabase
           .from('solicitacoes')
-          .insert([solicitacao])
-          .select()
+          .insert([solicitacaoData])
+          .select(`
+            *,
+            client_profiles!solicitacoes_solicitante_id_fkey (
+              name,
+              email
+            )
+          `)
           .single();
 
         if (solicitacaoError) {
@@ -202,12 +269,12 @@ export const useCreateSolicitacao = () => {
           throw solicitacaoError;
         }
 
-        console.log('Solicitacao created successfully:', solicitacaoData.id);
+        console.log('Solicitacao created successfully:', solicitacaoResult.id);
 
         // Upload de arquivos se houver
         if (files.length > 0) {
           for (const file of files) {
-            const fileName = `${solicitacaoData.id}/${Date.now()}_${file.name}`;
+            const fileName = `${solicitacaoResult.id}/${Date.now()}_${file.name}`;
             
             const { error: uploadError } = await supabase.storage
               .from('solicitacao-files')
@@ -222,7 +289,7 @@ export const useCreateSolicitacao = () => {
             const { error: anexoError } = await supabase
               .from('anexos')
               .insert({
-                solicitacao_id: solicitacaoData.id,
+                solicitacao_id: solicitacaoResult.id,
                 nome_arquivo: file.name,
                 tipo_arquivo: file.type,
                 tamanho_arquivo: file.size,
@@ -235,7 +302,22 @@ export const useCreateSolicitacao = () => {
           }
         }
 
-        return solicitacaoData;
+        // Criar histórico de criação
+        const { error: historicoError } = await supabase
+          .from('historico_aprovacao')
+          .insert({
+            solicitacao_id: solicitacaoResult.id,
+            usuario_id: solicitacao.solicitante_id,
+            nome_usuario: 'Usuário', // Pode ser melhorado pegando o nome do client_profiles
+            acao: 'Criação',
+            comentario: 'Solicitação criada'
+          });
+
+        if (historicoError) {
+          console.error('Error creating historico:', historicoError);
+        }
+
+        return solicitacaoResult;
       } catch (error) {
         console.error('Error in createSolicitacao mutation:', error);
         throw error;
@@ -244,6 +326,7 @@ export const useCreateSolicitacao = () => {
     onSuccess: () => {
       toast.success('Solicitação criada com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['solicitacoes'] });
+      queryClient.invalidateQueries({ queryKey: ['all-solicitacoes'] });
     },
     onError: (error: any) => {
       console.error('Mutation error:', error);
@@ -265,7 +348,13 @@ export const useUpdateSolicitacao = () => {
             data_ultima_modificacao: new Date().toISOString()
           })
           .eq('id', id)
-          .select()
+          .select(`
+            *,
+            client_profiles!solicitacoes_solicitante_id_fkey (
+              name,
+              email
+            )
+          `)
           .single();
 
         if (error) {
@@ -281,6 +370,7 @@ export const useUpdateSolicitacao = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['solicitacoes'] });
+      queryClient.invalidateQueries({ queryKey: ['all-solicitacoes'] });
       queryClient.invalidateQueries({ queryKey: ['solicitacoes-pendentes'] });
     },
     onError: (error: any) => {

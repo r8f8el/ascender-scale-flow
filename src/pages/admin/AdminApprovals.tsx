@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useSolicitacoes, useSolicitacaoPendentes } from '@/hooks/useSolicitacoes';
+import { useAllSolicitacoes, useSolicitacaoPendentes } from '@/hooks/useSolicitacoes';
 import { useAuth } from '@/contexts/AuthContext';
 import { DetalheSolicitacaoDialog } from '@/components/aprovacoes/DetalheSolicitacaoDialog';
 import { Solicitacao } from '@/types/aprovacoes';
@@ -33,12 +34,15 @@ const AdminApprovals: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedSolicitacao, setSelectedSolicitacao] = useState<SolicitacaoWithProfile | null>(null);
 
-  // Buscar todas as solicitações
-  const { data: allSolicitacoes = [], isLoading: loadingAll, refetch: refetchAll } = useSolicitacoes();
+  // Buscar todas as solicitações (para admins)
+  const { data: allSolicitacoes = [], isLoading: loadingAll, refetch: refetchAll } = useAllSolicitacoes();
   
   // Buscar solicitações pendentes para o usuário atual
   const { data: pendingSolicitacoes = [], isLoading: loadingPending, refetch: refetchPending } = 
     useSolicitacaoPendentes(user?.id || '');
+
+  console.log('Admin Approvals - All solicitacoes:', allSolicitacoes);
+  console.log('Admin Approvals - Pending solicitacoes:', pendingSolicitacoes);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -75,9 +79,9 @@ const AdminApprovals: React.FC = () => {
   };
 
   const filteredSolicitacoes = (allSolicitacoes as SolicitacaoWithProfile[]).filter(solicitacao => {
-    const matchesSearch = solicitacao.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = solicitacao.titulo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          solicitacao.client_profiles?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         solicitacao.descricao.toLowerCase().includes(searchTerm.toLowerCase());
+                         solicitacao.descricao?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || solicitacao.status === statusFilter;
     
@@ -104,9 +108,11 @@ const AdminApprovals: React.FC = () => {
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
             <h3 className="font-semibold text-lg mb-1">{solicitacao.titulo}</h3>
-            <p className="text-sm text-gray-600 mb-2">
-              {solicitacao.periodo_referencia}
-            </p>
+            {solicitacao.periodo_referencia && (
+              <p className="text-sm text-gray-600 mb-2">
+                {solicitacao.periodo_referencia}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {getStatusIcon(solicitacao.status)}
@@ -127,13 +133,19 @@ const AdminApprovals: React.FC = () => {
             <span>Criado em: {formatDate(solicitacao.data_criacao)}</span>
           </div>
 
+          {solicitacao.valor_solicitado && (
+            <div className="flex items-center gap-2 text-gray-600">
+              <span className="font-medium">Valor: R$ {Number(solicitacao.valor_solicitado).toLocaleString('pt-BR')}</span>
+            </div>
+          )}
+
           {solicitacao.aprovadores_necessarios && solicitacao.aprovadores_necessarios.length > 0 && (
             <div className="mt-3">
               <p className="text-xs font-medium text-gray-700 mb-1">Aprovadores necessários:</p>
               <div className="flex flex-wrap gap-1">
                 {solicitacao.aprovadores_necessarios.map((aprovador, index) => (
                   <Badge 
-                    key={aprovador.id} 
+                    key={aprovador.id || index} 
                     variant={aprovador.aprovado ? "default" : "secondary"}
                     className="text-xs"
                   >

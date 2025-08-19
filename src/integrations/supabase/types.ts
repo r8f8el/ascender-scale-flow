@@ -2205,42 +2205,54 @@ export type Database = {
           aprovadores_completos: Json | null
           aprovadores_necessarios: Json | null
           data_criacao: string | null
+          data_limite: string | null
           data_ultima_modificacao: string | null
           descricao: string
           etapa_atual: number | null
           id: string
+          justificativa: string | null
           periodo_referencia: string
+          prioridade: string | null
           solicitante_id: string
           status: string
           titulo: string
+          valor_solicitado: number | null
         }
         Insert: {
           aprovador_atual_id?: string | null
           aprovadores_completos?: Json | null
           aprovadores_necessarios?: Json | null
           data_criacao?: string | null
+          data_limite?: string | null
           data_ultima_modificacao?: string | null
           descricao: string
           etapa_atual?: number | null
           id?: string
+          justificativa?: string | null
           periodo_referencia: string
+          prioridade?: string | null
           solicitante_id: string
           status?: string
           titulo: string
+          valor_solicitado?: number | null
         }
         Update: {
           aprovador_atual_id?: string | null
           aprovadores_completos?: Json | null
           aprovadores_necessarios?: Json | null
           data_criacao?: string | null
+          data_limite?: string | null
           data_ultima_modificacao?: string | null
           descricao?: string
           etapa_atual?: number | null
           id?: string
+          justificativa?: string | null
           periodo_referencia?: string
+          prioridade?: string | null
           solicitante_id?: string
           status?: string
           titulo?: string
+          valor_solicitado?: number | null
         }
         Relationships: [
           {
