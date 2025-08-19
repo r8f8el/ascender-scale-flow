@@ -436,6 +436,44 @@ export default function ClientGantt() {
     }
   };
 
+  const handleUpdateTaskStatus = async (taskId: string, newStatus: 'pending' | 'in_progress' | 'completed' | 'blocked') => {
+    try {
+      const task = currentTasks.find(t => t.id === taskId);
+      if (!task) {
+        toast({
+          title: "Erro",
+          description: "Tarefa não encontrada",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const result = await updateTask(taskId, {
+        ...task,
+        status: newStatus,
+        progress: newStatus === 'completed' ? 100 : 
+                 newStatus === 'in_progress' ? 50 : 
+                 newStatus === 'blocked' ? 0 : 0
+      });
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      toast({
+        title: "Sucesso!",
+        description: `Status alterado para: ${formatStatusText(newStatus)}`
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar status:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar status. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleTaskSaved = async (taskData: Omit<GanttTask, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       console.log('🔄 handleTaskSaved chamado com:', taskData);
@@ -927,20 +965,22 @@ export default function ClientGantt() {
                     <div className="flex gap-1 h-8">
                       {getTimelineCells(task).map((cell, index) => (
                         <div key={index} className="flex-1 relative min-w-0">
-                          {cell.isInRange && (
-                            <div 
-                              className={`h-6 rounded transition-all duration-200 ${
-                                task.progress === 100 ? 'bg-green-500' :
-                                task.progress > 0 ? 'bg-blue-500' :
-                                'bg-gray-400'
-                              }`}
-                              style={{
-                                width: '100%',
-                                maxWidth: '100%'
-                              }}
-                              title={`${task.name}: ${task.progress}% concluído`}
-                            ></div>
-                          )}
+                                                     {cell.isInRange && (
+                             <div 
+                               className={`h-6 rounded transition-all duration-200 ${
+                                 task.status === 'completed' ? 'bg-green-500' :
+                                 task.status === 'in_progress' ? 'bg-blue-500' :
+                                 task.status === 'blocked' ? 'bg-red-500' :
+                                 task.status === 'pending' ? 'bg-yellow-500' :
+                                 'bg-gray-400'
+                               }`}
+                               style={{
+                                 width: '100%',
+                                 maxWidth: '100%'
+                               }}
+                               title={`${task.name}: ${task.progress}% concluído - Status: ${formatStatusText(task.status)}`}
+                             ></div>
+                           )}
                           {!cell.isInRange && (
                             <div className="h-6 border border-dashed border-gray-200 rounded opacity-30"></div>
                           )}
@@ -1021,14 +1061,42 @@ export default function ClientGantt() {
                       <Progress value={task.progress} className="w-20" />
                     </div>
                     
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => handleEditTask(task)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDeleteTask(task.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                                         <div className="flex gap-1">
+                       <Button variant="ghost" size="sm" onClick={() => handleEditTask(task)}>
+                         <Edit className="h-4 w-4" />
+                       </Button>
+                       <Button variant="ghost" size="sm" onClick={() => handleDeleteTask(task.id)}>
+                         <Trash2 className="h-4 w-4" />
+                       </Button>
+                     </div>
+                     
+                     {/* Botões de Status */}
+                     <div className="flex gap-1 mt-2">
+                       <Button 
+                         variant={task.status === 'completed' ? 'default' : 'outline'} 
+                         size="sm" 
+                         className="text-xs px-2 py-1 h-7"
+                         onClick={() => handleUpdateTaskStatus(task.id, 'completed')}
+                       >
+                         ✅ Concluída
+                       </Button>
+                       <Button 
+                         variant={task.status === 'in_progress' ? 'default' : 'outline'} 
+                         size="sm" 
+                         className="text-xs px-2 py-1 h-7"
+                         onClick={() => handleUpdateTaskStatus(task.id, 'in_progress')}
+                       >
+                         🔄 Em Andamento
+                       </Button>
+                       <Button 
+                         variant={task.status === 'blocked' ? 'default' : 'outline'} 
+                         size="sm" 
+                         className="text-xs px-2 py-1 h-7"
+                         onClick={() => handleUpdateTaskStatus(task.id, 'blocked')}
+                       >
+                         ⚠️ Bloqueada
+                       </Button>
+                     </div>
                   </div>
                 </div>
               ))}

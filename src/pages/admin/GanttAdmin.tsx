@@ -204,6 +204,130 @@ export default function GanttAdmin() {
     }
   };
 
+  // Funções auxiliares para visualização dinâmica
+  const getTimelineHeaders = () => {
+    const today = new Date();
+    const headers: string[] = [];
+    
+    switch (viewMode) {
+      case 'day':
+        // Mostrar próximos 7 dias
+        for (let i = 0; i < 7; i++) {
+          const date = new Date(today);
+          date.setDate(today.getDate() + i);
+          headers.push(date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
+        }
+        break;
+      case 'week':
+        // Mostrar próximas 4 semanas
+        for (let i = 0; i < 4; i++) {
+          const date = new Date(today);
+          date.setDate(today.getDate() + (i * 7));
+          const weekStart = new Date(date);
+          weekStart.setDate(date.getDate() - date.getDay());
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
+          headers.push(`${weekStart.toLocaleDateString('pt-BR', { day: '2-digit' })}-${weekEnd.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`);
+        }
+        break;
+      case 'month':
+        // Mostrar próximos 6 meses
+        for (let i = 0; i < 6; i++) {
+          const date = new Date(today);
+          date.setMonth(today.getMonth() + i);
+          headers.push(date.toLocaleDateString('pt-BR', { month: 'short' }));
+        }
+        break;
+    }
+    
+    return headers;
+  };
+
+  const getTodayPosition = () => {
+    const today = new Date();
+    const timelineStart = new Date();
+    
+    switch (viewMode) {
+      case 'day':
+        return 264; // Posição fixa para visualização diária
+      case 'week':
+        return 264; // Posição fixa para visualização semanal
+      case 'month':
+        return 264; // Posição fixa para visualização mensal
+      default:
+        return 264;
+    }
+  };
+
+  const getTimelineCells = (task: GanttTask) => {
+    const today = new Date();
+    const cells: { isInRange: boolean; progress: number; startOffset: number; width: number }[] = [];
+    
+    switch (viewMode) {
+      case 'day':
+        // 7 células para 7 dias
+        for (let i = 0; i < 7; i++) {
+          const date = new Date(today);
+          date.setDate(today.getDate() + i);
+          const taskStart = new Date(task.start_date);
+          const taskEnd = new Date(task.end_date);
+          const isInRange = date >= taskStart && date <= taskEnd;
+          
+          cells.push({ 
+            isInRange, 
+            progress: isInRange ? task.progress : 0,
+            startOffset: 0,
+            width: 100
+          });
+        }
+        break;
+      case 'week':
+        // 4 células para 4 semanas
+        for (let i = 0; i < 4; i++) {
+          const date = new Date(today);
+          date.setDate(today.getDate() + (i * 7));
+          const weekStart = new Date(date);
+          weekStart.setDate(date.getDate() - date.getDay());
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
+          
+          const taskStart = new Date(task.start_date);
+          const taskEnd = new Date(task.end_date);
+          const isInRange = (weekStart <= taskEnd && weekEnd >= taskStart);
+          
+          cells.push({ 
+            isInRange, 
+            progress: isInRange ? task.progress : 0,
+            startOffset: 0,
+            width: 100
+          });
+        }
+        break;
+      case 'month':
+        // 6 células para 6 meses
+        for (let i = 0; i < 6; i++) {
+          const date = new Date(today);
+          date.setMonth(today.getMonth() + i);
+          const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+          const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+          
+          const taskStart = new Date(task.start_date);
+          const taskEnd = new Date(task.end_date);
+          const isInRange = (monthStart <= taskEnd && monthEnd >= taskStart);
+          
+          cells.push({ 
+            isInRange, 
+            progress: isInRange ? task.progress : 0,
+            startOffset: 0,
+            width: 100
+          });
+        }
+        break;
+    }
+    
+    return cells;
+  };
+
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
@@ -270,6 +394,45 @@ export default function GanttAdmin() {
       title: "Sucesso!",
       description: "Tarefa salva com sucesso"
     });
+  };
+
+  const handleUpdateTaskStatus = async (taskId: string, newStatus: 'pending' | 'in_progress' | 'completed' | 'blocked') => {
+    try {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) {
+        toast({
+          title: "Erro",
+          description: "Tarefa não encontrada",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Atualizar tarefa localmente
+      setTasks(prev => prev.map(t => 
+        t.id === taskId 
+          ? { 
+              ...t, 
+              status: newStatus,
+              progress: newStatus === 'completed' ? 100 : 
+                       newStatus === 'in_progress' ? 50 : 
+                       newStatus === 'blocked' ? 0 : 0
+            }
+          : t
+      ));
+
+      toast({
+        title: "Sucesso!",
+        description: `Status alterado para: ${newStatus.replace('_', ' ')}`
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar status:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar status. Tente novamente.",
+        variant: "destructive"
+      });
+    }
   };
 
   const getCurrentProject = () => {
@@ -482,6 +645,158 @@ export default function GanttAdmin() {
         </CardContent>
       </Card>
 
+      {/* Visualização Gantt */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-blue-600" />
+                Cronograma do Projeto
+              </CardTitle>
+              <p className="text-sm text-gray-600 mt-1">
+                {viewMode === 'day' && 'Visualização diária - próximos 7 dias'}
+                {viewMode === 'week' && 'Visualização semanal - próximas 4 semanas'}
+                {viewMode === 'month' && 'Visualização mensal - próximos 6 meses'}
+              </p>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button
+                variant={viewMode === 'day' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('day')}
+                className="flex items-center gap-2"
+              >
+                <Calendar className="h-4 w-4" />
+                Dia
+              </Button>
+              <Button
+                variant={viewMode === 'week' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('week')}
+                className="flex items-center gap-2"
+              >
+                <Calendar className="h-4 w-4" />
+                Semana
+              </Button>
+              <Button
+                variant={viewMode === 'month' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('month')}
+                className="flex items-center gap-2"
+              >
+                <Calendar className="h-4 w-4" />
+                Mês
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {/* Gráfico Gantt Dinâmico */}
+          <div className="space-y-4">
+            {/* Cabeçalho da Timeline Dinâmico */}
+            <div className="flex items-center border-b pb-2">
+              <div className="w-64 font-medium text-sm text-gray-600">Nome da Tarefa</div>
+              <div className="flex-1 flex gap-1 text-xs text-gray-500">
+                {getTimelineHeaders().map((header, index) => (
+                  <div key={index} className="flex-1 text-center min-w-0 px-1">
+                    <div className="truncate" title={header}>
+                      {header}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="w-32 text-center font-medium text-sm text-gray-600">Progresso</div>
+            </div>
+
+            {/* Linha "Hoje" */}
+            <div className="relative">
+              <div 
+                className="absolute top-0 bottom-0 w-px bg-red-500 border-l-2 border-dashed border-red-500 z-10"
+                style={{ left: `${getTodayPosition()}px` }}
+              >
+                <div className="absolute -top-2 -left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
+                  Hoje
+                </div>
+              </div>
+            </div>
+
+            {/* Tarefas */}
+            {filteredTasks.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <BarChart3 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                <p>Nenhuma tarefa encontrada</p>
+                <p className="text-sm">Crie sua primeira tarefa para começar</p>
+              </div>
+            ) : (
+              filteredTasks.map((task) => (
+                <div key={task.id} className="flex items-center border-b pb-3">
+                  <div className="w-64 pr-4">
+                    <div className="flex items-center gap-2">
+                      {task.is_milestone && (
+                        <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                      )}
+                      <div>
+                        <p className="font-medium text-sm">{task.name}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className={getStatusColor(task.status)}>
+                            {getStatusIcon(task.status)}
+                            <span className="ml-1 capitalize">{task.status.replace('_', ' ')}</span>
+                          </Badge>
+                          <Badge variant="outline" className={getPriorityColor(task.priority)}>
+                            {task.priority}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          <Users className="h-3 w-3 inline mr-1" />
+                          {task.assignee}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex-1 relative">
+                    <div className="flex gap-1 h-8">
+                      {getTimelineCells(task).map((cell, index) => (
+                        <div key={index} className="flex-1 relative min-w-0">
+                          {cell.isInRange && (
+                            <div 
+                              className={`h-6 rounded transition-all duration-200 ${
+                                task.status === 'completed' ? 'bg-green-500' :
+                                task.status === 'in_progress' ? 'bg-blue-500' :
+                                task.status === 'blocked' ? 'bg-red-500' :
+                                task.status === 'pending' ? 'bg-yellow-500' :
+                                'bg-gray-400'
+                              }`}
+                              style={{
+                                width: '100%',
+                                maxWidth: '100%'
+                              }}
+                              title={`${task.name}: ${task.progress}% concluído - Status: ${task.status.replace('_', ' ')}`}
+                            ></div>
+                          )}
+                          {!cell.isInRange && (
+                            <div className="h-6 border border-dashed border-gray-200 rounded opacity-30"></div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="w-32 text-center">
+                    <div className="flex items-center gap-2">
+                      <Progress value={task.progress} className="flex-1" />
+                      <span className="text-xs font-medium">{task.progress}%</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -543,6 +858,34 @@ export default function GanttAdmin() {
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => handleDeleteTask(task.id)}>
                         <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    {/* Botões de Status */}
+                    <div className="flex gap-1 mt-2">
+                      <Button 
+                        variant={task.status === 'completed' ? 'default' : 'outline'} 
+                        size="sm" 
+                        className="text-xs px-2 py-1 h-7"
+                        onClick={() => handleUpdateTaskStatus(task.id, 'completed')}
+                      >
+                        ✅ Concluída
+                      </Button>
+                      <Button 
+                        variant={task.status === 'in_progress' ? 'default' : 'outline'} 
+                        size="sm" 
+                        className="text-xs px-2 py-1 h-7"
+                        onClick={() => handleUpdateTaskStatus(task.id, 'in_progress')}
+                      >
+                        🔄 Em Andamento
+                      </Button>
+                      <Button 
+                        variant={task.status === 'blocked' ? 'default' : 'outline'} 
+                        size="sm" 
+                        className="text-xs px-2 py-1 h-7"
+                        onClick={() => handleUpdateTaskStatus(task.id, 'blocked')}
+                      >
+                        ⚠️ Bloqueada
                       </Button>
                     </div>
                   </div>
