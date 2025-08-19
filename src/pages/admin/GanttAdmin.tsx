@@ -307,8 +307,11 @@ const GanttAdmin = () => {
               {selectedProjectId && tasks.length > 0 ? (
                 <GanttChart 
                   tasks={tasks}
-                  onTaskUpdate={handleTaskUpdate}
-                  onTaskSelect={setSelectedTaskId}
+                  onTaskUpdate={(task: GanttTask) => {
+                    const { id, ...updatedFields } = task;
+                    return handleTaskUpdate(id, updatedFields);
+                  }}
+                  onTaskSelect={(task: GanttTask) => setSelectedTaskId(task.id)}
                 />
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
