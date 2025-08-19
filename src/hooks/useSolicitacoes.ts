@@ -41,6 +41,20 @@ export const useSolicitacoes = (userId?: string) => {
       console.log('Fetching solicitacoes for user:', userId);
       
       try {
+        // First, let's check if the user exists in client_profiles
+        const { data: profile, error: profileError } = await supabase
+          .from('client_profiles')
+          .select('id, name, email')
+          .eq('id', userId)
+          .single();
+
+        if (profileError) {
+          console.error('Error fetching user profile:', profileError);
+        } else {
+          console.log('User profile found:', profile);
+        }
+
+        // Now fetch solicitacoes
         const { data, error } = await supabase
           .from('solicitacoes')
           .select(`
@@ -58,17 +72,20 @@ export const useSolicitacoes = (userId?: string) => {
           throw error;
         }
 
+        console.log('Solicitacoes raw data:', data);
         console.log('Solicitacoes fetched successfully:', data?.length || 0);
-        return (data || []) as any[];
+        
+        // Return the data as-is for now to debug
+        return (data || []);
       } catch (error) {
         console.error('Error in solicitacoes query:', error);
-        return [];
+        throw error; // Re-throw to show error in UI
       }
     },
     enabled: !!userId,
-    retry: 2,
-    staleTime: 1000 * 60 * 5,
-    gcTime: 1000 * 60 * 10,
+    retry: 1, // Reduced retry for faster debugging
+    staleTime: 0, // Force fresh data for debugging
+    gcTime: 0, // Don't cache for debugging
   });
 };
 

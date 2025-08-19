@@ -12,9 +12,15 @@ import { Solicitacao } from '@/types/aprovacoes';
 
 const MinhasSolicitacoes = () => {
   const { user } = useAuth();
-  const { data: solicitacoes, isLoading } = useSolicitacoes(user?.id);
+  const { data: solicitacoes, isLoading, error } = useSolicitacoes(user?.id);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedSolicitacao, setSelectedSolicitacao] = useState<Solicitacao | null>(null);
+
+  // Debug logs
+  console.log('MinhasSolicitacoes - User ID:', user?.id);
+  console.log('MinhasSolicitacoes - Solicitacoes data:', solicitacoes);
+  console.log('MinhasSolicitacoes - Loading:', isLoading);
+  console.log('MinhasSolicitacoes - Error:', error);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -44,6 +50,19 @@ const MinhasSolicitacoes = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-red-600">Erro ao carregar solicitações</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            {error instanceof Error ? error.message : 'Erro desconhecido'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -58,6 +77,22 @@ const MinhasSolicitacoes = () => {
           Criar Nova Solicitação
         </Button>
       </div>
+
+      {/* Debug Card - remover após teste */}
+      <Card className="bg-blue-50">
+        <CardHeader>
+          <CardTitle className="text-sm">Debug Info</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-xs space-y-1">
+            <p>User ID: {user?.id || 'No user ID'}</p>
+            <p>Loading: {isLoading ? 'true' : 'false'}</p>
+            <p>Data length: {solicitacoes?.length || 0}</p>
+            <p>Data type: {typeof solicitacoes}</p>
+            <p>Is array: {Array.isArray(solicitacoes) ? 'true' : 'false'}</p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -113,22 +148,25 @@ const MinhasSolicitacoes = () => {
         <CardContent>
           {solicitacoes && solicitacoes.length > 0 ? (
             <div className="space-y-4">
-              {solicitacoes.map((solicitacao) => (
+              {solicitacoes.map((solicitacao, index) => (
                 <div
-                  key={solicitacao.id}
+                  key={solicitacao.id || index}
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex-1">
-                    <h3 className="font-semibold">{solicitacao.titulo}</h3>
+                    <h3 className="font-semibold">{solicitacao.titulo || 'Título não disponível'}</h3>
                     <p className="text-sm text-muted-foreground">
-                      Período: {solicitacao.periodo_referencia}
+                      Período: {solicitacao.periodo_referencia || 'Não informado'}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Criado em {new Date(solicitacao.data_criacao).toLocaleDateString('pt-BR')}
+                      Criado em {solicitacao.data_criacao ? 
+                        new Date(solicitacao.data_criacao).toLocaleDateString('pt-BR') : 
+                        'Data não disponível'
+                      }
                     </p>
                   </div>
                   <div className="flex items-center gap-4">
-                    {getStatusBadge(solicitacao.status)}
+                    {getStatusBadge(solicitacao.status || 'Em Elaboração')}
                     <Button
                       variant="outline"
                       size="sm"
