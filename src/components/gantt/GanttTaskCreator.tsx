@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -10,7 +9,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CalendarIcon, Plus, Target, Clock, FileTemplate } from 'lucide-react';
+import { CalendarIcon, Plus, Target, Clock, FileText } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -151,7 +150,7 @@ export const GanttTaskCreator: React.FC<TaskCreatorProps> = ({
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="templates" className="flex items-center gap-2">
-              <FileTemplate className="h-4 w-4" />
+              <FileText className="h-4 w-4" />
               Templates FP&A
             </TabsTrigger>
             <TabsTrigger value="manual" className="flex items-center gap-2">
