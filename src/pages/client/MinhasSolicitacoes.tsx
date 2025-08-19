@@ -39,6 +39,15 @@ const MinhasSolicitacoes = () => {
     }
   };
 
+  const handleViewDetails = (solicitacao: any) => {
+    // Convert the raw solicitacao data to match Solicitacao interface
+    const formattedSolicitacao: Solicitacao = {
+      ...solicitacao,
+      tipo_solicitacao: solicitacao.tipo_solicitacao || 'Geral', // Provide default if missing
+    };
+    setSelectedSolicitacao(formattedSolicitacao);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -170,7 +179,7 @@ const MinhasSolicitacoes = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setSelectedSolicitacao(solicitacao as Solicitacao)}
+                      onClick={() => handleViewDetails(solicitacao)}
                     >
                       <Eye className="h-4 w-4 mr-2" />
                       Ver Detalhes
