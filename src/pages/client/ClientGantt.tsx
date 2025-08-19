@@ -233,8 +233,8 @@ export default function ClientGantt() {
     switch (status) {
       case 'completed': return 'bg-green-100 text-green-700';
       case 'in_progress': return 'bg-blue-100 text-blue-700';
-      case 'delayed': return 'bg-red-100 text-red-700';
       case 'pending': return 'bg-gray-100 text-gray-700';
+      case 'blocked': return 'bg-red-100 text-red-700';
       default: return 'bg-gray-100 text-gray-700';
     }
   };
@@ -253,10 +253,17 @@ export default function ClientGantt() {
     switch (status) {
       case 'completed': return <CheckCircle className="h-4 w-4" />;
       case 'in_progress': return <Clock className="h-4 w-4" />;
-      case 'delayed': return <AlertCircle className="h-4 w-4" />;
+      case 'blocked': return <AlertCircle className="h-4 w-4" />;
       case 'pending': return <Calendar className="h-4 w-4" />;
       default: return <Calendar className="h-4 w-4" />;
     }
+  };
+
+  // Helper function to check if a task is overdue
+  const isTaskOverdue = (task: GanttTask) => {
+    const today = new Date();
+    const endDate = new Date(task.end_date);
+    return endDate < today && task.status !== 'completed';
   };
 
   const filteredTasks = tasks.filter(task => {
@@ -272,10 +279,11 @@ export default function ClientGantt() {
     const total = tasks.length;
     const completed = tasks.filter(t => t.status === 'completed').length;
     const inProgress = tasks.filter(t => t.status === 'in_progress').length;
-    const delayed = tasks.filter(t => t.status === 'delayed').length;
+    const blocked = tasks.filter(t => t.status === 'blocked').length;
     const pending = tasks.filter(t => t.status === 'pending').length;
+    const overdue = tasks.filter(t => isTaskOverdue(t)).length;
 
-    return { total, completed, inProgress, delayed, notStarted: pending };
+    return { total, completed, inProgress, blocked, notStarted: pending, overdue };
   };
 
   const stats = getProjectStats();
@@ -479,7 +487,7 @@ export default function ClientGantt() {
               </div>
               <div>
                 <p className="text-sm text-red-600 font-medium">Atrasadas</p>
-                <p className="text-2xl font-bold text-red-800">{stats.delayed}</p>
+                <p className="text-2xl font-bold text-red-800">{stats.overdue}</p>
               </div>
             </div>
           </CardContent>
@@ -526,7 +534,7 @@ export default function ClientGantt() {
                   <SelectItem value="pending">Não Iniciadas</SelectItem>
                   <SelectItem value="in_progress">Em Progresso</SelectItem>
                   <SelectItem value="completed">Concluídas</SelectItem>
-                  <SelectItem value="delayed">Atrasadas</SelectItem>
+                  <SelectItem value="blocked">Bloqueadas</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -649,6 +657,9 @@ export default function ClientGantt() {
                           <Badge variant="outline" className={getPriorityColor(task.priority)}>
                             {task.priority}
                           </Badge>
+                          {isTaskOverdue(task) && (
+                            <Badge variant="destructive">Atrasada</Badge>
+                          )}
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
                           <Users className="h-3 w-3 inline mr-1" />
@@ -676,7 +687,7 @@ export default function ClientGantt() {
                                 className={`h-6 rounded ${
                                   task.status === 'completed' ? 'bg-green-500' :
                                   task.status === 'in_progress' ? 'bg-blue-500' :
-                                  task.status === 'delayed' ? 'bg-red-500' :
+                                  task.status === 'blocked' ? 'bg-red-500' :
                                   'bg-gray-400'
                                 }`}
                                 style={{
@@ -738,6 +749,9 @@ export default function ClientGantt() {
                           <Badge variant="outline" className={getPriorityColor(task.priority)}>
                             {task.priority}
                           </Badge>
+                          {isTaskOverdue(task) && (
+                            <Badge variant="destructive">Atrasada</Badge>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -787,7 +801,7 @@ export default function ClientGantt() {
       <GanttExport
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
-        tasks={tasks}
+        tasks={tasks as any}
         projectName={getCurrentProject()?.name || 'Projeto'}
       />
 
@@ -796,7 +810,7 @@ export default function ClientGantt() {
         onClose={() => setIsShareModalOpen(false)}
         projectId={selectedProjectId}
         projectName={getCurrentProject()?.name || 'Projeto'}
-        tasks={tasks}
+        tasks={tasks as any}
       />
     </div>
   );
