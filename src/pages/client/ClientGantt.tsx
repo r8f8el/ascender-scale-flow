@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,7 +33,8 @@ import { GanttExport } from '@/components/gantt/GanttExport';
 import { GanttShare } from '@/components/gantt/GanttShare';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
-import { GanttTask } from '@/hooks/useGanttTasks';
+import { useGanttTasks, GanttTask } from '@/hooks/useGanttTasks';
+import { useGanttProjects } from '@/hooks/useGanttProjects';
 
 export default function ClientGantt() {
   const { user, client } = useAuth();
@@ -45,182 +47,23 @@ export default function ClientGantt() {
   const [selectedTask, setSelectedTask] = useState<GanttTask | null>(null);
   
   // Estados de controle
-  const [selectedProjectId, setSelectedProjectId] = useState('123e4567-e89b-12d3-a456-426614174000'); // UUID válido temporário
+  const [selectedProjectId, setSelectedProjectId] = useState('123e4567-e89b-12d3-a456-426614174000');
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [assigneeFilter, setAssigneeFilter] = useState('all');
 
-  // Dados de exemplo para teste (fallback)
-  const [projects] = useState([
-    {
-      id: '123e4567-e89b-12d3-a456-426614174000',
-      name: 'Projeto de Consultoria Financeira',
-      progress: 65,
-      status: 'active',
-      start_date: '2024-01-01',
-      end_date: '2024-12-31'
-    },
-    {
-      id: '123e4567-e89b-12d3-a456-426614174001',
-      name: 'Implementação de Sistema FP&A',
-      progress: 30,
-      status: 'active',
-      start_date: '2024-03-01',
-      end_date: '2024-08-31'
-    }
-  ]);
-
-  const [tasks, setTasks] = useState<GanttTask[]>([
-    {
-      id: '223e4567-e89b-12d3-a456-426614174000',
-      name: 'Análise de Forças',
-      description: 'Identificar e analisar as forças internas da empresa',
-      start_date: '2024-06-05',
-      end_date: '2024-06-08',
-      progress: 100,
-      status: 'completed',
-      priority: 'medium',
-      assigned_to: 'Rafael',
-      dependencies: [],
-      is_milestone: false,
-      project_id: '123e4567-e89b-12d3-a456-426614174000',
-      created_at: '2024-06-01T00:00:00Z',
-      updated_at: '2024-06-01T00:00:00Z',
-      estimated_hours: 8,
-      actual_hours: 8,
-      category: 'Analysis',
-      tags: ['swot'],
-      assignee: 'Rafael'
-    },
-    {
-      id: '223e4567-e89b-12d3-a456-426614174001',
-      name: 'Análise de Fraquezas',
-      description: 'Identificar e analisar as fraquezas internas da empresa',
-      start_date: '2024-06-05',
-      end_date: '2024-06-08',
-      progress: 100,
-      status: 'completed',
-      priority: 'medium',
-      assigned_to: 'Rafael',
-      dependencies: [],
-      is_milestone: false,
-      project_id: '123e4567-e89b-12d3-a456-426614174000',
-      created_at: '2024-06-01T00:00:00Z',
-      updated_at: '2024-06-01T00:00:00Z',
-      estimated_hours: 8,
-      actual_hours: 8,
-      category: 'Analysis',
-      tags: ['swot'],
-      assignee: 'Rafael'
-    },
-    {
-      id: '223e4567-e89b-12d3-a456-426614174002',
-      name: 'Análise de Oportunidades',
-      description: 'Identificar e analisar as oportunidades externas',
-      start_date: '2024-06-08',
-      end_date: '2024-06-11',
-      progress: 75,
-      status: 'in_progress',
-      priority: 'medium',
-      assigned_to: 'Rafael',
-      dependencies: ['223e4567-e89b-12d3-a456-426614174000', '223e4567-e89b-12d3-a456-426614174001'],
-      is_milestone: false,
-      project_id: '123e4567-e89b-12d3-a456-426614174000',
-      created_at: '2024-06-01T00:00:00Z',
-      updated_at: '2024-06-01T00:00:00Z',
-      estimated_hours: 8,
-      actual_hours: 6,
-      category: 'Analysis',
-      tags: ['swot'],
-      assignee: 'Rafael'
-    },
-    {
-      id: '223e4567-e89b-12d3-a456-426614174003',
-      name: 'Análise de Ameaças',
-      description: 'Identificar e analisar as ameaças externas',
-      start_date: '2024-06-08',
-      end_date: '2024-06-11',
-      progress: 60,
-      status: 'in_progress',
-      priority: 'medium',
-      assigned_to: 'Rafael',
-      dependencies: ['223e4567-e89b-12d3-a456-426614174000', '223e4567-e89b-12d3-a456-426614174001'],
-      is_milestone: false,
-      project_id: '123e4567-e89b-12d3-a456-426614174000',
-      created_at: '2024-06-01T00:00:00Z',
-      updated_at: '2024-06-01T00:00:00Z',
-      estimated_hours: 8,
-      actual_hours: 5,
-      category: 'Analysis',
-      tags: ['swot'],
-      assignee: 'Rafael'
-    },
-    {
-      id: '223e4567-e89b-12d3-a456-426614174004',
-      name: 'Compilação da Matriz SWOT',
-      description: 'Criar a matriz SWOT consolidada',
-      start_date: '2024-06-11',
-      end_date: '2024-06-12',
-      progress: 0,
-      status: 'pending',
-      priority: 'high',
-      assigned_to: 'Paula',
-      dependencies: ['223e4567-e89b-12d3-a456-426614174002', '223e4567-e89b-12d3-a456-426614174003'],
-      is_milestone: true,
-      project_id: '123e4567-e89b-12d3-a456-426614174000',
-      created_at: '2024-06-01T00:00:00Z',
-      updated_at: '2024-06-01T00:00:00Z',
-      estimated_hours: 4,
-      actual_hours: 0,
-      category: 'Deliverable',
-      tags: ['swot', 'milestone'],
-      assignee: 'Paula'
-    },
-    {
-      id: '223e4567-e89b-12d3-a456-426614174005',
-      name: 'Criação de Planos de Ação',
-      description: 'Desenvolver planos de ação baseados na análise SWOT',
-      start_date: '2024-06-12',
-      end_date: '2024-06-16',
-      progress: 0,
-      status: 'pending',
-      priority: 'high',
-      assigned_to: 'Rafael e Paula',
-      dependencies: ['223e4567-e89b-12d3-a456-426614174004'],
-      is_milestone: false,
-      project_id: '123e4567-e89b-12d3-a456-426614174000',
-      created_at: '2024-06-01T00:00:00Z',
-      updated_at: '2024-06-01T00:00:00Z',
-      estimated_hours: 16,
-      actual_hours: 0,
-      category: 'Planning',
-      tags: ['action-plan'],
-      assignee: 'Rafael e Paula'
-    },
-    {
-      id: '223e4567-e89b-12d3-a456-426614174006',
-      name: 'Apresentação para o cliente',
-      description: 'Apresentar resultados e planos para o cliente',
-      start_date: '2024-06-16',
-      end_date: '2024-06-19',
-      progress: 0,
-      status: 'pending',
-      priority: 'high',
-      assigned_to: 'Rafael e Paula',
-      dependencies: ['223e4567-e89b-12d3-a456-426614174005'],
-      is_milestone: false,
-      project_id: '123e4567-e89b-12d3-a456-426614174000',
-      created_at: '2024-06-01T00:00:00Z',
-      updated_at: '2024-06-01T00:00:00Z',
-      estimated_hours: 8,
-      actual_hours: 0,
-      category: 'Presentation',
-      tags: ['client', 'final'],
-      assignee: 'Rafael e Paula'
-    }
-  ]);
+  // Hooks para dados do Supabase
+  const { projects } = useGanttProjects(client?.id);
+  const { 
+    tasks, 
+    loading, 
+    error, 
+    createTask, 
+    updateTask, 
+    deleteTask 
+  } = useGanttTasks(selectedProjectId);
 
   useEffect(() => {
     if (projects.length > 0 && !selectedProjectId) {
@@ -315,8 +158,10 @@ export default function ClientGantt() {
     if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return;
 
     try {
-      // Simular exclusão
-      setTasks(prev => prev.filter(t => t.id !== taskId));
+      const result = await deleteTask(taskId);
+      if (result.error) {
+        throw result.error;
+      }
       
       toast({
         title: "Sucesso!",
@@ -332,38 +177,61 @@ export default function ClientGantt() {
     }
   };
 
-  const handleTaskSaved = (taskData: Omit<GanttTask, 'id' | 'created_at' | 'updated_at'>) => {
-    // Simular salvamento
-    if (selectedTask) {
-      // Atualizar tarefa existente
-      setTasks(prev => prev.map(t => 
-        t.id === selectedTask.id 
-          ? { ...t, ...taskData, updated_at: new Date().toISOString() }
-          : t
-      ));
-    } else {
-      // Criar nova tarefa
-      const newTask: GanttTask = {
-        ...taskData,
-        id: `task-${Date.now()}`,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        project_id: selectedProjectId
-      };
-      setTasks(prev => [...prev, newTask]);
+  const handleTaskSaved = async (taskData: Omit<GanttTask, 'id' | 'created_at' | 'updated_at'>) => {
+    try {
+      let result;
+      
+      if (selectedTask) {
+        // Atualizar tarefa existente
+        result = await updateTask(selectedTask.id, taskData);
+      } else {
+        // Criar nova tarefa
+        result = await createTask({
+          ...taskData,
+          project_id: selectedProjectId
+        });
+      }
+      
+      if (result.error) {
+        throw result.error;
+      }
+      
+      toast({
+        title: "Sucesso!",
+        description: selectedTask ? "Tarefa atualizada com sucesso" : "Tarefa criada com sucesso"
+      });
+      
+      setIsTaskModalOpen(false);
+      setSelectedTask(null);
+    } catch (error) {
+      console.error('Erro ao salvar tarefa:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar tarefa",
+        variant: "destructive"
+      });
     }
-    
-    toast({
-      title: "Sucesso!",
-      description: selectedTask ? "Tarefa atualizada com sucesso" : "Tarefa criada com sucesso"
-    });
-    setIsTaskModalOpen(false);
-    setSelectedTask(null);
   };
 
   const getCurrentProject = () => {
     return projects.find(p => p.id === selectedProjectId);
   };
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64 text-red-500">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 mx-auto mb-4" />
+          <div className="text-lg font-medium">Erro ao carregar dados</div>
+          <div className="text-sm">{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
