@@ -11,6 +11,8 @@ export const useAscalateCollaborators = () => {
 
   const loadAscalateCollaborators = async () => {
     try {
+      console.log('Carregando colaboradores Ascalate...');
+      
       const { data, error } = await supabase
         .from('collaborators')
         .select('*')
@@ -18,7 +20,16 @@ export const useAscalateCollaborators = () => {
         .eq('is_active', true)
         .order('name');
 
+      console.log('Dados retornados da query:', data);
+      console.log('Erro da query:', error);
+
       if (error) throw error;
+      
+      console.log('Colaboradores Ascalate encontrados:', data?.length || 0);
+      data?.forEach(collaborator => {
+        console.log(`- ${collaborator.name} (${collaborator.email})`);
+      });
+      
       setCollaborators(data || []);
     } catch (error) {
       console.error('Erro ao carregar colaboradores Ascalate:', error);

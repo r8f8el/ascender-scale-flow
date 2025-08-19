@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -25,10 +24,17 @@ const CollaboratorsAdmin = () => {
     is_active: true
   });
 
-  // Filtrar apenas colaboradores @ascalate.com.br
+  // Filtrar apenas colaboradores @ascalate.com.br e adicionar logs
   const ascalateCollaborators = collaborators.filter(collaborator => 
     collaborator.email.endsWith('@ascalate.com.br')
   );
+
+  console.log('Todos os colaboradores carregados:', collaborators.length);
+  console.log('Colaboradores Ascalate filtrados:', ascalateCollaborators.length);
+  
+  collaborators.forEach(collaborator => {
+    console.log(`Colaborador: ${collaborator.name} - ${collaborator.email} - Ativo: ${collaborator.is_active}`);
+  });
 
   const resetForm = () => {
     setFormData({
@@ -136,7 +142,14 @@ const CollaboratorsAdmin = () => {
         ))}
       </div>
 
-      {ascalateCollaborators.length === 0 && <EmptyCollaboratorState />}
+      {ascalateCollaborators.length === 0 && (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground mb-4">
+            Nenhum colaborador Ascalate encontrado. Os logs no console mostrarão mais detalhes.
+          </p>
+          <EmptyCollaboratorState />
+        </div>
+      )}
 
       <CollaboratorForm
         isOpen={isDialogOpen}
