@@ -36,6 +36,8 @@ import { GanttTask, useGanttTasks } from '@/hooks/useGanttTasks';
 import { useGanttProjects } from '@/hooks/useGanttProjects';
 
 export default function ClientGantt() {
+  console.log('🔍 ClientGantt: Componente renderizando...');
+  
   const { user, client } = useAuth();
   const { toast } = useToast();
   
@@ -46,7 +48,7 @@ export default function ClientGantt() {
   const [selectedTask, setSelectedTask] = useState<GanttTask | null>(null);
   
   // Estados de controle
-  const [selectedProjectId, setSelectedProjectId] = useState('123e4567-e89b-12d3-a456-426614174000');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -61,8 +63,20 @@ export default function ClientGantt() {
     error: tasksError,
     createTask,
     updateTask,
-    deleteTask
+    deleteTask,
+    testConnection
   } = useGanttTasks(selectedProjectId);
+
+  // Logs de debug
+  console.log('🔍 ClientGantt: Dados dos hooks:', {
+    projects,
+    projectsLoading,
+    projectsError,
+    selectedProjectId,
+    tasks,
+    tasksLoading,
+    tasksError
+  });
 
   // Estados de loading e erro
   const isLoading = projectsLoading || tasksLoading;
@@ -159,10 +173,28 @@ export default function ClientGantt() {
   const currentTasks = tasks && tasks.length > 0 ? tasks : fallbackTasks;
 
   useEffect(() => {
-    if (currentProjects.length > 0 && !selectedProjectId) {
-      setSelectedProjectId(currentProjects[0].id);
+    if (projects && projects.length > 0 && !selectedProjectId) {
+      console.log('🔍 Selecionando primeiro projeto real do Supabase:', projects[0]);
+      setSelectedProjectId(projects[0].id);
     }
-  }, [currentProjects, selectedProjectId]);
+  }, [projects, selectedProjectId]);
+
+  // Verificar se há projeto selecionado
+  useEffect(() => {
+    if (projects && projects.length > 0 && !selectedProjectId) {
+      console.log('🔍 Nenhum projeto selecionado, selecionando primeiro real...');
+      setSelectedProjectId(projects[0].id);
+    }
+  }, [projects, selectedProjectId]);
+
+  // Log quando selectedProjectId mudar
+  useEffect(() => {
+    if (selectedProjectId) {
+      console.log('🔍 selectedProjectId atualizado para:', selectedProjectId);
+      const selectedProject = projects?.find(p => p.id === selectedProjectId);
+      console.log('🔍 Projeto selecionado:', selectedProject);
+    }
+  }, [selectedProjectId, projects]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -329,6 +361,66 @@ export default function ClientGantt() {
 
   return (
     <div className="space-y-6">
+      {/* Botão de Teste Debug */}
+      <div className="bg-red-100 border-2 border-red-500 p-4 rounded-lg">
+        <h3 className="text-red-800 font-bold mb-2">🧪 DEBUG - Teste de Conexão</h3>
+                   <Button 
+             className="bg-red-600 hover:bg-red-700 text-white font-bold text-lg px-6 py-3"
+             onClick={async () => {
+               console.log('🧪 BOTÃO DE TESTE CLICADO!');
+               console.log('🧪 selectedProjectId:', selectedProjectId);
+               console.log('🧪 currentProjects:', currentProjects);
+               console.log('🧪 testConnection existe?', typeof testConnection);
+               
+               if (!selectedProjectId) {
+                 alert('❌ Nenhum projeto selecionado! Selecione um projeto primeiro.');
+                 return;
+               }
+               
+               try {
+                 const result = await testConnection();
+                 console.log('🧪 Resultado:', result);
+                 alert(`Teste: ${result.success ? 'SUCESSO' : 'ERRO'} - Verifique o console`);
+               } catch (error) {
+                 console.error('🧪 Erro no teste:', error);
+                 alert('Erro no teste - Verifique o console');
+               }
+             }}
+           >
+             🧪 TESTAR CONEXÃO SUPABASE
+           </Button>
+           
+           <Button 
+             className="bg-green-600 hover:bg-green-700 text-white font-bold text-lg px-6 py-3"
+             onClick={async () => {
+               console.log('🔍 VERIFICANDO TAREFAS NO BANCO...');
+               console.log('🔍 selectedProjectId:', selectedProjectId);
+               
+               try {
+                 const { supabase } = await import('@/integrations/supabase/client');
+                 const { data, error } = await supabase
+                   .from('gantt_tasks')
+                   .select('*')
+                   .eq('project_id', selectedProjectId);
+                   
+                 console.log('🔍 Tarefas no banco:', data);
+                 console.log('🔍 Erro:', error);
+                 
+                 if (error) {
+                   alert(`❌ Erro: ${error.message}`);
+                 } else {
+                   alert(`✅ Encontradas ${data?.length || 0} tarefas no banco`);
+                 }
+               } catch (error) {
+                 console.error('🔍 Erro ao verificar tarefas:', error);
+                 alert('Erro ao verificar tarefas');
+               }
+             }}
+           >
+             🔍 VER TAREFAS NO BANCO
+           </Button>
+      </div>
+
       {/* Loading State */}
       {isLoading && (
         <div className="flex items-center justify-center py-12">
@@ -378,6 +470,30 @@ export default function ClientGantt() {
           >
             <Share2 className="h-4 w-4 mr-2" />
             Compartilhar
+          </Button>
+          <Button 
+            variant="default" 
+            size="sm"
+            className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold"
+            onClick={async () => {
+              console.log('🧪 Testando conexão...');
+              const result = await testConnection();
+              console.log('🧪 Resultado do teste:', result);
+              if (result.success) {
+                toast({
+                  title: "✅ Conexão OK",
+                  description: "Supabase conectado e funcionando!"
+                });
+              } else {
+                toast({
+                  title: "❌ Erro de Conexão",
+                  description: "Problema com Supabase. Verifique o console.",
+                  variant: "destructive"
+                });
+              }
+            }}
+          >
+            🧪 TESTAR CONEXÃO
           </Button>
           <Button size="sm" onClick={handleCreateTask}>
             <Plus className="h-4 w-4 mr-2" />

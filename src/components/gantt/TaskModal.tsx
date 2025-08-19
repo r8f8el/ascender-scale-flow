@@ -256,9 +256,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
       estimated_hours: formData.estimated_hours,
       progress: formData.progress,
       is_milestone: formData.is_milestone,
-      dependencies: formData.dependencies,
-      category: formData.category,
-      tags: formData.tags
+      dependencies: formData.dependencies
     };
 
     try {

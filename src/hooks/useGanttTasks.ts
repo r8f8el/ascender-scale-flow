@@ -94,13 +94,20 @@ export const useGanttTasks = (projectId: string) => {
     try {
       console.log('📤 Dados sendo enviados:', taskData);
       
-      // Ensure assigned_to is null if it's 'default-value' or empty
+      // Ensure data types match the database schema
       const sanitizedData = {
-        ...taskData,
-        assigned_to: taskData.assigned_to === 'default-value' || !taskData.assigned_to ? null : taskData.assigned_to,
-        estimated_hours: taskData.estimated_hours || 8,
-        actual_hours: taskData.actual_hours || 0,
-        progress: taskData.progress || 0
+        project_id: taskData.project_id,
+        name: taskData.name.trim(),
+        description: taskData.description?.trim() || null,
+        start_date: taskData.start_date,
+        end_date: taskData.end_date,
+        progress: Number(taskData.progress || 0),
+        assigned_to: (taskData.assigned_to === 'default-value' || !taskData.assigned_to) ? null : taskData.assigned_to,
+        priority: taskData.priority || 'medium',
+        estimated_hours: taskData.estimated_hours ? Number(taskData.estimated_hours) : null,
+        actual_hours: Number(taskData.actual_hours || 0),
+        is_milestone: Boolean(taskData.is_milestone || false),
+        dependencies: Array.isArray(taskData.dependencies) ? taskData.dependencies : []
       };
       
       console.log('📤 Dados de inserção:', sanitizedData);
@@ -112,7 +119,12 @@ export const useGanttTasks = (projectId: string) => {
         .single();
 
       if (createError) {
-        console.error('Erro ao salvar tarefa:', createError);
+        console.error('❌ Erro ao salvar tarefa:');
+        console.error('🔴 Erro completo:', createError);
+        console.error('🔴 Código:', createError.code);
+        console.error('🔴 Mensagem:', createError.message);
+        console.error('🔴 Detalhes:', createError.details);
+        console.error('🔴 Dados enviados:', sanitizedData);
         throw createError;
       }
 
@@ -142,15 +154,18 @@ export const useGanttTasks = (projectId: string) => {
         collaborators: (data as any).collaborators
       };
 
-      // Atualizar estado local
+      // Atualizar estado local imediatamente
       setTasks(prev => [...prev, newTask]);
       
-      // Recarregar tarefas do banco para garantir sincronização
-      await fetchTasks();
+      // Aguardar um pouco e recarregar do banco
+      setTimeout(async () => {
+        console.log('🔄 Recarregando tarefas do banco...');
+        await fetchTasks();
+      }, 100);
       
       return { data: newTask, error: null };
     } catch (err) {
-      console.error('Erro ao criar tarefa:', err);
+      console.error('❌ Erro ao criar tarefa:', err);
       return { data: null, error: err };
     }
   }, [fetchTasks]);
@@ -270,6 +285,55 @@ export const useGanttTasks = (projectId: string) => {
     }
   }, []);
 
+  // Função de teste para verificar conexão
+  const testConnection = useCallback(async () => {
+    try {
+      console.log('🧪 Testando conexão com Supabase...');
+      
+      // Teste simples: inserir uma tarefa de teste
+      const testData = {
+        project_id: projectId,
+        name: 'Tarefa de Teste',
+        description: 'Teste de conexão',
+        start_date: '2024-01-01',
+        end_date: '2024-01-02',
+        progress: 0,
+        priority: 'medium' as const,
+        assigned_to: null,
+        dependencies: [],
+        is_milestone: false,
+        estimated_hours: 8,
+        actual_hours: 0
+      };
+
+      console.log('🧪 Dados de teste:', testData);
+
+      const { data, error } = await supabase
+        .from('gantt_tasks')
+        .insert(testData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Erro no teste:', error);
+        return { success: false, error };
+      }
+
+      console.log('✅ Teste bem-sucedido:', data);
+      
+      // Limpar tarefa de teste
+      await supabase
+        .from('gantt_tasks')
+        .delete()
+        .eq('id', data.id);
+
+      return { success: true, data };
+    } catch (err) {
+      console.error('❌ Erro no teste de conexão:', err);
+      return { success: false, error: err };
+    }
+  }, [projectId]);
+
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
@@ -284,6 +348,7 @@ export const useGanttTasks = (projectId: string) => {
     deleteTask,
     updateTaskProgress,
     reorderTasks,
-    refetch: fetchTasks
+    refetch: fetchTasks,
+    testConnection
   };
 };
