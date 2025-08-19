@@ -1,94 +1,57 @@
-
-import React from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useEffect } from "react";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import AuthProvider from "@/contexts/AuthContext";
-import AdminAuthProvider from "@/contexts/AdminAuthContext";
-import { useMonitoring } from "@/hooks/useMonitoring";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { AdminAuthProvider } from "@/contexts/AdminAuthContext";
+import Index from "./pages/Index";
+import ClientLogin from "./pages/ClientLogin";
+import ClientArea from "./pages/ClientArea";
+import AdminLogin from "./pages/AdminLogin";
+import AdminRegister from "./pages/AdminRegister";
+import AdminArea from "./pages/AdminArea";
+import AbrirChamado from "./pages/AbrirChamado";
+import ParticipantData from "./pages/ParticipantData";
+import NewsletterSignup from "./pages/NewsletterSignup";
+import NotFound from "./pages/NotFound";
+import SecureTeamInviteSignup from "./pages/SecureTeamInviteSignup";
+import TeamInviteSignup from "./pages/TeamInviteSignup";
 
-// Pages
-import Index from "@/pages/Index";
-import ClientLogin from "@/pages/ClientLogin";
-import AdminLogin from "@/pages/AdminLogin";
-import AdminRegister from "@/pages/AdminRegister";
-import ClientArea from "@/pages/ClientArea";
-import AdminArea from "@/pages/admin/AdminArea";
-import AbrirChamado from "@/pages/AbrirChamado";
-import TeamInviteSignup from "@/pages/TeamInviteSignup";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import AdminProtectedRoute from "@/components/AdminProtectedRoute";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "sonner";
-import { ScrollToTop } from "@/components/ScrollToTop";
-
-// Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 10, // 10 minutes
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
     },
   },
 });
 
-// Component to track navigation
-const NavigationTracker = () => {
-  const { logClick } = useMonitoring();
-  
-  useEffect(() => {
-    // Log navigation event using logClick since trackEvent doesn't exist
-    logClick('navigation', { path: window.location.pathname });
-  }, [logClick]);
-  
-  return null;
-};
-
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <NavigationTracker />
-        <AuthProvider>
-          <AdminAuthProvider>
-            <div className="min-h-screen">
+      <AuthProvider>
+        <AdminAuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <BrowserRouter>
               <Routes>
-                {/* Public Routes */}
                 <Route path="/" element={<Index />} />
                 <Route path="/cliente/login" element={<ClientLogin />} />
+                <Route path="/cliente/*" element={<ClientArea />} />
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin/register" element={<AdminRegister />} />
-                
-                {/* Public ticket route */}
+                <Route path="/admin/*" element={<AdminArea />} />
                 <Route path="/abrir-chamado" element={<AbrirChamado />} />
-                
-                {/* Team invite signup route */}
-                <Route path="/convite/inscrever" element={<TeamInviteSignup />} />
-                
-                {/* Client Protected Routes */}
-                <Route path="/cliente/*" element={
-                  <ProtectedRoute>
-                    <ClientArea />
-                  </ProtectedRoute>
-                } />
-                
-                {/* Admin Protected Routes */}
-                <Route path="/admin/*" element={
-                  <AdminProtectedRoute>
-                    <AdminArea />
-                  </AdminProtectedRoute>
-                } />
-                
-                {/* Fallback */}
-                <Route path="*" element={<Navigate to="/" replace />} />
+                <Route path="/participant-data" element={<ParticipantData />} />
+                <Route path="/newsletter" element={<NewsletterSignup />} />
+                <Route path="/convite-seguro" element={<SecureTeamInviteSignup />} />
+				        <Route path="/convite/inscrever" element={<TeamInviteSignup />} />
+                <Route path="*" element={<NotFound />} />
               </Routes>
-            </div>
-            <Toaster />
-            <Sonner />
-            <ScrollToTop />
-          </AdminAuthProvider>
-        </AuthProvider>
-      </BrowserRouter>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AdminAuthProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

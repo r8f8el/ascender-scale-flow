@@ -2419,7 +2419,7 @@ export type Database = {
           expires_at: string
           id: string
           invited_name: string | null
-          inviter_id: string
+          inviter_id: string | null
           inviter_name: string
           message: string | null
           status: string
@@ -2434,7 +2434,7 @@ export type Database = {
           expires_at: string
           id?: string
           invited_name?: string | null
-          inviter_id: string
+          inviter_id?: string | null
           inviter_name: string
           message?: string | null
           status?: string
@@ -2449,7 +2449,7 @@ export type Database = {
           expires_at?: string
           id?: string
           invited_name?: string | null
-          inviter_id?: string
+          inviter_id?: string | null
           inviter_name?: string
           message?: string | null
           status?: string
@@ -2843,6 +2843,10 @@ export type Database = {
         Args:
           | { p_company_id: string; p_email: string }
           | { p_email: string; p_hierarchy_level_id: string; p_name: string }
+        Returns: string
+      }
+      invite_team_member_secure: {
+        Args: { p_email: string; p_hierarchy_level_id: string; p_name: string }
         Returns: string
       }
       is_admin_user: {

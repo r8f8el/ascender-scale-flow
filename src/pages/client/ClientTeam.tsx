@@ -8,20 +8,20 @@ import {
   Users, 
   Search, 
   Mail, 
-  Phone,
   Shield,
   CheckCircle,
   Clock,
   UserPlus
 } from 'lucide-react';
-import { useTeamMembers, useCompanyTeamMembers } from '@/hooks/useTeamMembers';
-import { TeamInviteDialog } from '@/components/client/TeamInviteDialog';
+import { useSecureTeamMembers, useSecureCompanyTeamMembers } from '@/hooks/useSecureTeamMembers';
+import { SecureInviteTeamMemberDialog } from '@/components/client/SecureInviteTeamMemberDialog';
 
 const ClientTeam = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
 
-  const { data: teamMembers = [], isLoading: teamLoading } = useTeamMembers();
-  const { data: companyMembers = [], isLoading: companyLoading } = useCompanyTeamMembers();
+  const { data: teamMembers = [], isLoading: teamLoading } = useSecureTeamMembers();
+  const { data: companyMembers = [], isLoading: companyLoading } = useSecureCompanyTeamMembers();
 
   // Combinar dados de membros da empresa com dados de convites da equipe
   const allTeamData = companyMembers.map(member => {
@@ -87,7 +87,10 @@ const ClientTeam = () => {
           </p>
         </div>
         
-        <TeamInviteDialog />
+        <Button onClick={() => setInviteDialogOpen(true)}>
+          <UserPlus className="h-4 w-4 mr-2" />
+          Convidar Membro
+        </Button>
       </div>
 
       {/* Estatísticas da Equipe */}
@@ -229,18 +232,20 @@ const ClientTeam = () => {
               }
             </p>
             {combinedTeamData.length === 0 && (
-              <TeamInviteDialog 
-                trigger={
-                  <Button>
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Convidar Primeiro Membro
-                  </Button>
-                }
-              />
+              <Button onClick={() => setInviteDialogOpen(true)}>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Convidar Primeiro Membro
+              </Button>
             )}
           </CardContent>
         </Card>
       )}
+
+      {/* Dialog de convite */}
+      <SecureInviteTeamMemberDialog 
+        open={inviteDialogOpen}
+        onOpenChange={setInviteDialogOpen}
+      />
     </div>
   );
 };

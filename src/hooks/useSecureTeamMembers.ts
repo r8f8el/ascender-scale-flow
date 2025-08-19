@@ -97,7 +97,7 @@ export const useSecureInviteTeamMember = () => {
         throw new Error('Nome muito longo');
       }
 
-      const { data, error } = await supabase.rpc('invite_team_member', {
+      const { data, error } = await supabase.rpc('invite_team_member_secure', {
         p_email: sanitizedEmail,
         p_name: sanitizedName,
         p_hierarchy_level_id: hierarchyLevelId

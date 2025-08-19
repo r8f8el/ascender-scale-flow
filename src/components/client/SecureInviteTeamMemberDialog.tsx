@@ -12,11 +12,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Mail, User, MessageCircle, Shield, Send } from 'lucide-react';
-import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
-import { useSecureAuth } from '@/hooks/useSecureAuth';
+import { useSecureInviteTeamMember, useHierarchyLevels } from '@/hooks/useSecureTeamMembers';
 
 interface SecureInviteTeamMemberDialogProps {
   open: boolean;
@@ -27,14 +32,16 @@ export const SecureInviteTeamMemberDialog: React.FC<SecureInviteTeamMemberDialog
   open,
   onOpenChange,
 }) => {
-  const { user } = useSecureAuth();
-  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     name: '',
+    hierarchyLevelId: '',
     message: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const { data: hierarchyLevels = [] } = useHierarchyLevels();
+  const inviteTeamMember = useSecureInviteTeamMember();
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -52,6 +59,10 @@ export const SecureInviteTeamMemberDialog: React.FC<SecureInviteTeamMemberDialog
       newErrors.name = 'Nome deve ter pelo menos 2 caracteres';
     }
 
+    if (!formData.hierarchyLevelId) {
+      newErrors.hierarchyLevelId = 'Nível hierárquico é obrigatório';
+    }
+
     if (formData.message.length > 500) {
       newErrors.message = 'Mensagem muito longa (máximo 500 caracteres)';
     }
@@ -62,124 +73,22 @@ export const SecureInviteTeamMemberDialog: React.FC<SecureInviteTeamMemberDialog
 
   const handleSendInvite = async () => {
     if (!validateForm()) {
-      toast.error('Por favor, corrija os erros no formulário');
       return;
     }
-
-    if (!user) {
-      toast.error('Usuário não autenticado');
-      return;
-    }
-
-    setLoading(true);
 
     try {
-      // Buscar dados da empresa atual
-      const { data: profile, error: profileError } = await supabase
-        .from('client_profiles')
-        .select('company, name')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError) {
-        console.error('Erro ao buscar perfil:', profileError);
-        toast.error('Erro ao buscar dados da empresa');
-        return;
-      }
-
-      // Buscar hierarchy_level padrão (nível mais baixo)
-      const { data: hierarchyLevel, error: hierarchyError } = await supabase
-        .from('hierarchy_levels')
-        .select('id')
-        .order('level', { ascending: true })
-        .limit(1)
-        .single();
-
-      if (hierarchyError) {
-        console.error('Erro ao buscar hierarchy level:', hierarchyError);
-        toast.error('Erro ao configurar permissões');
-        return;
-      }
-
-      // Criar convite seguro na tabela team_invitations
-      const inviteToken = crypto.randomUUID() + '-' + Date.now();
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7); // 7 dias para expirar
-
-      const { data: inviteData, error: inviteError } = await supabase
-        .from('team_invitations')
-        .insert({
-          company_id: user.id,
-          email: formData.email.trim().toLowerCase(),
-          inviter_id: user.id,
-          inviter_name: profile.name || user.email || 'Administrador',
-          invited_name: formData.name.trim(),
-          token: inviteToken,
-          message: formData.message.trim() || null,
-          expires_at: expiresAt.toISOString(),
-          status: 'pending'
-        })
-        .select()
-        .single();
-
-      if (inviteError) {
-        console.error('Erro ao criar convite:', inviteError);
-        if (inviteError.code === '23505') {
-          toast.error('Este email já foi convidado');
-        } else {
-          toast.error('Erro ao criar convite');
-        }
-        return;
-      }
-
-      // Criar entrada na tabela team_members
-      const { error: teamError } = await supabase
-        .from('team_members')
-        .insert({
-          company_id: user.id,
-          invited_email: formData.email.trim().toLowerCase(),
-          name: formData.name.trim(),
-          hierarchy_level_id: hierarchyLevel.id,
-          invited_by: user.id,
-          status: 'pending'
-        });
-
-      if (teamError) {
-        console.error('Erro ao criar membro da equipe:', teamError);
-        // Continua mesmo com erro, pois o convite principal foi criado
-      }
-
-      // Enviar email de convite
-      const inviteUrl = `${window.location.origin}/convite/inscrever?token=${inviteToken}`;
-      
-      const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
-        body: {
-          to: formData.email.trim().toLowerCase(),
-          inviterName: profile.name || user.email || 'Administrador',
-          invitedName: formData.name.trim(),
-          companyName: profile.company || 'Ascalate',
-          inviteUrl: inviteUrl,
-          message: formData.message.trim() || undefined
-        }
+      await inviteTeamMember.mutateAsync({
+        email: formData.email.trim().toLowerCase(),
+        name: formData.name.trim(),
+        hierarchyLevelId: formData.hierarchyLevelId
       });
-
-      if (emailError) {
-        console.error('Erro ao enviar email:', emailError);
-        toast.error('Convite criado, mas houve erro no envio do email');
-      } else {
-        toast.success('Convite enviado com sucesso!');
-      }
-
+      
       // Reset form and close dialog
-      setFormData({ email: '', name: '', message: '' });
+      setFormData({ email: '', name: '', hierarchyLevelId: '', message: '' });
       setErrors({});
       onOpenChange(false);
-
     } catch (error) {
-      console.error('Erro ao enviar convite:', error);
-      toast.error('Erro interno ao enviar convite');
-    } finally {
-      setLoading(false);
+      // Error handled by the mutation
     }
   };
 
@@ -193,7 +102,7 @@ export const SecureInviteTeamMemberDialog: React.FC<SecureInviteTeamMemberDialog
 
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
-      setFormData({ email: '', name: '', message: '' });
+      setFormData({ email: '', name: '', hierarchyLevelId: '', message: '' });
       setErrors({});
     }
     onOpenChange(newOpen);
@@ -226,7 +135,7 @@ export const SecureInviteTeamMemberDialog: React.FC<SecureInviteTeamMemberDialog
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
                 className={`pl-10 ${errors.email ? 'border-red-500' : ''}`}
-                disabled={loading}
+                disabled={inviteTeamMember.isPending}
               />
             </div>
             {errors.email && (
@@ -247,11 +156,43 @@ export const SecureInviteTeamMemberDialog: React.FC<SecureInviteTeamMemberDialog
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 className={`pl-10 ${errors.name ? 'border-red-500' : ''}`}
-                disabled={loading}
+                disabled={inviteTeamMember.isPending}
               />
             </div>
             {errors.name && (
               <p className="text-xs text-red-600">{errors.name}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">
+              Nível Hierárquico *
+            </Label>
+            <Select 
+              value={formData.hierarchyLevelId} 
+              onValueChange={(value) => handleInputChange('hierarchyLevelId', value)}
+              disabled={inviteTeamMember.isPending}
+            >
+              <SelectTrigger className={errors.hierarchyLevelId ? 'border-red-500' : ''}>
+                <SelectValue placeholder="Selecione o nível hierárquico" />
+              </SelectTrigger>
+              <SelectContent>
+                {hierarchyLevels.map((level) => (
+                  <SelectItem key={level.id} value={level.id}>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{level.name}</span>
+                      {level.description && (
+                        <span className="text-xs text-muted-foreground">
+                          {level.description}
+                        </span>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.hierarchyLevelId && (
+              <p className="text-xs text-red-600">{errors.hierarchyLevelId}</p>
             )}
           </div>
 
@@ -267,7 +208,7 @@ export const SecureInviteTeamMemberDialog: React.FC<SecureInviteTeamMemberDialog
                 value={formData.message}
                 onChange={(e) => handleInputChange('message', e.target.value)}
                 className={`pl-10 min-h-[80px] resize-none ${errors.message ? 'border-red-500' : ''}`}
-                disabled={loading}
+                disabled={inviteTeamMember.isPending}
                 maxLength={500}
               />
             </div>
@@ -291,16 +232,16 @@ export const SecureInviteTeamMemberDialog: React.FC<SecureInviteTeamMemberDialog
           <Button
             variant="outline"
             onClick={() => handleOpenChange(false)}
-            disabled={loading}
+            disabled={inviteTeamMember.isPending}
           >
             Cancelar
           </Button>
           <Button
             onClick={handleSendInvite}
-            disabled={loading}
+            disabled={inviteTeamMember.isPending}
             className="bg-blue-600 hover:bg-blue-700"
           >
-            {loading ? (
+            {inviteTeamMember.isPending ? (
               <>
                 <Send className="w-4 h-4 mr-2 animate-spin" />
                 Enviando...
