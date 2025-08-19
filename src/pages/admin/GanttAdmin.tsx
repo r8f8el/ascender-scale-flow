@@ -34,6 +34,26 @@ import { GanttShare } from '@/components/gantt/GanttShare';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
 import { GanttTask } from '@/hooks/useGanttTasks';
+import { supabase } from '@/integrations/supabase/client';
+
+interface ClientProfile {
+  id: string;
+  name: string;
+  email: string;
+  company: string | null;
+}
+
+interface GanttProject {
+  id: string;
+  name: string;
+  description: string | null;
+  client_id: string;
+  start_date: string;
+  end_date: string;
+  progress: number;
+  status: string;
+  priority: string;
+}
 
 export default function GanttAdmin() {
   const { user } = useAuth();
@@ -46,175 +66,123 @@ export default function GanttAdmin() {
   const [selectedTask, setSelectedTask] = useState<any>(null);
   
   // Estados de controle
-  const [selectedClientId, setSelectedClientId] = useState('1');
-  const [selectedProjectId, setSelectedProjectId] = useState('1');
+  const [selectedClientId, setSelectedClientId] = useState<string>('');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [assigneeFilter, setAssigneeFilter] = useState('all');
 
-  // Dados de exemplo para teste (fallback)
-  const [clients] = useState([
-    {
-      id: '1',
-      name: 'Empresa ABC Ltda',
-      email: 'contato@abc.com.br',
-      status: 'active'
-    },
-    {
-      id: '2',
-      name: 'Empresa XYZ S/A',
-      email: 'contato@xyz.com.br',
-      status: 'active'
-    },
-    {
-      id: '3',
-      name: 'Empresa DEF Ltda',
-      email: 'contato@def.com.br',
-      status: 'active'
-    }
-  ]);
+  // Estados de dados reais
+  const [clients, setClients] = useState<ClientProfile[]>([]);
+  const [projects, setProjects] = useState<GanttProject[]>([]);
+  const [tasks, setTasks] = useState<GanttTask[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [projects] = useState([
-    {
-      id: '1',
-      name: 'Projeto de Consultoria Financeira',
-      progress: 65,
-      status: 'active',
-      start_date: '2024-01-01',
-      end_date: '2024-12-31',
-      client_id: '1',
-      client_name: 'Empresa ABC Ltda',
-      manager: 'Rafael Gontijo'
-    },
-    {
-      id: '2',
-      name: 'Implementação de Sistema FP&A',
-      progress: 30,
-      status: 'active',
-      start_date: '2024-03-01',
-      end_date: '2024-08-31',
-      client_id: '2',
-      client_name: 'Empresa XYZ S/A',
-      manager: 'Paula Silva'
-    },
-    {
-      id: '3',
-      name: 'Auditoria Financeira',
-      progress: 85,
-      status: 'active',
-      start_date: '2024-02-01',
-      end_date: '2024-05-31',
-      client_id: '3',
-      client_name: 'Empresa DEF Ltda',
-      manager: 'Carlos Santos'
-    }
-  ]);
-
-  const [tasks, setTasks] = useState<GanttTask[]>([
-    {
-      id: '1',
-      name: 'Análise de Forças',
-      description: 'Identificar e analisar as forças internas da empresa',
-      start_date: '2024-06-05',
-      end_date: '2024-06-08',
-      progress: 100,
-      status: 'completed',
-      priority: 'medium',
-      assignee: 'Rafael',
-      dependencies: [],
-      is_milestone: false,
-      project_id: '1',
-      created_at: '2024-06-01T00:00:00Z',
-      updated_at: '2024-06-01T00:00:00Z'
-    },
-    {
-      id: '2',
-      name: 'Análise de Fraquezas',
-      description: 'Identificar e analisar as fraquezas internas da empresa',
-      start_date: '2024-06-05',
-      end_date: '2024-06-08',
-      progress: 100,
-      status: 'completed',
-      priority: 'medium',
-      assignee: 'Rafael',
-      dependencies: [],
-      is_milestone: false,
-      project_id: '1',
-      created_at: '2024-06-01T00:00:00Z',
-      updated_at: '2024-06-01T00:00:00Z'
-    },
-    {
-      id: '3',
-      name: 'Análise de Oportunidades',
-      description: 'Identificar e analisar as oportunidades externas',
-      start_date: '2024-06-08',
-      end_date: '2024-06-11',
-      progress: 75,
-      status: 'in_progress',
-      priority: 'medium',
-      assignee: 'Rafael',
-      dependencies: ['1', '2'],
-      is_milestone: false,
-      project_id: '1',
-      created_at: '2024-06-01T00:00:00Z',
-      updated_at: '2024-06-01T00:00:00Z'
-    },
-    {
-      id: '4',
-      name: 'Análise de Ameaças',
-      description: 'Identificar e analisar as ameaças externas',
-      start_date: '2024-06-08',
-      end_date: '2024-06-11',
-      progress: 60,
-      status: 'in_progress',
-      priority: 'medium',
-      assignee: 'Rafael',
-      dependencies: ['1', '2'],
-      is_milestone: false,
-      project_id: '1',
-      created_at: '2024-06-01T00:00:00Z',
-      updated_at: '2024-06-01T00:00:00Z'
-    },
-    {
-      id: '5',
-      name: 'Compilação da Matriz SWOT',
-      description: 'Criar a matriz SWOT consolidada',
-      start_date: '2024-06-11',
-      end_date: '2024-06-12',
-      progress: 0,
-      status: 'pending',
-      priority: 'high',
-      assignee: 'Paula',
-      dependencies: ['3', '4'],
-      is_milestone: true,
-      project_id: '1',
-      created_at: '2024-06-01T00:00:00Z',
-      updated_at: '2024-06-01T00:00:00Z'
-    }
-  ]);
+  // Carregar dados reais do banco
+  useEffect(() => {
+    loadClients();
+  }, []);
 
   useEffect(() => {
-    if (clients.length > 0 && !selectedClientId) {
-      setSelectedClientId(clients[0].id);
+    if (selectedClientId) {
+      loadProjects(selectedClientId);
     }
-  }, [clients, selectedClientId]);
+  }, [selectedClientId]);
 
   useEffect(() => {
-    if (selectedClientId && projects.length > 0) {
-      const clientProjects = projects.filter(p => p.client_id === selectedClientId);
-      if (clientProjects.length > 0 && !selectedProjectId) {
-        setSelectedProjectId(clientProjects[0].id);
+    if (selectedProjectId) {
+      loadTasks(selectedProjectId);
+    }
+  }, [selectedProjectId]);
+
+  const loadClients = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('client_profiles')
+        .select('id, name, email, company')
+        .order('name');
+
+      if (error) throw error;
+      
+      setClients(data || []);
+      if (data && data.length > 0) {
+        setSelectedClientId(data[0].id);
       }
+    } catch (error) {
+      console.error('Erro ao carregar clientes:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar clientes",
+        variant: "destructive"
+      });
     }
-  }, [selectedClientId, projects, selectedProjectId]);
+  };
+
+  const loadProjects = async (clientId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('gantt_projects')
+        .select('*')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      setProjects(data || []);
+      if (data && data.length > 0) {
+        setSelectedProjectId(data[0].id);
+      } else {
+        setSelectedProjectId('');
+      }
+    } catch (error) {
+      console.error('Erro ao carregar projetos:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar projetos",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const loadTasks = async (projectId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('gantt_tasks')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      // Mapear dados para o formato esperado
+      const mappedTasks = (data || []).map(task => ({
+        ...task,
+        status: task.progress === 100 ? 'completed' : 
+                task.progress > 0 ? 'in_progress' : 'pending',
+        assignee: task.assigned_to || 'Não atribuído'
+      }));
+      
+      setTasks(mappedTasks);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Erro ao carregar tarefas:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar tarefas",
+        variant: "destructive"
+      });
+      setIsLoading(false);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return 'bg-green-100 text-green-700';
       case 'in_progress': return 'bg-blue-100 text-blue-700';
       case 'pending': return 'bg-gray-100 text-gray-700';
+      case 'blocked': return 'bg-red-100 text-red-700';
       default: return 'bg-gray-100 text-gray-700';
     }
   };
@@ -234,6 +202,7 @@ export default function GanttAdmin() {
       case 'completed': return <CheckCircle className="h-4 w-4" />;
       case 'in_progress': return <Clock className="h-4 w-4" />;
       case 'pending': return <Calendar className="h-4 w-4" />;
+      case 'blocked': return <AlertCircle className="h-4 w-4" />;
       default: return <Calendar className="h-4 w-4" />;
     }
   };
@@ -311,7 +280,7 @@ export default function GanttAdmin() {
             isInRange, 
             progress: isInRange ? task.progress : 0,
             startOffset: 0,
-            width: 100
+            width: isInRange ? 100 : 0
           });
         }
         break;
@@ -333,7 +302,7 @@ export default function GanttAdmin() {
             isInRange, 
             progress: isInRange ? task.progress : 0,
             startOffset: 0,
-            width: 100
+            width: isInRange ? 100 : 0
           });
         }
         break;
@@ -353,7 +322,7 @@ export default function GanttAdmin() {
             isInRange, 
             progress: isInRange ? task.progress : 0,
             startOffset: 0,
-            width: 100
+            width: isInRange ? 100 : 0
           });
         }
         break;
@@ -366,7 +335,7 @@ export default function GanttAdmin() {
     const matchesProject = task.project_id === selectedProjectId;
     const matchesSearch = task.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
-    const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
+    const matchesPriority = priorityFilter === 'all' || task.priority === statusFilter;
     const matchesAssignee = assigneeFilter === 'all' || task.assignee?.includes(assigneeFilter);
     
     return matchesProject && matchesSearch && matchesStatus && matchesPriority && matchesAssignee;
@@ -407,7 +376,15 @@ export default function GanttAdmin() {
     if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return;
 
     try {
-      // Simular exclusão
+      // Excluir do banco
+      const { error } = await supabase
+        .from('gantt_tasks')
+        .delete()
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      // Atualizar estado local
       setTasks(prev => prev.filter(t => t.id !== taskId));
       
       toast({
@@ -424,12 +401,62 @@ export default function GanttAdmin() {
     }
   };
 
-  const handleTaskSaved = () => {
-    // Recarregar tarefas (simulado)
-    toast({
-      title: "Sucesso!",
-      description: "Tarefa salva com sucesso"
-    });
+  const handleTaskSaved = async (taskData: any) => {
+    try {
+      if (selectedTask) {
+        // Atualizar tarefa existente
+        const { error } = await supabase
+          .from('gantt_tasks')
+          .update({
+            name: taskData.name,
+            description: taskData.description,
+            start_date: taskData.start_date,
+            end_date: taskData.end_date,
+            priority: taskData.priority,
+            estimated_hours: taskData.estimated_hours,
+            progress: taskData.progress,
+            is_milestone: taskData.is_milestone
+          })
+          .eq('id', selectedTask.id);
+
+        if (error) throw error;
+      } else {
+        // Criar nova tarefa
+        const { error } = await supabase
+          .from('gantt_tasks')
+          .insert({
+            project_id: selectedProjectId,
+            name: taskData.name,
+            description: taskData.description,
+            start_date: taskData.start_date,
+            end_date: taskData.end_date,
+            priority: taskData.priority,
+            estimated_hours: taskData.estimated_hours,
+            progress: taskData.progress,
+            is_milestone: taskData.is_milestone
+          });
+
+        if (error) throw error;
+      }
+
+      // Recarregar tarefas
+      await loadTasks(selectedProjectId);
+      
+      toast({
+        title: "Sucesso!",
+        description: "Tarefa salva com sucesso"
+      });
+
+      setIsTaskModalOpen(false);
+      setSelectedTask(null);
+    } catch (error) {
+      console.error('Erro ao salvar tarefa:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar tarefa",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleUpdateTaskStatus = async (taskId: string, newStatus: 'pending' | 'in_progress' | 'completed' | 'blocked') => {
@@ -462,6 +489,16 @@ export default function GanttAdmin() {
         default:
           newProgress = 0;
       }
+
+      // Atualizar no banco
+      const { error } = await supabase
+        .from('gantt_tasks')
+        .update({
+          progress: newProgress
+        })
+        .eq('id', taskId);
+
+      if (error) throw error;
 
       // Atualizar tarefa localmente
       setTasks(prev => prev.map(t => 
@@ -499,6 +536,15 @@ export default function GanttAdmin() {
   const getClientProjects = () => {
     return projects.filter(p => p.client_id === selectedClientId);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <LoadingSpinner />
+        <span className="ml-2 text-gray-600">Carregando dados...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -550,7 +596,7 @@ export default function GanttAdmin() {
                   <SelectContent>
                     {clients.map((client) => (
                       <SelectItem key={client.id} value={client.id}>
-                        {client.name}
+                        {client.company || client.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -583,10 +629,10 @@ export default function GanttAdmin() {
                   <span className="font-medium">Status:</span> {getCurrentProject()?.status}
                 </div>
                 <div className="text-sm">
-                  <span className="font-medium">Cliente:</span> {getCurrentProject()?.client_name}
+                  <span className="font-medium">Cliente:</span> {getCurrentClient()?.company || getCurrentClient()?.name}
                 </div>
                 <div className="text-sm">
-                  <span className="font-medium">Gerente:</span> {getCurrentProject()?.manager}
+                  <span className="font-medium">Período:</span> {new Date(getCurrentProject()?.start_date || '').toLocaleDateString('pt-BR')} - {new Date(getCurrentProject()?.end_date || '').toLocaleDateString('pt-BR')}
                 </div>
               </div>
             )}
@@ -839,22 +885,22 @@ export default function GanttAdmin() {
                     <div className="flex gap-1 h-8">
                       {getTimelineCells(task).map((cell, index) => (
                         <div key={index} className="flex-1 relative min-w-0">
-                                                     {cell.isInRange && (
-                             <div 
-                               className={`h-6 rounded transition-all duration-200 ${
-                                 task.status === 'completed' ? 'bg-green-500' :
-                                 task.status === 'in_progress' ? 'bg-blue-500' :
-                                 task.status === 'blocked' ? 'bg-red-500' :
-                                 task.status === 'pending' ? 'bg-yellow-500' :
-                                 'bg-gray-400'
-                               }`}
-                               style={{
-                                 width: `${cell.width}%`,
-                                 maxWidth: `${cell.width}%`
-                               }}
-                               title={`${task.name}: ${task.progress}% concluído - Status: ${task.status.replace('_', ' ')}`}
-                             ></div>
-                           )}
+                          {cell.isInRange && (
+                            <div 
+                              className={`h-6 rounded transition-all duration-200 ${
+                                task.status === 'completed' ? 'bg-green-500' :
+                                task.status === 'in_progress' ? 'bg-blue-500' :
+                                task.status === 'blocked' ? 'bg-red-500' :
+                                task.status === 'pending' ? 'bg-yellow-500' :
+                                'bg-gray-400'
+                              }`}
+                              style={{
+                                width: `${cell.width}%`,
+                                maxWidth: `${cell.width}%`
+                              }}
+                              title={`${task.name}: ${task.progress}% concluído - Status: ${task.status.replace('_', ' ')}`}
+                            ></div>
+                          )}
                           {!cell.isInRange && (
                             <div className="h-6 border border-dashed border-gray-200 rounded opacity-30"></div>
                           )}
@@ -904,7 +950,7 @@ export default function GanttAdmin() {
                         <div className="flex items-center gap-2 mt-1">
                           <Badge variant="outline" className={getStatusColor(task.status)}>
                             {getStatusIcon(task.status)}
-                            <span className="ml-1 capitalize">{task.status.replace('-', ' ')}</span>
+                            <span className="ml-1 capitalize">{task.status.replace('_', ' ')}</span>
                           </Badge>
                           <Badge variant="outline" className={getPriorityColor(task.priority)}>
                             {task.priority}

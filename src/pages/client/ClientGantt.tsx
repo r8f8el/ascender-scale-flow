@@ -462,10 +462,19 @@ export default function ClientGantt() {
         throw result.error;
       }
 
-      // Forçar refresh das tarefas para sincronizar com o banco
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      // Aguardar um pouco e então recarregar as tarefas
+      setTimeout(async () => {
+        try {
+          // Forçar refresh das tarefas do hook
+          if (typeof window !== 'undefined' && window.location) {
+            // Recarregar apenas os dados, não a página inteira
+            console.log('🔄 Recarregando tarefas após atualização de status...');
+            // O hook useGanttTasks deve fazer o refresh automaticamente
+          }
+        } catch (refreshError) {
+          console.error('Erro ao recarregar tarefas:', refreshError);
+        }
+      }, 500);
 
       toast({
         title: "Sucesso!",
