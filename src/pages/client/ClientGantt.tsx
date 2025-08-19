@@ -47,7 +47,7 @@ export default function ClientGantt() {
   const [selectedTask, setSelectedTask] = useState<GanttTask | null>(null);
   
   // Estados de controle
-  const [selectedProjectId, setSelectedProjectId] = useState('123e4567-e89b-12d3-a456-426614174000');
+  const [selectedProjectId, setSelectedProjectId] = useState('');
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -62,16 +62,18 @@ export default function ClientGantt() {
     error, 
     createTask, 
     updateTask, 
-    deleteTask 
+    deleteTask,
+    refetch
   } = useGanttTasks(selectedProjectId);
 
+  // Definir projeto padrão quando os projetos carregarem
   useEffect(() => {
     if (projects.length > 0 && !selectedProjectId) {
       setSelectedProjectId(projects[0].id);
     }
   }, [projects, selectedProjectId]);
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | undefined) => {
     switch (status) {
       case 'completed': return 'bg-green-100 text-green-700';
       case 'in_progress': return 'bg-blue-100 text-blue-700';
@@ -81,7 +83,7 @@ export default function ClientGantt() {
     }
   };
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityColor = (priority: string | undefined) => {
     switch (priority) {
       case 'urgent': return 'bg-red-100 text-red-700';
       case 'high': return 'bg-orange-100 text-orange-700';
@@ -91,7 +93,7 @@ export default function ClientGantt() {
     }
   };
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: string | undefined) => {
     switch (status) {
       case 'completed': return <CheckCircle className="h-4 w-4" />;
       case 'in_progress': return <Clock className="h-4 w-4" />;
@@ -158,6 +160,7 @@ export default function ClientGantt() {
     if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return;
 
     try {
+      console.log('🗑️ Deletando tarefa:', taskId);
       const result = await deleteTask(taskId);
       if (result.error) {
         throw result.error;
@@ -179,22 +182,38 @@ export default function ClientGantt() {
 
   const handleTaskSaved = async (taskData: Omit<GanttTask, 'id' | 'created_at' | 'updated_at'>) => {
     try {
+      console.log('💾 Salvando tarefa:', taskData);
+      
+      // Garantir que os dados estejam no formato correto
+      const sanitizedTaskData = {
+        ...taskData,
+        project_id: selectedProjectId,
+        assigned_to: taskData.assigned_to || null,
+        dependencies: taskData.dependencies || [],
+        progress: taskData.progress || 0,
+        is_milestone: taskData.is_milestone || false,
+        priority: taskData.priority || 'medium',
+        status: taskData.status || 'pending'
+      };
+
       let result;
       
       if (selectedTask) {
         // Atualizar tarefa existente
-        result = await updateTask(selectedTask.id, taskData);
+        console.log('📝 Atualizando tarefa existente:', selectedTask.id);
+        result = await updateTask(selectedTask.id, sanitizedTaskData);
       } else {
         // Criar nova tarefa
-        result = await createTask({
-          ...taskData,
-          project_id: selectedProjectId
-        });
+        console.log('✨ Criando nova tarefa');
+        result = await createTask(sanitizedTaskData);
       }
       
       if (result.error) {
+        console.error('❌ Erro no resultado:', result.error);
         throw result.error;
       }
+      
+      console.log('✅ Tarefa salva com sucesso:', result.data);
       
       toast({
         title: "Sucesso!",
@@ -203,11 +222,15 @@ export default function ClientGantt() {
       
       setIsTaskModalOpen(false);
       setSelectedTask(null);
+      
+      // Recarregar as tarefas para garantir sincronização
+      await refetch();
+      
     } catch (error) {
-      console.error('Erro ao salvar tarefa:', error);
+      console.error('❌ Erro ao salvar tarefa:', error);
       toast({
         title: "Erro",
-        description: "Erro ao salvar tarefa",
+        description: `Erro ao salvar tarefa: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
         variant: "destructive"
       });
     }
@@ -228,6 +251,14 @@ export default function ClientGantt() {
           <AlertCircle className="h-12 w-12 mx-auto mb-4" />
           <div className="text-lg font-medium">Erro ao carregar dados</div>
           <div className="text-sm">{error}</div>
+          <Button 
+            onClick={refetch} 
+            className="mt-4"
+            variant="outline"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Tentar novamente
+          </Button>
         </div>
       </div>
     );
@@ -279,7 +310,7 @@ export default function ClientGantt() {
               <Label className="text-sm font-medium">Projeto Ativo</Label>
               <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
                 <SelectTrigger className="w-64">
-                  <SelectValue />
+                  <SelectValue placeholder="Selecione um projeto" />
                 </SelectTrigger>
                 <SelectContent>
                   {projects.map((project) => (
@@ -615,11 +646,11 @@ export default function ClientGantt() {
                       <div>
                         <h4 className="font-medium">{task.name}</h4>
                         <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className={getStatusColor(task.status || 'pending')}>
-                            {getStatusIcon(task.status || 'pending')}
+                          <Badge variant="outline" className={getStatusColor(task.status)}>
+                            {getStatusIcon(task.status)}
                             <span className="ml-1 capitalize">{formatStatusText(task.status)}</span>
                           </Badge>
-                          <Badge variant="outline" className={getPriorityColor(task.priority || 'medium')}>
+                          <Badge variant="outline" className={getPriorityColor(task.priority)}>
                             {task.priority || 'medium'}
                           </Badge>
                           {isTaskOverdue(task) && (
@@ -666,7 +697,10 @@ export default function ClientGantt() {
       {/* Modais */}
       <TaskModal
         isOpen={isTaskModalOpen}
-        onClose={() => setIsTaskModalOpen(false)}
+        onClose={() => {
+          setIsTaskModalOpen(false);
+          setSelectedTask(null);
+        }}
         task={selectedTask}
         onSave={handleTaskSaved}
       />
