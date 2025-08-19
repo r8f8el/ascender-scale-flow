@@ -29,6 +29,37 @@ interface CreateHistoricoParams {
   comentario?: string;
 }
 
+// Type for raw database response
+interface RawSolicitacao {
+  id: string;
+  titulo: string;
+  descricao: string;
+  tipo_solicitacao?: string;
+  periodo_referencia: string;
+  valor_solicitado?: number;
+  justificativa?: string;
+  data_limite?: string;
+  prioridade?: string;
+  status?: string;
+  solicitante_id: string;
+  aprovador_atual_id?: string;
+  etapa_atual: number;
+  aprovadores_necessarios?: any;
+  aprovadores_completos?: any;
+  data_criacao: string;
+  data_ultima_modificacao: string;
+}
+
+// Helper function to format raw data to Solicitacao
+const formatSolicitacao = (rawData: RawSolicitacao): Solicitacao => {
+  return {
+    ...rawData,
+    tipo_solicitacao: rawData.tipo_solicitacao || 'Geral',
+    prioridade: (rawData.prioridade as 'Baixa' | 'Media' | 'Alta') || 'Media',
+    status: (rawData.status as 'Em Elaboração' | 'Pendente' | 'Aprovado' | 'Rejeitado' | 'Requer Ajuste') || 'Em Elaboração',
+  };
+};
+
 export const useSolicitacoes = (userId?: string) => {
   return useQuery({
     queryKey: ['solicitacoes', userId],
@@ -57,12 +88,7 @@ export const useSolicitacoes = (userId?: string) => {
         console.log('Solicitacoes fetched successfully:', data?.length || 0);
         
         // Return the data with proper type conversion
-        const formattedData = (data || []).map(solicitacao => ({
-          ...solicitacao,
-          tipo_solicitacao: solicitacao.tipo_solicitacao || 'Geral', // Ensure tipo_solicitacao exists
-          prioridade: solicitacao.prioridade || 'Media',
-          status: solicitacao.status || 'Em Elaboração',
-        }));
+        const formattedData = (data || []).map(formatSolicitacao);
         
         return formattedData;
       } catch (error) {
@@ -97,12 +123,7 @@ export const useAllSolicitacoes = () => {
         console.log('All solicitacoes fetched successfully:', data?.length || 0);
         
         // Return the data with proper type conversion
-        const formattedData = (data || []).map(solicitacao => ({
-          ...solicitacao,
-          tipo_solicitacao: solicitacao.tipo_solicitacao || 'Geral',
-          prioridade: solicitacao.prioridade || 'Media',
-          status: solicitacao.status || 'Em Elaboração',
-        }));
+        const formattedData = (data || []).map(formatSolicitacao);
         
         return formattedData;
       } catch (error) {
@@ -136,12 +157,7 @@ export const useSolicitacaoPendentes = (userId?: string) => {
         }
 
         // Return the data with proper type conversion
-        const formattedData = (data || []).map(solicitacao => ({
-          ...solicitacao,
-          tipo_solicitacao: solicitacao.tipo_solicitacao || 'Geral',
-          prioridade: solicitacao.prioridade || 'Media',
-          status: solicitacao.status || 'Pendente',
-        }));
+        const formattedData = (data || []).map(formatSolicitacao);
 
         return formattedData;
       } catch (error) {
