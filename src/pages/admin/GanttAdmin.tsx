@@ -497,7 +497,7 @@ export default function GanttAdmin() {
           newProgress = 100;
           break;
         case 'in_progress':
-          newProgress = Math.max(task.progress, 1); // Se já tem progresso, manter; se não, pelo menos 1%
+          newProgress = Math.max(task.progress, 10); // Se já tem progresso, manter; se não, pelo menos 10%
           break;
         case 'blocked':
         case 'pending':
@@ -507,9 +507,9 @@ export default function GanttAdmin() {
           newProgress = task.progress;
       }
 
-      console.log(`Atualizando tarefa ${taskId}: status=${newStatus}, progress=${newProgress}`);
+      console.log(`🔄 Atualizando tarefa ${taskId}: status=${newStatus}, progress=${newProgress}`);
 
-      // Atualizar no banco de dados - usar apenas o campo progress
+      // Atualizar no banco de dados - usar apenas campos que existem na tabela
       const { data, error } = await supabase
         .from('gantt_tasks')
         .update({
@@ -520,13 +520,13 @@ export default function GanttAdmin() {
         .single();
 
       if (error) {
-        console.error('Erro do Supabase:', error);
+        console.error('❌ Erro do Supabase:', error);
         throw error;
       }
 
-      console.log('Tarefa atualizada no banco:', data);
+      console.log('✅ Tarefa atualizada no banco:', data);
 
-      // Atualizar estado local imediatamente
+      // Atualizar estado local imediatamente com o novo status calculado
       setTasks(prev => prev.map(t => 
         t.id === taskId 
           ? { 
@@ -537,16 +537,18 @@ export default function GanttAdmin() {
           : t
       ));
 
-      // Recarregar tarefas para garantir sincronização
-      await loadTasks(selectedProjectId);
-
       toast({
         title: "Sucesso!",
         description: `Status da tarefa alterado para: ${newStatus.replace('_', ' ')} (${newProgress}%)`
       });
 
+      // Recarregar tarefas para garantir sincronização
+      setTimeout(() => {
+        loadTasks(selectedProjectId);
+      }, 500);
+
     } catch (error) {
-      console.error('Erro ao atualizar status da tarefa:', error);
+      console.error('❌ Erro ao atualizar status da tarefa:', error);
       toast({
         title: "Erro",
         description: "Erro ao atualizar status da tarefa. Tente novamente.",
