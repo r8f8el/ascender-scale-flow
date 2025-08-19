@@ -66,18 +66,18 @@ export const useGanttTasks = (projectId: string) => {
         priority: (['low', 'medium', 'high', 'urgent'].includes(task.priority) ? task.priority : 'medium') as 'low' | 'medium' | 'high' | 'urgent',
         assigned_to: task.assigned_to || null,
         dependencies: Array.isArray(task.dependencies) ? 
-          task.dependencies.filter(dep => typeof dep === 'string') : [],
+          (task.dependencies as any[]).filter(dep => typeof dep === 'string') : [],
         is_milestone: task.is_milestone || false,
         project_id: task.project_id,
         created_at: task.created_at,
         updated_at: task.updated_at,
         estimated_hours: task.estimated_hours || 0,
         actual_hours: task.actual_hours || 0,
-        category: task.category || '',
-        tags: Array.isArray(task.tags) ? task.tags.filter(tag => typeof tag === 'string') : [],
-        status: (['pending', 'in_progress', 'completed', 'blocked'].includes(task.status) ? task.status : 'pending') as 'pending' | 'in_progress' | 'completed' | 'blocked',
+        category: (task as any).category || '',
+        tags: Array.isArray((task as any).tags) ? (task as any).tags.filter((tag: any) => typeof tag === 'string') : [],
+        status: (['pending', 'in_progress', 'completed', 'blocked'].includes((task as any).status) ? (task as any).status : 'pending') as 'pending' | 'in_progress' | 'completed' | 'blocked',
         assignee: task.assigned_to || '',
-        collaborators: task.collaborators
+        collaborators: (task as any).collaborators
       }));
       
       setTasks(convertedTasks);
@@ -126,18 +126,18 @@ export const useGanttTasks = (projectId: string) => {
         priority: (['low', 'medium', 'high', 'urgent'].includes(data.priority) ? data.priority : 'medium') as 'low' | 'medium' | 'high' | 'urgent',
         assigned_to: data.assigned_to || null,
         dependencies: Array.isArray(data.dependencies) ? 
-          data.dependencies.filter(dep => typeof dep === 'string') : [],
+          (data.dependencies as any[]).filter(dep => typeof dep === 'string') : [],
         is_milestone: data.is_milestone || false,
         project_id: data.project_id,
         created_at: data.created_at,
         updated_at: data.updated_at,
         estimated_hours: data.estimated_hours || 0,
         actual_hours: data.actual_hours || 0,
-        category: data.category || '',
-        tags: Array.isArray(data.tags) ? data.tags.filter(tag => typeof tag === 'string') : [],
-        status: (['pending', 'in_progress', 'completed', 'blocked'].includes(data.status) ? data.status : 'pending') as 'pending' | 'in_progress' | 'completed' | 'blocked',
+        category: (data as any).category || '',
+        tags: Array.isArray((data as any).tags) ? (data as any).tags.filter((tag: any) => typeof tag === 'string') : [],
+        status: (['pending', 'in_progress', 'completed', 'blocked'].includes((data as any).status) ? (data as any).status : 'pending') as 'pending' | 'in_progress' | 'completed' | 'blocked',
         assignee: data.assigned_to || '',
-        collaborators: data.collaborators
+        collaborators: (data as any).collaborators
       };
 
       setTasks(prev => [...prev, newTask]);
@@ -169,18 +169,18 @@ export const useGanttTasks = (projectId: string) => {
         priority: (['low', 'medium', 'high', 'urgent'].includes(data.priority) ? data.priority : 'medium') as 'low' | 'medium' | 'high' | 'urgent',
         assigned_to: data.assigned_to || null,
         dependencies: Array.isArray(data.dependencies) ? 
-          data.dependencies.filter(dep => typeof dep === 'string') : [],
+          (data.dependencies as any[]).filter(dep => typeof dep === 'string') : [],
         is_milestone: data.is_milestone || false,
         project_id: data.project_id,
         created_at: data.created_at,
         updated_at: data.updated_at,
         estimated_hours: data.estimated_hours || 0,
         actual_hours: data.actual_hours || 0,
-        category: data.category || '',
-        tags: Array.isArray(data.tags) ? data.tags.filter(tag => typeof tag === 'string') : [],
-        status: (['pending', 'in_progress', 'completed', 'blocked'].includes(data.status) ? data.status : 'pending') as 'pending' | 'in_progress' | 'completed' | 'blocked',
+        category: (data as any).category || '',
+        tags: Array.isArray((data as any).tags) ? (data as any).tags.filter((tag: any) => typeof tag === 'string') : [],
+        status: (['pending', 'in_progress', 'completed', 'blocked'].includes((data as any).status) ? (data as any).status : 'pending') as 'pending' | 'in_progress' | 'completed' | 'blocked',
         assignee: data.assigned_to || '',
-        collaborators: data.collaborators
+        collaborators: (data as any).collaborators
       };
 
       setTasks(prev => prev.map(task => 

@@ -33,6 +33,7 @@ import { GanttExport } from '@/components/gantt/GanttExport';
 import { GanttShare } from '@/components/gantt/GanttShare';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
+import { GanttTask } from '@/hooks/useGanttTasks';
 
 export default function GanttAdmin() {
   const { user } = useAuth();
@@ -86,7 +87,7 @@ export default function GanttAdmin() {
     }
   ]);
 
-  const [tasks, setTasks] = useState([
+  const [tasks, setTasks] = useState<GanttTask[]>([
     {
       id: '1',
       name: 'Análise de Forças',
@@ -94,8 +95,8 @@ export default function GanttAdmin() {
       start_date: '2024-06-05',
       end_date: '2024-06-08',
       progress: 100,
-      status: 'completed' as const,
-      priority: 'medium' as const,
+      status: 'completed',
+      priority: 'medium',
       assignee: 'Rafael',
       dependencies: [],
       is_milestone: false,
@@ -110,8 +111,8 @@ export default function GanttAdmin() {
       start_date: '2024-06-05',
       end_date: '2024-06-08',
       progress: 100,
-      status: 'completed' as const,
-      priority: 'medium' as const,
+      status: 'completed',
+      priority: 'medium',
       assignee: 'Rafael',
       dependencies: [],
       is_milestone: false,
@@ -126,8 +127,8 @@ export default function GanttAdmin() {
       start_date: '2024-06-08',
       end_date: '2024-06-11',
       progress: 75,
-      status: 'in-progress' as const,
-      priority: 'medium' as const,
+      status: 'in_progress',
+      priority: 'medium',
       assignee: 'Rafael',
       dependencies: ['1', '2'],
       is_milestone: false,
@@ -142,8 +143,8 @@ export default function GanttAdmin() {
       start_date: '2024-06-08',
       end_date: '2024-06-11',
       progress: 60,
-      status: 'in-progress' as const,
-      priority: 'medium' as const,
+      status: 'in_progress',
+      priority: 'medium',
       assignee: 'Rafael',
       dependencies: ['1', '2'],
       is_milestone: false,
@@ -158,8 +159,8 @@ export default function GanttAdmin() {
       start_date: '2024-06-11',
       end_date: '2024-06-12',
       progress: 0,
-      status: 'not-started' as const,
-      priority: 'high' as const,
+      status: 'pending',
+      priority: 'high',
       assignee: 'Paula',
       dependencies: ['3', '4'],
       is_milestone: true,
@@ -178,9 +179,8 @@ export default function GanttAdmin() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return 'bg-green-100 text-green-700';
-      case 'in-progress': return 'bg-blue-100 text-blue-700';
-      case 'delayed': return 'bg-red-100 text-red-700';
-      case 'not-started': return 'bg-gray-100 text-gray-700';
+      case 'in_progress': return 'bg-blue-100 text-blue-700';
+      case 'pending': return 'bg-gray-100 text-gray-700';
       default: return 'bg-gray-100 text-gray-700';
     }
   };
@@ -198,9 +198,8 @@ export default function GanttAdmin() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed': return <CheckCircle className="h-4 w-4" />;
-      case 'in-progress': return <Clock className="h-4 w-4" />;
-      case 'delayed': return <AlertCircle className="h-4 w-4" />;
-      case 'not-started': return <Calendar className="h-4 w-4" />;
+      case 'in_progress': return <Clock className="h-4 w-4" />;
+      case 'pending': return <Calendar className="h-4 w-4" />;
       default: return <Calendar className="h-4 w-4" />;
     }
   };
@@ -209,7 +208,7 @@ export default function GanttAdmin() {
     const matchesSearch = task.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
     const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
-    const matchesAssignee = assigneeFilter === 'all' || task.assignee.includes(assigneeFilter);
+    const matchesAssignee = assigneeFilter === 'all' || task.assignee?.includes(assigneeFilter);
     
     return matchesSearch && matchesStatus && matchesPriority && matchesAssignee;
   });
@@ -217,11 +216,11 @@ export default function GanttAdmin() {
   const getProjectStats = () => {
     const total = tasks.length;
     const completed = tasks.filter(t => t.status === 'completed').length;
-    const inProgress = tasks.filter(t => t.status === 'in-progress').length;
-    const delayed = tasks.filter(t => t.status === 'delayed').length;
-    const notStarted = tasks.filter(t => t.status === 'not-started').length;
+    const inProgress = tasks.filter(t => t.status === 'in_progress').length;
+    const pending = tasks.filter(t => t.status === 'pending').length;
+    const blocked = tasks.filter(t => t.status === 'blocked').length;
 
-    return { total, completed, inProgress, delayed, notStarted };
+    return { total, completed, inProgress, pending, blocked };
   };
 
   const stats = getProjectStats();
@@ -279,7 +278,6 @@ export default function GanttAdmin() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -315,7 +313,6 @@ export default function GanttAdmin() {
         </div>
       </div>
 
-      {/* Seleção de Projeto */}
       <Card>
         <CardContent className="p-4">
           <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
@@ -355,7 +352,6 @@ export default function GanttAdmin() {
         </CardContent>
       </Card>
 
-      {/* Estatísticas do Projeto */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
           <CardContent className="p-4">
@@ -407,7 +403,7 @@ export default function GanttAdmin() {
               </div>
               <div>
                 <p className="text-sm text-red-600 font-medium">Atrasadas</p>
-                <p className="text-2xl font-bold text-red-800">{stats.delayed}</p>
+                <p className="text-2xl font-bold text-red-800">{stats.blocked}</p>
               </div>
             </div>
           </CardContent>
@@ -421,14 +417,13 @@ export default function GanttAdmin() {
               </div>
               <div>
                 <p className="text-sm text-gray-600 font-medium">Não Iniciadas</p>
-                <p className="text-2xl font-bold text-gray-800">{stats.notStarted}</p>
+                <p className="text-2xl font-bold text-gray-800">{stats.pending}</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filtros e Controles */}
       <Card>
         <CardContent className="p-4">
           <div className="flex flex-col lg:flex-row gap-4">
@@ -451,10 +446,10 @@ export default function GanttAdmin() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="not-started">Não Iniciadas</SelectItem>
-                  <SelectItem value="in-progress">Em Progresso</SelectItem>
+                  <SelectItem value="pending">Não Iniciadas</SelectItem>
+                  <SelectItem value="in_progress">Em Progresso</SelectItem>
                   <SelectItem value="completed">Concluídas</SelectItem>
-                  <SelectItem value="delayed">Atrasadas</SelectItem>
+                  <SelectItem value="blocked">Atrasadas</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -487,7 +482,6 @@ export default function GanttAdmin() {
         </CardContent>
       </Card>
 
-      {/* Lista de Tarefas Detalhada */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -559,13 +553,11 @@ export default function GanttAdmin() {
         </CardContent>
       </Card>
 
-      {/* Modais */}
       <TaskModal
         isOpen={isTaskModalOpen}
         onClose={() => setIsTaskModalOpen(false)}
-        projectId={selectedProjectId}
         task={selectedTask}
-        onTaskSaved={handleTaskSaved}
+        onSave={handleTaskSaved}
       />
 
       <GanttExport
