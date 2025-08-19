@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { AdminHeader } from '@/components/admin/AdminHeader';
+import AdminHeader from '@/components/admin/AdminHeader';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
-import { GanttChart } from '@/components/gantt/GanttChart';
+import GanttChart from '@/components/gantt/GanttChart';
 import { GanttHeader } from '@/components/gantt/GanttHeader';
 import { GanttProjectSelector } from '@/components/gantt/GanttProjectSelector';
 import { GanttStats } from '@/components/gantt/GanttStats';
@@ -179,7 +179,10 @@ export default function GanttAdmin() {
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <GanttSyncIndicator status={syncStatus} />
+                  <GanttSyncIndicator 
+                    projectId={selectedProjectId} 
+                    isAdmin={true}
+                  />
                   <Button onClick={handleNewTask} disabled={!selectedProjectId}>
                     <Target className="h-4 w-4 mr-2" />
                     Nova Tarefa
@@ -191,7 +194,7 @@ export default function GanttAdmin() {
               <GanttProjectSelector 
                 projects={projects}
                 selectedProjectId={selectedProjectId}
-                onProjectSelect={setSelectedProjectId}
+                onSelectProject={setSelectedProjectId}
                 loading={projectsLoading}
               />
             </div>
@@ -251,7 +254,6 @@ export default function GanttAdmin() {
                       <div className="flex items-center justify-between">
                         <CardTitle>Cronograma do Projeto</CardTitle>
                         <GanttHeader 
-                          onNewTask={handleNewTask}
                           onRefresh={refetchTasks}
                           loading={tasksLoading}
                         />
@@ -287,7 +289,6 @@ export default function GanttAdmin() {
 
                 <TabsContent value="export">
                   <GanttExport 
-                    projectId={selectedProjectId}
                     tasks={processedTasks}
                     projectName={selectedProject?.name || 'Projeto'}
                   />
