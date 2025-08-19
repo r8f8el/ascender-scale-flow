@@ -5,10 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { Users, Briefcase, MessageSquare, FileText, TrendingUp, AlertCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 const AdminDashboard = () => {
   // Query para estatísticas de colaboradores
-  const { data: collaboratorsStats } = useQuery({
+  const { data: collaboratorsStats, isLoading: collaboratorsLoading } = useQuery({
     queryKey: ['admin-collaborators-stats'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -27,10 +28,10 @@ const AdminDashboard = () => {
   });
 
   // Query para estatísticas de projetos
-  const { data: projectsStats } = useQuery({
+  const { data: projectsStats, isLoading: projectsLoading } = useQuery({
     queryKey: ['admin-projects-stats'],
     queryFn: async () => {
-      const { data, error } = await supabase
+              const { data, error } = await supabase
         .from('projects')
         .select('id, status')
         .order('created_at', { ascending: false });
@@ -47,7 +48,7 @@ const AdminDashboard = () => {
   });
 
   // Query para tickets recentes
-  const { data: ticketsStats } = useQuery({
+  const { data: ticketsStats, isLoading: ticketsLoading } = useQuery({
     queryKey: ['admin-tickets-stats'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -69,7 +70,7 @@ const AdminDashboard = () => {
   });
 
   // Query para documentos
-  const { data: documentsStats } = useQuery({
+  const { data: documentsStats, isLoading: documentsLoading } = useQuery({
     queryKey: ['admin-documents-stats'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -88,6 +89,21 @@ const AdminDashboard = () => {
       };
     }
   });
+
+  // Loading state geral
+  const isLoading = collaboratorsLoading || projectsLoading || ticketsLoading || documentsLoading;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <LoadingSpinner 
+          size="xl" 
+          text="Carregando dashboard..." 
+          color="primary"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

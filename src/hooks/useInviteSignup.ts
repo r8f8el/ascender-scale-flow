@@ -81,8 +81,7 @@ export const useInviteSignup = (token: string | null, inviteId: string | null) =
           expires_at,
           status,
           token
-        `)
-        .eq('status', 'pending');
+        `);
 
       // Adiciona filtro baseado no parâmetro disponível
       if (token) {
@@ -91,11 +90,16 @@ export const useInviteSignup = (token: string | null, inviteId: string | null) =
         query = query.eq('id', inviteId);
       }
 
-      const { data: invite, error: inviteError } = await query.single();
+      const { data: invite, error: inviteError } = await query.maybeSingle();
 
       if (inviteError) {
         console.error('Erro ao buscar convite:', inviteError);
         setError('Convite não encontrado ou inválido');
+        return;
+      }
+      
+      if (!invite) {
+        setError('Convite não encontrado');
         return;
       }
 
@@ -105,6 +109,12 @@ export const useInviteSignup = (token: string | null, inviteId: string | null) =
       
       if (now > expiresAt) {
         setError('Este convite expirou');
+        return;
+      }
+
+      // Verifica status do convite para mensagens mais claras
+      if (invite.status === 'accepted') {
+        setError('Este convite já foi aceito');
         return;
       }
 
@@ -122,7 +132,7 @@ export const useInviteSignup = (token: string | null, inviteId: string | null) =
           .from('client_profiles')
           .select('id, name, company')
           .eq('id', invite.company_id)
-          .single();
+          .maybeSingle();
 
         if (!companyError && company) {
           setCompanyData({
@@ -150,6 +160,16 @@ export const useInviteSignup = (token: string | null, inviteId: string | null) =
     }
 
     try {
+      // Revalida status e expiração por segurança
+      const now = new Date();
+      const expiresAt = new Date(inviteData.expires_at);
+      if (now > expiresAt) {
+        return { success: false, error: 'Este convite expirou' };
+      }
+      if (inviteData.status === 'accepted') {
+        return { success: false, error: 'Este convite já foi aceito' };
+      }
+
       // Busca um nível hierárquico padrão (nível mais baixo disponível)
       const { data: hierarchyLevels, error: hierarchyError } = await supabase
         .from('hierarchy_levels')
@@ -164,16 +184,21 @@ export const useInviteSignup = (token: string | null, inviteId: string | null) =
       }
 
       // Cria a conta do usuário no Supabase Auth
+      const redirectUrl = typeof window !== 'undefined' ? `${window.location.origin}/cliente/login` : undefined;
+      const signUpOptions: any = {
+        data: {
+          full_name: signupData.name,
+          company_id: inviteData.company_id
+        }
+      };
+      if (redirectUrl) {
+        signUpOptions.emailRedirectTo = redirectUrl;
+      }
+
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: signupData.email,
         password: signupData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/cliente/login`,
-          data: {
-            full_name: signupData.name,
-            company_id: inviteData.company_id
-          }
-        }
+        options: signUpOptions
       });
 
       if (signUpError) {

@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { Logo } from '@/components/Logo';
 import { 
   LayoutDashboard, 
   Users, 
@@ -181,13 +182,9 @@ export function AdminSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b">
+            <SidebarHeader className="border-b">
         <div className="flex items-center justify-center p-2">
-          <img 
-            src="/lovable-uploads/770511e1-4eca-4d48-9bf0-ba1d8072c723.png" 
-            alt="Ascalate Logo" 
-            className="h-8 w-auto"
-          />
+          <Logo className="h-8 w-auto" />
         </div>
       </SidebarHeader>
 

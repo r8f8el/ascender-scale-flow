@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { useGanttTasks, GanttTask } from '@/hooks/useGanttTasks';
 import { GanttHeader } from './GanttHeader';
 import { GanttStats } from './GanttStats';
-import { GanttTaskModal } from './GanttTaskModal';
+import { FPAGanttTaskModal } from './FPAGanttTaskModal';
+import { GanttSyncIndicator } from './GanttSyncIndicator';
 import { useResponsive } from '@/hooks/useResponsive';
 import { BarChart3, Plus } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
@@ -85,11 +86,8 @@ export const GanttChart: React.FC<GanttChartProps> = ({
   }, [filteredTasks, isMobile]);
 
   const handleCreateTask = useCallback(() => {
-    console.log('🔍 handleCreateTask chamado!');
-    console.log('🔍 isTaskModalOpen antes:', isTaskModalOpen);
     setSelectedTask(null);
     setIsTaskModalOpen(true);
-    console.log('🔍 isTaskModalOpen depois:', true);
   }, []);
 
   const handleEditTask = useCallback((taskId: string) => {
@@ -99,6 +97,33 @@ export const GanttChart: React.FC<GanttChartProps> = ({
       setIsTaskModalOpen(true);
     }
   }, [tasks]);
+
+  // Handle task drag and drop for date changes
+  const handleTaskChange = useCallback((task: Task) => {
+    if (!isAdmin) return;
+    
+    const originalTask = tasks.find(t => t.id === task.id);
+    if (!originalTask) return;
+
+    const updatedTask = {
+      ...originalTask,
+      start_date: format(task.start, 'yyyy-MM-dd'),
+      end_date: format(task.end, 'yyyy-MM-dd'),
+      progress: task.progress
+    };
+
+    updateTask(task.id, updatedTask);
+    toast.success('Tarefa atualizada com sucesso!');
+  }, [isAdmin, tasks, updateTask]);
+
+
+
+  // Handle task double click for quick edit
+  const handleTaskDoubleClick = useCallback((task: Task) => {
+    if (isAdmin) {
+      handleEditTask(task.id);
+    }
+  }, [isAdmin, handleEditTask]);
 
   const handleSaveTask = useCallback(async (taskData: any) => {
     try {
@@ -183,10 +208,17 @@ export const GanttChart: React.FC<GanttChartProps> = ({
             {isAdmin ? 'Crie sua primeira tarefa para começar o cronograma' : 'Aguarde as tarefas serem criadas'}
           </p>
           {isAdmin && (
-            <Button onClick={handleCreateTask}>
-              <Plus className="w-4 h-4 mr-2" />
-              Criar Primeira Tarefa
-            </Button>
+            <div className="space-y-4">
+              <Button 
+                onClick={handleCreateTask}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Criar Primeira Tarefa
+              </Button>
+              
+
+            </div>
           )}
         </CardContent>
       </Card>
@@ -196,7 +228,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({
   return (
     <div className="w-full min-h-screen flex flex-col">
       {/* Header fixo */}
-      <div className="flex-shrink-0">
+      <div className="flex-shrink-0 space-y-4">
         <GanttHeader
           viewMode={viewMode}
           onViewModeChange={setViewMode}
@@ -210,6 +242,11 @@ export const GanttChart: React.FC<GanttChartProps> = ({
           completedCount={filteredTasks.filter(t => t.progress === 100).length}
           onRefresh={refetch}
         />
+        
+        {/* Indicador de Sincronização */}
+        <div className="px-6">
+          <GanttSyncIndicator projectId={projectId} isAdmin={isAdmin} />
+        </div>
       </div>
 
       {/* Statistics */}
@@ -244,10 +281,10 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                 <Gantt
                   tasks={ganttTasks}
                   viewMode={viewMode}
-                  onDateChange={handleDateChange}
-                  onProgressChange={handleProgressChange}
-                  onDoubleClick={(task) => isAdmin && handleEditTask(task.id)}
-                  onDelete={(task) => isAdmin && handleDeleteTask(task.id)}
+                  onDateChange={isAdmin ? handleTaskChange : undefined}
+                  onProgressChange={isAdmin ? handleProgressChange : undefined}
+                  onDoubleClick={handleTaskDoubleClick}
+                  onDelete={isAdmin ? (task) => handleDeleteTask(task.id) : undefined}
                   listCellWidth={isMobile ? "150px" : "280px"}
                   columnWidth={
                     viewMode === ViewMode.Month ? 350 :
@@ -257,9 +294,10 @@ export const GanttChart: React.FC<GanttChartProps> = ({
                   rowHeight={isMobile ? 40 : 55}
                   barCornerRadius={6}
                   handleWidth={10}
-                  fontSize="13px"
                   arrowColor="#6B7280"
                   arrowIndent={20}
+                  timeStep={60000}
+                  fontSize="13px"
                   todayColor="rgba(59, 130, 246, 0.3)"
                   TooltipContent={({ task }) => {
                     const taskData = tasks.find(t => t.id === task.id);
@@ -289,7 +327,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({
       </div>
 
       {/* Task Modal */}
-      <GanttTaskModal
+      <FPAGanttTaskModal
         isOpen={isTaskModalOpen}
         onClose={() => {
           setIsTaskModalOpen(false);
@@ -299,19 +337,10 @@ export const GanttChart: React.FC<GanttChartProps> = ({
         onSave={handleSaveTask}
         onDelete={handleDeleteTask}
         isAdmin={isAdmin}
+        availableTasks={tasks}
       />
-      {isAdmin && (
-        <div className="mb-4 p-4 bg-yellow-100 border border-yellow-300 rounded">
-          <p className="text-sm text-yellow-800 mb-2">Debug: Teste o modal</p>
-          <Button onClick={() => {
-            console.log('🔍 Teste manual do modal');
-            setIsTaskModalOpen(true);
-          }}>
-            Abrir Modal Manualmente
-          </Button>
-          <span className="ml-2 text-xs">Estado: {isTaskModalOpen ? 'ABERTO' : 'FECHADO'}</span>
-        </div>
-      )}
+
+
     </div>
   );
 };

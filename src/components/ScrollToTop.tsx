@@ -1,44 +1,47 @@
 
 import React, { useState, useEffect } from 'react';
+import { ChevronUp } from 'lucide-react';
 
 const ScrollToTop = () => {
-  const [showButton, setShowButton] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 300) {
-        setShowButton(true);
-      } else {
-        setShowButton(false);
-      }
-    };
+  // Mostrar botão quando scroll > 300px
+  const toggleVisibility = () => {
+    if (window.pageYOffset > 300) {
+      setIsVisible(true);
+    } else {
+      setIsVisible(false);
+    }
+  };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
-
+  // Scroll suave para o topo
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
-      behavior: 'smooth'
+      behavior: 'smooth',
     });
   };
 
+  useEffect(() => {
+    window.addEventListener('scroll', toggleVisibility);
+    return () => {
+      window.removeEventListener('scroll', toggleVisibility);
+    };
+  }, []);
+
   return (
-    <button
-      onClick={scrollToTop}
-      className={`fixed bottom-6 right-6 z-50 p-3 rounded-full bg-ascalate-blue text-white shadow-lg transition-all duration-300 transform ${
-        showButton ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'
-      } hover:bg-ascalate-darkblue focus:outline-none focus:ring-2 focus:ring-ascalate-blue focus:ring-opacity-50`}
-      aria-label="Voltar ao topo"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-      </svg>
-    </button>
+    <>
+      {isVisible && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-8 right-8 z-50 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 animate-fade-in-up hover-lift"
+          aria-label="Voltar ao topo"
+        >
+          <ChevronUp className="h-6 w-6" />
+        </button>
+      )}
+    </>
   );
 };
 
-export default ScrollToTop;
+export { ScrollToTop };

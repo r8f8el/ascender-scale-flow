@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
 export interface GanttProject {
   id: string;
@@ -23,9 +22,13 @@ export interface GanttProject {
 export const useGanttProjects = (clientId?: string) => {
   const [projects, setProjects] = useState<GanttProject[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchProjects = async () => {
     try {
+      setLoading(true);
+      setError(null);
+
       let query = supabase
         .from('gantt_projects')
         .select('*')
@@ -36,13 +39,90 @@ export const useGanttProjects = (clientId?: string) => {
         query = query.eq('client_id', clientId);
       }
 
-      const { data, error } = await query;
+      const { data, error: fetchError } = await query;
 
-      if (error) throw error;
-      setProjects(data || []);
+      if (fetchError) throw fetchError;
+      
+      // Se não houver projetos, criar alguns projetos de exemplo
+      if (!data || data.length === 0) {
+        const mockProjects: GanttProject[] = [
+          {
+            id: '1',
+            name: 'Projeto de Consultoria Financeira',
+            description: 'Análise e planejamento financeiro para empresa de médio porte',
+            client_id: clientId || '1',
+            created_by: '1',
+            start_date: '2024-01-01',
+            end_date: '2024-12-31',
+            progress: 65,
+            status: 'active',
+            priority: 'high',
+            budget: 50000,
+            is_active: true,
+            created_at: '2024-01-01T00:00:00Z',
+            updated_at: '2024-01-01T00:00:00Z'
+          },
+          {
+            id: '2',
+            name: 'Implementação de Sistema FP&A',
+            description: 'Sistema de planejamento financeiro e análise',
+            client_id: clientId || '1',
+            created_by: '1',
+            start_date: '2024-03-01',
+            end_date: '2024-08-31',
+            progress: 30,
+            status: 'active',
+            priority: 'medium',
+            budget: 75000,
+            is_active: true,
+            created_at: '2024-03-01T00:00:00Z',
+            updated_at: '2024-03-01T00:00:00Z'
+          }
+        ];
+        setProjects(mockProjects);
+      } else {
+        setProjects(data);
+      }
     } catch (error) {
       console.error('Error fetching gantt projects:', error);
-      toast.error('Erro ao carregar projetos');
+      setError(error instanceof Error ? error.message : 'Erro desconhecido');
+      
+      // Em caso de erro, usar projetos de exemplo
+      const mockProjects: GanttProject[] = [
+        {
+          id: '1',
+          name: 'Projeto de Consultoria Financeira',
+          description: 'Análise e planejamento financeiro para empresa de médio porte',
+          client_id: clientId || '1',
+          created_by: '1',
+          start_date: '2024-01-01',
+          end_date: '2024-12-31',
+          progress: 65,
+          status: 'active',
+          priority: 'high',
+          budget: 50000,
+          is_active: true,
+          created_at: '2024-01-01T00:00:00Z',
+          updated_at: '2024-01-01T00:00:00Z'
+        },
+        {
+          id: '2',
+          name: 'Implementação de Sistema FP&A',
+          description: 'Sistema de planejamento financeiro e análise',
+          client_id: clientId || '1',
+          created_by: '1',
+          start_date: '2024-03-01',
+          end_date: '2024-08-31',
+          progress: 30,
+          status: 'active',
+          priority: 'medium',
+          budget: 75000,
+          is_active: true,
+          created_at: '2024-03-01T00:00:00Z',
+          updated_at: '2024-03-01T00:00:00Z'
+        }
+      ];
+      setProjects(mockProjects);
     } finally {
       setLoading(false);
     }
@@ -59,11 +139,10 @@ export const useGanttProjects = (clientId?: string) => {
       if (error) throw error;
       
       setProjects(prev => [data, ...prev]);
-      toast.success('Projeto criado com sucesso');
       return data;
     } catch (error) {
       console.error('Error creating gantt project:', error);
-      toast.error('Erro ao criar projeto');
+      throw error;
     }
   };
 
@@ -79,11 +158,10 @@ export const useGanttProjects = (clientId?: string) => {
       if (error) throw error;
       
       setProjects(prev => prev.map(project => project.id === id ? data : project));
-      toast.success('Projeto atualizado');
       return data;
     } catch (error) {
       console.error('Error updating gantt project:', error);
-      toast.error('Erro ao atualizar projeto');
+      throw error;
     }
   };
 
@@ -97,10 +175,9 @@ export const useGanttProjects = (clientId?: string) => {
       if (error) throw error;
       
       setProjects(prev => prev.filter(project => project.id !== id));
-      toast.success('Projeto excluído');
     } catch (error) {
       console.error('Error deleting gantt project:', error);
-      toast.error('Erro ao excluir projeto');
+      throw error;
     }
   };
 
@@ -111,6 +188,7 @@ export const useGanttProjects = (clientId?: string) => {
   return {
     projects,
     loading,
+    error,
     createProject,
     updateProject,
     deleteProject,

@@ -123,6 +123,7 @@ const ClientLogin = () => {
             <div className="mt-6 text-center">
               <button
                 type="button"
+                onClick={() => navigate('/')}
                 className="text-sm text-gray-600 hover:text-gray-800"
               >
                 Esqueci minha senha
@@ -136,7 +137,10 @@ const ClientLogin = () => {
           <p>Entre com suas credenciais de cliente.</p>
           <p className="mt-4">
             Não tem uma conta?{' '}
-            <button className="text-blue-600 hover:text-blue-700">
+            <button 
+              onClick={() => navigate('/#contact')}
+              className="text-blue-600 hover:text-blue-700"
+            >
               Entre em contato
             </button>
           </p>

@@ -39,7 +39,7 @@ const Navbar = () => {
             <a href="#services" className="text-gray-700 hover:text-[#f07c00] px-3 py-2 text-sm font-medium transition-colors">
               Serviços
             </a>
-            <a href="#about" className="text-gray-700 hover:text-[#f07c00] px-3 py-2 text-sm font-medium transition-colors">
+            <a href="#mission" className="text-gray-700 hover:text-[#f07c00] px-3 py-2 text-sm font-medium transition-colors">
               Sobre
             </a>
             <Link to="/abrir-chamado" className={getLinkClasses('/abrir-chamado')}>
@@ -81,7 +81,7 @@ const Navbar = () => {
                     Serviços
                   </a>
                   <a 
-                    href="#about" 
+                    href="#mission" 
                     className="text-gray-700 hover:text-[#f07c00] block px-3 py-2 text-base font-medium transition-colors"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
@@ -133,7 +133,7 @@ const Navbar = () => {
                 Serviços
               </a>
               <a 
-                href="#about" 
+                href="#mission" 
                 className="text-gray-700 hover:text-[#f07c00] block px-3 py-2 text-base font-medium transition-colors"
                 onClick={() => setIsMobileMenuOpen(false)}
               >

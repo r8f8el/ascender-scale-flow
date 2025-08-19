@@ -9,7 +9,7 @@ import MissionVision from '../components/MissionVision';
 import Clients from '../components/Clients';
 import Contact from '../components/Contact';
 import Footer from '../components/Footer';
-import ScrollToTop from '../components/ScrollToTop';
+import { ScrollToTop } from '../components/ScrollToTop';
 
 const Index = () => {
   useEffect(() => {

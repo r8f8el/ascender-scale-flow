@@ -54,30 +54,33 @@ const Services = () => {
           </p>
         </div>
         
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
           {services.map((service, index) => (
-            <Card key={index} className="overflow-hidden border-none shadow-lg hover:shadow-xl transition-all duration-300">
+            <Card key={index} className="overflow-hidden border-none shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
               <CardContent className="p-0">
                 <div className="h-3 bg-blue-600"></div>
-                <div className="p-8">
-                  <div className={`w-16 h-16 rounded-full ${service.bgColor} flex items-center justify-center mb-6`}>
-                    <service.icon className="h-8 w-8 text-blue-600" />
+                <div className="p-6 lg:p-8">
+                  <div className={`w-14 h-14 lg:w-16 lg:h-16 rounded-full ${service.bgColor} flex items-center justify-center mb-4 lg:mb-6`}>
+                    <service.icon className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600" />
                   </div>
-                  <h3 className="text-xl font-bold mb-4">{service.title}</h3>
-                  <p className="text-gray-600 mb-4">{service.description}</p>
+                  <h3 className="text-lg lg:text-xl font-bold mb-3 lg:mb-4">{service.title}</h3>
+                  <p className="text-gray-600 mb-4 text-sm lg:text-base">{service.description}</p>
                   
-                  <ul className="space-y-2 mb-6">
+                  <ul className="space-y-2 mb-4 lg:mb-6">
                     {service.details.map((detail, detailIndex) => (
-                      <li key={detailIndex} className="text-sm text-gray-700 flex items-start">
+                      <li key={detailIndex} className="text-xs lg:text-sm text-gray-700 flex items-start">
                         <span className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
                         {detail}
                       </li>
                     ))}
                   </ul>
                   
-                  <a href="#contact" className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">
+                  <a 
+                    href="#contact" 
+                    className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors group"
+                  >
                     <span>Saiba mais</span>
-                    <ArrowRight className="ml-2 h-4 w-4" />
+                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                   </a>
                 </div>
               </CardContent>

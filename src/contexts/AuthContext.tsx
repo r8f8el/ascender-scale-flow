@@ -42,6 +42,19 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
   const fetchClientProfile = async (userId: string) => {
     try {
+      // First check if user is admin
+      const { data: adminData, error: adminError } = await supabase
+        .from('admin_profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (adminData && !adminError) {
+        console.log('✅ User is ADMIN:', adminData);
+        return null; // Admin users don't need client profile
+      }
+
+      // If not admin, fetch client profile
       const { data, error } = await supabase
         .from('client_profiles')
         .select('*')
@@ -53,6 +66,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         return null;
       }
 
+      console.log('✅ User is CLIENT:', data);
       return data;
     } catch (error) {
       console.error('Error in fetchClientProfile:', error);
@@ -70,10 +84,31 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch client profile asynchronously
+          // Check if admin profile exists and create if needed
           setTimeout(async () => {
-            const profile = await fetchClientProfile(session.user.id);
-            setClient(profile);
+            // Check if user is admin by email
+            if (session.user.email?.includes('@ascalate.com.br')) {
+              console.log('🔧 Creating admin profile for:', session.user.email);
+              
+              // Try to create admin profile
+              const { data: adminData, error: adminError } = await supabase
+                .from('admin_profiles')
+                .upsert({
+                  id: session.user.id,
+                  name: session.user.email.split('@')[0],
+                  email: session.user.email,
+                  role: session.user.email === 'rafael.gontijo@ascalate.com.br' ? 'super_admin' : 'admin'
+                }, { onConflict: 'id' })
+                .select()
+                .single();
+              
+              console.log('✅ Admin profile created/updated:', adminData);
+              setClient(null); // Admin users don't need client profile
+            } else {
+              // Fetch client profile for non-admin users
+              const profile = await fetchClientProfile(session.user.id);
+              setClient(profile);
+            }
           }, 0);
         } else {
           setClient(null);

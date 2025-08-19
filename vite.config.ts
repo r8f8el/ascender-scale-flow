@@ -19,4 +19,8 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  define: {
+    'import.meta.env.VITE_INSTAGRAM_URL': JSON.stringify('https://www.instagram.com/ascalateconsulting'),
+    'import.meta.env.VITE_LINKEDIN_URL': JSON.stringify('https://br.linkedin.com/in/danielgomesgo'),
+  },
 }));

@@ -20,6 +20,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminProtectedRoute from "@/components/AdminProtectedRoute";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "sonner";
+import { ScrollToTop } from "@/components/ScrollToTop";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -84,6 +85,7 @@ function App() {
             </div>
             <Toaster />
             <Sonner />
+            <ScrollToTop />
           </AdminAuthProvider>
         </AuthProvider>
       </BrowserRouter>

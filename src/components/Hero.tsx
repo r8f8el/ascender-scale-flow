@@ -6,12 +6,12 @@ const Hero = () => {
     <section className="py-16 bg-white relative z-10">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-8 text-black">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-8 text-black animate-fade-in-up">
             Sobre Ascalate
           </h2>
           
           <div className="space-y-6 text-gray-700 leading-relaxed">
-            <p className="text-lg">
+            <p className="text-lg animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
               Somos uma consultoria especializada em Planejamento Financeiro, Estratégico e Orçamentário, com foco em impulsionar a performance e a escalabilidade de negócios por meio de soluções práticas, orientadas por dados e alinhadas aos objetivos dos nossos clientes.
             </p>
             

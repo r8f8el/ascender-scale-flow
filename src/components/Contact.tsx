@@ -15,6 +15,7 @@ const Contact = () => {
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitProgress, setSubmitProgress] = useState(0);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -24,19 +25,37 @@ const Contact = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSubmitProgress(0);
+    
+    // Simulando progresso de envio
+    const progressInterval = setInterval(() => {
+      setSubmitProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90;
+        }
+        return prev + 10;
+      });
+    }, 100);
     
     // Simulando envio de formulário
     setTimeout(() => {
-      console.log('Form submitted:', formState);
-      setIsSubmitting(false);
+      setSubmitProgress(100);
+      clearInterval(progressInterval);
       
-      toast({
-        title: "Mensagem enviada!",
-        description: "Entraremos em contato em breve.",
-        duration: 5000,
-      });
-      
-      setFormState({ name: '', email: '', phone: '', company: '', message: '' });
+      setTimeout(() => {
+        console.log('Form submitted:', formState);
+        setIsSubmitting(false);
+        setSubmitProgress(0);
+        
+        toast({
+          title: "Mensagem enviada!",
+          description: "Entraremos em contato em breve.",
+          duration: 5000,
+        });
+        
+        setFormState({ name: '', email: '', phone: '', company: '', message: '' });
+      }, 500);
     }, 1500);
   };
   
@@ -136,18 +155,29 @@ const Contact = () => {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className={`w-full py-3 px-6 rounded-md font-semibold text-white transition-colors duration-300 flex items-center justify-center ${
+                    className={`w-full py-3 px-6 rounded-md font-semibold text-white transition-colors duration-300 flex items-center justify-center relative overflow-hidden ${
                       isSubmitting ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
                     }`}
                   >
-                    {isSubmitting ? (
-                      <>Enviando...</>
-                    ) : (
-                      <>
-                        <Send className="mr-2 h-5 w-5" />
-                        Enviar mensagem
-                      </>
+                    {isSubmitting && (
+                      <div 
+                        className="absolute inset-0 bg-blue-500 transition-all duration-300"
+                        style={{ width: `${submitProgress}%` }}
+                      />
                     )}
+                    <span className="relative z-10 flex items-center">
+                      {isSubmitting ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                          Enviando... {submitProgress}%
+                        </>
+                      ) : (
+                        <>
+                          <Send className="mr-2 h-5 w-5" />
+                          Enviar mensagem
+                        </>
+                      )}
+                    </span>
                   </button>
                   
                   <p className="text-sm text-gray-500 text-center">
