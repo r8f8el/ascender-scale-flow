@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Solicitacao, Anexo, HistoricoAprovacao } from '@/types/aprovacoes';
@@ -60,7 +59,7 @@ export const useSolicitacoes = (userId?: string) => {
         }
 
         console.log('Solicitacoes fetched successfully:', data?.length || 0);
-        return (data || []) as Solicitacao[];
+        return (data || []) as any[];
       } catch (error) {
         console.error('Error in solicitacoes query:', error);
         return [];
@@ -97,7 +96,7 @@ export const useAllSolicitacoes = () => {
         }
 
         console.log('All solicitacoes fetched successfully:', data?.length || 0);
-        return (data || []) as Solicitacao[];
+        return (data || []) as any[];
       } catch (error) {
         console.error('Error in all solicitacoes query:', error);
         return [];
@@ -134,7 +133,7 @@ export const useSolicitacaoPendentes = (userId?: string) => {
           throw error;
         }
 
-        return (data || []) as Solicitacao[];
+        return (data || []) as any[];
       } catch (error) {
         console.error('Error in pending solicitacoes query:', error);
         return [];
