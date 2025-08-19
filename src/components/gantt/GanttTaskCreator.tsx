@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -62,9 +61,10 @@ export const GanttTaskCreator: React.FC<GanttTaskCreatorProps> = ({ projectId, o
   const [estimatedHours, setEstimatedHours] = useState<number | ''>('');
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date>(addDays(new Date(), 1));
+  const [isCreating, setIsCreating] = useState(false);
 
   const { collaborators, isLoading: loadingCollaborators } = useAscalateCollaborators();
-  const { createTask, isCreating } = useGanttTasks();
+  const { createTask } = useGanttTasks(projectId);
 
   const applyTemplate = (template: typeof taskTemplates[0]) => {
     setTaskName(template.name);
@@ -78,28 +78,47 @@ export const GanttTaskCreator: React.FC<GanttTaskCreatorProps> = ({ projectId, o
     
     if (!taskName.trim()) return;
 
-    const success = await createTask({
-      name: taskName,
-      description: description || undefined,
-      project_id: projectId,
-      start_date: startDate.toISOString().split('T')[0],
-      end_date: endDate.toISOString().split('T')[0],
-      assigned_to: assignedTo || undefined,
-      priority,
-      estimated_hours: estimatedHours ? Number(estimatedHours) : undefined,
-    });
+    setIsCreating(true);
 
-    if (success) {
-      // Reset form
-      setTaskName('');
-      setDescription('');
-      setAssignedTo('');
-      setPriority('medium');
-      setEstimatedHours('');
-      setStartDate(new Date());
-      setEndDate(addDays(new Date(), 1));
-      setOpen(false);
-      onTaskCreated?.();
+    try {
+      const taskData = {
+        name: taskName,
+        description: description || '',
+        project_id: projectId,
+        start_date: startDate.toISOString().split('T')[0],
+        end_date: endDate.toISOString().split('T')[0],
+        assigned_to: assignedTo || null,
+        priority: priority as 'low' | 'medium' | 'high' | 'urgent',
+        estimated_hours: estimatedHours ? Number(estimatedHours) : 0,
+        progress: 0,
+        dependencies: [],
+        is_milestone: false,
+        actual_hours: 0,
+        category: '',
+        tags: [],
+        status: 'pending' as const,
+        assignee: assignedTo || '',
+        collaborators: null
+      };
+
+      const result = await createTask(taskData);
+
+      if (result.data) {
+        // Reset form
+        setTaskName('');
+        setDescription('');
+        setAssignedTo('');
+        setPriority('medium');
+        setEstimatedHours('');
+        setStartDate(new Date());
+        setEndDate(addDays(new Date(), 1));
+        setOpen(false);
+        onTaskCreated?.();
+      }
+    } catch (error) {
+      console.error('Erro ao criar tarefa:', error);
+    } finally {
+      setIsCreating(false);
     }
   };
 
