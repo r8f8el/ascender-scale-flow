@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
@@ -57,10 +56,10 @@ const Hero = () => {
           animate="visible"
         >
           <motion.h2 
-            className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-8 text-gray-900"
+            className="text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-8 text-black"
             variants={itemVariants}
           >
-            Sobre a <span className="text-blue-600">Ascalate</span>
+            Sobre a Ascalate
           </motion.h2>
           
           <motion.div 
