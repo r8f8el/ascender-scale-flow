@@ -318,7 +318,7 @@ export default function ClientGantt() {
 
   const getTimelineCells = (task: GanttTask) => {
     const today = new Date();
-    const cells: { isInRange: boolean; progress: number }[] = [];
+    const cells: { isInRange: boolean; progress: number; startOffset: number; width: number }[] = [];
     
     switch (viewMode) {
       case 'day':
@@ -329,7 +329,28 @@ export default function ClientGantt() {
           const taskStart = new Date(task.start_date);
           const taskEnd = new Date(task.end_date);
           const isInRange = date >= taskStart && date <= taskEnd;
-          cells.push({ isInRange, progress: isInRange ? task.progress : 0 });
+          
+          // Calcular progresso para este dia específico
+          let dayProgress = 0;
+          if (isInRange) {
+            if (date.getTime() === taskStart.getTime()) {
+              // Primeiro dia da tarefa
+              dayProgress = task.progress;
+            } else if (date.getTime() === taskEnd.getTime()) {
+              // Último dia da tarefa
+              dayProgress = task.progress;
+            } else {
+              // Dias intermediários
+              dayProgress = task.progress;
+            }
+          }
+          
+          cells.push({ 
+            isInRange, 
+            progress: dayProgress,
+            startOffset: 0,
+            width: 100
+          });
         }
         break;
       case 'week':
@@ -345,7 +366,13 @@ export default function ClientGantt() {
           const taskStart = new Date(task.start_date);
           const taskEnd = new Date(task.end_date);
           const isInRange = (weekStart <= taskEnd && weekEnd >= taskStart);
-          cells.push({ isInRange, progress: isInRange ? task.progress : 0 });
+          
+          cells.push({ 
+            isInRange, 
+            progress: isInRange ? task.progress : 0,
+            startOffset: 0,
+            width: 100
+          });
         }
         break;
       case 'month':
@@ -359,7 +386,13 @@ export default function ClientGantt() {
           const taskStart = new Date(task.start_date);
           const taskEnd = new Date(task.end_date);
           const isInRange = (monthStart <= taskEnd && monthEnd >= taskStart);
-          cells.push({ isInRange, progress: isInRange ? task.progress : 0 });
+          
+          cells.push({ 
+            isInRange, 
+            progress: isInRange ? task.progress : 0,
+            startOffset: 0,
+            width: 100
+          });
         }
         break;
     }
@@ -902,7 +935,7 @@ export default function ClientGantt() {
                                 'bg-gray-400'
                               }`}
                               style={{
-                                width: `${Math.min(cell.progress, 100)}%`,
+                                width: '100%',
                                 maxWidth: '100%'
                               }}
                               title={`${task.name}: ${task.progress}% concluído`}
