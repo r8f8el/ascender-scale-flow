@@ -1,14 +1,14 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Download, FileText, Image, Table } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Download, FileText, FileSpreadsheet, Image } from 'lucide-react';
 import { GanttTask } from '@/hooks/useGanttTasks';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import * as XLSX from 'xlsx';
+import { toast } from 'sonner';
 
 interface GanttExportProps {
   isOpen: boolean;
@@ -23,8 +23,8 @@ export const GanttExport: React.FC<GanttExportProps> = ({
   tasks,
   projectName
 }) => {
-  const [exportFormat, setExportFormat] = useState<'excel' | 'csv' | 'pdf'>('excel');
-  const [includeFields, setIncludeFields] = useState({
+  const [exportFormat, setExportFormat] = useState<'excel' | 'csv' | 'pdf' | 'png'>('excel');
+  const [selectedFields, setSelectedFields] = useState({
     name: true,
     description: true,
     startDate: true,
@@ -37,170 +37,95 @@ export const GanttExport: React.FC<GanttExportProps> = ({
     ismilestone: true
   });
 
-  const handleFieldChange = (field: keyof typeof includeFields, checked: boolean) => {
-    setIncludeFields(prev => ({
+  const handleFieldToggle = (field: keyof typeof selectedFields) => {
+    setSelectedFields(prev => ({
       ...prev,
-      [field]: checked
+      [field]: !prev[field]
     }));
   };
 
-  const getStatusText = (task: GanttTask) => {
-    const status = task.status || 'pending';
-    switch (status) {
-      case 'completed': return 'Concluída';
-      case 'in_progress': return 'Em Progresso';
-      case 'blocked': return 'Bloqueada';
-      case 'pending': return 'Pendente';
-      default: return 'Não definido';
-    }
-  };
-
-  const getPriorityText = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return 'Urgente';
-      case 'high': return 'Alta';
-      case 'medium': return 'Média';
-      case 'low': return 'Baixa';
-      default: return 'Não definido';
-    }
-  };
-
   const exportToExcel = () => {
-    const data = tasks.map(task => {
-      const row: any = {};
+    try {
+      const exportData = tasks.map(task => {
+        const data: any = {};
+        
+        if (selectedFields.name) data['Nome'] = task.name;
+        if (selectedFields.description) data['Descrição'] = task.description || '';
+        if (selectedFields.startDate) data['Data Início'] = task.start_date;
+        if (selectedFields.endDate) data['Data Fim'] = task.end_date;
+        if (selectedFields.progress) data['Progresso (%)'] = task.progress;
+        if (selectedFields.priority) data['Prioridade'] = task.priority;
+        if (selectedFields.assignedTo) data['Responsável'] = task.assigned_to || '';
+        if (selectedFields.category) data['Categoria'] = task.category || '';
+        if (selectedFields.dependencies) data['Dependências'] = task.dependencies.join(', ');
+        if (selectedFields.ismilestone) data['Marco'] = task.is_milestone ? 'Sim' : 'Não';
+        
+        return data;
+      });
+
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Cronograma');
       
-      if (includeFields.name) row['Nome'] = task.name;
-      if (includeFields.description) row['Descrição'] = task.description || '';
-      if (includeFields.startDate) row['Data de Início'] = format(new Date(task.start_date), 'dd/MM/yyyy');
-      if (includeFields.endDate) row['Data de Fim'] = format(new Date(task.end_date), 'dd/MM/yyyy');
-      if (includeFields.progress) row['Progresso (%)'] = task.progress;
-      if (includeFields.priority) row['Prioridade'] = getPriorityText(task.priority);
-      if (includeFields.assignedTo) row['Responsável'] = task.assigned_to || 'Não definido';
-      if (includeFields.category) row['Categoria'] = task.category || 'Não definido';
-      if (includeFields.ismilestone) row['Marco'] = task.is_milestone ? 'Sim' : 'Não';
-      if (includeFields.dependencies) row['Dependências'] = task.dependencies?.length > 0 ? 
-        task.dependencies.join(', ') : 'Nenhuma';
-
-      return row;
-    });
-
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Cronograma');
-
-    // Ajustar largura das colunas
-    const colWidths = Object.keys(data[0] || {}).map(key => ({ wch: Math.max(key.length, 15) }));
-    ws['!cols'] = colWidths;
-
-    XLSX.writeFile(wb, `${projectName}_Cronograma.xlsx`);
+      const fileName = `${projectName.replace(/[^a-zA-Z0-9]/g, '_')}_cronograma.xlsx`;
+      XLSX.writeFile(wb, fileName);
+      
+      toast.success('Arquivo Excel exportado com sucesso!');
+      onClose();
+    } catch (error) {
+      console.error('Erro ao exportar Excel:', error);
+      toast.error('Erro ao exportar arquivo Excel');
+    }
   };
 
   const exportToCSV = () => {
-    const headers: string[] = [];
-    const rows: string[][] = [];
+    try {
+      const exportData = tasks.map(task => {
+        const data: any = {};
+        
+        if (selectedFields.name) data['Nome'] = task.name;
+        if (selectedFields.description) data['Descrição'] = task.description || '';
+        if (selectedFields.startDate) data['Data Início'] = task.start_date;
+        if (selectedFields.endDate) data['Data Fim'] = task.end_date;
+        if (selectedFields.progress) data['Progresso (%)'] = task.progress;
+        if (selectedFields.priority) data['Prioridade'] = task.priority;
+        if (selectedFields.assignedTo) data['Responsável'] = task.assigned_to || '';
+        if (selectedFields.category) data['Categoria'] = task.category || '';
+        if (selectedFields.dependencies) data['Dependências'] = task.dependencies.join(', ');
+        if (selectedFields.ismilestone) data['Marco'] = task.is_milestone ? 'Sim' : 'Não';
+        
+        return data;
+      });
 
-    // Definir cabeçalhos baseado nos campos selecionados
-    if (includeFields.name) headers.push('Nome');
-    if (includeFields.description) headers.push('Descrição');
-    if (includeFields.startDate) headers.push('Data de Início');
-    if (includeFields.endDate) headers.push('Data de Fim');
-    if (includeFields.progress) headers.push('Progresso (%)');
-    if (includeFields.priority) headers.push('Prioridade');
-    if (includeFields.assignedTo) headers.push('Responsável');
-    if (includeFields.category) headers.push('Categoria');
-    if (includeFields.ismilestone) headers.push('Marco');
-    if (includeFields.dependencies) headers.push('Dependências');
-
-    // Adicionar dados das tarefas
-    tasks.forEach(task => {
-      const row: string[] = [];
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const csvContent = XLSX.utils.sheet_to_csv(ws);
       
-      if (includeFields.name) row.push(task.name);
-      if (includeFields.description) row.push(task.description || '');
-      if (includeFields.startDate) row.push(format(new Date(task.start_date), 'dd/MM/yyyy'));
-      if (includeFields.endDate) row.push(format(new Date(task.end_date), 'dd/MM/yyyy'));
-      if (includeFields.progress) row.push(task.progress.toString());
-      if (includeFields.priority) row.push(getPriorityText(task.priority));
-      if (includeFields.assignedTo) row.push(task.assigned_to || 'Não definido');
-      if (includeFields.category) row.push(task.category || 'Não definido');
-      if (includeFields.ismilestone) row.push(task.is_milestone ? 'Sim' : 'Não');
-      if (includeFields.dependencies) row.push(task.dependencies?.length > 0 ? 
-        task.dependencies.join(', ') : 'Nenhuma');
-
-      rows.push(row);
-    });
-
-    // Criar conteúdo CSV
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-    ].join('\n');
-
-    // Download do arquivo
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `${projectName}_Cronograma.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${projectName.replace(/[^a-zA-Z0-9]/g, '_')}_cronograma.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success('Arquivo CSV exportado com sucesso!');
+      onClose();
+    } catch (error) {
+      console.error('Erro ao exportar CSV:', error);
+      toast.error('Erro ao exportar arquivo CSV');
+    }
   };
 
   const exportToPDF = () => {
-    // Implementação básica para PDF - pode ser expandida com jsPDF
-    const printContent = `
-      <html>
-        <head>
-          <title>${projectName} - Cronograma</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
-            h1 { color: #333; }
-            .milestone { font-weight: bold; color: #8B5CF6; }
-          </style>
-        </head>
-        <body>
-          <h1>${projectName} - Cronograma do Projeto</h1>
-          <p>Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}</p>
-          
-          <table>
-            <thead>
-              <tr>
-                ${includeFields.name ? '<th>Nome</th>' : ''}
-                ${includeFields.startDate ? '<th>Início</th>' : ''}
-                ${includeFields.endDate ? '<th>Fim</th>' : ''}
-                ${includeFields.progress ? '<th>Progresso</th>' : ''}
-                ${includeFields.priority ? '<th>Prioridade</th>' : ''}
-                ${includeFields.assignedTo ? '<th>Responsável</th>' : ''}
-              </tr>
-            </thead>
-            <tbody>
-              ${tasks.map(task => `
-                <tr ${task.is_milestone ? 'class="milestone"' : ''}>
-                  ${includeFields.name ? `<td>${task.name}${task.is_milestone ? ' 🏆' : ''}</td>` : ''}
-                  ${includeFields.startDate ? `<td>${format(new Date(task.start_date), 'dd/MM/yyyy')}</td>` : ''}
-                  ${includeFields.endDate ? `<td>${format(new Date(task.end_date), 'dd/MM/yyyy')}</td>` : ''}
-                  ${includeFields.progress ? `<td>${task.progress}%</td>` : ''}
-                  ${includeFields.priority ? `<td>${getPriorityText(task.priority)}</td>` : ''}
-                  ${includeFields.assignedTo ? `<td>${task.assigned_to || 'Não definido'}</td>` : ''}
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </body>
-      </html>
-    `;
+    toast.info('Funcionalidade de exportação para PDF em desenvolvimento');
+  };
 
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(printContent);
-      printWindow.document.close();
-      printWindow.print();
-    }
+  const exportToPNG = () => {
+    toast.info('Funcionalidade de exportação para PNG em desenvolvimento');
   };
 
   const handleExport = () => {
@@ -214,15 +139,26 @@ export const GanttExport: React.FC<GanttExportProps> = ({
       case 'pdf':
         exportToPDF();
         break;
+      case 'png':
+        exportToPNG();
+        break;
+      default:
+        break;
     }
-    onClose();
   };
 
   const getFormatIcon = () => {
     switch (exportFormat) {
-      case 'excel': return <Table className="h-4 w-4" />;
-      case 'csv': return <FileText className="h-4 w-4" />;
-      case 'pdf': return <Image className="h-4 w-4" />;
+      case 'excel':
+        return <FileSpreadsheet className="h-4 w-4" />;
+      case 'csv':
+        return <FileText className="h-4 w-4" />;
+      case 'pdf':
+        return <FileText className="h-4 w-4" />;
+      case 'png':
+        return <Image className="h-4 w-4" />;
+      default:
+        return <Download className="h-4 w-4" />;
     }
   };
 
@@ -236,8 +172,8 @@ export const GanttExport: React.FC<GanttExportProps> = ({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-          <div className="space-y-3">
+        <div className="space-y-4">
+          <div className="space-y-2">
             <Label>Formato de Exportação</Label>
             <Select value={exportFormat} onValueChange={(value: any) => setExportFormat(value)}>
               <SelectTrigger>
@@ -246,7 +182,7 @@ export const GanttExport: React.FC<GanttExportProps> = ({
               <SelectContent>
                 <SelectItem value="excel">
                   <div className="flex items-center gap-2">
-                    <Table className="h-4 w-4" />
+                    <FileSpreadsheet className="h-4 w-4" />
                     Excel (.xlsx)
                   </div>
                 </SelectItem>
@@ -258,62 +194,57 @@ export const GanttExport: React.FC<GanttExportProps> = ({
                 </SelectItem>
                 <SelectItem value="pdf">
                   <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    PDF (.pdf)
+                  </div>
+                </SelectItem>
+                <SelectItem value="png">
+                  <div className="flex items-center gap-2">
                     <Image className="h-4 w-4" />
-                    PDF (Impressão)
+                    Imagem (.png)
                   </div>
                 </SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <div className="space-y-3">
-            <Label>Campos para Exportar</Label>
-            <div className="grid grid-cols-2 gap-2">
-              {Object.entries(includeFields).map(([field, checked]) => {
-                const fieldLabels: Record<string, string> = {
-                  name: 'Nome',
-                  description: 'Descrição',
-                  startDate: 'Data Início',
-                  endDate: 'Data Fim',
-                  progress: 'Progresso',
-                  priority: 'Prioridade',
-                  assignedTo: 'Responsável',
-                  category: 'Categoria',
-                  dependencies: 'Dependências',
-                  ismilestone: 'Marco'
-                };
-
-                return (
+          {(exportFormat === 'excel' || exportFormat === 'csv') && (
+            <div className="space-y-2">
+              <Label>Campos para Exportar</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(selectedFields).map(([field, selected]) => (
                   <div key={field} className="flex items-center space-x-2">
                     <Checkbox
                       id={field}
-                      checked={checked}
-                      onCheckedChange={(checked) => 
-                        handleFieldChange(field as keyof typeof includeFields, checked as boolean)
-                      }
+                      checked={selected}
+                      onCheckedChange={() => handleFieldToggle(field as keyof typeof selectedFields)}
                     />
                     <Label htmlFor={field} className="text-sm">
-                      {fieldLabels[field]}
+                      {field === 'name' && 'Nome'}
+                      {field === 'description' && 'Descrição'}
+                      {field === 'startDate' && 'Data Início'}
+                      {field === 'endDate' && 'Data Fim'}
+                      {field === 'progress' && 'Progresso'}
+                      {field === 'priority' && 'Prioridade'}
+                      {field === 'assignedTo' && 'Responsável'}
+                      {field === 'category' && 'Categoria'}
+                      {field === 'dependencies' && 'Dependências'}
+                      {field === 'ismilestone' && 'Marco'}
                     </Label>
                   </div>
-                );
-              })}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="flex justify-between pt-4">
-            <div className="text-sm text-gray-600">
-              {tasks.length} tarefa{tasks.length !== 1 ? 's' : ''} para exportar
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={onClose}>
-                Cancelar
-              </Button>
-              <Button onClick={handleExport} className="flex items-center gap-2">
-                {getFormatIcon()}
-                Exportar
-              </Button>
-            </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button onClick={handleExport}>
+              {getFormatIcon()}
+              <span className="ml-2">Exportar</span>
+            </Button>
           </div>
         </div>
       </DialogContent>

@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -56,11 +57,27 @@ export const useGanttTasks = (projectId: string) => {
       
       // Type conversion to ensure proper types
       const convertedTasks: GanttTask[] = (data || []).map(task => ({
-        ...task,
-        priority: (task.priority as 'low' | 'medium' | 'high' | 'urgent') || 'medium',
-        status: (task.status as 'pending' | 'in_progress' | 'completed' | 'blocked') || 'pending',
-        dependencies: Array.isArray(task.dependencies) ? task.dependencies : [],
-        tags: Array.isArray(task.tags) ? task.tags : []
+        id: task.id,
+        name: task.name,
+        description: task.description || '',
+        start_date: task.start_date,
+        end_date: task.end_date,
+        progress: task.progress || 0,
+        priority: (['low', 'medium', 'high', 'urgent'].includes(task.priority) ? task.priority : 'medium') as 'low' | 'medium' | 'high' | 'urgent',
+        assigned_to: task.assigned_to || null,
+        dependencies: Array.isArray(task.dependencies) ? 
+          task.dependencies.filter(dep => typeof dep === 'string') : [],
+        is_milestone: task.is_milestone || false,
+        project_id: task.project_id,
+        created_at: task.created_at,
+        updated_at: task.updated_at,
+        estimated_hours: task.estimated_hours || 0,
+        actual_hours: task.actual_hours || 0,
+        category: task.category || '',
+        tags: Array.isArray(task.tags) ? task.tags.filter(tag => typeof tag === 'string') : [],
+        status: (['pending', 'in_progress', 'completed', 'blocked'].includes(task.status) ? task.status : 'pending') as 'pending' | 'in_progress' | 'completed' | 'blocked',
+        assignee: task.assigned_to || '',
+        collaborators: task.collaborators
       }));
       
       setTasks(convertedTasks);
@@ -100,11 +117,27 @@ export const useGanttTasks = (projectId: string) => {
       }
 
       const newTask: GanttTask = {
-        ...data,
-        priority: (data.priority as 'low' | 'medium' | 'high' | 'urgent') || 'medium',
-        status: (data.status as 'pending' | 'in_progress' | 'completed' | 'blocked') || 'pending',
-        dependencies: Array.isArray(data.dependencies) ? data.dependencies : [],
-        tags: Array.isArray(data.tags) ? data.tags : []
+        id: data.id,
+        name: data.name,
+        description: data.description || '',
+        start_date: data.start_date,
+        end_date: data.end_date,
+        progress: data.progress || 0,
+        priority: (['low', 'medium', 'high', 'urgent'].includes(data.priority) ? data.priority : 'medium') as 'low' | 'medium' | 'high' | 'urgent',
+        assigned_to: data.assigned_to || null,
+        dependencies: Array.isArray(data.dependencies) ? 
+          data.dependencies.filter(dep => typeof dep === 'string') : [],
+        is_milestone: data.is_milestone || false,
+        project_id: data.project_id,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        estimated_hours: data.estimated_hours || 0,
+        actual_hours: data.actual_hours || 0,
+        category: data.category || '',
+        tags: Array.isArray(data.tags) ? data.tags.filter(tag => typeof tag === 'string') : [],
+        status: (['pending', 'in_progress', 'completed', 'blocked'].includes(data.status) ? data.status : 'pending') as 'pending' | 'in_progress' | 'completed' | 'blocked',
+        assignee: data.assigned_to || '',
+        collaborators: data.collaborators
       };
 
       setTasks(prev => [...prev, newTask]);
@@ -127,11 +160,27 @@ export const useGanttTasks = (projectId: string) => {
       if (updateError) throw updateError;
 
       const updatedTask: GanttTask = {
-        ...data,
-        priority: (data.priority as 'low' | 'medium' | 'high' | 'urgent') || 'medium',
-        status: (data.status as 'pending' | 'in_progress' | 'completed' | 'blocked') || 'pending',
-        dependencies: Array.isArray(data.dependencies) ? data.dependencies : [],
-        tags: Array.isArray(data.tags) ? data.tags : []
+        id: data.id,
+        name: data.name,
+        description: data.description || '',
+        start_date: data.start_date,
+        end_date: data.end_date,
+        progress: data.progress || 0,
+        priority: (['low', 'medium', 'high', 'urgent'].includes(data.priority) ? data.priority : 'medium') as 'low' | 'medium' | 'high' | 'urgent',
+        assigned_to: data.assigned_to || null,
+        dependencies: Array.isArray(data.dependencies) ? 
+          data.dependencies.filter(dep => typeof dep === 'string') : [],
+        is_milestone: data.is_milestone || false,
+        project_id: data.project_id,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        estimated_hours: data.estimated_hours || 0,
+        actual_hours: data.actual_hours || 0,
+        category: data.category || '',
+        tags: Array.isArray(data.tags) ? data.tags.filter(tag => typeof tag === 'string') : [],
+        status: (['pending', 'in_progress', 'completed', 'blocked'].includes(data.status) ? data.status : 'pending') as 'pending' | 'in_progress' | 'completed' | 'blocked',
+        assignee: data.assigned_to || '',
+        collaborators: data.collaborators
       };
 
       setTasks(prev => prev.map(task => 
@@ -184,17 +233,7 @@ export const useGanttTasks = (projectId: string) => {
 
   const reorderTasks = useCallback(async (taskIds: string[]) => {
     try {
-      const updates = taskIds.map((taskId, index) => ({
-        id: taskId,
-        display_order: index
-      }));
-
-      const { error: updateError } = await supabase
-        .from('gantt_tasks')
-        .upsert(updates);
-
-      if (updateError) throw updateError;
-
+      // For now, just update the local state since we don't have display_order column
       setTasks(prev => {
         const taskMap = new Map(prev.map(task => [task.id, task]));
         return taskIds.map(id => taskMap.get(id)!).filter(Boolean);

@@ -19,6 +19,21 @@ interface TaskModalProps {
 
 type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 
+interface FormData {
+  name: string;
+  description: string;
+  start_date: string;
+  end_date: string;
+  priority: TaskPriority;
+  assigned_to: string;
+  estimated_hours: number;
+  progress: number;
+  is_milestone: boolean;
+  dependencies: string[];
+  category: string;
+  tags: string[];
+}
+
 export const TaskModal: React.FC<TaskModalProps> = ({
   isOpen,
   onClose,
@@ -26,7 +41,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   onSave,
   onDelete
 }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     description: '',
     start_date: '',
