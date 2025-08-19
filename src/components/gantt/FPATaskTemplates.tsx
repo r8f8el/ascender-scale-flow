@@ -1,209 +1,231 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React from 'react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Clock, FileText, Target, Calendar } from 'lucide-react';
+import { Calendar, Clock, FileText, Target, TrendingUp, Users, Settings, BarChart3 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface TaskTemplate {
+  id: string;
   name: string;
-  duration: number;
   description: string;
-}
-
-interface TaskCategory {
+  duration: number; // em dias
   category: string;
-  tasks: TaskTemplate[];
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  estimatedHours?: number;
+  dependencies?: string[];
+  icon?: React.ReactNode;
 }
 
-const FPA_TASK_TEMPLATES: TaskCategory[] = [
+interface FPATaskTemplatesProps {
+  onSelectTemplate: (template: { name: string; duration: number; description: string }) => void;
+  startDate: Date;
+}
+
+const taskTemplates: TaskTemplate[] = [
   {
-    category: 'Kick-off & Planejamento',
-    tasks: [
-      { name: 'Reunião de Kick-off', duration: 1, description: 'Alinhamento inicial com stakeholders' },
-      { name: 'Definição de Escopo', duration: 2, description: 'Documentação detalhada do escopo do projeto' },
-      { name: 'Cronograma Detalhado', duration: 1, description: 'Elaboração do cronograma final' }
-    ]
+    id: 'kickoff',
+    name: 'Kick-off do Projeto',
+    description: 'Reunião inicial com stakeholders para alinhamento de objetivos e escopo',
+    duration: 1,
+    category: 'Planejamento',
+    priority: 'high',
+    estimatedHours: 4,
+    icon: <Target className="h-4 w-4" />
   },
   {
-    category: 'Entendimento do Negócio',
-    tasks: [
-      { name: 'Análise do Modelo de Negócio', duration: 3, description: 'Compreensão profunda do negócio' },
-      { name: 'Mapeamento de Processos', duration: 5, description: 'Documentação dos processos financeiros' },
-      { name: 'Identificação de KPIs', duration: 2, description: 'Definição dos principais indicadores' }
-    ]
+    id: 'data-collection',
+    name: 'Coleta de Dados Históricos',
+    description: 'Levantamento e organização de dados financeiros dos últimos 24 meses',
+    duration: 5,
+    category: 'Análise',
+    priority: 'medium',
+    estimatedHours: 32,
+    icon: <BarChart3 className="h-4 w-4" />
   },
   {
-    category: 'Coleta e Análise de Dados',
-    tasks: [
-      { name: 'Coleta de Dados Financeiros', duration: 7, description: 'Extração de dados históricos' },
-      { name: 'Validação de Dados', duration: 3, description: 'Verificação e limpeza dos dados' },
-      { name: 'Análise de Tendências', duration: 4, description: 'Identificação de padrões e tendências' }
-    ]
+    id: 'baseline-model',
+    name: 'Construção do Modelo Base',
+    description: 'Desenvolvimento do modelo financeiro inicial com drivers principais',
+    duration: 7,
+    category: 'Modelagem',
+    priority: 'high',
+    estimatedHours: 48,
+    icon: <Settings className="h-4 w-4" />
   },
   {
-    category: 'Modelagem e Forecast',
-    tasks: [
-      { name: 'Construção do Modelo Base', duration: 8, description: 'Desenvolvimento do modelo financeiro' },
-      { name: 'Cenários e Simulações', duration: 5, description: 'Criação de cenários otimista/pessimista/realista' },
-      { name: 'Projeções de Receita', duration: 4, description: 'Modelagem detalhada de receitas' },
-      { name: 'Projeções de Custos', duration: 4, description: 'Modelagem detalhada de custos' }
-    ]
+    id: 'scenario-analysis',
+    name: 'Análise de Cenários',
+    description: 'Criação de cenários otimista, pessimista e realista',
+    duration: 3,
+    category: 'Análise',
+    priority: 'medium',
+    estimatedHours: 20,
+    icon: <TrendingUp className="h-4 w-4" />
   },
   {
-    category: 'Orçamento e Budget',
-    tasks: [
-      { name: 'Estruturação do Budget', duration: 6, description: 'Organização da estrutura orçamentária' },
-      { name: 'Budget Operacional', duration: 5, description: 'Orçamento das operações' },
-      { name: 'Budget de Investimentos', duration: 3, description: 'Planejamento de CAPEX' },
-      { name: 'Validação com Gestores', duration: 3, description: 'Alinhamento com áreas responsáveis' }
-    ]
+    id: 'variance-analysis',
+    name: 'Análise de Variações',
+    description: 'Comparação entre real vs orçado e identificação de desvios',
+    duration: 2,
+    category: 'Análise',
+    priority: 'medium',
+    estimatedHours: 12,
+    icon: <BarChart3 className="h-4 w-4" />
   },
   {
-    category: 'Entrega e Apresentação',
-    tasks: [
-      { name: 'Preparação da Apresentação', duration: 3, description: 'Criação de slides executivos' },
-      { name: 'Apresentação para Diretoria', duration: 1, description: 'Apresentação dos resultados' },
-      { name: 'Documentação Final', duration: 2, description: 'Entrega de documentação completa' },
-      { name: 'Treinamento da Equipe', duration: 2, description: 'Capacitação da equipe interna' }
-    ]
+    id: 'rolling-forecast',
+    name: 'Rolling Forecast',
+    description: 'Implementação de previsão contínua trimestral',
+    duration: 4,
+    category: 'Previsão',
+    priority: 'high',
+    estimatedHours: 28,
+    icon: <Calendar className="h-4 w-4" />
+  },
+  {
+    id: 'dashboard-setup',
+    name: 'Configuração de Dashboard',
+    description: 'Criação de painéis executivos e operacionais',
+    duration: 3,
+    category: 'Reporting',
+    priority: 'medium',
+    estimatedHours: 20,
+    icon: <BarChart3 className="h-4 w-4" />
+  },
+  {
+    id: 'training',
+    name: 'Treinamento da Equipe',
+    description: 'Capacitação da equipe nas ferramentas e processos FP&A',
+    duration: 2,
+    category: 'Treinamento',
+    priority: 'medium',
+    estimatedHours: 16,
+    icon: <Users className="h-4 w-4" />
+  },
+  {
+    id: 'documentation',
+    name: 'Documentação de Processos',
+    description: 'Elaboração de manuais e procedimentos operacionais',
+    duration: 3,
+    category: 'Documentação',
+    priority: 'low',
+    estimatedHours: 20,
+    icon: <FileText className="h-4 w-4" />
   }
 ];
 
-interface FPATaskTemplatesProps {
-  onSelectTemplate: (template: TaskTemplate) => void;
-  startDate: Date;
-}
+const getCategoryColor = (category: string) => {
+  const colors: Record<string, string> = {
+    'Planejamento': 'bg-blue-100 text-blue-700',
+    'Análise': 'bg-green-100 text-green-700',
+    'Modelagem': 'bg-purple-100 text-purple-700',
+    'Previsão': 'bg-orange-100 text-orange-700',
+    'Reporting': 'bg-cyan-100 text-cyan-700',
+    'Treinamento': 'bg-pink-100 text-pink-700',
+    'Documentação': 'bg-gray-100 text-gray-700'
+  };
+  return colors[category] || 'bg-gray-100 text-gray-700';
+};
+
+const getPriorityColor = (priority: string) => {
+  const colors: Record<string, string> = {
+    'urgent': 'bg-red-100 text-red-700',
+    'high': 'bg-orange-100 text-orange-700',
+    'medium': 'bg-yellow-100 text-yellow-700',
+    'low': 'bg-blue-100 text-blue-700'
+  };
+  return colors[priority] || 'bg-gray-100 text-gray-700';
+};
 
 export const FPATaskTemplates: React.FC<FPATaskTemplatesProps> = ({
   onSelectTemplate,
   startDate
 }) => {
-  const [selectedCategory, setSelectedCategory] = useState<string>('Kick-off & Planejamento');
-
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'Kick-off & Planejamento': return '🎯';
-      case 'Entendimento do Negócio': return '🏢';
-      case 'Coleta e Análise de Dados': return '📊';
-      case 'Modelagem e Forecast': return '📈';
-      case 'Orçamento e Budget': return '💰';
-      case 'Entrega e Apresentação': return '📋';
-      default: return '📋';
+  const groupedTemplates = taskTemplates.reduce((acc, template) => {
+    if (!acc[template.category]) {
+      acc[template.category] = [];
     }
-  };
-
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'Kick-off & Planejamento': return 'bg-blue-50 border-blue-200';
-      case 'Entendimento do Negócio': return 'bg-green-50 border-green-200';
-      case 'Coleta e Análise de Dados': return 'bg-purple-50 border-purple-200';
-      case 'Modelagem e Forecast': return 'bg-orange-50 border-orange-200';
-      case 'Orçamento e Budget': return 'bg-yellow-50 border-yellow-200';
-      case 'Entrega e Apresentação': return 'bg-red-50 border-red-200';
-      default: return 'bg-gray-50 border-gray-200';
-    }
-  };
+    acc[template.category].push(template);
+    return acc;
+  }, {} as Record<string, TaskTemplate[]>);
 
   return (
-    <div className="space-y-4">
-      <div className="text-center">
-        <h3 className="text-lg font-semibold text-gray-900 flex items-center justify-center gap-2">
-          <Target className="h-5 w-5 text-blue-600" />
-          Templates FP&A
-        </h3>
-        <p className="text-sm text-gray-600 mt-1">
-          Selecione um template para preencher automaticamente os dados da tarefa
+    <div className="space-y-6">
+      <div className="text-center mb-6">
+        <FileText className="h-12 w-12 mx-auto text-primary mb-3" />
+        <h3 className="text-lg font-semibold mb-2">Templates FP&A</h3>
+        <p className="text-sm text-muted-foreground">
+          Selecione um template pré-configurado para acelerar a criação de tarefas
         </p>
       </div>
 
-      <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 h-auto">
-          {FPA_TASK_TEMPLATES.map((template) => (
-            <TabsTrigger
-              key={template.category}
-              value={template.category}
-              className="text-xs p-2 flex flex-col items-center gap-1"
-            >
-              <span className="text-lg">{getCategoryIcon(template.category)}</span>
-              <span className="hidden lg:block">{template.category.split(' ')[0]}</span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        {FPA_TASK_TEMPLATES.map((categoryData) => (
-          <TabsContent key={categoryData.category} value={categoryData.category} className="mt-4">
-            <Card className={`${getCategoryColor(categoryData.category)} border-2`}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <span className="text-xl">{getCategoryIcon(categoryData.category)}</span>
-                  {categoryData.category}
-                  <Badge variant="secondary" className="ml-auto">
-                    {categoryData.tasks.length} templates
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-3">
-                  {categoryData.tasks.map((task, index) => {
-                    const endDate = addDays(startDate, task.duration);
-                    const estimatedHours = task.duration * 8;
-
-                    return (
-                      <Card
-                        key={index}
-                        className="p-4 hover:shadow-md transition-shadow cursor-pointer border border-gray-200 hover:border-blue-300"
-                        onClick={() => onSelectTemplate(task)}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <FileText className="h-4 w-4 text-blue-600" />
-                              <h4 className="font-medium text-gray-900">{task.name}</h4>
-                            </div>
-                            <p className="text-sm text-gray-600 mb-3">{task.description}</p>
-                            
-                            <div className="flex items-center gap-4 text-xs text-gray-500">
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {task.duration} dia{task.duration > 1 ? 's' : ''}
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                {format(endDate, 'dd/MM', { locale: ptBR })}
-                              </div>
-                              <Badge variant="outline" className="text-xs">
-                                {estimatedHours}h
-                              </Badge>
-                            </div>
+      <div className="space-y-6 max-h-96 overflow-y-auto">
+        {Object.entries(groupedTemplates).map(([category, templates]) => (
+          <div key={category} className="space-y-3">
+            <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+              {category}
+            </h4>
+            <div className="grid gap-3">
+              {templates.map((template) => {
+                const endDate = addDays(startDate, template.duration);
+                
+                return (
+                  <Card 
+                    key={template.id} 
+                    className="cursor-pointer hover:border-primary transition-colors"
+                    onClick={() => onSelectTemplate({
+                      name: template.name,
+                      duration: template.duration,
+                      description: template.description
+                    })}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                          {template.icon || <FileText className="h-4 w-4 text-primary" />}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h5 className="font-medium text-sm truncate">{template.name}</h5>
+                            <Badge variant="outline" className={getPriorityColor(template.priority)}>
+                              {template.priority}
+                            </Badge>
                           </div>
                           
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="ml-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                          >
-                            Usar Template
-                          </Button>
+                          <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+                            {template.description}
+                          </p>
+                          
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              <span>{template.duration} dia{template.duration > 1 ? 's' : ''}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              <span>{template.estimatedHours || template.duration * 8}h</span>
+                            </div>
+                            <Badge variant="outline" className={getCategoryColor(template.category)}>
+                              {template.category}
+                            </Badge>
+                          </div>
+                          
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            <span>Fim previsto: {format(endDate, 'dd/MM/yyyy', { locale: ptBR })}</span>
+                          </div>
                         </div>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
         ))}
-      </Tabs>
-
-      <div className="text-center">
-        <div className="text-xs text-gray-500 space-y-1">
-          <p>💼 <strong>Total:</strong> {FPA_TASK_TEMPLATES.reduce((acc, cat) => acc + cat.tasks.length, 0)} templates disponíveis</p>
-          <p>⏱️ <strong>Estimativa Total:</strong> ~{FPA_TASK_TEMPLATES.reduce((acc, cat) => acc + cat.tasks.reduce((sum, task) => sum + task.duration, 0), 0)} dias úteis</p>
-        </div>
       </div>
     </div>
   );
