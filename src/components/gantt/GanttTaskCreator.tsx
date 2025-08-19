@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -51,7 +50,7 @@ export const GanttTaskCreator: React.FC<TaskCreatorProps> = ({
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date>(addDays(new Date(), 1));
 
-  const { data: collaborators = [], isLoading: loadingCollaborators } = useCollaborators();
+  const { collaborators, isLoading: loadingCollaborators } = useCollaborators();
 
   // Filtrar apenas colaboradores com email @ascalate.com.br
   const ascalateCollaborators = collaborators.filter(collaborator => 
