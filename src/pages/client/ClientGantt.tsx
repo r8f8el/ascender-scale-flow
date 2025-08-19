@@ -448,12 +448,29 @@ export default function ClientGantt() {
         return;
       }
 
+      // Atualizar progresso baseado no status
+      let newProgress = 0;
+      switch (newStatus) {
+        case 'completed':
+          newProgress = 100;
+          break;
+        case 'in_progress':
+          newProgress = 50;
+          break;
+        case 'blocked':
+          newProgress = 0;
+          break;
+        case 'pending':
+          newProgress = 0;
+          break;
+        default:
+          newProgress = 0;
+      }
+
       const result = await updateTask(taskId, {
         ...task,
         status: newStatus,
-        progress: newStatus === 'completed' ? 100 : 
-                 newStatus === 'in_progress' ? 50 : 
-                 newStatus === 'blocked' ? 0 : 0
+        progress: newProgress
       });
 
       if (result.error) {
@@ -462,7 +479,7 @@ export default function ClientGantt() {
 
       toast({
         title: "Sucesso!",
-        description: `Status alterado para: ${formatStatusText(newStatus)}`
+        description: `Status alterado para: ${formatStatusText(newStatus)} - Progresso: ${newProgress}%`
       });
     } catch (error) {
       console.error('Erro ao atualizar status:', error);

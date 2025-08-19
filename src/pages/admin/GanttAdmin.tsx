@@ -46,6 +46,7 @@ export default function GanttAdmin() {
   const [selectedTask, setSelectedTask] = useState<any>(null);
   
   // Estados de controle
+  const [selectedClientId, setSelectedClientId] = useState('1');
   const [selectedProjectId, setSelectedProjectId] = useState('1');
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
   const [searchTerm, setSearchTerm] = useState('');
@@ -54,6 +55,27 @@ export default function GanttAdmin() {
   const [assigneeFilter, setAssigneeFilter] = useState('all');
 
   // Dados de exemplo para teste (fallback)
+  const [clients] = useState([
+    {
+      id: '1',
+      name: 'Empresa ABC Ltda',
+      email: 'contato@abc.com.br',
+      status: 'active'
+    },
+    {
+      id: '2',
+      name: 'Empresa XYZ S/A',
+      email: 'contato@xyz.com.br',
+      status: 'active'
+    },
+    {
+      id: '3',
+      name: 'Empresa DEF Ltda',
+      email: 'contato@def.com.br',
+      status: 'active'
+    }
+  ]);
+
   const [projects] = useState([
     {
       id: '1',
@@ -62,6 +84,7 @@ export default function GanttAdmin() {
       status: 'active',
       start_date: '2024-01-01',
       end_date: '2024-12-31',
+      client_id: '1',
       client_name: 'Empresa ABC Ltda',
       manager: 'Rafael Gontijo'
     },
@@ -72,6 +95,7 @@ export default function GanttAdmin() {
       status: 'active',
       start_date: '2024-03-01',
       end_date: '2024-08-31',
+      client_id: '2',
       client_name: 'Empresa XYZ S/A',
       manager: 'Paula Silva'
     },
@@ -82,6 +106,7 @@ export default function GanttAdmin() {
       status: 'active',
       start_date: '2024-02-01',
       end_date: '2024-05-31',
+      client_id: '3',
       client_name: 'Empresa DEF Ltda',
       manager: 'Carlos Santos'
     }
@@ -171,10 +196,19 @@ export default function GanttAdmin() {
   ]);
 
   useEffect(() => {
-    if (projects.length > 0 && !selectedProjectId) {
-      setSelectedProjectId(projects[0].id);
+    if (clients.length > 0 && !selectedClientId) {
+      setSelectedClientId(clients[0].id);
     }
-  }, [projects, selectedProjectId]);
+  }, [clients, selectedClientId]);
+
+  useEffect(() => {
+    if (selectedClientId && projects.length > 0) {
+      const clientProjects = projects.filter(p => p.client_id === selectedClientId);
+      if (clientProjects.length > 0 && !selectedProjectId) {
+        setSelectedProjectId(clientProjects[0].id);
+      }
+    }
+  }, [selectedClientId, projects, selectedProjectId]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -329,20 +363,22 @@ export default function GanttAdmin() {
   };
 
   const filteredTasks = tasks.filter(task => {
+    const matchesProject = task.project_id === selectedProjectId;
     const matchesSearch = task.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
     const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
     const matchesAssignee = assigneeFilter === 'all' || task.assignee?.includes(assigneeFilter);
     
-    return matchesSearch && matchesStatus && matchesPriority && matchesAssignee;
+    return matchesProject && matchesSearch && matchesStatus && matchesPriority && matchesAssignee;
   });
 
   const getProjectStats = () => {
-    const total = tasks.length;
-    const completed = tasks.filter(t => t.status === 'completed').length;
-    const inProgress = tasks.filter(t => t.status === 'in_progress').length;
-    const pending = tasks.filter(t => t.status === 'pending').length;
-    const blocked = tasks.filter(t => t.status === 'blocked').length;
+    const clientTasks = tasks.filter(t => t.project_id === selectedProjectId);
+    const total = clientTasks.length;
+    const completed = clientTasks.filter(t => t.status === 'completed').length;
+    const inProgress = clientTasks.filter(t => t.status === 'in_progress').length;
+    const pending = clientTasks.filter(t => t.status === 'pending').length;
+    const blocked = clientTasks.filter(t => t.status === 'blocked').length;
 
     return { total, completed, inProgress, pending, blocked };
   };
@@ -408,22 +444,39 @@ export default function GanttAdmin() {
         return;
       }
 
+      // Atualizar progresso baseado no status
+      let newProgress = 0;
+      switch (newStatus) {
+        case 'completed':
+          newProgress = 100;
+          break;
+        case 'in_progress':
+          newProgress = 50;
+          break;
+        case 'blocked':
+          newProgress = 0;
+          break;
+        case 'pending':
+          newProgress = 0;
+          break;
+        default:
+          newProgress = 0;
+      }
+
       // Atualizar tarefa localmente
       setTasks(prev => prev.map(t => 
         t.id === taskId 
           ? { 
               ...t, 
               status: newStatus,
-              progress: newStatus === 'completed' ? 100 : 
-                       newStatus === 'in_progress' ? 50 : 
-                       newStatus === 'blocked' ? 0 : 0
+              progress: newProgress
             }
           : t
       ));
 
       toast({
         title: "Sucesso!",
-        description: `Status alterado para: ${newStatus.replace('_', ' ')}`
+        description: `Status alterado para: ${newStatus.replace('_', ' ')} - Progresso: ${newProgress}%`
       });
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
@@ -436,7 +489,15 @@ export default function GanttAdmin() {
   };
 
   const getCurrentProject = () => {
-    return projects.find(p => p.id === selectedProjectId);
+    return projects.find(p => p.id === selectedProjectId && p.client_id === selectedClientId);
+  };
+
+  const getCurrentClient = () => {
+    return clients.find(c => c.id === selectedClientId);
+  };
+
+  const getClientProjects = () => {
+    return projects.filter(p => p.client_id === selectedClientId);
   };
 
   return (
@@ -479,20 +540,38 @@ export default function GanttAdmin() {
       <Card>
         <CardContent className="p-4">
           <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
-            <div>
-              <Label className="text-sm font-medium">Projeto Ativo</Label>
-              <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-                <SelectTrigger className="w-64">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex flex-col gap-4">
+              <div>
+                <Label className="text-sm font-medium">Cliente</Label>
+                <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                  <SelectTrigger className="w-64">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label className="text-sm font-medium">Projeto do Cliente</Label>
+                <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+                  <SelectTrigger className="w-64">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getClientProjects().map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             
             {getCurrentProject() && (
