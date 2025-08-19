@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -86,14 +87,14 @@ const PRIORITY_OPTIONS = [
   { value: 'medium', label: 'Média', color: 'bg-yellow-100 text-yellow-800' },
   { value: 'high', label: 'Alta', color: 'bg-orange-100 text-orange-800' },
   { value: 'urgent', label: 'Urgente', color: 'bg-red-100 text-red-800' }
-];
+] as const;
 
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pendente', color: 'bg-gray-100 text-gray-800' },
   { value: 'in_progress', label: 'Em Andamento', color: 'bg-blue-100 text-blue-800' },
   { value: 'completed', label: 'Concluída', color: 'bg-green-100 text-green-800' },
   { value: 'blocked', label: 'Bloqueada', color: 'bg-red-100 text-red-800' }
-];
+] as const;
 
 export const FPAGanttTaskModal: React.FC<FPAGanttTaskModalProps> = ({
   isOpen,
@@ -306,7 +307,7 @@ export const FPAGanttTaskModal: React.FC<FPAGanttTaskModalProps> = ({
                 <Label>Prioridade</Label>
                 <Select
                   value={formData.priority}
-                  onValueChange={(value: any) => setFormData(prev => ({ ...prev, priority: value }))}
+                  onValueChange={(value: 'low' | 'medium' | 'high' | 'urgent') => setFormData(prev => ({ ...prev, priority: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -328,7 +329,7 @@ export const FPAGanttTaskModal: React.FC<FPAGanttTaskModalProps> = ({
                 <Label>Status</Label>
                 <Select
                   value={formData.status}
-                  onValueChange={(value: any) => setFormData(prev => ({ ...prev, status: value }))}
+                  onValueChange={(value: 'pending' | 'in_progress' | 'completed' | 'blocked') => setFormData(prev => ({ ...prev, status: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue />

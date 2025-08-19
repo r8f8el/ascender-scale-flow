@@ -10,12 +10,19 @@ export interface GanttTask {
   end_date: string;
   progress: number;
   priority: 'low' | 'medium' | 'high' | 'urgent';
-  assigned_to?: string;
+  assigned_to?: string | null;
   dependencies: string[];
   is_milestone: boolean;
   project_id: string;
   created_at: string;
   updated_at: string;
+  estimated_hours?: number;
+  actual_hours?: number;
+  category?: string;
+  tags?: string[];
+  status?: 'pending' | 'in_progress' | 'completed' | 'blocked';
+  assignee?: string;
+  collaborators?: any;
 }
 
 export const useGanttTasks = (projectId: string) => {
@@ -32,6 +39,8 @@ export const useGanttTasks = (projectId: string) => {
     try {
       setLoading(true);
       setError(null);
+      
+      console.log('Fetching tasks for project:', projectId);
 
       const { data, error: fetchError } = await supabase
         .from('gantt_tasks')
@@ -39,168 +48,17 @@ export const useGanttTasks = (projectId: string) => {
         .eq('project_id', projectId)
         .order('start_date', { ascending: true });
 
-      if (fetchError) throw fetchError;
-
-      // Se não houver tarefas, criar algumas de exemplo
-      if (!data || data.length === 0) {
-        const mockTasks: GanttTask[] = [
-          {
-            id: '1',
-            name: 'Análise de Forças',
-            description: 'Identificar e analisar as forças internas da empresa',
-            start_date: '2024-06-05',
-            end_date: '2024-06-08',
-            progress: 100,
-
-            priority: 'medium',
-            assigned_to: 'Rafael',
-            dependencies: [],
-            is_milestone: false,
-            project_id: projectId,
-            created_at: '2024-06-01T00:00:00Z',
-            updated_at: '2024-06-01T00:00:00Z'
-          },
-          {
-            id: '2',
-            name: 'Análise de Fraquezas',
-            description: 'Identificar e analisar as fraquezas internas da empresa',
-            start_date: '2024-06-05',
-            end_date: '2024-06-08',
-            progress: 100,
-
-            priority: 'medium',
-            assigned_to: 'Rafael',
-            dependencies: [],
-            is_milestone: false,
-            project_id: projectId,
-            created_at: '2024-06-01T00:00:00Z',
-            updated_at: '2024-06-01T00:00:00Z'
-          },
-          {
-            id: '3',
-            name: 'Análise de Oportunidades',
-            description: 'Identificar e analisar as oportunidades externas',
-            start_date: '2024-06-08',
-            end_date: '2024-06-11',
-            progress: 75,
-
-            priority: 'medium',
-            assigned_to: 'Rafael',
-            dependencies: ['1', '2'],
-            is_milestone: false,
-            project_id: projectId,
-            created_at: '2024-06-01T00:00:00Z',
-            updated_at: '2024-06-01T00:00:00Z'
-          },
-          {
-            id: '4',
-            name: 'Análise de Ameaças',
-            description: 'Identificar e analisar as ameaças externas',
-            start_date: '2024-06-08',
-            end_date: '2024-06-11',
-            progress: 60,
-
-            priority: 'medium',
-            assigned_to: 'Rafael',
-            dependencies: ['1', '2'],
-            is_milestone: false,
-            project_id: projectId,
-            created_at: '2024-06-01T00:00:00Z',
-            updated_at: '2024-06-01T00:00:00Z'
-          },
-          {
-            id: '5',
-            name: 'Compilação da Matriz SWOT',
-            description: 'Criar a matriz SWOT consolidada',
-            start_date: '2024-06-11',
-            end_date: '2024-06-12',
-            progress: 0,
-
-            priority: 'high',
-            assigned_to: 'Paula',
-            dependencies: ['3', '4'],
-            is_milestone: true,
-            project_id: projectId,
-            created_at: '2024-06-01T00:00:00Z',
-            updated_at: '2024-06-01T00:00:00Z'
-          },
-          {
-            id: '6',
-            name: 'Criação de Planos de Ação',
-            description: 'Desenvolver planos de ação baseados na análise SWOT',
-            start_date: '2024-06-12',
-            end_date: '2024-06-16',
-            progress: 0,
-
-            priority: 'high',
-            assigned_to: 'Rafael e Paula',
-            dependencies: ['5'],
-            is_milestone: false,
-            project_id: projectId,
-            created_at: '2024-06-01T00:00:00Z',
-            updated_at: '2024-06-01T00:00:00Z'
-          },
-          {
-            id: '7',
-            name: 'Apresentação para o cliente',
-            description: 'Apresentar resultados e planos para o cliente',
-            start_date: '2024-06-16',
-            end_date: '2024-06-19',
-            progress: 0,
-
-            priority: 'high',
-            assigned_to: 'Rafael e Paula',
-            dependencies: ['6'],
-            is_milestone: false,
-            project_id: projectId,
-            created_at: '2024-06-01T00:00:00Z',
-            updated_at: '2024-06-01T00:00:00Z'
-          }
-        ];
-        setTasks(mockTasks);
-      } else {
-        setTasks(data);
+      if (fetchError) {
+        console.error('Error fetching tasks:', fetchError);
+        throw fetchError;
       }
+
+      console.log('Tasks fetched successfully:', data);
+      setTasks(data || []);
     } catch (err) {
       console.error('Erro ao buscar tarefas:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
-      
-      // Em caso de erro, usar tarefas de exemplo
-      const mockTasks: GanttTask[] = [
-        {
-          id: '1',
-          name: 'Análise de Forças',
-          description: 'Identificar e analisar as forças internas da empresa',
-          start_date: '2024-06-05',
-          end_date: '2024-06-08',
-          progress: 100,
-          status: 'completed',
-          priority: 'medium',
-          assignee: 'Rafael',
-          dependencies: [],
-          is_milestone: false,
-          project_id: projectId,
-          created_at: '2024-06-01T00:00:00Z',
-          updated_at: '2024-06-01T00:00:00Z'
-        },
-        {
-          id: '2',
-          name: 'Análise de Fraquezas',
-          description: 'Identificar e analisar as fraquezas internas da empresa',
-          start_date: '2024-06-05',
-          end_date: '2024-06-08',
-          progress: 100,
-          status: 'completed',
-          priority: 'medium',
-          assignee: 'Rafael',
-          dependencies: [],
-          is_milestone: false,
-          project_id: projectId,
-          created_at: '2024-06-01T00:00:00Z',
-          updated_at: '2024-06-01T00:00:00Z'
-        }
-      ];
-      setTasks(mockTasks);
+      setTasks([]);
     } finally {
       setLoading(false);
     }
@@ -208,13 +66,29 @@ export const useGanttTasks = (projectId: string) => {
 
   const createTask = useCallback(async (taskData: Omit<GanttTask, 'id' | 'created_at' | 'updated_at'>) => {
     try {
+      console.log('📤 Dados sendo enviados:', taskData);
+      
+      // Ensure assigned_to is null if it's 'default-value' or empty
+      const sanitizedData = {
+        ...taskData,
+        assigned_to: taskData.assigned_to === 'default-value' || !taskData.assigned_to ? null : taskData.assigned_to,
+        estimated_hours: taskData.estimated_hours || 8,
+        actual_hours: taskData.actual_hours || 0,
+        progress: taskData.progress || 0
+      };
+      
+      console.log('📤 Dados de inserção:', sanitizedData);
+
       const { data, error: createError } = await supabase
         .from('gantt_tasks')
-        .insert(taskData)
+        .insert(sanitizedData)
         .select()
         .single();
 
-      if (createError) throw createError;
+      if (createError) {
+        console.error('Erro ao salvar tarefa:', createError);
+        throw createError;
+      }
 
       setTasks(prev => [...prev, data]);
       return { data, error: null };
@@ -283,11 +157,8 @@ export const useGanttTasks = (projectId: string) => {
     }
   }, []);
 
-
-
   const reorderTasks = useCallback(async (taskIds: string[]) => {
     try {
-      // Atualizar a ordem das tarefas no banco
       const updates = taskIds.map((taskId, index) => ({
         id: taskId,
         display_order: index
@@ -299,10 +170,9 @@ export const useGanttTasks = (projectId: string) => {
 
       if (updateError) throw updateError;
 
-      // Reordenar localmente
       setTasks(prev => {
         const taskMap = new Map(prev.map(task => [task.id, task]));
-        return taskIds.map(id => taskMap.get(id)!);
+        return taskIds.map(id => taskMap.get(id)!).filter(Boolean);
       });
 
       return { error: null };
@@ -312,7 +182,6 @@ export const useGanttTasks = (projectId: string) => {
     }
   }, []);
 
-  // Carregar tarefas quando o projectId mudar
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
@@ -326,7 +195,6 @@ export const useGanttTasks = (projectId: string) => {
     updateTask,
     deleteTask,
     updateTaskProgress,
-
     reorderTasks,
     refetch: fetchTasks
   };
