@@ -330,26 +330,11 @@ export default function ClientGantt() {
           const taskEnd = new Date(task.end_date);
           const isInRange = date >= taskStart && date <= taskEnd;
           
-          // Calcular progresso para este dia específico
-          let dayProgress = 0;
-          if (isInRange) {
-            if (date.getTime() === taskStart.getTime()) {
-              // Primeiro dia da tarefa
-              dayProgress = task.progress;
-            } else if (date.getTime() === taskEnd.getTime()) {
-              // Último dia da tarefa
-              dayProgress = task.progress;
-            } else {
-              // Dias intermediários
-              dayProgress = task.progress;
-            }
-          }
-          
           cells.push({ 
             isInRange, 
-            progress: dayProgress,
+            progress: isInRange ? task.progress : 0,
             startOffset: 0,
-            width: 100
+            width: isInRange ? 100 : 0
           });
         }
         break;
@@ -371,7 +356,7 @@ export default function ClientGantt() {
             isInRange, 
             progress: isInRange ? task.progress : 0,
             startOffset: 0,
-            width: 100
+            width: isInRange ? 100 : 0
           });
         }
         break;
@@ -391,7 +376,7 @@ export default function ClientGantt() {
             isInRange, 
             progress: isInRange ? task.progress : 0,
             startOffset: 0,
-            width: 100
+            width: isInRange ? 100 : 0
           });
         }
         break;
@@ -476,6 +461,11 @@ export default function ClientGantt() {
       if (result.error) {
         throw result.error;
       }
+
+      // Forçar refresh das tarefas para sincronizar com o banco
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
 
       toast({
         title: "Sucesso!",
@@ -982,22 +972,22 @@ export default function ClientGantt() {
                     <div className="flex gap-1 h-8">
                       {getTimelineCells(task).map((cell, index) => (
                         <div key={index} className="flex-1 relative min-w-0">
-                                                     {cell.isInRange && (
-                             <div 
-                               className={`h-6 rounded transition-all duration-200 ${
-                                 task.status === 'completed' ? 'bg-green-500' :
-                                 task.status === 'in_progress' ? 'bg-blue-500' :
-                                 task.status === 'blocked' ? 'bg-red-500' :
-                                 task.status === 'pending' ? 'bg-yellow-500' :
-                                 'bg-gray-400'
-                               }`}
-                               style={{
-                                 width: '100%',
-                                 maxWidth: '100%'
-                               }}
-                               title={`${task.name}: ${task.progress}% concluído - Status: ${formatStatusText(task.status)}`}
-                             ></div>
-                           )}
+                                                                                      {cell.isInRange && (
+                              <div 
+                                className={`h-6 rounded transition-all duration-200 ${
+                                  task.status === 'completed' ? 'bg-green-500' :
+                                  task.status === 'in_progress' ? 'bg-blue-500' :
+                                  task.status === 'blocked' ? 'bg-red-500' :
+                                  task.status === 'pending' ? 'bg-yellow-500' :
+                                  'bg-gray-400'
+                                }`}
+                                style={{
+                                  width: `${cell.width}%`,
+                                  maxWidth: `${cell.width}%`
+                                }}
+                                title={`${task.name}: ${task.progress}% concluído - Status: ${formatStatusText(task.status)}`}
+                              ></div>
+                            )}
                           {!cell.isInRange && (
                             <div className="h-6 border border-dashed border-gray-200 rounded opacity-30"></div>
                           )}

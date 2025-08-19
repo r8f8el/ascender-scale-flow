@@ -839,22 +839,22 @@ export default function GanttAdmin() {
                     <div className="flex gap-1 h-8">
                       {getTimelineCells(task).map((cell, index) => (
                         <div key={index} className="flex-1 relative min-w-0">
-                          {cell.isInRange && (
-                            <div 
-                              className={`h-6 rounded transition-all duration-200 ${
-                                task.status === 'completed' ? 'bg-green-500' :
-                                task.status === 'in_progress' ? 'bg-blue-500' :
-                                task.status === 'blocked' ? 'bg-red-500' :
-                                task.status === 'pending' ? 'bg-yellow-500' :
-                                'bg-gray-400'
-                              }`}
-                              style={{
-                                width: '100%',
-                                maxWidth: '100%'
-                              }}
-                              title={`${task.name}: ${task.progress}% concluído - Status: ${task.status.replace('_', ' ')}`}
-                            ></div>
-                          )}
+                                                     {cell.isInRange && (
+                             <div 
+                               className={`h-6 rounded transition-all duration-200 ${
+                                 task.status === 'completed' ? 'bg-green-500' :
+                                 task.status === 'in_progress' ? 'bg-blue-500' :
+                                 task.status === 'blocked' ? 'bg-red-500' :
+                                 task.status === 'pending' ? 'bg-yellow-500' :
+                                 'bg-gray-400'
+                               }`}
+                               style={{
+                                 width: `${cell.width}%`,
+                                 maxWidth: `${cell.width}%`
+                               }}
+                               title={`${task.name}: ${task.progress}% concluído - Status: ${task.status.replace('_', ' ')}`}
+                             ></div>
+                           )}
                           {!cell.isInRange && (
                             <div className="h-6 border border-dashed border-gray-200 rounded opacity-30"></div>
                           )}
