@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -78,7 +77,7 @@ export const GanttExport: React.FC<GanttExportProps> = ({
       if (includeFields.priority) row['Prioridade'] = getPriorityText(task.priority);
       if (includeFields.assignedTo) row['Responsável'] = task.assigned_to || 'Não definido';
       if (includeFields.category) row['Categoria'] = task.category || 'Não definido';
-      if (includeFields.isMinestone) row['Marco'] = task.is_milestone ? 'Sim' : 'Não';
+      if (includeFields.ismilestone) row['Marco'] = task.is_milestone ? 'Sim' : 'Não';
       if (includeFields.dependencies) row['Dependências'] = task.dependencies?.length > 0 ? 
         task.dependencies.join(', ') : 'Nenhuma';
 
@@ -109,7 +108,7 @@ export const GanttExport: React.FC<GanttExportProps> = ({
     if (includeFields.priority) headers.push('Prioridade');
     if (includeFields.assignedTo) headers.push('Responsável');
     if (includeFields.category) headers.push('Categoria');
-    if (includeFields.isMinestone) headers.push('Marco');
+    if (includeFields.ismilestone) headers.push('Marco');
     if (includeFields.dependencies) headers.push('Dependências');
 
     // Adicionar dados das tarefas
@@ -124,7 +123,7 @@ export const GanttExport: React.FC<GanttExportProps> = ({
       if (includeFields.priority) row.push(getPriorityText(task.priority));
       if (includeFields.assignedTo) row.push(task.assigned_to || 'Não definido');
       if (includeFields.category) row.push(task.category || 'Não definido');
-      if (includeFields.isMinestone) row.push(task.is_milestone ? 'Sim' : 'Não');
+      if (includeFields.ismilestone) row.push(task.is_milestone ? 'Sim' : 'Não');
       if (includeFields.dependencies) row.push(task.dependencies?.length > 0 ? 
         task.dependencies.join(', ') : 'Nenhuma');
 
@@ -281,7 +280,7 @@ export const GanttExport: React.FC<GanttExportProps> = ({
                   assignedTo: 'Responsável',
                   category: 'Categoria',
                   dependencies: 'Dependências',
-                  isMinestone: 'Marco'
+                  ismilestone: 'Marco'
                 };
 
                 return (

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -96,6 +95,26 @@ const STATUS_OPTIONS = [
   { value: 'blocked', label: 'Bloqueada', color: 'bg-red-100 text-red-800' }
 ] as const;
 
+type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
+type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'blocked';
+
+interface FormData {
+  name: string;
+  description: string;
+  start_date: string;
+  end_date: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+  assigned_to: string;
+  estimated_hours: number;
+  actual_hours: number;
+  progress: number;
+  is_milestone: boolean;
+  dependencies: string[];
+  category: string;
+  tags: string[];
+}
+
 export const FPAGanttTaskModal: React.FC<FPAGanttTaskModalProps> = ({
   isOpen,
   onClose,
@@ -105,13 +124,13 @@ export const FPAGanttTaskModal: React.FC<FPAGanttTaskModalProps> = ({
   isAdmin,
   availableTasks = []
 }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     description: '',
     start_date: format(new Date(), 'yyyy-MM-dd'),
     end_date: format(addDays(new Date(), 7), 'yyyy-MM-dd'),
-    priority: 'medium' as const,
-    status: 'pending' as const,
+    priority: 'medium' as TaskPriority,
+    status: 'pending' as TaskStatus,
     assigned_to: '',
     estimated_hours: 40,
     actual_hours: 0,
@@ -307,7 +326,7 @@ export const FPAGanttTaskModal: React.FC<FPAGanttTaskModalProps> = ({
                 <Label>Prioridade</Label>
                 <Select
                   value={formData.priority}
-                  onValueChange={(value: 'low' | 'medium' | 'high' | 'urgent') => setFormData(prev => ({ ...prev, priority: value }))}
+                  onValueChange={(value: TaskPriority) => setFormData(prev => ({ ...prev, priority: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -329,7 +348,7 @@ export const FPAGanttTaskModal: React.FC<FPAGanttTaskModalProps> = ({
                 <Label>Status</Label>
                 <Select
                   value={formData.status}
-                  onValueChange={(value: 'pending' | 'in_progress' | 'completed' | 'blocked') => setFormData(prev => ({ ...prev, status: value }))}
+                  onValueChange={(value: TaskStatus) => setFormData(prev => ({ ...prev, status: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue />

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -54,7 +53,17 @@ export const useGanttTasks = (projectId: string) => {
       }
 
       console.log('Tasks fetched successfully:', data);
-      setTasks(data || []);
+      
+      // Type conversion to ensure proper types
+      const convertedTasks: GanttTask[] = (data || []).map(task => ({
+        ...task,
+        priority: (task.priority as 'low' | 'medium' | 'high' | 'urgent') || 'medium',
+        status: (task.status as 'pending' | 'in_progress' | 'completed' | 'blocked') || 'pending',
+        dependencies: Array.isArray(task.dependencies) ? task.dependencies : [],
+        tags: Array.isArray(task.tags) ? task.tags : []
+      }));
+      
+      setTasks(convertedTasks);
     } catch (err) {
       console.error('Erro ao buscar tarefas:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
@@ -90,8 +99,16 @@ export const useGanttTasks = (projectId: string) => {
         throw createError;
       }
 
-      setTasks(prev => [...prev, data]);
-      return { data, error: null };
+      const newTask: GanttTask = {
+        ...data,
+        priority: (data.priority as 'low' | 'medium' | 'high' | 'urgent') || 'medium',
+        status: (data.status as 'pending' | 'in_progress' | 'completed' | 'blocked') || 'pending',
+        dependencies: Array.isArray(data.dependencies) ? data.dependencies : [],
+        tags: Array.isArray(data.tags) ? data.tags : []
+      };
+
+      setTasks(prev => [...prev, newTask]);
+      return { data: newTask, error: null };
     } catch (err) {
       console.error('Erro ao criar tarefa:', err);
       return { data: null, error: err };
@@ -109,11 +126,19 @@ export const useGanttTasks = (projectId: string) => {
 
       if (updateError) throw updateError;
 
+      const updatedTask: GanttTask = {
+        ...data,
+        priority: (data.priority as 'low' | 'medium' | 'high' | 'urgent') || 'medium',
+        status: (data.status as 'pending' | 'in_progress' | 'completed' | 'blocked') || 'pending',
+        dependencies: Array.isArray(data.dependencies) ? data.dependencies : [],
+        tags: Array.isArray(data.tags) ? data.tags : []
+      };
+
       setTasks(prev => prev.map(task => 
-        task.id === taskId ? { ...task, ...data } : task
+        task.id === taskId ? { ...task, ...updatedTask } : task
       ));
 
-      return { data, error: null };
+      return { data: updatedTask, error: null };
     } catch (err) {
       console.error('Erro ao atualizar tarefa:', err);
       return { data: null, error: err };
