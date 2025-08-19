@@ -32,7 +32,8 @@ import { GanttExport } from '@/components/gantt/GanttExport';
 import { GanttShare } from '@/components/gantt/GanttShare';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
-import { GanttTask } from '@/hooks/useGanttTasks';
+import { GanttTask, useGanttTasks } from '@/hooks/useGanttTasks';
+import { useGanttProjects } from '@/hooks/useGanttProjects';
 
 export default function ClientGantt() {
   const { user, client } = useAuth();
@@ -45,15 +46,30 @@ export default function ClientGantt() {
   const [selectedTask, setSelectedTask] = useState<GanttTask | null>(null);
   
   // Estados de controle
-  const [selectedProjectId, setSelectedProjectId] = useState('123e4567-e89b-12d3-a456-426614174000'); // UUID válido temporário
+  const [selectedProjectId, setSelectedProjectId] = useState('123e4567-e89b-12d3-a456-426614174000');
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [assigneeFilter, setAssigneeFilter] = useState('all');
 
-  // Dados de exemplo para teste (fallback)
-  const [projects] = useState([
+  // Usar hooks para dados reais
+  const { projects, loading: projectsLoading, error: projectsError } = useGanttProjects();
+  const { 
+    tasks, 
+    loading: tasksLoading, 
+    error: tasksError,
+    createTask,
+    updateTask,
+    deleteTask
+  } = useGanttTasks(selectedProjectId);
+
+  // Estados de loading e erro
+  const isLoading = projectsLoading || tasksLoading;
+  const hasError = projectsError || tasksError;
+
+  // Dados de fallback se não houver projetos ou tarefas
+  const fallbackProjects = [
     {
       id: '123e4567-e89b-12d3-a456-426614174000',
       name: 'Projeto de Consultoria Financeira',
@@ -70,9 +86,9 @@ export default function ClientGantt() {
       start_date: '2024-03-01',
       end_date: '2024-08-31'
     }
-  ]);
+  ];
 
-  const [tasks, setTasks] = useState<GanttTask[]>([
+  const fallbackTasks: GanttTask[] = [
     {
       id: '223e4567-e89b-12d3-a456-426614174000',
       name: 'Análise de Forças',
@@ -98,135 +114,55 @@ export default function ClientGantt() {
       id: '223e4567-e89b-12d3-a456-426614174001',
       name: 'Análise de Fraquezas',
       description: 'Identificar e analisar as fraquezas internas da empresa',
-      start_date: '2024-06-05',
-      end_date: '2024-06-08',
-      progress: 100,
-      status: 'completed',
+      start_date: '2024-06-09',
+      end_date: '2024-06-12',
+      progress: 75,
+      status: 'in_progress',
       priority: 'medium',
-      assigned_to: 'Rafael',
-      dependencies: [],
+      assigned_to: 'Paula',
+      dependencies: ['223e4567-e89b-12d3-a456-426614174000'],
       is_milestone: false,
       project_id: '123e4567-e89b-12d3-a456-426614174000',
       created_at: '2024-06-01T00:00:00Z',
       updated_at: '2024-06-01T00:00:00Z',
-      estimated_hours: 8,
-      actual_hours: 8,
+      estimated_hours: 12,
+      actual_hours: 9,
       category: 'Analysis',
       tags: ['swot'],
-      assignee: 'Rafael'
+      assignee: 'Paula'
     },
     {
       id: '223e4567-e89b-12d3-a456-426614174002',
       name: 'Análise de Oportunidades',
       description: 'Identificar e analisar as oportunidades externas',
-      start_date: '2024-06-08',
-      end_date: '2024-06-11',
-      progress: 75,
-      status: 'in_progress',
-      priority: 'medium',
-      assigned_to: 'Rafael',
-      dependencies: ['223e4567-e89b-12d3-a456-426614174000', '223e4567-e89b-12d3-a456-426614174001'],
-      is_milestone: false,
-      project_id: '123e4567-e89b-12d3-a456-426614174000',
-      created_at: '2024-06-01T00:00:00Z',
-      updated_at: '2024-06-01T00:00:00Z',
-      estimated_hours: 8,
-      actual_hours: 6,
-      category: 'Analysis',
-      tags: ['swot'],
-      assignee: 'Rafael'
-    },
-    {
-      id: '223e4567-e89b-12d3-a456-426614174003',
-      name: 'Análise de Ameaças',
-      description: 'Identificar e analisar as ameaças externas',
-      start_date: '2024-06-08',
-      end_date: '2024-06-11',
-      progress: 60,
-      status: 'in_progress',
-      priority: 'medium',
-      assigned_to: 'Rafael',
-      dependencies: ['223e4567-e89b-12d3-a456-426614174000', '223e4567-e89b-12d3-a456-426614174001'],
-      is_milestone: false,
-      project_id: '123e4567-e89b-12d3-a456-426614174000',
-      created_at: '2024-06-01T00:00:00Z',
-      updated_at: '2024-06-01T00:00:00Z',
-      estimated_hours: 8,
-      actual_hours: 5,
-      category: 'Analysis',
-      tags: ['swot'],
-      assignee: 'Rafael'
-    },
-    {
-      id: '223e4567-e89b-12d3-a456-426614174004',
-      name: 'Compilação da Matriz SWOT',
-      description: 'Criar a matriz SWOT consolidada',
-      start_date: '2024-06-11',
-      end_date: '2024-06-12',
-      progress: 0,
-      status: 'pending',
-      priority: 'high',
-      assigned_to: 'Paula',
-      dependencies: ['223e4567-e89b-12d3-a456-426614174002', '223e4567-e89b-12d3-a456-426614174003'],
-      is_milestone: true,
-      project_id: '123e4567-e89b-12d3-a456-426614174000',
-      created_at: '2024-06-01T00:00:00Z',
-      updated_at: '2024-06-01T00:00:00Z',
-      estimated_hours: 4,
-      actual_hours: 0,
-      category: 'Deliverable',
-      tags: ['swot', 'milestone'],
-      assignee: 'Paula'
-    },
-    {
-      id: '223e4567-e89b-12d3-a456-426614174005',
-      name: 'Criação de Planos de Ação',
-      description: 'Desenvolver planos de ação baseados na análise SWOT',
-      start_date: '2024-06-12',
+      start_date: '2024-06-13',
       end_date: '2024-06-16',
       progress: 0,
       status: 'pending',
       priority: 'high',
-      assigned_to: 'Rafael e Paula',
-      dependencies: ['223e4567-e89b-12d3-a456-426614174004'],
+      assigned_to: 'Rafael',
+      dependencies: ['223e4567-e89b-12d3-a456-426614174001'],
       is_milestone: false,
       project_id: '123e4567-e89b-12d3-a456-426614174000',
       created_at: '2024-06-01T00:00:00Z',
       updated_at: '2024-06-01T00:00:00Z',
       estimated_hours: 16,
       actual_hours: 0,
-      category: 'Planning',
-      tags: ['action-plan'],
-      assignee: 'Rafael e Paula'
-    },
-    {
-      id: '223e4567-e89b-12d3-a456-426614174006',
-      name: 'Apresentação para o cliente',
-      description: 'Apresentar resultados e planos para o cliente',
-      start_date: '2024-06-16',
-      end_date: '2024-06-19',
-      progress: 0,
-      status: 'pending',
-      priority: 'high',
-      assigned_to: 'Rafael e Paula',
-      dependencies: ['223e4567-e89b-12d3-a456-426614174005'],
-      is_milestone: false,
-      project_id: '123e4567-e89b-12d3-a456-426614174000',
-      created_at: '2024-06-01T00:00:00Z',
-      updated_at: '2024-06-01T00:00:00Z',
-      estimated_hours: 8,
-      actual_hours: 0,
-      category: 'Presentation',
-      tags: ['client', 'final'],
-      assignee: 'Rafael e Paula'
+      category: 'Analysis',
+      tags: ['swot'],
+      assignee: 'Rafael'
     }
-  ]);
+  ];
+
+  // Usar dados reais ou fallback
+  const currentProjects = projects && projects.length > 0 ? projects : fallbackProjects;
+  const currentTasks = tasks && tasks.length > 0 ? tasks : fallbackTasks;
 
   useEffect(() => {
-    if (projects.length > 0 && !selectedProjectId) {
-      setSelectedProjectId(projects[0].id);
+    if (currentProjects.length > 0 && !selectedProjectId) {
+      setSelectedProjectId(currentProjects[0].id);
     }
-  }, [projects, selectedProjectId]);
+  }, [currentProjects, selectedProjectId]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -271,7 +207,7 @@ export default function ClientGantt() {
     return status.replace('_', ' ');
   };
 
-  const filteredTasks = tasks.filter(task => {
+  const filteredTasks = currentTasks.filter(task => {
     const matchesSearch = task.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
     const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
@@ -281,12 +217,12 @@ export default function ClientGantt() {
   });
 
   const getProjectStats = () => {
-    const total = tasks.length;
-    const completed = tasks.filter(t => t.status === 'completed').length;
-    const inProgress = tasks.filter(t => t.status === 'in_progress').length;
-    const blocked = tasks.filter(t => t.status === 'blocked').length;
-    const pending = tasks.filter(t => t.status === 'pending').length;
-    const overdue = tasks.filter(t => isTaskOverdue(t)).length;
+    const total = currentTasks.length;
+    const completed = currentTasks.filter(t => t.status === 'completed').length;
+    const inProgress = currentTasks.filter(t => t.status === 'in_progress').length;
+    const blocked = currentTasks.filter(t => t.status === 'blocked').length;
+    const pending = currentTasks.filter(t => t.status === 'pending').length;
+    const overdue = currentTasks.filter(t => isTaskOverdue(t)).length;
 
     return { total, completed, inProgress, blocked, notStarted: pending, overdue };
   };
@@ -312,11 +248,8 @@ export default function ClientGantt() {
   };
 
   const handleDeleteTask = async (taskId: string) => {
-    if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return;
-
     try {
-      // Simular exclusão
-      setTasks(prev => prev.filter(t => t.id !== taskId));
+      await deleteTask(taskId);
       
       toast({
         title: "Sucesso!",
@@ -326,47 +259,69 @@ export default function ClientGantt() {
       console.error('Erro ao excluir tarefa:', error);
       toast({
         title: "Erro",
-        description: "Erro ao excluir tarefa",
+        description: "Erro ao excluir tarefa. Tente novamente.",
         variant: "destructive"
       });
     }
   };
 
-  const handleTaskSaved = (taskData: Omit<GanttTask, 'id' | 'created_at' | 'updated_at'>) => {
-    // Simular salvamento
-    if (selectedTask) {
-      // Atualizar tarefa existente
-      setTasks(prev => prev.map(t => 
-        t.id === selectedTask.id 
-          ? { ...t, ...taskData, updated_at: new Date().toISOString() }
-          : t
-      ));
-    } else {
-      // Criar nova tarefa
-      const newTask: GanttTask = {
-        ...taskData,
-        id: `task-${Date.now()}`,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        project_id: selectedProjectId
-      };
-      setTasks(prev => [...prev, newTask]);
+  const handleTaskSaved = async (taskData: Omit<GanttTask, 'id' | 'created_at' | 'updated_at'>) => {
+    try {
+      if (selectedTask) {
+        // Atualizar tarefa existente
+        await updateTask(selectedTask.id, taskData);
+        toast({
+          title: "Sucesso!",
+          description: "Tarefa atualizada com sucesso"
+        });
+      } else {
+        // Criar nova tarefa
+        await createTask(taskData);
+        toast({
+          title: "Sucesso!",
+          description: "Tarefa criada com sucesso"
+        });
+      }
+      
+      setIsTaskModalOpen(false);
+      setSelectedTask(null);
+    } catch (error) {
+      console.error('Erro ao salvar tarefa:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar tarefa. Tente novamente.",
+        variant: "destructive"
+      });
     }
-    
-    toast({
-      title: "Sucesso!",
-      description: selectedTask ? "Tarefa atualizada com sucesso" : "Tarefa criada com sucesso"
-    });
-    setIsTaskModalOpen(false);
-    setSelectedTask(null);
   };
 
   const getCurrentProject = () => {
-    return projects.find(p => p.id === selectedProjectId);
+    return currentProjects.find(p => p.id === selectedProjectId);
   };
 
   return (
     <div className="space-y-6">
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <LoadingSpinner />
+          <span className="ml-2 text-gray-600">Carregando projetos e tarefas...</span>
+        </div>
+      )}
+
+      {/* Error State */}
+      {hasError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center gap-2 text-red-800">
+            <AlertCircle className="h-5 w-5" />
+            <span className="font-medium">Erro ao carregar dados</span>
+          </div>
+          <p className="text-red-600 mt-1">
+            {projectsError || tasksError || 'Erro desconhecido. Usando dados de exemplo.'}
+          </p>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
       <div>
@@ -414,7 +369,7 @@ export default function ClientGantt() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {projects.map((project) => (
+                  {currentProjects.map((project) => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.name}
                     </SelectItem>
@@ -807,7 +762,7 @@ export default function ClientGantt() {
       <GanttExport
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
-        tasks={tasks as any}
+        tasks={currentTasks as any}
         projectName={getCurrentProject()?.name || 'Projeto'}
       />
 
@@ -816,7 +771,7 @@ export default function ClientGantt() {
         onClose={() => setIsShareModalOpen(false)}
         projectId={selectedProjectId}
         projectName={getCurrentProject()?.name || 'Projeto'}
-        tasks={tasks as any}
+        tasks={currentTasks as any}
       />
     </div>
   );
