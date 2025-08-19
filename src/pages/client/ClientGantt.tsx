@@ -267,26 +267,54 @@ export default function ClientGantt() {
 
   const handleTaskSaved = async (taskData: Omit<GanttTask, 'id' | 'created_at' | 'updated_at'>) => {
     try {
+      console.log('🔄 handleTaskSaved chamado com:', taskData);
+      console.log('🔄 selectedTask:', selectedTask);
+      console.log('🔄 selectedProjectId:', selectedProjectId);
+      
       if (selectedTask) {
         // Atualizar tarefa existente
-        await updateTask(selectedTask.id, taskData);
+        console.log('🔄 Atualizando tarefa existente...');
+        const result = await updateTask(selectedTask.id, taskData);
+        console.log('🔄 Resultado da atualização:', result);
+        
+        if (result.error) {
+          throw result.error;
+        }
+        
         toast({
           title: "Sucesso!",
           description: "Tarefa atualizada com sucesso"
         });
       } else {
         // Criar nova tarefa
-        await createTask(taskData);
+        console.log('🔄 Criando nova tarefa...');
+        const result = await createTask(taskData);
+        console.log('🔄 Resultado da criação:', result);
+        
+        if (result.error) {
+          throw result.error;
+        }
+        
         toast({
           title: "Sucesso!",
           description: "Tarefa criada com sucesso"
         });
       }
       
+      console.log('🔄 Fechando modal e limpando estado...');
       setIsTaskModalOpen(false);
       setSelectedTask(null);
+      
+      // Forçar recarregamento das tarefas
+      console.log('🔄 Recarregando tarefas...');
+      // Aguardar um pouco para o banco processar
+      setTimeout(() => {
+        console.log('🔄 Recarregando tarefas após delay...');
+        // Aqui você pode chamar uma função de refresh se necessário
+      }, 500);
+      
     } catch (error) {
-      console.error('Erro ao salvar tarefa:', error);
+      console.error('❌ Erro ao salvar tarefa:', error);
       toast({
         title: "Erro",
         description: "Erro ao salvar tarefa. Tente novamente.",

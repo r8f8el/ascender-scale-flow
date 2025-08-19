@@ -116,6 +116,8 @@ export const useGanttTasks = (projectId: string) => {
         throw createError;
       }
 
+      console.log('✅ Tarefa criada com sucesso:', data);
+
       const newTask: GanttTask = {
         id: data.id,
         name: data.name,
@@ -140,16 +142,23 @@ export const useGanttTasks = (projectId: string) => {
         collaborators: (data as any).collaborators
       };
 
+      // Atualizar estado local
       setTasks(prev => [...prev, newTask]);
+      
+      // Recarregar tarefas do banco para garantir sincronização
+      await fetchTasks();
+      
       return { data: newTask, error: null };
     } catch (err) {
       console.error('Erro ao criar tarefa:', err);
       return { data: null, error: err };
     }
-  }, []);
+  }, [fetchTasks]);
 
   const updateTask = useCallback(async (taskId: string, updates: Partial<GanttTask>) => {
     try {
+      console.log('📤 Atualizando tarefa:', taskId, updates);
+
       const { data, error: updateError } = await supabase
         .from('gantt_tasks')
         .update(updates)
@@ -158,6 +167,8 @@ export const useGanttTasks = (projectId: string) => {
         .single();
 
       if (updateError) throw updateError;
+
+      console.log('✅ Tarefa atualizada com sucesso:', data);
 
       const updatedTask: GanttTask = {
         id: data.id,
@@ -183,19 +194,25 @@ export const useGanttTasks = (projectId: string) => {
         collaborators: (data as any).collaborators
       };
 
+      // Atualizar estado local
       setTasks(prev => prev.map(task => 
         task.id === taskId ? { ...task, ...updatedTask } : task
       ));
+
+      // Recarregar tarefas do banco para garantir sincronização
+      await fetchTasks();
 
       return { data: updatedTask, error: null };
     } catch (err) {
       console.error('Erro ao atualizar tarefa:', err);
       return { data: null, error: err };
     }
-  }, []);
+  }, [fetchTasks]);
 
   const deleteTask = useCallback(async (taskId: string) => {
     try {
+      console.log('🗑️ Excluindo tarefa:', taskId);
+
       const { error: deleteError } = await supabase
         .from('gantt_tasks')
         .delete()
@@ -203,13 +220,20 @@ export const useGanttTasks = (projectId: string) => {
 
       if (deleteError) throw deleteError;
 
+      console.log('✅ Tarefa excluída com sucesso');
+
+      // Atualizar estado local
       setTasks(prev => prev.filter(task => task.id !== taskId));
+      
+      // Recarregar tarefas do banco para garantir sincronização
+      await fetchTasks();
+
       return { error: null };
     } catch (err) {
       console.error('Erro ao excluir tarefa:', err);
       return { error: err };
     }
-  }, []);
+  }, [fetchTasks]);
 
   const updateTaskProgress = useCallback(async (taskId: string, progress: number) => {
     try {
