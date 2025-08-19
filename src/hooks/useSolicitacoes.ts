@@ -41,29 +41,10 @@ export const useSolicitacoes = (userId?: string) => {
       console.log('Fetching solicitacoes for user:', userId);
       
       try {
-        // First, let's check if the user exists in client_profiles
-        const { data: profile, error: profileError } = await supabase
-          .from('client_profiles')
-          .select('id, name, email')
-          .eq('id', userId)
-          .single();
-
-        if (profileError) {
-          console.error('Error fetching user profile:', profileError);
-        } else {
-          console.log('User profile found:', profile);
-        }
-
-        // Now fetch solicitacoes
+        // Fetch solicitacoes without the problematic join
         const { data, error } = await supabase
           .from('solicitacoes')
-          .select(`
-            *,
-            client_profiles!solicitacoes_solicitante_id_fkey (
-              name,
-              email
-            )
-          `)
+          .select('*')
           .eq('solicitante_id', userId)
           .order('data_criacao', { ascending: false });
 
@@ -75,8 +56,15 @@ export const useSolicitacoes = (userId?: string) => {
         console.log('Solicitacoes raw data:', data);
         console.log('Solicitacoes fetched successfully:', data?.length || 0);
         
-        // Return the data as-is for now to debug
-        return (data || []);
+        // Return the data with proper type conversion
+        const formattedData = (data || []).map(solicitacao => ({
+          ...solicitacao,
+          tipo_solicitacao: solicitacao.tipo_solicitacao || 'Geral', // Ensure tipo_solicitacao exists
+          prioridade: solicitacao.prioridade || 'Media',
+          status: solicitacao.status || 'Em Elaboração',
+        }));
+        
+        return formattedData;
       } catch (error) {
         console.error('Error in solicitacoes query:', error);
         throw error; // Re-throw to show error in UI
@@ -98,13 +86,7 @@ export const useAllSolicitacoes = () => {
       try {
         const { data, error } = await supabase
           .from('solicitacoes')
-          .select(`
-            *,
-            client_profiles!solicitacoes_solicitante_id_fkey (
-              name,
-              email
-            )
-          `)
+          .select('*')
           .order('data_criacao', { ascending: false });
 
         if (error) {
@@ -113,7 +95,16 @@ export const useAllSolicitacoes = () => {
         }
 
         console.log('All solicitacoes fetched successfully:', data?.length || 0);
-        return (data || []) as any[];
+        
+        // Return the data with proper type conversion
+        const formattedData = (data || []).map(solicitacao => ({
+          ...solicitacao,
+          tipo_solicitacao: solicitacao.tipo_solicitacao || 'Geral',
+          prioridade: solicitacao.prioridade || 'Media',
+          status: solicitacao.status || 'Em Elaboração',
+        }));
+        
+        return formattedData;
       } catch (error) {
         console.error('Error in all solicitacoes query:', error);
         return [];
@@ -134,13 +125,7 @@ export const useSolicitacaoPendentes = (userId?: string) => {
       try {
         const { data, error } = await supabase
           .from('solicitacoes')
-          .select(`
-            *,
-            client_profiles!solicitacoes_solicitante_id_fkey (
-              name,
-              email
-            )
-          `)
+          .select('*')
           .eq('aprovador_atual_id', userId)
           .eq('status', 'Pendente')
           .order('data_criacao', { ascending: false });
@@ -150,7 +135,15 @@ export const useSolicitacaoPendentes = (userId?: string) => {
           throw error;
         }
 
-        return (data || []) as any[];
+        // Return the data with proper type conversion
+        const formattedData = (data || []).map(solicitacao => ({
+          ...solicitacao,
+          tipo_solicitacao: solicitacao.tipo_solicitacao || 'Geral',
+          prioridade: solicitacao.prioridade || 'Media',
+          status: solicitacao.status || 'Pendente',
+        }));
+
+        return formattedData;
       } catch (error) {
         console.error('Error in pending solicitacoes query:', error);
         return [];
@@ -260,13 +253,7 @@ export const useCreateSolicitacao = () => {
         const { data: solicitacaoResult, error: solicitacaoError } = await supabase
           .from('solicitacoes')
           .insert([solicitacaoData])
-          .select(`
-            *,
-            client_profiles!solicitacoes_solicitante_id_fkey (
-              name,
-              email
-            )
-          `)
+          .select('*')
           .single();
 
         if (solicitacaoError) {
@@ -361,13 +348,7 @@ export const useUpdateSolicitacao = () => {
             data_ultima_modificacao: new Date().toISOString()
           })
           .eq('id', id)
-          .select(`
-            *,
-            client_profiles!solicitacoes_solicitante_id_fkey (
-              name,
-              email
-            )
-          `)
+          .select('*')
           .single();
 
         if (error) {
