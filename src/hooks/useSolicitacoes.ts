@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Solicitacao, Anexo, HistoricoAprovacao } from '@/types/aprovacoes';
@@ -55,11 +56,6 @@ export const useSolicitacoes = (userId?: string) => {
 
         if (error) {
           console.error('Error fetching solicitacoes:', error);
-          // Se for erro de política, retornar array vazio em vez de falhar
-          if (error.code === '42P17') {
-            console.warn('Database policy issue detected, returning empty array');
-            return [];
-          }
           throw error;
         }
 
@@ -67,24 +63,16 @@ export const useSolicitacoes = (userId?: string) => {
         return (data || []) as Solicitacao[];
       } catch (error) {
         console.error('Error in solicitacoes query:', error);
-        // Retornar array vazio em caso de erro para evitar quebrar a UI
         return [];
       }
     },
     enabled: !!userId,
-    retry: (failureCount, error: any) => {
-      // Não tentar novamente se for erro de política do Supabase
-      if (error?.code === '42P17') {
-        return false;
-      }
-      return failureCount < 2;
-    },
-    staleTime: 1000 * 60 * 5, // 5 minutos
-    gcTime: 1000 * 60 * 10, // 10 minutos
+    retry: 2,
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
   });
 };
 
-// Nova query para admins verem todas as solicitações
 export const useAllSolicitacoes = () => {
   return useQuery({
     queryKey: ['all-solicitacoes'],
@@ -115,7 +103,7 @@ export const useAllSolicitacoes = () => {
         return [];
       }
     },
-    staleTime: 1000 * 60 * 2, // 2 minutos
+    staleTime: 1000 * 60 * 2,
   });
 };
 
@@ -143,9 +131,6 @@ export const useSolicitacaoPendentes = (userId?: string) => {
 
         if (error) {
           console.error('Error fetching pending solicitacoes:', error);
-          if (error.code === '42P17') {
-            return [];
-          }
           throw error;
         }
 
@@ -156,13 +141,8 @@ export const useSolicitacaoPendentes = (userId?: string) => {
       }
     },
     enabled: !!userId,
-    retry: (failureCount, error: any) => {
-      if (error?.code === '42P17') {
-        return false;
-      }
-      return failureCount < 2;
-    },
-    staleTime: 1000 * 60 * 2, // 2 minutos
+    retry: 2,
+    staleTime: 1000 * 60 * 2,
   });
 };
 
@@ -236,19 +216,28 @@ export const useCreateSolicitacao = () => {
       try {
         console.log('Creating solicitacao with data:', solicitacao);
         
-        // Garantir que os valores obrigatórios estão presentes
+        // Garantir que os valores obrigatórios estão presentes e seguem a estrutura da tabela
         const solicitacaoData = {
-          ...solicitacao,
+          titulo: solicitacao.titulo,
+          descricao: solicitacao.descricao || '',
+          tipo_solicitacao: solicitacao.tipo_solicitacao || 'Geral',
+          periodo_referencia: solicitacao.periodo_referencia,
+          valor_solicitado: solicitacao.valor_solicitado || null,
+          justificativa: solicitacao.justificativa || null,
+          data_limite: solicitacao.data_limite || null,
           prioridade: solicitacao.prioridade || 'Media',
-          etapa_atual: solicitacao.etapa_atual || 1,
           status: solicitacao.status || 'Em Elaboração',
+          solicitante_id: solicitacao.solicitante_id,
+          aprovador_atual_id: solicitacao.aprovador_atual_id || null,
+          etapa_atual: solicitacao.etapa_atual || 1,
           aprovadores_necessarios: aprovadores.map(ap => ({
             id: ap.id,
             name: ap.name,
             email: ap.email,
             nivel: ap.nivel,
             aprovado: false
-          }))
+          })),
+          aprovadores_completos: []
         };
 
         // Criar solicitação
@@ -285,36 +274,44 @@ export const useCreateSolicitacao = () => {
               // Continuar mesmo com erro de upload
             }
 
-            // Registrar arquivo na tabela anexos
-            const { error: anexoError } = await supabase
-              .from('anexos')
-              .insert({
-                solicitacao_id: solicitacaoResult.id,
-                nome_arquivo: file.name,
-                tipo_arquivo: file.type,
-                tamanho_arquivo: file.size,
-                url_arquivo: fileName
-              });
+            // Registrar arquivo na tabela anexos se ela existir
+            try {
+              const { error: anexoError } = await supabase
+                .from('anexos')
+                .insert({
+                  solicitacao_id: solicitacaoResult.id,
+                  nome_arquivo: file.name,
+                  tipo_arquivo: file.type,
+                  tamanho_arquivo: file.size,
+                  url_arquivo: fileName
+                });
 
-            if (anexoError) {
-              console.error('Error creating anexo record:', anexoError);
+              if (anexoError) {
+                console.error('Error creating anexo record:', anexoError);
+              }
+            } catch (error) {
+              console.error('Anexos table might not exist:', error);
             }
           }
         }
 
-        // Criar histórico de criação
-        const { error: historicoError } = await supabase
-          .from('historico_aprovacao')
-          .insert({
-            solicitacao_id: solicitacaoResult.id,
-            usuario_id: solicitacao.solicitante_id,
-            nome_usuario: 'Usuário', // Pode ser melhorado pegando o nome do client_profiles
-            acao: 'Criação',
-            comentario: 'Solicitação criada'
-          });
+        // Criar histórico de criação se a tabela existir
+        try {
+          const { error: historicoError } = await supabase
+            .from('historico_aprovacao')
+            .insert({
+              solicitacao_id: solicitacaoResult.id,
+              usuario_id: solicitacao.solicitante_id,
+              nome_usuario: 'Usuário',
+              acao: 'Criação',
+              comentario: 'Solicitação criada'
+            });
 
-        if (historicoError) {
-          console.error('Error creating historico:', historicoError);
+          if (historicoError) {
+            console.error('Error creating historico:', historicoError);
+          }
+        } catch (error) {
+          console.error('Historico table might not exist:', error);
         }
 
         return solicitacaoResult;
