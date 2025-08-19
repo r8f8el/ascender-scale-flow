@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -6,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Collaborator, CollaboratorFormData } from '@/types/collaborator';
+import { useToast } from '@/hooks/use-toast';
 
 interface CollaboratorFormProps {
   isOpen: boolean;
@@ -24,17 +26,43 @@ export const CollaboratorForm: React.FC<CollaboratorFormProps> = ({
   setFormData,
   editingCollaborator
 }) => {
+  const { toast } = useToast();
+
+  const validateEmail = (email: string) => {
+    if (!email.endsWith('@ascalate.com.br')) {
+      toast({
+        title: "Email inválido",
+        description: "Apenas emails @ascalate.com.br são permitidos para colaboradores.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const email = e.target.value;
+    setFormData({ ...formData, email });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validateEmail(formData.email)) {
+      onSubmit(e);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{editingCollaborator ? 'Editar Colaborador' : 'Novo Colaborador'}</DialogTitle>
           <DialogDescription>
-            Preencha as informações do colaborador
+            Preencha as informações do colaborador. Apenas emails @ascalate.com.br são permitidos.
           </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nome</Label>
@@ -46,12 +74,13 @@ export const CollaboratorForm: React.FC<CollaboratorFormProps> = ({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Email (@ascalate.com.br)</Label>
               <Input
                 id="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={handleEmailChange}
+                placeholder="nome@ascalate.com.br"
                 required
               />
             </div>
