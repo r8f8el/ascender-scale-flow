@@ -1,43 +1,22 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar, Users, Clock, Target, AlertCircle, CheckCircle, Play, Pause } from 'lucide-react';
-import { GanttChart } from '@/components/gantt/GanttChart';
+import GanttChart from '@/components/gantt/GanttChart';
 import { GanttTaskCreator } from '@/components/gantt/GanttTaskCreator';
 import { GanttTaskModal } from '@/components/gantt/GanttTaskModal';
 import { GanttProjectSelector } from '@/components/gantt/GanttProjectSelector';
 import { GanttStats } from '@/components/gantt/GanttStats';
 import { GanttExport } from '@/components/gantt/GanttExport';
 import { GanttShare } from '@/components/gantt/GanttShare';
-import { useGanttTasks } from '@/hooks/useGanttTasks';
-import { useGanttProjects } from '@/hooks/useGanttProjects';
+import { useGanttTasks, GanttTask } from '@/hooks/useGanttTasks';
+import { useGanttProjects, GanttProject } from '@/hooks/useGanttProjects';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-
-interface Task {
-  id: string;
-  name: string;
-  start_date: string;
-  end_date: string;
-  progress: number;
-  dependencies: string[];
-  project_id: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  description: string | null;
-  estimated_hours: number;
-  actual_hours: number;
-  is_milestone: boolean;
-}
-
-interface Project {
-  id: string;
-  name: string;
-  description: string | null;
-  created_at: string;
-}
 
 const getPriorityLabel = (priority: string) => {
   const labels: Record<string, string> = {
@@ -49,8 +28,8 @@ const getPriorityLabel = (priority: string) => {
   return labels[priority] || 'Média';
 };
 
-const getPriorityVariant = (priority: string) => {
-  const variants: Record<string, string> = {
+const getPriorityVariant = (priority: string): "default" | "secondary" | "destructive" | "outline" => {
+  const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
     'low': 'default',
     'medium': 'secondary',
     'high': 'destructive',
@@ -69,28 +48,26 @@ const getStatusLabel = (status: string) => {
 };
 
 const GanttAdmin = () => {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<GanttTask[]>([]);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('gantt');
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [selectedProject, setSelectedProject] = useState<GanttProject | null>(null);
 
   const { 
-    data: initialTasks, 
-    isLoading: loadingTasks, 
+    tasks: initialTasks, 
+    loading: loadingTasks, 
     error: errorTasks, 
-    mutate: refetchTasks 
-  } = useGanttTasks(selectedProjectId);
+    fetchTasks 
+  } = useGanttTasks(selectedProjectId || '');
   
   const { 
-    data: projects, 
-    isLoading: loadingProjects, 
+    projects, 
+    loading: loadingProjects, 
     error: errorProjects, 
-    mutate: refetchProjects,
+    refetch: refetchProjects,
     createProject: handleCreateProject
   } = useGanttProjects();
-
-  const createTaskMutation = useGanttTasks(selectedProjectId);
 
   useEffect(() => {
     if (initialTasks) {
@@ -129,10 +106,13 @@ const GanttAdmin = () => {
       console.log('Task created successfully:', data);
       
       // Optimistically update local state
-      setTasks(prevTasks => [...prevTasks, ...data]);
+      if (data && data.length > 0) {
+        const newTask = data[0] as GanttTask;
+        setTasks(prevTasks => [...prevTasks, newTask]);
+      }
       
       // Invalidate cache and refetch tasks
-      await refetchTasks();
+      await fetchTasks();
 
       toast.success('Tarefa criada com sucesso!');
     } catch (error) {
@@ -141,7 +121,7 @@ const GanttAdmin = () => {
     }
   };
 
-  const handleTaskUpdate = async (taskId: string, updatedFields: Partial<Task>) => {
+  const handleTaskUpdate = async (taskId: string, updatedFields: Partial<GanttTask>) => {
     console.log('Updating task:', { taskId, updatedFields });
 
     try {
@@ -166,7 +146,7 @@ const GanttAdmin = () => {
       );
       
       // Invalidate cache and refetch tasks
-      await refetchTasks();
+      await fetchTasks();
 
       toast.success('Tarefa atualizada com sucesso!');
     } catch (error) {
@@ -195,7 +175,7 @@ const GanttAdmin = () => {
       setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
       
       // Invalidate cache and refetch tasks
-      await refetchTasks();
+      await fetchTasks();
 
       toast.success('Tarefa excluída com sucesso!');
     } catch (error) {
@@ -252,7 +232,7 @@ const GanttAdmin = () => {
       );
 
       // Reload tasks to ensure sync
-      await refetchTasks();
+      await fetchTasks();
       
       toast.success(`Status atualizado para ${getStatusLabel(newStatus)}`);
     } catch (error) {
@@ -277,27 +257,31 @@ const GanttAdmin = () => {
             projectName={selectedProject?.name || 'Projeto'} 
           />
           <GanttShare 
-            projectId={selectedProjectId} 
-            projectName={selectedProject?.name || 'Projeto'} 
+            projectId={selectedProjectId || ''} 
+            projectName={selectedProject?.name || 'Projeto'}
+            isOpen={false}
+            onClose={() => {}}
+            tasks={tasks}
           />
           <GanttTaskCreator 
             onCreateTask={handleCreateTask}
-            loading={createTaskMutation.isPending}
+            loading={loadingTasks}
             disabled={!selectedProjectId}
           />
         </div>
       </div>
 
       <GanttProjectSelector
-        selectedProjectId={selectedProjectId}
-        onProjectSelect={setSelectedProjectId}
-        onProjectCreate={handleCreateProject}
+        projects={projects || []}
+        selectedProjectId={selectedProjectId || ''}
+        onSelectProject={setSelectedProjectId}
+        loading={loadingProjects}
       />
 
       {selectedProject && (
         <GanttStats 
           tasks={tasks}
-          projectName={selectedProject.name}
+          isAdmin={true}
         />
       )}
 
@@ -380,7 +364,7 @@ const GanttAdmin = () => {
                           </span>
                           <span className="flex items-center gap-1">
                             <Clock className="h-4 w-4" />
-                            {task.estimated_hours}h
+                            {task.estimated_hours || 0}h
                           </span>
                         </div>
                       </div>
@@ -467,7 +451,7 @@ const GanttAdmin = () => {
 
       {selectedTaskId && (
         <GanttTaskModal
-          taskId={selectedTaskId}
+          task={tasks.find(t => t.id === selectedTaskId) || null}
           isOpen={!!selectedTaskId}
           onClose={() => setSelectedTaskId(null)}
           onUpdate={handleTaskUpdate}
