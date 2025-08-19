@@ -21,12 +21,20 @@ import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { ViewMode } from 'gantt-task-react';
 
 export default function GanttAdmin() {
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [selectedTask, setSelectedTask] = useState<GanttTask | null>(null);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error'>('idle');
+  const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Week);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filters, setFilters] = useState({
+    status: 'all',
+    priority: 'all'
+  });
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   const { projects, loading: projectsLoading, error: projectsError } = useGanttProjects();
   const { 
@@ -116,8 +124,10 @@ export default function GanttAdmin() {
     ...task,
     // Garantir que priority seja um dos valores válidos
     priority: (['low', 'medium', 'high', 'urgent'] as const).includes(task.priority as any) 
-      ? task.priority 
-      : 'medium' as const
+      ? task.priority as 'low' | 'medium' | 'high' | 'urgent'
+      : 'medium' as const,
+    // Garantir que dependencies seja um array
+    dependencies: Array.isArray(task.dependencies) ? task.dependencies : []
   }));
 
   // Estatísticas das tarefas
@@ -251,15 +261,24 @@ export default function GanttAdmin() {
                   {/* Gráfico Gantt */}
                   <Card>
                     <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle>Cronograma do Projeto</CardTitle>
-                        <GanttHeader 
-                          onRefresh={refetchTasks}
-                          loading={tasksLoading}
-                        />
-                      </div>
+                      <CardTitle>Cronograma do Projeto</CardTitle>
                     </CardHeader>
                     <CardContent>
+                      {/* Header com controles */}
+                      <GanttHeader 
+                        viewMode={viewMode}
+                        onViewModeChange={setViewMode}
+                        onCreateTask={handleNewTask}
+                        searchTerm={searchTerm}
+                        onSearchChange={setSearchTerm}
+                        filters={filters}
+                        onFiltersChange={setFilters}
+                        isAdmin={true}
+                        taskCount={processedTasks.length}
+                        completedCount={taskStats.completed}
+                        onRefresh={refetchTasks}
+                      />
+                      
                       {tasksError ? (
                         <div className="text-center py-8">
                           <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
@@ -274,8 +293,8 @@ export default function GanttAdmin() {
                       ) : (
                         <GanttChart 
                           tasks={processedTasks}
-                          onTaskEdit={handleTaskEdit}
-                          onTaskCreate={handleNewTask}
+                          onTaskClick={handleTaskEdit}
+                          viewMode={viewMode}
                           loading={tasksLoading}
                         />
                       )}
@@ -288,10 +307,29 @@ export default function GanttAdmin() {
                 </TabsContent>
 
                 <TabsContent value="export">
-                  <GanttExport 
-                    tasks={processedTasks}
-                    projectName={selectedProject?.name || 'Projeto'}
-                  />
+                  <div className="space-y-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Exportar Cronograma</CardTitle>
+                        <CardDescription>
+                          Exporte o cronograma do projeto em diferentes formatos
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Button onClick={() => setIsExportModalOpen(true)}>
+                          <Download className="h-4 w-4 mr-2" />
+                          Abrir Exportação
+                        </Button>
+                      </CardContent>
+                    </Card>
+                    
+                    <GanttExport 
+                      isOpen={isExportModalOpen}
+                      onClose={() => setIsExportModalOpen(false)}
+                      tasks={processedTasks}
+                      projectName={selectedProject?.name || 'Projeto'}
+                    />
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="settings">
