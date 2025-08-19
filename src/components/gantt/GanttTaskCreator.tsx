@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -9,12 +10,13 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CalendarIcon, Plus, Target, Clock, FileText } from 'lucide-react';
+import { CalendarIcon, Plus, Target, Clock, FileText, Users } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { FPATaskTemplates } from './FPATaskTemplates';
+import { useCompanyTeamMembers } from '@/hooks/useTeamMembers';
 
 interface TaskCreatorProps {
   onCreateTask: (taskData: any) => Promise<void>;
@@ -48,6 +50,8 @@ export const GanttTaskCreator: React.FC<TaskCreatorProps> = ({
 
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date>(addDays(new Date(), 1));
+
+  const { data: teamMembers = [], isLoading: loadingTeam } = useCompanyTeamMembers();
 
   const resetForm = () => {
     setFormData({
@@ -148,10 +152,14 @@ export const GanttTaskCreator: React.FC<TaskCreatorProps> = ({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="templates" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Templates FP&A
+            </TabsTrigger>
+            <TabsTrigger value="responsavel" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Responsável
             </TabsTrigger>
             <TabsTrigger value="manual" className="flex items-center gap-2">
               <Target className="h-4 w-4" />
@@ -166,8 +174,117 @@ export const GanttTaskCreator: React.FC<TaskCreatorProps> = ({
             />
           </TabsContent>
 
+          <TabsContent value="responsavel" className="mt-4">
+            <div className="space-y-4">
+              <div className="text-center mb-6">
+                <Users className="h-12 w-12 mx-auto text-primary mb-3" />
+                <h3 className="text-lg font-semibold mb-2">Selecionar Responsável</h3>
+                <p className="text-sm text-muted-foreground">
+                  Escolha um membro da sua equipe para ser responsável pela tarefa
+                </p>
+              </div>
+
+              {loadingTeam ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  <span className="ml-2 text-muted-foreground">Carregando equipe...</span>
+                </div>
+              ) : teamMembers.length > 0 ? (
+                <div className="grid gap-3 max-h-96 overflow-y-auto">
+                  {teamMembers.map((member) => (
+                    <div
+                      key={member.id}
+                      className={cn(
+                        "p-4 border rounded-lg cursor-pointer transition-all hover:border-primary",
+                        formData.assigned_to === member.id 
+                          ? "border-primary bg-primary/5" 
+                          : "border-muted"
+                      )}
+                      onClick={() => {
+                        setFormData({ ...formData, assigned_to: member.id });
+                        setActiveTab('manual');
+                        toast.success(`${member.name} selecionado como responsável`);
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-medium text-primary">
+                            {member.name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-medium">{member.name}</h4>
+                          <p className="text-sm text-muted-foreground">{member.email}</p>
+                          {member.hierarchy_levels && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {member.hierarchy_levels.name}
+                            </p>
+                          )}
+                        </div>
+                        {formData.assigned_to === member.id && (
+                          <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                            <div className="w-2 h-2 bg-white rounded-full"></div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p className="text-lg mb-2">Nenhum membro encontrado</p>
+                  <p className="text-sm">
+                    Entre em contato com o administrador para adicionar membros à equipe
+                  </p>
+                </div>
+              )}
+
+              {formData.assigned_to && (
+                <div className="flex justify-end pt-4 border-t">
+                  <Button 
+                    onClick={() => setActiveTab('manual')}
+                    className="gap-2"
+                  >
+                    <Target className="h-4 w-4" />
+                    Continuar para Detalhes
+                  </Button>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
           <TabsContent value="manual" className="mt-4">
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Responsável Selecionado */}
+              {formData.assigned_to && (
+                <div className="bg-muted/50 p-3 rounded-lg">
+                  <Label className="text-sm font-medium mb-2 block">Responsável Selecionado</Label>
+                  {(() => {
+                    const selectedMember = teamMembers.find(m => m.id === formData.assigned_to);
+                    return selectedMember ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center">
+                          <span className="text-xs font-medium text-primary">
+                            {selectedMember.name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <span className="text-sm">{selectedMember.name}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setFormData({ ...formData, assigned_to: '' })}
+                          className="ml-auto h-6 px-2 text-xs"
+                        >
+                          Remover
+                        </Button>
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
+              )}
+
               {/* Nome da Tarefa */}
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-sm font-medium flex items-center gap-2">
