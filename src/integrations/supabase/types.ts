@@ -2215,6 +2215,7 @@ export type Database = {
           prioridade: string | null
           solicitante_id: string
           status: string
+          tipo_solicitacao: string | null
           titulo: string
           valor_solicitado: number | null
         }
@@ -2233,6 +2234,7 @@ export type Database = {
           prioridade?: string | null
           solicitante_id: string
           status?: string
+          tipo_solicitacao?: string | null
           titulo: string
           valor_solicitado?: number | null
         }
@@ -2251,6 +2253,7 @@ export type Database = {
           prioridade?: string | null
           solicitante_id?: string
           status?: string
+          tipo_solicitacao?: string | null
           titulo?: string
           valor_solicitado?: number | null
         }

@@ -40,10 +40,12 @@ const MinhasSolicitacoes = () => {
   };
 
   const handleViewDetails = (solicitacao: any) => {
-    // Convert the raw solicitacao data to match Solicitacao interface
+    // Ensure the solicitacao has all required properties
     const formattedSolicitacao: Solicitacao = {
       ...solicitacao,
-      tipo_solicitacao: solicitacao.tipo_solicitacao || 'Geral', // Provide default if missing
+      tipo_solicitacao: solicitacao.tipo_solicitacao || 'Geral',
+      prioridade: (solicitacao.prioridade as 'Baixa' | 'Media' | 'Alta') || 'Media',
+      status: (solicitacao.status as 'Em Elaboração' | 'Pendente' | 'Aprovado' | 'Rejeitado' | 'Requer Ajuste') || 'Em Elaboração',
     };
     setSelectedSolicitacao(formattedSolicitacao);
   };
@@ -86,22 +88,6 @@ const MinhasSolicitacoes = () => {
           Criar Nova Solicitação
         </Button>
       </div>
-
-      {/* Debug Card - remover após teste */}
-      <Card className="bg-blue-50">
-        <CardHeader>
-          <CardTitle className="text-sm">Debug Info</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-xs space-y-1">
-            <p>User ID: {user?.id || 'No user ID'}</p>
-            <p>Loading: {isLoading ? 'true' : 'false'}</p>
-            <p>Data length: {solicitacoes?.length || 0}</p>
-            <p>Data type: {typeof solicitacoes}</p>
-            <p>Is array: {Array.isArray(solicitacoes) ? 'true' : 'false'}</p>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

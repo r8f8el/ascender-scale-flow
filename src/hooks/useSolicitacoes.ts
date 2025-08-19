@@ -72,7 +72,6 @@ export const useSolicitacoes = (userId?: string) => {
       console.log('Fetching solicitacoes for user:', userId);
       
       try {
-        // Fetch solicitacoes without the problematic join
         const { data, error } = await supabase
           .from('solicitacoes')
           .select('*')
