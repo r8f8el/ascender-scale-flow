@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -264,6 +263,12 @@ export default function ClientGantt() {
     const today = new Date();
     const endDate = new Date(task.end_date);
     return endDate < today && task.status !== 'completed';
+  };
+
+  // Helper function to safely format status text
+  const formatStatusText = (status: string | undefined) => {
+    if (!status) return 'Não definido';
+    return status.replace('_', ' ');
   };
 
   const filteredTasks = tasks.filter(task => {
@@ -650,12 +655,12 @@ export default function ClientGantt() {
                       <div>
                         <p className="font-medium text-sm">{task.name}</p>
                         <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className={getStatusColor(task.status)}>
-                            {getStatusIcon(task.status)}
-                            <span className="ml-1 capitalize">{task.status.replace('_', ' ')}</span>
+                          <Badge variant="outline" className={getStatusColor(task.status || 'pending')}>
+                            {getStatusIcon(task.status || 'pending')}
+                            <span className="ml-1 capitalize">{formatStatusText(task.status)}</span>
                           </Badge>
-                          <Badge variant="outline" className={getPriorityColor(task.priority)}>
-                            {task.priority}
+                          <Badge variant="outline" className={getPriorityColor(task.priority || 'medium')}>
+                            {task.priority || 'medium'}
                           </Badge>
                           {isTaskOverdue(task) && (
                             <Badge variant="destructive">Atrasada</Badge>
@@ -663,7 +668,7 @@ export default function ClientGantt() {
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
                           <Users className="h-3 w-3 inline mr-1" />
-                          {task.assignee}
+                          {task.assignee || 'Não atribuído'}
                   </p>
                 </div>
           </div>
@@ -742,12 +747,12 @@ export default function ClientGantt() {
                       <div>
                         <h4 className="font-medium">{task.name}</h4>
                         <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className={getStatusColor(task.status)}>
-                            {getStatusIcon(task.status)}
-                            <span className="ml-1 capitalize">{task.status.replace('_', ' ')}</span>
+                          <Badge variant="outline" className={getStatusColor(task.status || 'pending')}>
+                            {getStatusIcon(task.status || 'pending')}
+                            <span className="ml-1 capitalize">{formatStatusText(task.status)}</span>
                           </Badge>
-                          <Badge variant="outline" className={getPriorityColor(task.priority)}>
-                            {task.priority}
+                          <Badge variant="outline" className={getPriorityColor(task.priority || 'medium')}>
+                            {task.priority || 'medium'}
                           </Badge>
                           {isTaskOverdue(task) && (
                             <Badge variant="destructive">Atrasada</Badge>
@@ -763,7 +768,7 @@ export default function ClientGantt() {
                       </div>
                       <div className="flex items-center gap-1 mt-1">
                         <Users className="h-4 w-4" />
-                        {task.assignee}
+                        {task.assignee || 'Não atribuído'}
                       </div>
                     </div>
                   </div>
