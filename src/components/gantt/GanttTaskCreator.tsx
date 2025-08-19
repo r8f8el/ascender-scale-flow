@@ -38,7 +38,7 @@ export const GanttTaskCreator: React.FC<TaskCreatorProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState('manual');
+  const [activeTab, setActiveTab] = useState('templates');
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -64,21 +64,36 @@ export const GanttTaskCreator: React.FC<TaskCreatorProps> = ({
     });
     setStartDate(new Date());
     setEndDate(addDays(new Date(), 1));
-    setActiveTab('manual');
+    setActiveTab('templates');
   };
 
   const handleTemplateSelect = (template: { name: string; duration: number; description: string }) => {
+    console.log('Template selecionado:', template);
+    
+    // Calcular nova data de fim baseada na duração do template
     const calculatedEndDate = addDays(startDate, template.duration);
     const estimatedHours = template.duration * 8;
 
-    setFormData({
-      ...formData,
+    // Atualizar os dados do formulário
+    setFormData(prev => ({
+      ...prev,
       name: template.name,
       description: template.description,
       estimated_hours: estimatedHours
-    });
+    }));
+    
+    // Atualizar as datas
     setEndDate(calculatedEndDate);
+    
+    // Mudar para a aba manual para mostrar os campos preenchidos
     setActiveTab('manual');
+
+    console.log('Dados atualizados:', {
+      name: template.name,
+      description: template.description,
+      estimated_hours: estimatedHours,
+      endDate: calculatedEndDate
+    });
 
     toast.success(`Template "${template.name}" aplicado com sucesso!`, {
       description: `Duração: ${template.duration} dia(s) • ${estimatedHours} horas`
