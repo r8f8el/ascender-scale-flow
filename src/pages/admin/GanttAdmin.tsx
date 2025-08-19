@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import AdminHeader from '@/components/admin/AdminHeader';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
@@ -293,9 +292,10 @@ export default function GanttAdmin() {
                       ) : (
                         <GanttChart 
                           tasks={processedTasks}
-                          onTaskClick={handleTaskEdit}
+                          onTaskSelect={handleTaskEdit}
+                          onTaskUpdate={updateTask}
                           viewMode={viewMode}
-                          loading={tasksLoading}
+                          height={600}
                         />
                       )}
                     </CardContent>
