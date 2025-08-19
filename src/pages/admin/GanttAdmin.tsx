@@ -558,6 +558,7 @@ export default function GanttAdmin() {
         onClose={() => setIsTaskModalOpen(false)}
         task={selectedTask}
         onSave={handleTaskSaved}
+        projectId={selectedProjectId}
       />
 
       <GanttExport

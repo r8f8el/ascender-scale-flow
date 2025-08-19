@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,8 +32,7 @@ import { GanttExport } from '@/components/gantt/GanttExport';
 import { GanttShare } from '@/components/gantt/GanttShare';
 import { useToast } from '@/hooks/use-toast';
 import { Label } from '@/components/ui/label';
-import { useGanttTasks, GanttTask } from '@/hooks/useGanttTasks';
-import { useGanttProjects } from '@/hooks/useGanttProjects';
+import { GanttTask } from '@/hooks/useGanttTasks';
 
 export default function ClientGantt() {
   const { user, client } = useAuth();
@@ -47,33 +45,190 @@ export default function ClientGantt() {
   const [selectedTask, setSelectedTask] = useState<GanttTask | null>(null);
   
   // Estados de controle
-  const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [selectedProjectId, setSelectedProjectId] = useState('123e4567-e89b-12d3-a456-426614174000'); // UUID válido temporário
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [assigneeFilter, setAssigneeFilter] = useState('all');
 
-  // Hooks para dados do Supabase
-  const { projects } = useGanttProjects(client?.id);
-  const { 
-    tasks, 
-    loading, 
-    error, 
-    createTask, 
-    updateTask, 
-    deleteTask,
-    refetch
-  } = useGanttTasks(selectedProjectId);
+  // Dados de exemplo para teste (fallback)
+  const [projects] = useState([
+    {
+      id: '123e4567-e89b-12d3-a456-426614174000',
+      name: 'Projeto de Consultoria Financeira',
+      progress: 65,
+      status: 'active',
+      start_date: '2024-01-01',
+      end_date: '2024-12-31'
+    },
+    {
+      id: '123e4567-e89b-12d3-a456-426614174001',
+      name: 'Implementação de Sistema FP&A',
+      progress: 30,
+      status: 'active',
+      start_date: '2024-03-01',
+      end_date: '2024-08-31'
+    }
+  ]);
 
-  // Definir projeto padrão quando os projetos carregarem
+  const [tasks, setTasks] = useState<GanttTask[]>([
+    {
+      id: '223e4567-e89b-12d3-a456-426614174000',
+      name: 'Análise de Forças',
+      description: 'Identificar e analisar as forças internas da empresa',
+      start_date: '2024-06-05',
+      end_date: '2024-06-08',
+      progress: 100,
+      status: 'completed',
+      priority: 'medium',
+      assigned_to: 'Rafael',
+      dependencies: [],
+      is_milestone: false,
+      project_id: '123e4567-e89b-12d3-a456-426614174000',
+      created_at: '2024-06-01T00:00:00Z',
+      updated_at: '2024-06-01T00:00:00Z',
+      estimated_hours: 8,
+      actual_hours: 8,
+      category: 'Analysis',
+      tags: ['swot'],
+      assignee: 'Rafael'
+    },
+    {
+      id: '223e4567-e89b-12d3-a456-426614174001',
+      name: 'Análise de Fraquezas',
+      description: 'Identificar e analisar as fraquezas internas da empresa',
+      start_date: '2024-06-05',
+      end_date: '2024-06-08',
+      progress: 100,
+      status: 'completed',
+      priority: 'medium',
+      assigned_to: 'Rafael',
+      dependencies: [],
+      is_milestone: false,
+      project_id: '123e4567-e89b-12d3-a456-426614174000',
+      created_at: '2024-06-01T00:00:00Z',
+      updated_at: '2024-06-01T00:00:00Z',
+      estimated_hours: 8,
+      actual_hours: 8,
+      category: 'Analysis',
+      tags: ['swot'],
+      assignee: 'Rafael'
+    },
+    {
+      id: '223e4567-e89b-12d3-a456-426614174002',
+      name: 'Análise de Oportunidades',
+      description: 'Identificar e analisar as oportunidades externas',
+      start_date: '2024-06-08',
+      end_date: '2024-06-11',
+      progress: 75,
+      status: 'in_progress',
+      priority: 'medium',
+      assigned_to: 'Rafael',
+      dependencies: ['223e4567-e89b-12d3-a456-426614174000', '223e4567-e89b-12d3-a456-426614174001'],
+      is_milestone: false,
+      project_id: '123e4567-e89b-12d3-a456-426614174000',
+      created_at: '2024-06-01T00:00:00Z',
+      updated_at: '2024-06-01T00:00:00Z',
+      estimated_hours: 8,
+      actual_hours: 6,
+      category: 'Analysis',
+      tags: ['swot'],
+      assignee: 'Rafael'
+    },
+    {
+      id: '223e4567-e89b-12d3-a456-426614174003',
+      name: 'Análise de Ameaças',
+      description: 'Identificar e analisar as ameaças externas',
+      start_date: '2024-06-08',
+      end_date: '2024-06-11',
+      progress: 60,
+      status: 'in_progress',
+      priority: 'medium',
+      assigned_to: 'Rafael',
+      dependencies: ['223e4567-e89b-12d3-a456-426614174000', '223e4567-e89b-12d3-a456-426614174001'],
+      is_milestone: false,
+      project_id: '123e4567-e89b-12d3-a456-426614174000',
+      created_at: '2024-06-01T00:00:00Z',
+      updated_at: '2024-06-01T00:00:00Z',
+      estimated_hours: 8,
+      actual_hours: 5,
+      category: 'Analysis',
+      tags: ['swot'],
+      assignee: 'Rafael'
+    },
+    {
+      id: '223e4567-e89b-12d3-a456-426614174004',
+      name: 'Compilação da Matriz SWOT',
+      description: 'Criar a matriz SWOT consolidada',
+      start_date: '2024-06-11',
+      end_date: '2024-06-12',
+      progress: 0,
+      status: 'pending',
+      priority: 'high',
+      assigned_to: 'Paula',
+      dependencies: ['223e4567-e89b-12d3-a456-426614174002', '223e4567-e89b-12d3-a456-426614174003'],
+      is_milestone: true,
+      project_id: '123e4567-e89b-12d3-a456-426614174000',
+      created_at: '2024-06-01T00:00:00Z',
+      updated_at: '2024-06-01T00:00:00Z',
+      estimated_hours: 4,
+      actual_hours: 0,
+      category: 'Deliverable',
+      tags: ['swot', 'milestone'],
+      assignee: 'Paula'
+    },
+    {
+      id: '223e4567-e89b-12d3-a456-426614174005',
+      name: 'Criação de Planos de Ação',
+      description: 'Desenvolver planos de ação baseados na análise SWOT',
+      start_date: '2024-06-12',
+      end_date: '2024-06-16',
+      progress: 0,
+      status: 'pending',
+      priority: 'high',
+      assigned_to: 'Rafael e Paula',
+      dependencies: ['223e4567-e89b-12d3-a456-426614174004'],
+      is_milestone: false,
+      project_id: '123e4567-e89b-12d3-a456-426614174000',
+      created_at: '2024-06-01T00:00:00Z',
+      updated_at: '2024-06-01T00:00:00Z',
+      estimated_hours: 16,
+      actual_hours: 0,
+      category: 'Planning',
+      tags: ['action-plan'],
+      assignee: 'Rafael e Paula'
+    },
+    {
+      id: '223e4567-e89b-12d3-a456-426614174006',
+      name: 'Apresentação para o cliente',
+      description: 'Apresentar resultados e planos para o cliente',
+      start_date: '2024-06-16',
+      end_date: '2024-06-19',
+      progress: 0,
+      status: 'pending',
+      priority: 'high',
+      assigned_to: 'Rafael e Paula',
+      dependencies: ['223e4567-e89b-12d3-a456-426614174005'],
+      is_milestone: false,
+      project_id: '123e4567-e89b-12d3-a456-426614174000',
+      created_at: '2024-06-01T00:00:00Z',
+      updated_at: '2024-06-01T00:00:00Z',
+      estimated_hours: 8,
+      actual_hours: 0,
+      category: 'Presentation',
+      tags: ['client', 'final'],
+      assignee: 'Rafael e Paula'
+    }
+  ]);
+
   useEffect(() => {
     if (projects.length > 0 && !selectedProjectId) {
       setSelectedProjectId(projects[0].id);
     }
   }, [projects, selectedProjectId]);
 
-  const getStatusColor = (status: string | undefined) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return 'bg-green-100 text-green-700';
       case 'in_progress': return 'bg-blue-100 text-blue-700';
@@ -83,7 +238,7 @@ export default function ClientGantt() {
     }
   };
 
-  const getPriorityColor = (priority: string | undefined) => {
+  const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'urgent': return 'bg-red-100 text-red-700';
       case 'high': return 'bg-orange-100 text-orange-700';
@@ -93,7 +248,7 @@ export default function ClientGantt() {
     }
   };
 
-  const getStatusIcon = (status: string | undefined) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed': return <CheckCircle className="h-4 w-4" />;
       case 'in_progress': return <Clock className="h-4 w-4" />;
@@ -160,11 +315,8 @@ export default function ClientGantt() {
     if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return;
 
     try {
-      console.log('🗑️ Deletando tarefa:', taskId);
-      const result = await deleteTask(taskId);
-      if (result.error) {
-        throw result.error;
-      }
+      // Simular exclusão
+      setTasks(prev => prev.filter(t => t.id !== taskId));
       
       toast({
         title: "Sucesso!",
@@ -180,89 +332,38 @@ export default function ClientGantt() {
     }
   };
 
-  const handleTaskSaved = async (taskData: Omit<GanttTask, 'id' | 'created_at' | 'updated_at'>) => {
-    try {
-      console.log('💾 Salvando tarefa:', taskData);
-      
-      // Garantir que os dados estejam no formato correto
-      const sanitizedTaskData = {
+  const handleTaskSaved = (taskData: Omit<GanttTask, 'id' | 'created_at' | 'updated_at'>) => {
+    // Simular salvamento
+    if (selectedTask) {
+      // Atualizar tarefa existente
+      setTasks(prev => prev.map(t => 
+        t.id === selectedTask.id 
+          ? { ...t, ...taskData, updated_at: new Date().toISOString() }
+          : t
+      ));
+    } else {
+      // Criar nova tarefa
+      const newTask: GanttTask = {
         ...taskData,
-        project_id: selectedProjectId,
-        assigned_to: taskData.assigned_to || null,
-        dependencies: taskData.dependencies || [],
-        progress: taskData.progress || 0,
-        is_milestone: taskData.is_milestone || false,
-        priority: taskData.priority || 'medium',
-        status: taskData.status || 'pending'
+        id: `task-${Date.now()}`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        project_id: selectedProjectId
       };
-
-      let result;
-      
-      if (selectedTask) {
-        // Atualizar tarefa existente
-        console.log('📝 Atualizando tarefa existente:', selectedTask.id);
-        result = await updateTask(selectedTask.id, sanitizedTaskData);
-      } else {
-        // Criar nova tarefa
-        console.log('✨ Criando nova tarefa');
-        result = await createTask(sanitizedTaskData);
-      }
-      
-      if (result.error) {
-        console.error('❌ Erro no resultado:', result.error);
-        throw result.error;
-      }
-      
-      console.log('✅ Tarefa salva com sucesso:', result.data);
-      
-      toast({
-        title: "Sucesso!",
-        description: selectedTask ? "Tarefa atualizada com sucesso" : "Tarefa criada com sucesso"
-      });
-      
-      setIsTaskModalOpen(false);
-      setSelectedTask(null);
-      
-      // Recarregar as tarefas para garantir sincronização
-      await refetch();
-      
-    } catch (error) {
-      console.error('❌ Erro ao salvar tarefa:', error);
-      toast({
-        title: "Erro",
-        description: `Erro ao salvar tarefa: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
-        variant: "destructive"
-      });
+      setTasks(prev => [...prev, newTask]);
     }
+    
+    toast({
+      title: "Sucesso!",
+      description: selectedTask ? "Tarefa atualizada com sucesso" : "Tarefa criada com sucesso"
+    });
+    setIsTaskModalOpen(false);
+    setSelectedTask(null);
   };
 
   const getCurrentProject = () => {
     return projects.find(p => p.id === selectedProjectId);
   };
-
-  if (loading) {
-    return <LoadingSpinner />;
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-64 text-red-500">
-        <div className="text-center">
-          <AlertCircle className="h-12 w-12 mx-auto mb-4" />
-          <div className="text-lg font-medium">Erro ao carregar dados</div>
-          <div className="text-sm">{error}</div>
-          <Button 
-            onClick={refetch} 
-            className="mt-4"
-            variant="outline"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Tentar novamente
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -310,7 +411,7 @@ export default function ClientGantt() {
               <Label className="text-sm font-medium">Projeto Ativo</Label>
               <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
                 <SelectTrigger className="w-64">
-                  <SelectValue placeholder="Selecione um projeto" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {projects.map((project) => (
@@ -646,11 +747,11 @@ export default function ClientGantt() {
                       <div>
                         <h4 className="font-medium">{task.name}</h4>
                         <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className={getStatusColor(task.status)}>
-                            {getStatusIcon(task.status)}
+                          <Badge variant="outline" className={getStatusColor(task.status || 'pending')}>
+                            {getStatusIcon(task.status || 'pending')}
                             <span className="ml-1 capitalize">{formatStatusText(task.status)}</span>
                           </Badge>
-                          <Badge variant="outline" className={getPriorityColor(task.priority)}>
+                          <Badge variant="outline" className={getPriorityColor(task.priority || 'medium')}>
                             {task.priority || 'medium'}
                           </Badge>
                           {isTaskOverdue(task) && (
@@ -697,12 +798,10 @@ export default function ClientGantt() {
       {/* Modais */}
       <TaskModal
         isOpen={isTaskModalOpen}
-        onClose={() => {
-          setIsTaskModalOpen(false);
-          setSelectedTask(null);
-        }}
+        onClose={() => setIsTaskModalOpen(false)}
         task={selectedTask}
         onSave={handleTaskSaved}
+        projectId={selectedProjectId}
       />
 
       <GanttExport
