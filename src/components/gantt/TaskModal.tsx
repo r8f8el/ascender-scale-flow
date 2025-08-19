@@ -131,7 +131,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [activeTab, setActiveTab] = useState('form');
 
-  // Carregar usuários disponíveis (equipe do cliente + colaboradores Ascalate)
+  // Carregar usuários disponíveis (colaboradores Ascalate)
   useEffect(() => {
     if (isOpen) {
       loadAvailableUsers();
@@ -151,21 +151,11 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         console.error('Erro ao carregar colaboradores:', collaboratorsError);
       }
 
-      // Buscar equipe do cliente (se houver)
-      const { data: clientTeam, error: clientTeamError } = await supabase
-        .from('client_team')
-        .select('id, name, email, role, company')
-        .eq('is_active', true);
-
-      if (clientTeamError) {
-        console.error('Erro ao carregar equipe do cliente:', clientTeamError);
-      }
-
       // Combinar usuários
-      const allUsers: User[] = [
-        ...(collaborators || []).map(c => ({ ...c, role: `Ascalate - ${c.role}` })),
-        ...(clientTeam || []).map(ct => ({ ...ct, role: `Cliente - ${ct.role}` }))
-      ];
+      const allUsers: User[] = (collaborators || []).map(c => ({ 
+        ...c, 
+        role: `Ascalate - ${c.role}` 
+      }));
 
       setAvailableUsers(allUsers);
     } catch (error) {
