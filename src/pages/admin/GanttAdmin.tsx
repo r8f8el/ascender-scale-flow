@@ -156,12 +156,29 @@ export default function GanttAdmin() {
 
       if (error) throw error;
       
-      // Mapear dados para o formato esperado
-      const mappedTasks = (data || []).map(task => ({
-        ...task,
+      // Mapear dados para o formato esperado do GanttTask
+      const mappedTasks: GanttTask[] = (data || []).map(task => ({
+        id: task.id,
+        name: task.name || '',
+        description: task.description || '',
+        start_date: task.start_date || '',
+        end_date: task.end_date || '',
+        progress: task.progress || 0,
         status: task.progress === 100 ? 'completed' : 
                 task.progress > 0 ? 'in_progress' : 'pending',
-        assignee: task.assigned_to || 'Não atribuído'
+        priority: (task.priority as 'low' | 'medium' | 'high' | 'urgent') || 'medium',
+        assigned_to: task.assigned_to || '',
+        dependencies: Array.isArray(task.dependencies) ? task.dependencies : [],
+        is_milestone: task.is_milestone || false,
+        project_id: task.project_id,
+        created_at: task.created_at,
+        updated_at: task.updated_at,
+        estimated_hours: task.estimated_hours || 0,
+        actual_hours: task.actual_hours || 0,
+        category: 'Task',
+        tags: [],
+        assignee: task.assigned_to || 'Não atribuído',
+        collaborators: []
       }));
       
       setTasks(mappedTasks);
@@ -335,7 +352,7 @@ export default function GanttAdmin() {
     const matchesProject = task.project_id === selectedProjectId;
     const matchesSearch = task.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || task.status === statusFilter;
-    const matchesPriority = priorityFilter === 'all' || task.priority === statusFilter;
+    const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
     const matchesAssignee = assigneeFilter === 'all' || task.assignee?.includes(assigneeFilter);
     
     return matchesProject && matchesSearch && matchesStatus && matchesPriority && matchesAssignee;
@@ -770,7 +787,6 @@ export default function GanttAdmin() {
         </CardContent>
       </Card>
 
-      {/* Visualização Gantt */}
       <Card>
         <CardHeader>
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
@@ -818,9 +834,7 @@ export default function GanttAdmin() {
           </div>
         </CardHeader>
         <CardContent>
-          {/* Gráfico Gantt Dinâmico */}
           <div className="space-y-4">
-            {/* Cabeçalho da Timeline Dinâmico */}
             <div className="flex items-center border-b pb-2">
               <div className="w-64 font-medium text-sm text-gray-600">Nome da Tarefa</div>
               <div className="flex-1 flex gap-1 text-xs text-gray-500">
@@ -835,7 +849,6 @@ export default function GanttAdmin() {
               <div className="w-32 text-center font-medium text-sm text-gray-600">Progresso</div>
             </div>
 
-            {/* Linha "Hoje" */}
             <div className="relative">
               <div 
                 className="absolute top-0 bottom-0 w-px bg-red-500 border-l-2 border-dashed border-red-500 z-10"
@@ -847,7 +860,6 @@ export default function GanttAdmin() {
               </div>
             </div>
 
-            {/* Tarefas */}
             {filteredTasks.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <BarChart3 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
@@ -986,7 +998,6 @@ export default function GanttAdmin() {
                       </Button>
                     </div>
                     
-                    {/* Botões de Status */}
                     <div className="flex gap-1 mt-2">
                       <Button 
                         variant={task.status === 'completed' ? 'default' : 'outline'} 
