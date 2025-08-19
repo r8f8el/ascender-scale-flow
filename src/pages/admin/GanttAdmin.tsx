@@ -490,36 +490,43 @@ export default function GanttAdmin() {
         return;
       }
 
-      // Atualizar progresso baseado no status
+      // Determinar progresso baseado no status
       let newProgress = 0;
       switch (newStatus) {
         case 'completed':
           newProgress = 100;
           break;
         case 'in_progress':
-          newProgress = 50;
+          newProgress = Math.max(task.progress, 1); // Se já tem progresso, manter; se não, pelo menos 1%
           break;
         case 'blocked':
-          newProgress = 0;
-          break;
         case 'pending':
           newProgress = 0;
           break;
         default:
-          newProgress = 0;
+          newProgress = task.progress;
       }
 
-      // Atualizar no banco
-      const { error } = await supabase
+      console.log(`Atualizando tarefa ${taskId}: status=${newStatus}, progress=${newProgress}`);
+
+      // Atualizar no banco de dados - usar apenas o campo progress
+      const { data, error } = await supabase
         .from('gantt_tasks')
         .update({
           progress: newProgress
         })
-        .eq('id', taskId);
+        .eq('id', taskId)
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro do Supabase:', error);
+        throw error;
+      }
 
-      // Atualizar tarefa localmente
+      console.log('Tarefa atualizada no banco:', data);
+
+      // Atualizar estado local imediatamente
       setTasks(prev => prev.map(t => 
         t.id === taskId 
           ? { 
@@ -530,15 +537,19 @@ export default function GanttAdmin() {
           : t
       ));
 
+      // Recarregar tarefas para garantir sincronização
+      await loadTasks(selectedProjectId);
+
       toast({
         title: "Sucesso!",
-        description: `Status alterado para: ${newStatus.replace('_', ' ')} - Progresso: ${newProgress}%`
+        description: `Status da tarefa alterado para: ${newStatus.replace('_', ' ')} (${newProgress}%)`
       });
+
     } catch (error) {
-      console.error('Erro ao atualizar status:', error);
+      console.error('Erro ao atualizar status da tarefa:', error);
       toast({
         title: "Erro",
-        description: "Erro ao atualizar status. Tente novamente.",
+        description: "Erro ao atualizar status da tarefa. Tente novamente.",
         variant: "destructive"
       });
     }
@@ -791,48 +802,43 @@ export default function GanttAdmin() {
 
       <Card>
         <CardHeader>
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-blue-600" />
-                Cronograma do Projeto
-              </CardTitle>
-              <p className="text-sm text-gray-600 mt-1">
-                {viewMode === 'day' && 'Visualização diária - próximos 7 dias'}
-                {viewMode === 'week' && 'Visualização semanal - próximas 4 semanas'}
-                {viewMode === 'month' && 'Visualização mensal - próximos 6 meses'}
-              </p>
-            </div>
-            
-            <div className="flex gap-2">
-              <Button
-                variant={viewMode === 'day' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('day')}
-                className="flex items-center gap-2"
-              >
-                <Calendar className="h-4 w-4" />
-                Dia
-              </Button>
-              <Button
-                variant={viewMode === 'week' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('week')}
-                className="flex items-center gap-2"
-              >
-                <Calendar className="h-4 w-4" />
-                Semana
-              </Button>
-              <Button
-                variant={viewMode === 'month' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('month')}
-                className="flex items-center gap-2"
-              >
-                <Calendar className="h-4 w-4" />
-                Mês
-              </Button>
-            </div>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-blue-600" />
+            Cronograma do Projeto
+          </CardTitle>
+          <p className="text-sm text-gray-600 mt-1">
+            {viewMode === 'day' && 'Visualização diária - próximos 7 dias'}
+            {viewMode === 'week' && 'Visualização semanal - próximas 4 semanas'}
+            {viewMode === 'month' && 'Visualização mensal - próximos 6 meses'}
+          </p>
+          <div className="flex gap-2 mt-2">
+            <Button
+              variant={viewMode === 'day' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('day')}
+              className="flex items-center gap-2"
+            >
+              <Calendar className="h-4 w-4" />
+              Dia
+            </Button>
+            <Button
+              variant={viewMode === 'week' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('week')}
+              className="flex items-center gap-2"
+            >
+              <Calendar className="h-4 w-4" />
+              Semana
+            </Button>
+            <Button
+              variant={viewMode === 'month' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('month')}
+              className="flex items-center gap-2"
+            >
+              <Calendar className="h-4 w-4" />
+              Mês
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -985,7 +991,7 @@ export default function GanttAdmin() {
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-4">
                     <div className="text-right">
                       <div className="text-sm font-medium">{task.progress}%</div>
                       <Progress value={task.progress} className="w-20" />
@@ -1000,7 +1006,7 @@ export default function GanttAdmin() {
                       </Button>
                     </div>
                     
-                    <div className="flex gap-1 mt-2">
+                    <div className="flex gap-1">
                       <Button 
                         variant={task.status === 'completed' ? 'default' : 'outline'} 
                         size="sm" 
