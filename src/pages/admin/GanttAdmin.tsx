@@ -156,7 +156,7 @@ export default function GanttAdmin() {
 
       if (error) throw error;
       
-      // Mapear dados para o formato esperado do GanttTask
+      // Mapear dados para o formato esperado do GanttTask com conversão correta de tipos
       const mappedTasks: GanttTask[] = (data || []).map(task => ({
         id: task.id,
         name: task.name || '',
@@ -168,7 +168,9 @@ export default function GanttAdmin() {
                 task.progress > 0 ? 'in_progress' : 'pending',
         priority: (task.priority as 'low' | 'medium' | 'high' | 'urgent') || 'medium',
         assigned_to: task.assigned_to || '',
-        dependencies: Array.isArray(task.dependencies) ? task.dependencies : [],
+        dependencies: Array.isArray(task.dependencies) 
+          ? task.dependencies.map(dep => String(dep)).filter(Boolean)
+          : [],
         is_milestone: task.is_milestone || false,
         project_id: task.project_id,
         created_at: task.created_at,
