@@ -261,6 +261,112 @@ export default function ClientGantt() {
 
   const stats = getProjectStats();
 
+  // Funções auxiliares para visualização dinâmica
+  const getTimelineHeaders = () => {
+    const today = new Date();
+    const headers: string[] = [];
+    
+    switch (viewMode) {
+      case 'day':
+        // Mostrar próximos 7 dias
+        for (let i = 0; i < 7; i++) {
+          const date = new Date(today);
+          date.setDate(today.getDate() + i);
+          headers.push(date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
+        }
+        break;
+      case 'week':
+        // Mostrar próximas 4 semanas
+        for (let i = 0; i < 4; i++) {
+          const date = new Date(today);
+          date.setDate(today.getDate() + (i * 7));
+          const weekStart = new Date(date);
+          weekStart.setDate(date.getDate() - date.getDay());
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
+          headers.push(`${weekStart.toLocaleDateString('pt-BR', { day: '2-digit' })}-${weekEnd.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`);
+        }
+        break;
+      case 'month':
+        // Mostrar próximos 6 meses
+        for (let i = 0; i < 6; i++) {
+          const date = new Date(today);
+          date.setMonth(today.getMonth() + i);
+          headers.push(date.toLocaleDateString('pt-BR', { month: 'short' }));
+        }
+        break;
+    }
+    
+    return headers;
+  };
+
+  const getTodayPosition = () => {
+    const today = new Date();
+    const timelineStart = new Date();
+    
+    switch (viewMode) {
+      case 'day':
+        return 264; // Posição fixa para visualização diária
+      case 'week':
+        return 264; // Posição fixa para visualização semanal
+      case 'month':
+        return 264; // Posição fixa para visualização mensal
+      default:
+        return 264;
+    }
+  };
+
+  const getTimelineCells = (task: GanttTask) => {
+    const today = new Date();
+    const cells: { isInRange: boolean; progress: number }[] = [];
+    
+    switch (viewMode) {
+      case 'day':
+        // 7 células para 7 dias
+        for (let i = 0; i < 7; i++) {
+          const date = new Date(today);
+          date.setDate(today.getDate() + i);
+          const taskStart = new Date(task.start_date);
+          const taskEnd = new Date(task.end_date);
+          const isInRange = date >= taskStart && date <= taskEnd;
+          cells.push({ isInRange, progress: isInRange ? task.progress : 0 });
+        }
+        break;
+      case 'week':
+        // 4 células para 4 semanas
+        for (let i = 0; i < 4; i++) {
+          const date = new Date(today);
+          date.setDate(today.getDate() + (i * 7));
+          const weekStart = new Date(date);
+          weekStart.setDate(date.getDate() - date.getDay());
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
+          
+          const taskStart = new Date(task.start_date);
+          const taskEnd = new Date(task.end_date);
+          const isInRange = (weekStart <= taskEnd && weekEnd >= taskStart);
+          cells.push({ isInRange, progress: isInRange ? task.progress : 0 });
+        }
+        break;
+      case 'month':
+        // 6 células para 6 meses
+        for (let i = 0; i < 6; i++) {
+          const date = new Date(today);
+          date.setMonth(today.getMonth() + i);
+          const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+          const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+          
+          const taskStart = new Date(task.start_date);
+          const taskEnd = new Date(task.end_date);
+          const isInRange = (monthStart <= taskEnd && monthEnd >= taskStart);
+          cells.push({ isInRange, progress: isInRange ? task.progress : 0 });
+        }
+        break;
+    }
+    
+    return cells;
+  };
+
   const handleCreateTask = () => {
     if (!selectedProjectId) {
       toast({
@@ -680,7 +786,9 @@ export default function ClientGantt() {
                 Cronograma do Projeto
               </CardTitle>
               <p className="text-sm text-gray-600 mt-1">
-                Visualize o progresso e dependências das tarefas
+                {viewMode === 'day' && 'Visualização diária - próximos 7 dias'}
+                {viewMode === 'week' && 'Visualização semanal - próximas 4 semanas'}
+                {viewMode === 'month' && 'Visualização mensal - próximos 6 meses'}
               </p>
             </div>
             
@@ -689,47 +797,56 @@ export default function ClientGantt() {
                 variant={viewMode === 'day' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('day')}
+                className="flex items-center gap-2"
               >
+                <Calendar className="h-4 w-4" />
                 Dia
               </Button>
               <Button
                 variant={viewMode === 'week' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('week')}
+                className="flex items-center gap-2"
               >
+                <Calendar className="h-4 w-4" />
                 Semana
               </Button>
               <Button
                 variant={viewMode === 'month' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('month')}
+                className="flex items-center gap-2"
               >
+                <Calendar className="h-4 w-4" />
                 Mês
               </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          {/* Gráfico Gantt Simulado */}
+          {/* Gráfico Gantt Dinâmico */}
           <div className="space-y-4">
-            {/* Cabeçalho da Timeline */}
+            {/* Cabeçalho da Timeline Dinâmico */}
             <div className="flex items-center border-b pb-2">
               <div className="w-64 font-medium text-sm text-gray-600">Nome da Tarefa</div>
-              <div className="flex-1 grid grid-cols-7 gap-1 text-xs text-gray-500">
-                <div className="text-center">05/06</div>
-                <div className="text-center">08/06</div>
-                <div className="text-center">11/06</div>
-                <div className="text-center">12/06</div>
-                <div className="text-center">16/06</div>
-                <div className="text-center">19/06</div>
-                <div className="text-center">23/06</div>
+              <div className="flex-1 flex gap-1 text-xs text-gray-500">
+                {getTimelineHeaders().map((header, index) => (
+                  <div key={index} className="flex-1 text-center min-w-0 px-1">
+                    <div className="truncate" title={header}>
+                      {header}
+                    </div>
+                  </div>
+                ))}
               </div>
               <div className="w-32 text-center font-medium text-sm text-gray-600">Progresso</div>
             </div>
 
             {/* Linha "Hoje" */}
             <div className="relative">
-              <div className="absolute left-64 top-0 bottom-0 w-px bg-red-500 border-l-2 border-dashed border-red-500 z-10">
+              <div 
+                className="absolute top-0 bottom-0 w-px bg-red-500 border-l-2 border-dashed border-red-500 z-10"
+                style={{ left: `${getTodayPosition()}px` }}
+              >
                 <div className="absolute -top-2 -left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
                   Hoje
                 </div>
@@ -767,42 +884,35 @@ export default function ClientGantt() {
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
                           <Users className="h-3 w-3 inline mr-1" />
-                          {task.assignee || 'Não atribuído'}
-                  </p>
-                </div>
-          </div>
-        </div>
+                          {task.assigned_to || 'Não atribuído'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                   
                   <div className="flex-1 relative">
-                    <div className="grid grid-cols-7 gap-1 h-8">
-                      {Array.from({ length: 7 }, (_, i) => {
-                        const startDate = new Date('2024-06-05');
-                        const currentDate = new Date(startDate);
-                        currentDate.setDate(startDate.getDate() + (i * 3));
-                        
-                        const taskStart = new Date(task.start_date);
-                        const taskEnd = new Date(task.end_date);
-                        const isInRange = currentDate >= taskStart && currentDate <= taskEnd;
-                        
-                        return (
-                          <div key={i} className="relative">
-                            {isInRange && (
-                              <div 
-                                className={`h-6 rounded ${
-                                  task.status === 'completed' ? 'bg-green-500' :
-                                  task.status === 'in_progress' ? 'bg-blue-500' :
-                                  task.status === 'blocked' ? 'bg-red-500' :
-                                  'bg-gray-400'
-                                }`}
-                                style={{
-                                  width: `${task.progress}%`,
-                                  maxWidth: '100%'
-                                }}
-                              ></div>
-                            )}
-                          </div>
-                        );
-                      })}
+                    <div className="flex gap-1 h-8">
+                      {getTimelineCells(task).map((cell, index) => (
+                        <div key={index} className="flex-1 relative min-w-0">
+                          {cell.isInRange && (
+                            <div 
+                              className={`h-6 rounded transition-all duration-200 ${
+                                task.progress === 100 ? 'bg-green-500' :
+                                task.progress > 0 ? 'bg-blue-500' :
+                                'bg-gray-400'
+                              }`}
+                              style={{
+                                width: `${Math.min(cell.progress, 100)}%`,
+                                maxWidth: '100%'
+                              }}
+                              title={`${task.name}: ${task.progress}% concluído`}
+                            ></div>
+                          )}
+                          {!cell.isInRange && (
+                            <div className="h-6 border border-dashed border-gray-200 rounded opacity-30"></div>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </div>
                   
