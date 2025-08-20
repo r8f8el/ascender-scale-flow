@@ -32,17 +32,20 @@ const ClientLogin = () => {
     }
 
     try {
+      console.log('🔐 Attempting client login for:', email);
       const result = await login(email, password);
       
       if (result?.error) {
+        console.error('❌ Login failed:', result.error);
         setError('Email ou senha incorretos');
         toast.error('Erro ao fazer login');
       } else {
+        console.log('✅ Login successful, redirecting to /cliente');
         toast.success('Login realizado com sucesso!');
         navigate('/cliente');
       }
     } catch (error) {
-      console.error('Erro no login:', error);
+      console.error('❌ Login exception:', error);
       setError('Erro interno. Tente novamente.');
       toast.error('Erro ao fazer login');
     } finally {

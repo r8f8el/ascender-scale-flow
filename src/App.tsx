@@ -7,11 +7,15 @@ import {
   Navigate
 } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
+import { AdminAuthProvider } from './contexts/AdminAuthContext';
 import { PageLoader } from './components/ui/page-loader';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminProtectedRoute from './components/AdminProtectedRoute';
 
 // Lazy load components for better performance
 const LoginPage = lazy(() => import('./pages/ClientLogin'));
+const AdminLogin = lazy(() => import('./pages/AdminLogin'));
+const AdminArea = lazy(() => import('./pages/admin/AdminArea'));
 const ClientArea = lazy(() => import('./pages/client/ClientArea'));
 const SecureTeamInviteSignup = lazy(() => import('./pages/SecureTeamInviteSignup'));
 
@@ -24,53 +28,71 @@ function App() {
 
   return (
     <Router>
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
-          {/* Login route - redirect to dashboard if already authenticated */}
-          <Route 
-            path="/login" 
-            element={
-              isAuthenticated ? <Navigate to="/cliente" replace /> : <LoginPage />
-            } 
-          />
-          
-          <Route 
-            path="/cliente/login" 
-            element={
-              isAuthenticated ? <Navigate to="/cliente" replace /> : <LoginPage />
-            } 
-          />
+      <AdminAuthProvider>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            {/* Client Login routes */}
+            <Route 
+              path="/login" 
+              element={
+                isAuthenticated ? <Navigate to="/cliente" replace /> : <LoginPage />
+              } 
+            />
+            
+            <Route 
+              path="/cliente/login" 
+              element={
+                isAuthenticated ? <Navigate to="/cliente" replace /> : <LoginPage />
+              } 
+            />
 
-          {/* Protected Client Area Routes */}
-          <Route 
-            path="/cliente/*" 
-            element={
-              <ProtectedRoute>
-                <ClientArea />
-              </ProtectedRoute>
-            } 
-          />
+            {/* Admin Login routes */}
+            <Route 
+              path="/admin/login" 
+              element={<AdminLogin />} 
+            />
 
-          {/* Secure Team Invitation Signup */}
-          <Route path="/convite-seguro" element={<SecureTeamInviteSignup />} />
+            {/* Protected Client Area Routes */}
+            <Route 
+              path="/cliente/*" 
+              element={
+                <ProtectedRoute>
+                  <ClientArea />
+                </ProtectedRoute>
+              } 
+            />
 
-          {/* Default redirects */}
-          <Route 
-            path="/" 
-            element={
-              isAuthenticated ? <Navigate to="/cliente" replace /> : <Navigate to="/login" replace />
-            } 
-          />
-          
-          {/* Catch all - redirect to appropriate page */}
-          <Route 
-            path="*" 
-            element={
-              isAuthenticated ? <Navigate to="/cliente" replace /> : <Navigate to="/login" replace />
-            } 
-          />
-        </Routes>
-      </Suspense>
+            {/* Protected Admin Area Routes */}
+            <Route 
+              path="/admin/*" 
+              element={
+                <AdminProtectedRoute>
+                  <AdminArea />
+                </AdminProtectedRoute>
+              } 
+            />
+
+            {/* Secure Team Invitation Signup */}
+            <Route path="/convite-seguro" element={<SecureTeamInviteSignup />} />
+
+            {/* Default redirects */}
+            <Route 
+              path="/" 
+              element={
+                isAuthenticated ? <Navigate to="/cliente" replace /> : <Navigate to="/login" replace />
+              } 
+            />
+            
+            {/* Catch all - redirect to appropriate page */}
+            <Route 
+              path="*" 
+              element={
+                isAuthenticated ? <Navigate to="/cliente" replace /> : <Navigate to="/login" replace />
+              } 
+            />
+          </Routes>
+        </Suspense>
+      </AdminAuthProvider>
     </Router>
   );
 }
