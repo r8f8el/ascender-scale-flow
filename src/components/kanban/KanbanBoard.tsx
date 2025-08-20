@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,9 +10,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useKanbanData, KanbanTask, KanbanColumn } from '@/hooks/useKanbanBoards';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useKanbanData, KanbanTask } from '@/hooks/useKanbanBoards';
+import { useKanbanColumns } from '@/hooks/useKanbanColumns';
 import { useCollaborators } from '@/hooks/useCollaborators';
-import { Plus, Calendar as CalendarIcon, Clock, User, Flag, MoreVertical, Paperclip, Sparkles } from 'lucide-react';
+import { ColumnEditDialog } from './ColumnEditDialog';
+import { Plus, Calendar as CalendarIcon, Clock, User, Flag, MoreVertical, Paperclip, Sparkles, Edit, Trash2, Settings } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -41,10 +43,14 @@ const priorityLabels = {
 };
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
-  const { columns, tasks, loading, createTask, updateTask, moveTask, deleteTask } = useKanbanData(boardId);
+  const { tasks, loading: tasksLoading, createTask, updateTask, moveTask, deleteTask } = useKanbanData(boardId);
+  const { columns, loading: columnsLoading, createColumn, updateColumn, deleteColumn } = useKanbanColumns(boardId);
   const { collaborators } = useCollaborators();
+  
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [isColumnDialogOpen, setIsColumnDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<KanbanTask | null>(null);
+  const [editingColumn, setEditingColumn] = useState<any>(null);
   const [selectedColumnId, setSelectedColumnId] = useState<string>('');
   
   const [taskForm, setTaskForm] = useState<{
@@ -98,6 +104,31 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
     setIsTaskDialogOpen(true);
   };
 
+  const handleCreateColumn = () => {
+    setEditingColumn(null);
+    setIsColumnDialogOpen(true);
+  };
+
+  const handleEditColumn = (column: any) => {
+    setEditingColumn(column);
+    setIsColumnDialogOpen(true);
+  };
+
+  const handleSaveColumn = async (columnData: any) => {
+    if (editingColumn) {
+      await updateColumn(editingColumn.id, columnData);
+    } else {
+      await createColumn(columnData);
+    }
+    setEditingColumn(null);
+  };
+
+  const handleDeleteColumn = async (columnId: string) => {
+    if (confirm('Tem certeza que deseja excluir esta coluna? Esta ação não pode ser desfeita.')) {
+      await deleteColumn(columnId);
+    }
+  };
+
   const handleSubmitTask = async () => {
     if (!taskForm.title.trim()) {
       toast.error('Título é obrigatório');
@@ -148,7 +179,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
       .sort((a, b) => a.task_order - b.task_order);
   };
 
-  if (loading) {
+  if (tasksLoading || columnsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -158,6 +189,18 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
 
   return (
     <div className="h-full flex flex-col">
+      {/* Header with Column Management */}
+      <div className="flex items-center justify-between mb-6 p-4 bg-gradient-to-r from-muted/30 to-background/50 rounded-2xl">
+        <div className="flex items-center gap-3">
+          <Settings className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold">Gerenciar Colunas</h3>
+        </div>
+        <Button onClick={handleCreateColumn} className="rounded-xl">
+          <Plus className="w-4 h-4 mr-2" />
+          Nova Coluna
+        </Button>
+      </div>
+
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="flex gap-6 overflow-x-auto pb-4 flex-1">
           {columns.map((column) => (
@@ -175,14 +218,40 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
                         {getTasksByColumn(column.id).length}
                       </Badge>
                     </CardTitle>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleCreateTask(column.id)}
-                      className="p-2 h-8 w-8 rounded-xl hover:bg-primary/10"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleCreateTask(column.id)}
+                        className="p-2 h-8 w-8 rounded-xl hover:bg-primary/10"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="p-2 h-8 w-8 rounded-xl hover:bg-primary/10"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEditColumn(column)}>
+                            <Edit className="w-4 h-4 mr-2" />
+                            Editar Coluna
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteColumn(column.id)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Excluir Coluna
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
                   {column.wip_limit && (
                     <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-2 py-1 w-fit">
@@ -283,6 +352,15 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
         </div>
       </DragDropContext>
 
+      {/* Column Edit Dialog */}
+      <ColumnEditDialog
+        column={editingColumn}
+        isOpen={isColumnDialogOpen}
+        onClose={() => setIsColumnDialogOpen(false)}
+        onSave={handleSaveColumn}
+      />
+
+      {/* Task Dialog */}
       <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
         <DialogContent className="max-w-3xl rounded-2xl">
           <DialogHeader>
@@ -394,7 +472,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
               </div>
             </div>
 
-            {/* File Upload Section */}
             <div className="border rounded-xl p-4 bg-muted/30">
               <TaskFileUpload
                 taskId={editingTask?.id || 'new'}
