@@ -1,4 +1,5 @@
 
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -40,7 +41,7 @@ export const useGanttTasks = (projectId: string) => {
       setLoading(true);
       setError(null);
       
-      console.log('Fetching tasks for project:', projectId);
+      console.log('🔍 Buscando tarefas para projeto:', projectId);
 
       const { data, error: fetchError } = await supabase
         .from('gantt_tasks')
@@ -49,11 +50,11 @@ export const useGanttTasks = (projectId: string) => {
         .order('start_date', { ascending: true });
 
       if (fetchError) {
-        console.error('Error fetching tasks:', fetchError);
+        console.error('❌ Erro ao buscar tarefas:', fetchError);
         throw fetchError;
       }
 
-      console.log('Tasks fetched successfully:', data);
+      console.log('✅ Tarefas encontradas:', data);
       
       // Type conversion to ensure proper types
       const convertedTasks: GanttTask[] = (data || []).map(task => ({
@@ -75,14 +76,15 @@ export const useGanttTasks = (projectId: string) => {
         actual_hours: task.actual_hours || 0,
         category: (task as any).category || '',
         tags: Array.isArray((task as any).tags) ? (task as any).tags.filter((tag: any) => typeof tag === 'string') : [],
-        status: (['pending', 'in_progress', 'completed', 'blocked'].includes((task as any).status) ? (task as any).status : 'pending') as 'pending' | 'in_progress' | 'completed' | 'blocked',
+        status: task.progress === 100 ? 'completed' : 
+                task.progress > 0 ? 'in_progress' : 'pending',
         assignee: task.assigned_to || '',
         collaborators: (task as any).collaborators
       }));
       
       setTasks(convertedTasks);
     } catch (err) {
-      console.error('Erro ao buscar tarefas:', err);
+      console.error('❌ Erro ao buscar tarefas:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
       setTasks([]);
     } finally {
@@ -92,7 +94,7 @@ export const useGanttTasks = (projectId: string) => {
 
   const createTask = useCallback(async (taskData: Omit<GanttTask, 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      console.log('📤 Dados sendo enviados:', taskData);
+      console.log('📤 Criando nova tarefa:', taskData);
       
       // Ensure data types match the database schema
       const sanitizedData = {
@@ -110,7 +112,7 @@ export const useGanttTasks = (projectId: string) => {
         dependencies: Array.isArray(taskData.dependencies) ? taskData.dependencies : []
       };
       
-      console.log('📤 Dados de inserção:', sanitizedData);
+      console.log('📤 Dados sanitizados para inserção:', sanitizedData);
 
       const { data, error: createError } = await supabase
         .from('gantt_tasks')
@@ -119,12 +121,7 @@ export const useGanttTasks = (projectId: string) => {
         .single();
 
       if (createError) {
-        console.error('❌ Erro ao salvar tarefa:');
-        console.error('🔴 Erro completo:', createError);
-        console.error('🔴 Código:', createError.code);
-        console.error('🔴 Mensagem:', createError.message);
-        console.error('🔴 Detalhes:', createError.details);
-        console.error('🔴 Dados enviados:', sanitizedData);
+        console.error('❌ Erro ao criar tarefa:', createError);
         throw createError;
       }
 
@@ -149,7 +146,8 @@ export const useGanttTasks = (projectId: string) => {
         actual_hours: data.actual_hours || 0,
         category: (data as any).category || '',
         tags: Array.isArray((data as any).tags) ? (data as any).tags.filter((tag: any) => typeof tag === 'string') : [],
-        status: (['pending', 'in_progress', 'completed', 'blocked'].includes((data as any).status) ? (data as any).status : 'pending') as 'pending' | 'in_progress' | 'completed' | 'blocked',
+        status: data.progress === 100 ? 'completed' : 
+                data.progress > 0 ? 'in_progress' : 'pending',
         assignee: data.assigned_to || '',
         collaborators: (data as any).collaborators
       };
@@ -157,11 +155,10 @@ export const useGanttTasks = (projectId: string) => {
       // Atualizar estado local imediatamente
       setTasks(prev => [...prev, newTask]);
       
-      // Aguardar um pouco e recarregar do banco
-      setTimeout(async () => {
-        console.log('🔄 Recarregando tarefas do banco...');
-        await fetchTasks();
-      }, 100);
+      // Recarregar tarefas para garantir sincronização
+      setTimeout(() => {
+        fetchTasks();
+      }, 500);
       
       return { data: newTask, error: null };
     } catch (err) {
@@ -174,9 +171,17 @@ export const useGanttTasks = (projectId: string) => {
     try {
       console.log('📤 Atualizando tarefa:', taskId, updates);
 
+      // Sanitizar dados de atualização
+      const sanitizedUpdates = {
+        ...updates,
+        estimated_hours: updates.estimated_hours ? Number(updates.estimated_hours) : undefined,
+        progress: updates.progress !== undefined ? Number(updates.progress) : undefined,
+        actual_hours: updates.actual_hours !== undefined ? Number(updates.actual_hours) : undefined
+      };
+
       const { data, error: updateError } = await supabase
         .from('gantt_tasks')
-        .update(updates)
+        .update(sanitizedUpdates)
         .eq('id', taskId)
         .select()
         .single();
@@ -204,7 +209,8 @@ export const useGanttTasks = (projectId: string) => {
         actual_hours: data.actual_hours || 0,
         category: (data as any).category || '',
         tags: Array.isArray((data as any).tags) ? (data as any).tags.filter((tag: any) => typeof tag === 'string') : [],
-        status: (['pending', 'in_progress', 'completed', 'blocked'].includes((data as any).status) ? (data as any).status : 'pending') as 'pending' | 'in_progress' | 'completed' | 'blocked',
+        status: data.progress === 100 ? 'completed' : 
+                data.progress > 0 ? 'in_progress' : 'pending',
         assignee: data.assigned_to || '',
         collaborators: (data as any).collaborators
       };
@@ -215,11 +221,13 @@ export const useGanttTasks = (projectId: string) => {
       ));
 
       // Recarregar tarefas do banco para garantir sincronização
-      await fetchTasks();
+      setTimeout(() => {
+        fetchTasks();
+      }, 500);
 
       return { data: updatedTask, error: null };
     } catch (err) {
-      console.error('Erro ao atualizar tarefa:', err);
+      console.error('❌ Erro ao atualizar tarefa:', err);
       return { data: null, error: err };
     }
   }, [fetchTasks]);
@@ -241,11 +249,13 @@ export const useGanttTasks = (projectId: string) => {
       setTasks(prev => prev.filter(task => task.id !== taskId));
       
       // Recarregar tarefas do banco para garantir sincronização
-      await fetchTasks();
+      setTimeout(() => {
+        fetchTasks();
+      }, 500);
 
       return { error: null };
     } catch (err) {
-      console.error('Erro ao excluir tarefa:', err);
+      console.error('❌ Erro ao excluir tarefa:', err);
       return { error: err };
     }
   }, [fetchTasks]);
@@ -265,7 +275,7 @@ export const useGanttTasks = (projectId: string) => {
 
       return { error: null };
     } catch (err) {
-      console.error('Erro ao atualizar progresso:', err);
+      console.error('❌ Erro ao atualizar progresso:', err);
       return { error: err };
     }
   }, []);
@@ -280,59 +290,10 @@ export const useGanttTasks = (projectId: string) => {
 
       return { error: null };
     } catch (err) {
-      console.error('Erro ao reordenar tarefas:', err);
+      console.error('❌ Erro ao reordenar tarefas:', err);
       return { error: err };
     }
   }, []);
-
-  // Função de teste para verificar conexão
-  const testConnection = useCallback(async () => {
-    try {
-      console.log('🧪 Testando conexão com Supabase...');
-      
-      // Teste simples: inserir uma tarefa de teste
-      const testData = {
-        project_id: projectId,
-        name: 'Tarefa de Teste',
-        description: 'Teste de conexão',
-        start_date: '2024-01-01',
-        end_date: '2024-01-02',
-        progress: 0,
-        priority: 'medium' as const,
-        assigned_to: null,
-        dependencies: [],
-        is_milestone: false,
-        estimated_hours: 8,
-        actual_hours: 0
-      };
-
-      console.log('🧪 Dados de teste:', testData);
-
-      const { data, error } = await supabase
-        .from('gantt_tasks')
-        .insert(testData)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('❌ Erro no teste:', error);
-        return { success: false, error };
-      }
-
-      console.log('✅ Teste bem-sucedido:', data);
-      
-      // Limpar tarefa de teste
-      await supabase
-        .from('gantt_tasks')
-        .delete()
-        .eq('id', data.id);
-
-      return { success: true, data };
-    } catch (err) {
-      console.error('❌ Erro no teste de conexão:', err);
-      return { success: false, error: err };
-    }
-  }, [projectId]);
 
   useEffect(() => {
     fetchTasks();
@@ -348,7 +309,6 @@ export const useGanttTasks = (projectId: string) => {
     deleteTask,
     updateTaskProgress,
     reorderTasks,
-    refetch: fetchTasks,
-    testConnection
+    refetch: fetchTasks
   };
 };
