@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -29,7 +29,6 @@ class ErrorBoundary extends React.Component<Props, State> {
     
     // Em produção, enviar erro para serviço de monitoramento
     if (process.env.NODE_ENV === 'production') {
-      // Sentry.captureException(error, { contexts: { react: { errorInfo } } });
       console.log('Error would be sent to monitoring service:', { error, errorInfo });
     }
 
@@ -39,6 +38,11 @@ class ErrorBoundary extends React.Component<Props, State> {
   handleReload = () => {
     this.setState({ hasError: false, error: undefined, errorInfo: undefined });
     window.location.reload();
+  };
+
+  handleGoHome = () => {
+    this.setState({ hasError: false, error: undefined, errorInfo: undefined });
+    window.location.href = '/';
   };
 
   render() {
@@ -57,7 +61,7 @@ class ErrorBoundary extends React.Component<Props, State> {
               
               {process.env.NODE_ENV === 'development' && this.state.error && (
                 <details className="text-left mb-4 p-3 bg-gray-100 rounded text-xs">
-                  <summary className="font-medium cursor-pointer">Detalhes do erro</summary>
+                  <summary className="font-medium cursor-pointer">Detalhes do erro (Desenvolvimento)</summary>
                   <pre className="mt-2 whitespace-pre-wrap">
                     {this.state.error.toString()}
                     {this.state.errorInfo?.componentStack}
@@ -72,9 +76,10 @@ class ErrorBoundary extends React.Component<Props, State> {
                 </Button>
                 <Button 
                   variant="outline" 
-                  onClick={() => window.location.href = '/'}
+                  onClick={this.handleGoHome}
                   className="w-full"
                 >
+                  <Home className="h-4 w-4 mr-2" />
                   Voltar ao Início
                 </Button>
               </div>

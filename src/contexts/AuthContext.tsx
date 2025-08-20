@@ -49,7 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .from('admin_profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (adminData && !adminError) {
         console.log('✅ User is ADMIN:', adminData);
@@ -61,17 +61,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .from('client_profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('❌ Error fetching client profile:', error);
+        // Don't throw error, just return null to allow app to continue
         return null;
       }
 
-      console.log('✅ User is CLIENT:', data);
+      if (!data) {
+        console.log('⚠️ No client profile found, creating basic client profile');
+        // Create a basic client profile if none exists
+        const userEmail = session?.user?.email;
+        if (userEmail) {
+          const { data: newProfile, error: createError } = await supabase
+            .from('client_profiles')
+            .insert({
+              id: userId,
+              name: userEmail.split('@')[0],
+              email: userEmail,
+              is_primary_contact: true
+            })
+            .select()
+            .single();
+
+          if (createError) {
+            console.error('❌ Error creating client profile:', createError);
+            return null;
+          }
+
+          console.log('✅ Created new CLIENT profile:', newProfile);
+          return newProfile;
+        }
+        return null;
+      }
+
+      console.log('✅ Found existing CLIENT profile:', data);
       return data;
     } catch (error) {
-      console.error('❌ Error in fetchClientProfile:', error);
+      console.error('❌ Exception in fetchClientProfile:', error);
       return null;
     }
   };
@@ -84,52 +112,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       async (event, session) => {
         console.log('📡 Auth state change:', event, 'User ID:', session?.user?.id);
         
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Check if admin profile exists and create if needed
-          setTimeout(async () => {
-            // Check if user is admin by email
-            if (session.user.email?.includes('@ascalate.com.br')) {
-              console.log('🔧 Creating admin profile for:', session.user.email);
-              
-              // Try to create admin profile
-              const { data: adminData, error: adminError } = await supabase
-                .from('admin_profiles')
-                .upsert({
-                  id: session.user.id,
-                  name: session.user.email.split('@')[0],
-                  email: session.user.email,
-                  role: session.user.email === 'rafael.gontijo@ascalate.com.br' ? 'super_admin' : 'admin'
-                }, { onConflict: 'id' })
-                .select()
-                .single();
-              
-              if (adminError) {
-                console.error('❌ Error creating admin profile:', adminError);
-              } else {
-                console.log('✅ Admin profile created/updated:', adminData);
+        try {
+          setSession(session);
+          setUser(session?.user ?? null);
+          
+          if (session?.user) {
+            // Use setTimeout to prevent blocking the auth state change
+            setTimeout(async () => {
+              try {
+                const profile = await fetchClientProfile(session.user.id);
+                setClient(profile);
+              } catch (error) {
+                console.error('❌ Error fetching profile in timeout:', error);
+                setClient(null);
               }
-              
-              setClient(null); // Admin users don't need client profile
-            } else {
-              // Fetch client profile for non-admin users
-              const profile = await fetchClientProfile(session.user.id);
-              setClient(profile);
-            }
-          }, 0);
-        } else {
+            }, 0);
+          } else {
+            setClient(null);
+          }
+        } catch (error) {
+          console.error('❌ Error in auth state change handler:', error);
           setClient(null);
+        } finally {
+          setLoading(false);
         }
-        
-        setLoading(false);
       }
     );
 
     // Check for existing session
     const checkInitialSession = async () => {
       try {
+        console.log('🔍 Checking initial session...');
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
           console.error('❌ Error getting initial session:', error);
@@ -139,8 +152,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(session?.user ?? null);
           
           if (session?.user) {
-            const profile = await fetchClientProfile(session.user.id);
-            setClient(profile);
+            try {
+              const profile = await fetchClientProfile(session.user.id);
+              setClient(profile);
+            } catch (error) {
+              console.error('❌ Error fetching profile in initial check:', error);
+              setClient(null);
+            }
           }
         }
       } catch (error) {
@@ -176,8 +194,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (data.user) {
         console.log('✅ Login successful for user:', data.user.id);
-        const profile = await fetchClientProfile(data.user.id);
-        setClient(profile);
+        // Profile will be fetched by the auth state change listener
         toast.success('Login realizado com sucesso!');
       }
 
@@ -198,7 +215,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/cliente/login`,
+          emailRedirectTo: `${window.location.origin}/cliente`,
           data: userData || {}
         }
       });
