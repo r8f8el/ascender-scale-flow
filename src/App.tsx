@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import {
   BrowserRouter as Router,
@@ -6,7 +7,7 @@ import {
   Navigate
 } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
-import LoginPage from './pages/LoginPage';
+import LoginPage from './pages/ClientLogin';
 import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
@@ -22,28 +23,24 @@ import DashboardAprovacoes from './pages/client/DashboardAprovacoes';
 import ClientTeam from './pages/client/ClientTeam';
 import ClientContact from './pages/client/ClientContact';
 import ClientSchedule from './pages/client/ClientSchedule';
-import ClientFPADashboardReal from './pages/client/ClientFPADashboardReal';
-import ClientFPAScenarios from './pages/client/ClientFPAScenarios';
-import ClientFPAReports from './pages/client/ClientFPAReports';
-import ClientFPACommunication from './pages/client/ClientFPACommunication';
-import ClientFPAData from './pages/client/ClientFPAData';
-import ClientBIDashboard from './pages/client/ClientBIDashboard';
+import ClientFPADashboardReal from './pages/client/fpa/ClientFPADashboardReal';
+import ClientFPAScenarios from './pages/client/fpa/ClientFPAScenarios';
+import ClientFPAReports from './pages/client/fpa/ClientFPAReports';
+import ClientFPACommunication from './pages/client/fpa/ClientFPACommunication';
+import ClientFPAData from './pages/client/fpa/ClientFPAData';
+import ClientBIDashboard from './pages/client/fpa/ClientBIDashboard';
 import SecureTeamInviteSignup from './pages/SecureTeamInviteSignup';
 import TestInvitePage from './pages/client/TestInvitePage';
 
 function App() {
-  const { authStatus, checkAuthStatus } = useAuth();
-
-  useEffect(() => {
-    checkAuthStatus();
-  }, [checkAuthStatus]);
+  const { loading, isAuthenticated } = useAuth();
 
   const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-    if (authStatus.isLoading) {
+    if (loading) {
       return <div>Carregando...</div>;
     }
 
-    return authStatus.isAuthenticated ? (
+    return isAuthenticated ? (
       children
     ) : (
       <Navigate to="/login" replace />
