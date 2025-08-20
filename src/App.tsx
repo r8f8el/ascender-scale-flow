@@ -1,4 +1,5 @@
 
+
 import React, { useEffect } from 'react';
 import {
   BrowserRouter as Router,
@@ -8,9 +9,6 @@ import {
 } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/ClientLogin';
-import RegisterPage from './pages/RegisterPage';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
 import ClientArea from './pages/client/ClientArea';
 import ClientDocumentsNew from './pages/client/ClientDocumentsNew';
 import ClientGantt from './pages/client/ClientGantt';
@@ -51,9 +49,6 @@ function App() {
     <Router>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
         {/* Client Area Routes */}
         <Route path="/cliente" element={<ProtectedRoute><ClientArea /></ProtectedRoute>}>
@@ -90,3 +85,4 @@ function App() {
 }
 
 export default App;
+
