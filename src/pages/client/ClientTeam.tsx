@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +10,8 @@ import {
   Shield,
   CheckCircle,
   Clock,
-  UserPlus
+  UserPlus,
+  Eye
 } from 'lucide-react';
 import { useSecureTeamMembers, useSecureCompanyTeamMembers } from '@/hooks/useSecureTeamMembers';
 import { SecureInviteTeamMemberDialog } from '@/components/client/SecureInviteTeamMemberDialog';
@@ -87,10 +87,19 @@ const ClientTeam = () => {
           </p>
         </div>
         
-        <Button onClick={() => setInviteDialogOpen(true)}>
-          <UserPlus className="h-4 w-4 mr-2" />
-          Convidar Membro
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            onClick={() => window.open('/cliente/teste-convite', '_blank')}
+          >
+            <Eye className="h-4 w-4 mr-2" />
+            Ver Página de Convite
+          </Button>
+          <Button onClick={() => setInviteDialogOpen(true)}>
+            <UserPlus className="h-4 w-4 mr-2" />
+            Convidar Membro
+          </Button>
+        </div>
       </div>
 
       {/* Estatísticas da Equipe */}
