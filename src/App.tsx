@@ -13,7 +13,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
 
 // Lazy load components for better performance
-const Index = lazy(() => import('./pages/Index'));
 const LoginPage = lazy(() => import('./pages/ClientLogin'));
 const AdminLogin = lazy(() => import('./pages/AdminLogin'));
 const AdminArea = lazy(() => import('./pages/admin/AdminArea'));
@@ -32,10 +31,6 @@ function App() {
       <AdminAuthProvider>
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            {/* Public home page */}
-            <Route path="/home" element={<Index />} />
-            <Route path="/inicial" element={<Index />} />
-
             {/* Client Login routes */}
             <Route 
               path="/login" 
