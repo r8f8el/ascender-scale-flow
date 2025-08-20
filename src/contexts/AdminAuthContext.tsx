@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
@@ -32,7 +31,7 @@ const AdminAuthContext = createContext<AdminAuthContextType>({
 
 export const useAdminAuth = () => useContext(AdminAuthContext);
 
-const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
+export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
   const [admin, setAdmin] = useState<Admin | null>(null);
   const [user, setUser] = useState<User | null>(null);
