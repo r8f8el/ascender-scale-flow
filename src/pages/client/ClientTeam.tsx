@@ -90,7 +90,7 @@ const ClientTeam = () => {
         <div className="flex gap-2">
           <Button 
             variant="outline"
-            onClick={() => window.open('/cliente/teste-convite', '_blank')}
+            onClick={() => window.open('/convite-equipe', '_blank')}
           >
             <Eye className="h-4 w-4 mr-2" />
             Ver Página de Convite

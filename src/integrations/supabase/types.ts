@@ -2414,10 +2414,13 @@ export type Database = {
         Row: {
           accepted_at: string | null
           company_id: string
+          company_name: string | null
           created_at: string
           email: string
           expires_at: string
+          hierarchy_level_id: string | null
           id: string
+          invited_by_name: string | null
           invited_name: string | null
           inviter_id: string | null
           inviter_name: string
@@ -2429,10 +2432,13 @@ export type Database = {
         Insert: {
           accepted_at?: string | null
           company_id: string
+          company_name?: string | null
           created_at?: string
           email: string
           expires_at: string
+          hierarchy_level_id?: string | null
           id?: string
+          invited_by_name?: string | null
           invited_name?: string | null
           inviter_id?: string | null
           inviter_name: string
@@ -2444,10 +2450,13 @@ export type Database = {
         Update: {
           accepted_at?: string | null
           company_id?: string
+          company_name?: string | null
           created_at?: string
           email?: string
           expires_at?: string
+          hierarchy_level_id?: string | null
           id?: string
+          invited_by_name?: string | null
           invited_name?: string | null
           inviter_id?: string | null
           inviter_name?: string
@@ -2462,6 +2471,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_invitations_hierarchy_level_id_fkey"
+            columns: ["hierarchy_level_id"]
+            isOneToOne: false
+            referencedRelation: "hierarchy_levels"
             referencedColumns: ["id"]
           },
         ]
@@ -2785,6 +2801,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_team_invitation: {
+        Args: { p_token: string; p_user_id: string }
+        Returns: boolean
+      }
       check_auth_rate_limit: {
         Args: {
           p_attempt_type: string
