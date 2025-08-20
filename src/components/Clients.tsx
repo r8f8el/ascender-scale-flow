@@ -50,24 +50,6 @@ const Clients = () => {
               className="max-h-16 w-auto opacity-70 hover:opacity-100 transition-opacity"
             />
           </div>
-          
-          {/* Cliente 5 */}
-          <div className="flex items-center justify-center p-6 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
-            <img 
-              src="/lovable-uploads/244710e0-c1bc-438e-978d-5daddf1771c0.png" 
-              alt="Cliente 5" 
-              className="max-h-16 w-auto opacity-70 hover:opacity-100 transition-opacity"
-            />
-          </div>
-          
-          {/* Cliente 6 */}
-          <div className="flex items-center justify-center p-6 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
-            <img 
-              src="/lovable-uploads/56c3c6a9-9428-4d10-889f-078c025019d3.png" 
-              alt="Cliente 6" 
-              className="max-h-16 w-auto opacity-70 hover:opacity-100 transition-opacity"
-            />
-          </div>
         </div>
         
         <div className="text-center mt-12">
