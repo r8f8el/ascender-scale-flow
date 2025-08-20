@@ -79,20 +79,16 @@ function App() {
             {/* Secure Team Invitation Signup */}
             <Route path="/convite-seguro" element={<SecureTeamInviteSignup />} />
 
-            {/* Default redirects */}
+            {/* Root redirect to home page */}
             <Route 
               path="/" 
-              element={
-                isAuthenticated ? <Navigate to="/cliente" replace /> : <Navigate to="/login" replace />
-              } 
+              element={<Navigate to="/home" replace />} 
             />
             
-            {/* Catch all - redirect to appropriate page */}
+            {/* Catch all - redirect to home page */}
             <Route 
               path="*" 
-              element={
-                isAuthenticated ? <Navigate to="/cliente" replace /> : <Navigate to="/login" replace />
-              } 
+              element={<Navigate to="/home" replace />} 
             />
           </Routes>
         </Suspense>
