@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,12 +11,21 @@ import {
   Clock,
   AlertCircle,
   CheckCircle,
-  Filter
+  Filter,
+  Trash2,
+  MoreVertical
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useClientTicketActions } from '@/hooks/useClientTicketActions';
 
 interface Ticket {
   id: string;
@@ -39,6 +49,7 @@ interface Ticket {
 const ClientTickets = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { deleteTicket } = useClientTicketActions();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -100,6 +111,15 @@ const ClientTickets = () => {
   const handleNewTicket = () => {
     console.log('Navegando para abrir chamado...');
     window.location.href = '/abrir-chamado';
+  };
+
+  const handleDeleteTicket = async (ticketId: string) => {
+    if (confirm('Tem certeza que deseja excluir este chamado? Esta ação não pode ser desfeita.')) {
+      const success = await deleteTicket(ticketId);
+      if (success) {
+        setTickets(prev => prev.filter(t => t.id !== ticketId));
+      }
+    }
   };
 
   const getStatusColor = (ticket: Ticket) => {
@@ -246,7 +266,7 @@ const ClientTickets = () => {
         </CardContent>
       </Card>
 
-      {/* Lista de chamados */}
+      {/* Lista de chamados com opção de exclusão */}
       <div className="space-y-4">
         {filteredTickets.length === 0 ? (
           <Card>
@@ -269,7 +289,7 @@ const ClientTickets = () => {
           </Card>
         ) : (
           filteredTickets.map((ticket) => (
-            <Card key={ticket.id} className="hover:shadow-md transition-shadow cursor-pointer">
+            <Card key={ticket.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -289,20 +309,38 @@ const ClientTickets = () => {
                       <span>{ticket.responses_count || 0} respostas</span>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-3">
-                    <Badge className={getStatusColor(ticket)}>
-                      <div className="flex items-center gap-1">
-                        {getStatusIcon(ticket)}
-                        {getStatusLabel(ticket)}
-                      </div>
-                    </Badge>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => navigate(`/cliente/chamados/${ticket.id}`)}
-                    >
-                      Ver Detalhes
-                    </Button>
+                  <div className="flex items-center gap-3">
+                    <div className="flex flex-col items-end gap-3">
+                      <Badge className={getStatusColor(ticket)}>
+                        <div className="flex items-center gap-1">
+                          {getStatusIcon(ticket)}
+                          {getStatusLabel(ticket)}
+                        </div>
+                      </Badge>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => navigate(`/cliente/chamados/${ticket.id}`)}
+                      >
+                        Ver Detalhes
+                      </Button>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem 
+                          onClick={() => handleDeleteTicket(ticket.id)}
+                          className="text-red-600 focus:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Excluir Chamado
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               </CardContent>

@@ -39,7 +39,7 @@ const TicketsAdmin = () => {
     loadData
   } = useTicketData();
 
-  const { assignTicket, updateTicketStatus, addResponse } = useTicketActions(tickets, setTickets, statuses);
+  const { assignTicket, updateTicketStatus, addResponse, deleteTicket } = useTicketActions(tickets, setTickets, statuses);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -98,6 +98,15 @@ const TicketsAdmin = () => {
     const success = await addResponse(selectedTicket.id, response);
     if (success) {
       setResponse('');
+    }
+  };
+
+  const handleDeleteTicket = async (ticketId: string) => {
+    if (confirm('Tem certeza que deseja excluir este chamado? Esta ação não pode ser desfeita.')) {
+      const success = await deleteTicket(ticketId);
+      if (success && selectedTicket && selectedTicket.id === ticketId) {
+        closeDetails();
+      }
     }
   };
 
@@ -182,6 +191,7 @@ const TicketsAdmin = () => {
                 onAssignTicket={handleAssignTicket}
                 onUpdateStatus={handleUpdateStatus}
                 onAddResponse={handleAddResponse}
+                onDeleteTicket={handleDeleteTicket}
                 getStatusDisplay={getStatusDisplay}
                 getPriorityDisplay={getPriorityDisplay}
                 getCategoryDisplay={getCategoryDisplay}

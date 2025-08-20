@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Check, MessageSquare, Mail } from 'lucide-react';
+import { Check, MessageSquare, Mail, Trash2 } from 'lucide-react';
 
 interface Ticket {
   id: string;
@@ -52,6 +51,7 @@ interface TicketDetailsProps {
   onAssignTicket: (ticketId: string, adminId: string) => void;
   onUpdateStatus: (ticketId: string, statusId: string) => void;
   onAddResponse: () => void;
+  onDeleteTicket: (ticketId: string) => void;
   getStatusDisplay: (statusId: string) => { name: string; color: string };
   getPriorityDisplay: (priorityId: string) => { name: string; color: string };
   getCategoryDisplay: (categoryId: string) => string;
@@ -69,6 +69,7 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
   onAssignTicket,
   onUpdateStatus,
   onAddResponse,
+  onDeleteTicket,
   getStatusDisplay,
   getPriorityDisplay,
   getCategoryDisplay
@@ -97,6 +98,14 @@ export const TicketDetails: React.FC<TicketDetailsProps> = ({
             onClick={onToggleChat}
           >
             <MessageSquare className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => onDeleteTicket(ticket.id)}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+          >
+            <Trash2 className="h-4 w-4" />
           </Button>
           <Button 
             variant="ghost" 
