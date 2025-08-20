@@ -104,7 +104,6 @@ const Services = () => {
               className="h-full"
             >
               <Card className="overflow-hidden border-none shadow-lg hover:shadow-xl transition-all duration-300 h-full flex flex-col">
-                <div className="h-2 bg-gradient-to-r from-blue-500 to-orange-500"></div>
                 <CardContent className="p-6 lg:p-8 flex-grow flex flex-col">
                   <div className={`w-14 h-14 lg:w-16 lg:h-16 rounded-full ${service.bgColor} flex items-center justify-center mb-4 lg:mb-6`}>
                     <service.icon className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600" />
