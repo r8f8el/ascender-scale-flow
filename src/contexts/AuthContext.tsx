@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,6 +42,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchClientProfile = async (userId: string) => {
     try {
+      console.log('👤 Buscando perfil do cliente para userId:', userId);
+      
       // First check if user is admin
       const { data: adminData, error: adminError } = await supabase
         .from('admin_profiles')
@@ -61,23 +64,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (error) {
-        console.error('Error fetching client profile:', error);
+        console.error('❌ Error fetching client profile:', error);
         return null;
       }
 
       console.log('✅ User is CLIENT:', data);
       return data;
     } catch (error) {
-      console.error('Error in fetchClientProfile:', error);
+      console.error('❌ Error in fetchClientProfile:', error);
       return null;
     }
   };
 
   useEffect(() => {
+    console.log('🔄 Setting up auth state listener');
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state change:', event, session?.user?.id);
+        console.log('📡 Auth state change:', event, 'User ID:', session?.user?.id);
         
         setSession(session);
         setUser(session?.user ?? null);
@@ -101,7 +106,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .select()
                 .single();
               
-              console.log('✅ Admin profile created/updated:', adminData);
+              if (adminError) {
+                console.error('❌ Error creating admin profile:', adminError);
+              } else {
+                console.log('✅ Admin profile created/updated:', adminData);
+              }
+              
               setClient(null); // Admin users don't need client profile
             } else {
               // Fetch client profile for non-admin users
@@ -118,36 +128,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session check:', session?.user?.id);
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchClientProfile(session.user.id).then(setClient);
+    const checkInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('❌ Error getting initial session:', error);
+        } else {
+          console.log('🔍 Initial session check:', session?.user?.id);
+          setSession(session);
+          setUser(session?.user ?? null);
+          
+          if (session?.user) {
+            const profile = await fetchClientProfile(session.user.id);
+            setClient(profile);
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error in checkInitialSession:', error);
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
-    });
+    };
 
-    return () => subscription.unsubscribe();
+    checkInitialSession();
+
+    return () => {
+      console.log('🧹 Cleaning up auth subscription');
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
     try {
+      console.log('🔐 Attempting login for:', email);
       setLoading(true);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        console.error('Login error:', error);
+        console.error('❌ Login error:', error);
         toast.error('Erro ao fazer login: ' + error.message);
         return { error };
       }
 
       if (data.user) {
+        console.log('✅ Login successful for user:', data.user.id);
         const profile = await fetchClientProfile(data.user.id);
         setClient(profile);
         toast.success('Login realizado com sucesso!');
@@ -155,7 +183,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       return { error: null };
     } catch (error: any) {
-      console.error('Login exception:', error);
+      console.error('❌ Login exception:', error);
       toast.error('Erro inesperado ao fazer login');
       return { error };
     } finally {
@@ -176,7 +204,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) {
-        console.error('Signup error:', error);
+        console.error('❌ Signup error:', error);
         toast.error('Erro ao criar conta: ' + error.message);
         return { error };
       }
@@ -187,7 +215,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       return { error: null };
     } catch (error: any) {
-      console.error('Signup exception:', error);
+      console.error('❌ Signup exception:', error);
       toast.error('Erro inesperado ao criar conta');
       return { error };
     } finally {
@@ -197,18 +225,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
+      console.log('👋 Attempting logout');
       const { error } = await supabase.auth.signOut();
       if (error) {
-        console.error('Logout error:', error);
+        console.error('❌ Logout error:', error);
         toast.error('Erro ao fazer logout');
       } else {
+        console.log('✅ Logout successful');
         setUser(null);
         setSession(null);
         setClient(null);
         toast.success('Logout realizado com sucesso!');
       }
     } catch (error) {
-      console.error('Logout exception:', error);
+      console.error('❌ Logout exception:', error);
       toast.error('Erro inesperado ao fazer logout');
     }
   };

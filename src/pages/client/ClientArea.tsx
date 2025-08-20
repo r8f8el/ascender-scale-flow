@@ -40,12 +40,17 @@ const ClientArea = () => {
   const { client, logout } = useAuth();
   const navigate = useNavigate();
 
+  console.log('🔍 ClientArea: Renderizando com cliente:', client?.name);
+
   const handleLogout = () => {
+    console.log('👋 ClientArea: Fazendo logout');
     logout();
-    navigate('/cliente/login');
+    navigate('/login');
   };
 
-  console.log('🔍 ClientArea: Renderizando com cliente:', client?.name);
+  if (!client) {
+    console.log('⚠️ ClientArea: Cliente não encontrado, mas usuário autenticado');
+  }
 
   return (
     <ErrorBoundary>
@@ -55,7 +60,7 @@ const ClientArea = () => {
           
           <SidebarInset className="flex-1">
             <ClientHeader 
-              clientName={client?.name}
+              clientName={client?.name || 'Usuário'}
               onLogout={handleLogout}
             />
             
