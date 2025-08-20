@@ -101,16 +101,21 @@ export const useKanbanColumns = (boardId: string) => {
 
   const reorderColumns = async (newOrder: KanbanColumn[]) => {
     try {
-      const updates = newOrder.map((column, index) => ({
-        id: column.id,
-        column_order: index
-      }));
+      // Update each column individually
+      const updatePromises = newOrder.map((column, index) =>
+        supabase
+          .from('kanban_columns')
+          .update({ column_order: index })
+          .eq('id', column.id)
+      );
 
-      const { error } = await supabase
-        .from('kanban_columns')
-        .upsert(updates);
-
-      if (error) throw error;
+      const results = await Promise.all(updatePromises);
+      
+      // Check if any update failed
+      const errors = results.filter(result => result.error);
+      if (errors.length > 0) {
+        throw new Error('Failed to update column order');
+      }
       
       setColumns(newOrder);
     } catch (error) {
