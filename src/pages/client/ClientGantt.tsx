@@ -54,7 +54,7 @@ export default function ClientGantt() {
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [assigneeFilter, setAssigneeFilter] = useState('all');
 
-  // Hooks para dados
+  // Hooks para dados - TODOS OS HOOKS DEVEM SER CHAMADOS INCONDICIONALMENTE
   const { 
     projects, 
     loading: projectsLoading, 
@@ -115,14 +115,12 @@ export default function ClientGantt() {
     }
   };
 
-  // Funções auxiliares para visualização dinâmica
   const getTimelineHeaders = () => {
     const today = new Date();
     const headers: string[] = [];
     
     switch (viewMode) {
       case 'day':
-        // Mostrar próximos 7 dias
         for (let i = 0; i < 7; i++) {
           const date = new Date(today);
           date.setDate(today.getDate() + i);
@@ -130,7 +128,6 @@ export default function ClientGantt() {
         }
         break;
       case 'week':
-        // Mostrar próximas 4 semanas
         for (let i = 0; i < 4; i++) {
           const date = new Date(today);
           date.setDate(today.getDate() + (i * 7));
@@ -142,7 +139,6 @@ export default function ClientGantt() {
         }
         break;
       case 'month':
-        // Mostrar próximos 6 meses
         for (let i = 0; i < 6; i++) {
           const date = new Date(today);
           date.setMonth(today.getMonth() + i);
@@ -155,7 +151,7 @@ export default function ClientGantt() {
   };
 
   const getTodayPosition = () => {
-    return 264; // Posição fixa para a linha "Hoje"
+    return 264;
   };
 
   const getTimelineCells = (task: any) => {
@@ -164,7 +160,6 @@ export default function ClientGantt() {
     
     switch (viewMode) {
       case 'day':
-        // 7 células para 7 dias
         for (let i = 0; i < 7; i++) {
           const date = new Date(today);
           date.setDate(today.getDate() + i);
@@ -181,7 +176,6 @@ export default function ClientGantt() {
         }
         break;
       case 'week':
-        // 4 células para 4 semanas
         for (let i = 0; i < 4; i++) {
           const date = new Date(today);
           date.setDate(today.getDate() + (i * 7));
@@ -203,7 +197,6 @@ export default function ClientGantt() {
         }
         break;
       case 'month':
-        // 6 células para 6 meses
         for (let i = 0; i < 6; i++) {
           const date = new Date(today);
           date.setMonth(today.getMonth() + i);
@@ -282,7 +275,6 @@ export default function ClientGantt() {
         description: "Tarefa excluída com sucesso"
       });
 
-      // Recarregar tarefas
       refetchTasks();
     } catch (error) {
       console.error('Erro ao excluir tarefa:', error);
@@ -297,7 +289,6 @@ export default function ClientGantt() {
   const handleTaskSaved = async () => {
     setIsTaskModalOpen(false);
     setSelectedTask(null);
-    // Recarregar tarefas
     refetchTasks();
   };
 
@@ -313,14 +304,13 @@ export default function ClientGantt() {
         return;
       }
 
-      // Determinar progresso baseado no status
       let newProgress = 0;
       switch (newStatus) {
         case 'completed':
           newProgress = 100;
           break;
         case 'in_progress':
-          newProgress = Math.max(task.progress, 10); // Se já tem progresso, manter; se não, pelo menos 10%
+          newProgress = Math.max(task.progress, 10);
           break;
         case 'blocked':
         case 'pending':
@@ -332,7 +322,6 @@ export default function ClientGantt() {
 
       console.log(`🔄 Atualizando tarefa ${taskId}: status=${newStatus}, progress=${newProgress}`);
 
-      // Atualizar no banco de dados - usar apenas o campo progress
       const { data, error } = await supabase
         .from('gantt_tasks')
         .update({
@@ -354,7 +343,6 @@ export default function ClientGantt() {
         description: `Status da tarefa alterado para: ${newStatus.replace('_', ' ')} (${newProgress}%)`
       });
 
-      // Recarregar tarefas para garantir sincronização
       setTimeout(() => {
         refetchTasks();
       }, 500);
