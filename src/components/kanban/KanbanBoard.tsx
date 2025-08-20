@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,23 +13,24 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useKanbanData, KanbanTask, KanbanColumn } from '@/hooks/useKanbanBoards';
 import { useCollaborators } from '@/hooks/useCollaborators';
-import { Plus, Calendar as CalendarIcon, Clock, User, Flag, MoreVertical } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Clock, User, Flag, MoreVertical, Paperclip, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TaskCommentsKanban } from '@/components/kanban/TaskComments';
 import { TaskTimeLogsKanban } from '@/components/kanban/TaskTimeLogs';
+import { TaskFileUpload } from '@/components/kanban/TaskFileUpload';
 
 interface KanbanBoardProps {
   boardId: string;
 }
 
 const priorityColors = {
-  low: 'bg-blue-100 text-blue-800 border-blue-200',
-  medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  high: 'bg-orange-100 text-orange-800 border-orange-200',
-  urgent: 'bg-red-100 text-red-800 border-red-200'
+  low: 'bg-blue-50 text-blue-700 border-blue-200',
+  medium: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+  high: 'bg-orange-50 text-orange-700 border-orange-200',
+  urgent: 'bg-red-50 text-red-700 border-red-200'
 };
 
 const priorityLabels = {
@@ -52,13 +54,15 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
     assigned_to: string;
     due_date: Date | undefined;
     estimated_hours: string;
+    attachments: any[];
   }>({
     title: '',
     description: '',
     priority: 'medium',
     assigned_to: '',
     due_date: undefined,
-    estimated_hours: ''
+    estimated_hours: '',
+    attachments: []
   });
 
   const resetForm = () => {
@@ -68,7 +72,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
       priority: 'medium',
       assigned_to: '',
       due_date: undefined,
-      estimated_hours: ''
+      estimated_hours: '',
+      attachments: []
     });
     setEditingTask(null);
     setSelectedColumnId('');
@@ -87,7 +92,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
       priority: task.priority as 'low' | 'medium' | 'high' | 'urgent',
       assigned_to: task.assigned_to || '',
       due_date: task.due_date ? new Date(task.due_date) : undefined,
-      estimated_hours: task.estimated_hours?.toString() || ''
+      estimated_hours: task.estimated_hours?.toString() || '',
+      attachments: task.attachments || []
     });
     setIsTaskDialogOpen(true);
   };
@@ -110,7 +116,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
       task_order: editingTask ? editingTask.task_order : tasks.filter(t => t.column_id === selectedColumnId).length,
       actual_hours: editingTask ? editingTask.actual_hours : 0,
       labels: editingTask ? editingTask.labels : [],
-      attachments: editingTask ? editingTask.attachments : [],
+      attachments: taskForm.attachments,
       checklist: editingTask ? editingTask.checklist : []
     };
 
@@ -156,16 +162,16 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
         <div className="flex gap-6 overflow-x-auto pb-4 flex-1">
           {columns.map((column) => (
             <div key={column.id} className="flex-shrink-0 w-80">
-              <Card className="h-full flex flex-col">
-                <CardHeader className="pb-3">
+              <Card className="h-full flex flex-col rounded-2xl border-0 shadow-lg bg-gradient-to-b from-card to-card/80">
+                <CardHeader className="pb-3 bg-gradient-to-r from-muted/30 to-background/50 rounded-t-2xl">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-3">
                       <div
-                        className="w-3 h-3 rounded-full"
+                        className="w-3 h-3 rounded-full shadow-lg"
                         style={{ backgroundColor: column.color }}
                       />
-                      {column.name}
-                      <Badge variant="secondary" className="ml-auto">
+                      <span>{column.name}</span>
+                      <Badge variant="secondary" className="ml-auto rounded-full px-2 py-1 text-xs">
                         {getTasksByColumn(column.id).length}
                       </Badge>
                     </CardTitle>
@@ -173,25 +179,25 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
                       size="sm"
                       variant="ghost"
                       onClick={() => handleCreateTask(column.id)}
-                      className="p-1 h-6 w-6"
+                      className="p-2 h-8 w-8 rounded-xl hover:bg-primary/10"
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
                   {column.wip_limit && (
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-2 py-1 w-fit">
                       Limite: {getTasksByColumn(column.id).length}/{column.wip_limit}
                     </div>
                   )}
                 </CardHeader>
-                <CardContent className="flex-1 p-3 pt-0">
+                <CardContent className="flex-1 p-4 pt-2">
                   <Droppable droppableId={column.id}>
                     {(provided, snapshot) => (
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={`space-y-3 min-h-32 ${
-                          snapshot.isDraggingOver ? 'bg-muted/30 rounded-lg' : ''
+                        className={`space-y-3 min-h-32 transition-colors duration-200 rounded-xl p-2 ${
+                          snapshot.isDraggingOver ? 'bg-primary/5 ring-2 ring-primary/20' : ''
                         }`}
                       >
                         {getTasksByColumn(column.id).map((task, index) => (
@@ -201,19 +207,19 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                className={`cursor-pointer hover:shadow-md transition-shadow ${
-                                  snapshot.isDragging ? 'shadow-lg' : ''
-                                }`}
+                                className={`cursor-pointer hover:shadow-lg transition-all duration-200 rounded-xl border-0 ${
+                                  snapshot.isDragging ? 'shadow-2xl ring-2 ring-primary/30 rotate-2' : 'shadow-md'
+                                } bg-gradient-to-br from-background to-background/80`}
                                 onClick={() => handleEditTask(task)}
                               >
-                                <CardContent className="p-3">
-                                  <div className="space-y-2">
+                                <CardContent className="p-4">
+                                  <div className="space-y-3">
                                     <div className="flex items-start justify-between">
-                                      <h4 className="font-medium text-sm leading-tight">
+                                      <h4 className="font-semibold text-sm leading-tight">
                                         {task.title}
                                       </h4>
                                       <Badge
-                                        className={`text-xs ${priorityColors[task.priority]}`}
+                                        className={`text-xs rounded-full px-2 py-1 ${priorityColors[task.priority]}`}
                                       >
                                         <Flag className="w-3 h-3 mr-1" />
                                         {priorityLabels[task.priority]}
@@ -221,30 +227,36 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
                                     </div>
                                     
                                     {task.description && (
-                                      <p className="text-xs text-muted-foreground line-clamp-2">
+                                      <p className="text-xs text-muted-foreground line-clamp-2 bg-muted/30 rounded-lg p-2">
                                         {task.description}
                                       </p>
                                     )}
                                     
                                     <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-3">
                                         {task.due_date && (
-                                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                          <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 rounded-lg px-2 py-1">
                                             <CalendarIcon className="w-3 h-3" />
                                             {format(new Date(task.due_date), 'dd/MM', { locale: ptBR })}
                                           </div>
                                         )}
                                         {task.estimated_hours && (
-                                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                          <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 rounded-lg px-2 py-1">
                                             <Clock className="w-3 h-3" />
                                             {task.estimated_hours}h
+                                          </div>
+                                        )}
+                                        {task.attachments && task.attachments.length > 0 && (
+                                          <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 rounded-lg px-2 py-1">
+                                            <Paperclip className="w-3 h-3" />
+                                            {task.attachments.length}
                                           </div>
                                         )}
                                       </div>
                                       
                                       {task.collaborators && (
-                                        <Avatar className="h-6 w-6">
-                                          <AvatarFallback className="text-xs">
+                                        <Avatar className="h-7 w-7 ring-2 ring-background">
+                                          <AvatarFallback className="text-xs font-medium bg-gradient-to-br from-primary/20 to-primary/10">
                                             {task.collaborators.name
                                               .split(' ')
                                               .map(n => n[0])
@@ -272,31 +284,36 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
       </DragDropContext>
 
       <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl rounded-2xl">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-xl flex items-center gap-2">
               {editingTask ? 'Editar Tarefa' : 'Nova Tarefa'}
+              <Sparkles className="w-5 h-5 text-primary" />
             </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Título *</label>
-              <Input
-                value={taskForm.title}
-                onChange={(e) => setTaskForm(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="Digite o título da tarefa..."
-              />
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium">Descrição</label>
-              <Textarea
-                value={taskForm.description}
-                onChange={(e) => setTaskForm(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Descreva a tarefa..."
-                rows={3}
-              />
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label className="text-sm font-medium">Título *</label>
+                <Input
+                  value={taskForm.title}
+                  onChange={(e) => setTaskForm(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="Digite o título da tarefa..."
+                  className="rounded-xl"
+                />
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium">Descrição</label>
+                <Textarea
+                  value={taskForm.description}
+                  onChange={(e) => setTaskForm(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Descreva a tarefa..."
+                  rows={3}
+                  className="rounded-xl"
+                />
+              </div>
             </div>
             
             <div className="grid grid-cols-2 gap-4">
@@ -306,7 +323,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
                   value={taskForm.priority}
                   onValueChange={(value) => setTaskForm(prev => ({ ...prev, priority: value as any }))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="rounded-xl">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -324,7 +341,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
                   value={taskForm.assigned_to}
                   onValueChange={(value) => setTaskForm(prev => ({ ...prev, assigned_to: value }))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="rounded-xl">
                     <SelectValue placeholder="Selecionar..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -344,7 +361,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
                 <label className="text-sm font-medium">Data de Entrega</label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start text-left">
+                    <Button variant="outline" className="w-full justify-start text-left rounded-xl">
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {taskForm.due_date 
                         ? format(taskForm.due_date, 'dd/MM/yyyy', { locale: ptBR })
@@ -372,16 +389,28 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
                   placeholder="0"
                   min="0"
                   step="0.5"
+                  className="rounded-xl"
                 />
               </div>
+            </div>
+
+            {/* File Upload Section */}
+            <div className="border rounded-xl p-4 bg-muted/30">
+              <TaskFileUpload
+                taskId={editingTask?.id || 'new'}
+                attachments={taskForm.attachments}
+                onAttachmentsUpdate={(attachments) => 
+                  setTaskForm(prev => ({ ...prev, attachments }))
+                }
+              />
             </div>
             
             {editingTask && (
               <div className="pt-2">
                 <Tabs defaultValue="comments">
-                  <TabsList className="grid grid-cols-2 w-full sm:w-auto">
-                    <TabsTrigger value="comments">Comentários</TabsTrigger>
-                    <TabsTrigger value="time">Tempo</TabsTrigger>
+                  <TabsList className="grid grid-cols-2 w-full sm:w-auto rounded-xl">
+                    <TabsTrigger value="comments" className="rounded-lg">Comentários</TabsTrigger>
+                    <TabsTrigger value="time" className="rounded-lg">Tempo</TabsTrigger>
                   </TabsList>
                   <TabsContent value="comments">
                     <TaskCommentsKanban taskId={editingTask.id} />
@@ -393,9 +422,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
               </div>
             )}
             
-            
-            <div className="flex justify-end gap-2 pt-4">
-              <Button variant="outline" onClick={() => setIsTaskDialogOpen(false)}>
+            <div className="flex justify-end gap-3 pt-4 border-t">
+              <Button variant="outline" onClick={() => setIsTaskDialogOpen(false)} className="rounded-xl">
                 Cancelar
               </Button>
               {editingTask && (
@@ -406,11 +434,12 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ boardId }) => {
                     setIsTaskDialogOpen(false);
                     resetForm();
                   }}
+                  className="rounded-xl"
                 >
                   Excluir
                 </Button>
               )}
-              <Button onClick={handleSubmitTask}>
+              <Button onClick={handleSubmitTask} className="rounded-xl">
                 {editingTask ? 'Atualizar' : 'Criar'} Tarefa
               </Button>
             </div>

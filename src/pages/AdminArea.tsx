@@ -54,6 +54,8 @@ const AdminArea = () => {
               <Route path="logs" element={<LogsAdmin />} />
               <Route path="aprovacoes" element={<AdminApprovals />} />
               <Route path="testing" element={<TestingDashboard />} />
+              <Route path="kanban" element={<KanbanAdmin />} />
+              <Route path="gantt" element={<GanttAdmin />} />
               
               {/* FP&A Admin Routes */}
               <Route path="fpa" element={<AdminFPADashboard />} />
