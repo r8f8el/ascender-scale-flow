@@ -31,7 +31,7 @@ export const useInviteValidation = (token: string | null) => {
       try {
         console.log('Validando token:', token);
 
-        // Primeiro buscar na tabela team_invitations que tem o token
+        // Buscar convite válido
         const { data: invitationData, error: inviteError } = await supabase
           .from('team_invitations')
           .select('*')
@@ -53,10 +53,7 @@ export const useInviteValidation = (token: string | null) => {
             id,
             invited_email,
             name,
-            hierarchy_levels!inner(
-              name,
-              level
-            )
+            hierarchy_level_id
           `)
           .eq('invited_email', invitationData.email)
           .eq('company_id', invitationData.company_id)
@@ -69,13 +66,27 @@ export const useInviteValidation = (token: string | null) => {
           return;
         }
 
+        // Buscar dados do nível hierárquico
+        const { data: hierarchyData, error: hierarchyError } = await supabase
+          .from('hierarchy_levels')
+          .select('name, level')
+          .eq('id', memberData.hierarchy_level_id)
+          .single();
+
+        if (hierarchyError || !hierarchyData) {
+          console.error('Erro ao buscar nível hierárquico:', hierarchyError);
+          setError('Dados do nível hierárquico não encontrados');
+          return;
+        }
+
         setInviteData({
           id: memberData.id,
           invited_email: memberData.invited_email,
           name: memberData.name,
           inviter_name: invitationData.inviter_name || 'Administrador',
           company_name: invitationData.company_name || 'Empresa',
-          hierarchy_level: memberData.hierarchy_levels
+          message: invitationData.message,
+          hierarchy_level: hierarchyData
         });
 
       } catch (error: any) {

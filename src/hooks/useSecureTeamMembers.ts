@@ -101,36 +101,7 @@ export const useSecureInviteTeamMember = () => {
       console.log('Enviando convite para:', { email: sanitizedEmail, name: sanitizedName });
 
       try {
-        // Usar a função RPC existente que já funciona
-        const { data: invitationId, error: inviteError } = await supabase.rpc('invite_team_member_secure', {
-          p_email: sanitizedEmail,
-          p_name: sanitizedName,
-          p_hierarchy_level_id: hierarchyLevelId
-        });
-
-        if (inviteError) {
-          console.error('Erro ao criar convite:', inviteError);
-          throw new Error(`Erro ao criar convite: ${inviteError.message}`);
-        }
-
-        console.log('Convite criado com sucesso. ID:', invitationId);
-
-        // Buscar o token do convite criado na tabela team_invitations
-        const { data: inviteTokenData, error: tokenError } = await supabase
-          .from('team_invitations')
-          .select('token')
-          .eq('email', sanitizedEmail)
-          .eq('status', 'pending')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        if (tokenError || !inviteTokenData?.token) {
-          console.error('Erro ao obter token do convite:', tokenError);
-          throw new Error('Erro ao gerar token do convite');
-        }
-
-        // Obter dados da empresa atual
+        // Obter dados do usuário atual
         const { data: userProfile, error: profileError } = await supabase
           .from('client_profiles')
           .select('name, company')
@@ -142,7 +113,48 @@ export const useSecureInviteTeamMember = () => {
           throw new Error('Erro ao obter dados do usuário');
         }
 
-        const inviteUrl = `${window.location.origin}/convite-equipe?token=${inviteTokenData.token}`;
+        // Gerar token único
+        const token = crypto.randomUUID() + '-' + Date.now();
+        
+        // Criar convite na tabela team_invitations
+        const { data: inviteData, error: inviteError } = await supabase
+          .from('team_invitations')
+          .insert({
+            email: sanitizedEmail,
+            company_id: userProfile.id || (await supabase.auth.getUser()).data.user?.id,
+            company_name: userProfile.company || userProfile.name,
+            inviter_name: userProfile.name,
+            token: token,
+            message: message || 'Você foi convidado para se juntar à nossa equipe na plataforma Ascalate',
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 dias
+            status: 'pending'
+          })
+          .select()
+          .single();
+
+        if (inviteError) {
+          console.error('Erro ao criar convite:', inviteError);
+          throw new Error(`Erro ao criar convite: ${inviteError.message}`);
+        }
+
+        // Criar entrada em team_members
+        const { error: memberError } = await supabase
+          .from('team_members')
+          .insert({
+            company_id: userProfile.id || (await supabase.auth.getUser()).data.user?.id,
+            invited_email: sanitizedEmail,
+            name: sanitizedName,
+            hierarchy_level_id: hierarchyLevelId,
+            invited_by: (await supabase.auth.getUser()).data.user?.id,
+            status: 'pending'
+          });
+
+        if (memberError) {
+          console.error('Erro ao criar membro da equipe:', memberError);
+          // Continue mesmo com erro, pois o convite foi criado
+        }
+
+        const inviteUrl = `${window.location.origin}/convite-equipe/cadastro?token=${token}`;
         console.log('URL do convite:', inviteUrl);
 
         console.log('Enviando email via edge function...');
@@ -153,7 +165,7 @@ export const useSecureInviteTeamMember = () => {
             to: sanitizedEmail,
             inviterName: userProfile.name || 'Administrador',
             invitedName: sanitizedName,
-            companyName: userProfile.company || 'Sua Empresa',
+            companyName: userProfile.company || userProfile.name || 'Sua Empresa',
             inviteUrl: inviteUrl,
             message: message || 'Você foi convidado para se juntar à nossa equipe na plataforma Ascalate'
           }
@@ -167,8 +179,8 @@ export const useSecureInviteTeamMember = () => {
         console.log('Email enviado com sucesso:', emailData);
 
         return { 
-          invitationId, 
-          token: inviteTokenData.token,
+          invitationId: inviteData.id, 
+          token: token,
           email: emailData,
           invitedEmail: sanitizedEmail,
           invitedName: sanitizedName
@@ -181,8 +193,8 @@ export const useSecureInviteTeamMember = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['secure-team-members'] });
       queryClient.invalidateQueries({ queryKey: ['company-team-members'] });
-      toast.success(`Seu convite foi enviado para ${data.invitedName} (${data.invitedEmail})!`, {
-        description: `O convite foi enviado por email com sucesso.`,
+      toast.success(`Convite enviado com sucesso!`, {
+        description: `${data.invitedName} (${data.invitedEmail}) receberá o convite por email em breve.`,
         duration: 8000
       });
     },

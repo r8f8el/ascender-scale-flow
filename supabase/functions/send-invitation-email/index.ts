@@ -1,7 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.9';
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -19,11 +18,6 @@ interface InvitationEmailRequest {
   message?: string;
 }
 
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-);
-
 const handler = async (req: Request): Promise<Response> => {
   console.log('Invitation email function called');
 
@@ -34,9 +28,6 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { to, inviterName, invitedName, companyName, inviteUrl, message }: InvitationEmailRequest = await req.json();
     console.log('Processing invitation for:', { to, inviterName, invitedName, companyName });
-
-    // Construir URL de cadastro específica para convites
-    const signupUrl = inviteUrl.replace('/convite-equipe?', '/convite-equipe/cadastro?');
 
     const emailResponse = await resend.emails.send({
       from: "Ascalate <onboarding@resend.dev>",
@@ -74,7 +65,7 @@ const handler = async (req: Request): Promise<Response> => {
             </p>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${signupUrl}" 
+              <a href="${inviteUrl}" 
                  style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                         color: white; 
                         padding: 15px 30px; 
