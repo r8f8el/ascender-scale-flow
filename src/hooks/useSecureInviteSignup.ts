@@ -14,6 +14,7 @@ interface InviteData {
   email: string;
   inviter_name: string;
   company_id: string;
+  company_name: string;
   message?: string;
 }
 
@@ -57,14 +58,7 @@ export const useSecureInviteSignup = (token?: string | null) => {
       const invitation = inviteResult[0];
       console.log('✅ Convite válido:', invitation);
 
-      setInviteData({
-        email: invitation.email,
-        inviter_name: invitation.inviter_name,
-        company_id: invitation.company_id,
-        message: invitation.message
-      });
-
-      // Buscar dados da empresa
+      // Buscar dados completos da empresa do convite
       const { data: company, error: companyError } = await supabase
         .from('client_profiles')
         .select('name, company')
@@ -73,11 +67,31 @@ export const useSecureInviteSignup = (token?: string | null) => {
 
       if (companyError) {
         console.error('❌ Erro ao buscar empresa:', companyError);
-      } else {
-        setCompanyData({
-          name: company.company || company.name
-        });
       }
+
+      // Buscar dados do convite da tabela team_invitations para company_name
+      const { data: teamInvite, error: teamInviteError } = await supabase
+        .from('team_invitations')
+        .select('company_name')
+        .eq('token', inviteToken)
+        .eq('status', 'pending')
+        .single();
+
+      if (teamInviteError) {
+        console.error('❌ Erro ao buscar team invitation:', teamInviteError);
+      }
+
+      setInviteData({
+        email: invitation.email,
+        inviter_name: invitation.inviter_name,
+        company_id: invitation.company_id,
+        company_name: teamInvite?.company_name || company?.company || company?.name || 'Empresa',
+        message: invitation.message
+      });
+
+      setCompanyData({
+        name: teamInvite?.company_name || company?.company || company?.name || 'Empresa'
+      });
     } catch (err) {
       console.error('❌ Erro na validação:', err);
       setError('Erro ao validar convite');
@@ -146,7 +160,7 @@ export const useSecureInviteSignup = (token?: string | null) => {
       // Buscar dados da empresa do convite
       const { data: companyDataResult, error: companyError } = await supabase
         .from('client_profiles')
-        .select('company, cnpj')
+        .select('company, cnpj, name')
         .eq('id', invitation.company_id)
         .single();
 
@@ -157,10 +171,10 @@ export const useSecureInviteSignup = (token?: string | null) => {
 
       console.log('✅ Dados da empresa obtidos:', companyDataResult);
 
-      // Buscar dados do convite na tabela team_invitations para pegar hierarchy_level_id
+      // Buscar dados do convite na tabela team_invitations para pegar hierarchy_level_id e company_name
       const { data: teamInviteData, error: teamInviteError } = await supabase
         .from('team_invitations')
-        .select('hierarchy_level_id')
+        .select('hierarchy_level_id, company_name')
         .eq('token', data.token)
         .eq('status', 'pending')
         .single();
@@ -168,6 +182,9 @@ export const useSecureInviteSignup = (token?: string | null) => {
       if (teamInviteError) {
         console.error('❌ Erro ao buscar dados do team invite:', teamInviteError);
       }
+
+      // Definir nome da empresa (usar company_name do convite ou company do perfil)
+      const companyName = teamInviteData?.company_name || companyDataResult?.company || companyDataResult?.name || 'Empresa';
 
       // Aceitar o convite usando a função do banco
       const { data: acceptData, error: acceptError } = await supabase
@@ -182,6 +199,21 @@ export const useSecureInviteSignup = (token?: string | null) => {
       }
 
       console.log('✅ Convite aceito com sucesso:', acceptData);
+
+      // Garantir que o perfil do usuário tenha o company correto
+      const { error: updateProfileError } = await supabase
+        .from('client_profiles')
+        .update({ 
+          company: companyName,
+          hierarchy_level_id: teamInviteData?.hierarchy_level_id 
+        })
+        .eq('id', authData.user.id);
+
+      if (updateProfileError) {
+        console.error('⚠️ Aviso: Erro ao atualizar perfil:', updateProfileError);
+      } else {
+        console.log('✅ Perfil atualizado com company:', companyName);
+      }
 
       toast.success('Conta criada com sucesso!', {
         description: 'Verifique seu email para confirmar a conta e fazer login.'
