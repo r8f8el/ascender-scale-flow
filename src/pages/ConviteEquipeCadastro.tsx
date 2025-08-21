@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Users, Mail, Lock, User, Building2, UserPlus } from 'lucide-react';
-import { useSecureInviteSignup } from '@/hooks/useSecureInviteSignup';
+import { useInviteValidation } from '@/hooks/useInviteValidation';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const ConviteEquipeCadastro = () => {
   const [searchParams] = useSearchParams();
@@ -24,7 +24,18 @@ const ConviteEquipeCadastro = () => {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { inviteData, companyData, loading, error, acceptInvite } = useSecureInviteSignup(token);
+  const { inviteData, loading, error } = useInviteValidation(token);
+
+  // Preencher dados do convite no formulário
+  useEffect(() => {
+    if (inviteData) {
+      setFormData(prev => ({
+        ...prev,
+        name: inviteData.name,
+        email: inviteData.invited_email
+      }));
+    }
+  }, [inviteData]);
 
   useEffect(() => {
     if (!token) {
@@ -51,7 +62,7 @@ const ConviteEquipeCadastro = () => {
       errors.email = 'Email é obrigatório';
     } else if (!emailRegex.test(formData.email.trim())) {
       errors.email = 'Email inválido';
-    } else if (inviteData && formData.email.toLowerCase() !== inviteData.email.toLowerCase()) {
+    } else if (inviteData && formData.email.toLowerCase() !== inviteData.invited_email.toLowerCase()) {
       errors.email = 'O email deve ser o mesmo do convite';
     }
 
@@ -72,28 +83,67 @@ const ConviteEquipeCadastro = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) {
+    if (!validateForm() || !inviteData) {
       return;
     }
 
     setIsSubmitting(true);
     
     try {
-      const result = await acceptInvite({
-        name: formData.name.trim(),
+      // Criar conta no Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email.trim().toLowerCase(),
-        password: formData.password
+        password: formData.password,
+        options: {
+          data: {
+            name: formData.name.trim()
+          }
+        }
       });
 
-      if (result.success) {
-        toast.success('Conta criada com sucesso! Faça login para continuar.');
-        navigate('/cliente/login');
-      } else {
-        toast.error(result.error || 'Erro ao criar conta');
+      if (authError) {
+        throw new Error(authError.message);
       }
-    } catch (error) {
+
+      if (!authData.user) {
+        throw new Error('Erro ao criar usuário');
+      }
+
+      // Atualizar o convite com o user_id e status
+      const { error: updateError } = await supabase
+        .from('team_members')
+        .update({
+          user_id: authData.user.id,
+          status: 'active',
+          joined_at: new Date().toISOString()
+        })
+        .eq('id', inviteData.id);
+
+      if (updateError) {
+        console.error('Erro ao atualizar convite:', updateError);
+      }
+
+      // Criar perfil do cliente
+      const { error: profileError } = await supabase
+        .from('client_profiles')
+        .insert({
+          id: authData.user.id,
+          name: formData.name.trim(),
+          email: formData.email.trim().toLowerCase(),
+          company: inviteData.company_name,
+          hierarchy_level_id: inviteData.hierarchy_level ? '49aaf5bb-164b-4bad-bdd3-1f9f764ecdb8' : null // Default analista
+        });
+
+      if (profileError) {
+        console.error('Erro ao criar perfil:', profileError);
+      }
+
+      toast.success('Conta criada com sucesso! Faça login para continuar.');
+      navigate('/cliente/login');
+
+    } catch (error: any) {
       console.error('Erro ao aceitar convite:', error);
-      toast.error('Erro interno ao processar cadastro');
+      toast.error(`Erro ao criar conta: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -158,18 +208,13 @@ const ConviteEquipeCadastro = () => {
             <div className="space-y-2 text-sm">
               <div className="flex items-center justify-center gap-2 text-gray-600">
                 <Building2 className="h-4 w-4" />
-                <span>Empresa: <strong>{companyData?.name || 'Carregando...'}</strong></span>
+                <span>Empresa: <strong>{inviteData.company_name}</strong></span>
               </div>
               <div className="flex items-center justify-center gap-2 text-gray-600">
                 <UserPlus className="h-4 w-4" />
                 <span>Convidado por: <strong>{inviteData.inviter_name}</strong></span>
               </div>
             </div>
-            {inviteData.message && (
-              <div className="mt-4 p-3 bg-blue-50 rounded-md text-sm text-blue-800 border border-blue-200">
-                "{inviteData.message}"
-              </div>
-            )}
           </CardContent>
         </Card>
 
@@ -213,13 +258,14 @@ const ConviteEquipeCadastro = () => {
                     onChange={(e) => handleInputChange('email', e.target.value)}
                     className={`pl-10 ${formErrors.email ? 'border-red-500' : ''}`}
                     disabled={isSubmitting}
+                    readOnly
                   />
                 </div>
                 {formErrors.email && (
                   <p className="text-xs text-red-600">{formErrors.email}</p>
                 )}
                 <p className="text-xs text-gray-500">
-                  Use o mesmo email do convite: {inviteData.email}
+                  Use o mesmo email do convite: {inviteData.invited_email}
                 </p>
               </div>
 
