@@ -9,8 +9,8 @@ export interface CompanyProject {
   description?: string;
   status: 'planning' | 'in_progress' | 'completed' | 'on_hold';
   progress: number;
-  start_date?: string;
-  end_date?: string;
+  start_date: string;
+  end_date: string;
   client_id: string;
   created_at: string;
   updated_at: string;
@@ -52,15 +52,32 @@ export const useCompanyProjects = () => {
   });
 
   const createProject = useMutation({
-    mutationFn: async (projectData: Omit<CompanyProject, 'id' | 'created_at' | 'updated_at' | 'owner'>) => {
+    mutationFn: async (projectData: {
+      name: string;
+      description?: string;
+      status: 'planning' | 'in_progress' | 'completed' | 'on_hold';
+      start_date?: string;
+      end_date?: string;
+      progress: number;
+    }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
+
+      // Definir datas padrão se não fornecidas
+      const today = new Date().toISOString().split('T')[0];
+      const futureDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
       const { data, error } = await supabase
         .from('gantt_projects')
         .insert({
-          ...projectData,
-          client_id: user.id
+          name: projectData.name,
+          description: projectData.description,
+          status: projectData.status || 'planning',
+          start_date: projectData.start_date || today,
+          end_date: projectData.end_date || futureDate,
+          progress: projectData.progress || 0,
+          client_id: user.id,
+          created_by: user.id
         })
         .select()
         .single();

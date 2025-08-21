@@ -5,11 +5,12 @@ import { toast } from 'sonner';
 
 export interface CompanyDocument {
   id: string;
-  name: string;
+  filename: string;
   file_path: string;
   file_size: number;
   category?: string;
-  tags?: string[];
+  description?: string;
+  content_type?: string;
   uploaded_at: string;
   updated_at: string;
   user_id: string;
@@ -51,10 +52,10 @@ export const useCompanyDocuments = () => {
   });
 
   const uploadDocument = useMutation({
-    mutationFn: async ({ file, category, tags }: {
+    mutationFn: async ({ file, category, description }: {
       file: File;
       category?: string;
-      tags?: string[];
+      description?: string;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
@@ -71,11 +72,12 @@ export const useCompanyDocuments = () => {
       const { data, error } = await supabase
         .from('client_documents')
         .insert({
-          name: file.name,
+          filename: file.name,
           file_path: uploadData.path,
           file_size: file.size,
           category: category || 'Geral',
-          tags: tags || [],
+          description: description || '',
+          content_type: file.type,
           user_id: user.id
         })
         .select()
