@@ -15,7 +15,7 @@ import { ScrollToTop } from '@/components/ScrollToTop';
 import ClientArea from '@/pages/client/ClientArea';
 import AdminArea from '@/pages/AdminArea';
 import SecureTeamInviteSignup from '@/pages/SecureTeamInviteSignup';
-import ErrorFallback from '@/components/ErrorBoundary';
+import ErrorFallback from '@/components/ErrorFallback';
 
 function App() {
   return (
