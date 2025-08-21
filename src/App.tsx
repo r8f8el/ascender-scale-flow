@@ -1,14 +1,15 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ErrorBoundary } from 'react-error-boundary';
 import ErrorFallback from '@/components/ErrorFallback';
-import ScrollToTop from '@/components/ScrollToTop';
+import { ScrollToTop } from '@/components/ScrollToTop';
 import Index from '@/pages/Index';
-import ClientLogin from '@/pages/auth/ClientLogin';
-import AdminLogin from '@/pages/auth/AdminLogin';
-import AdminRegister from '@/pages/auth/AdminRegister';
+import ClientLogin from '@/pages/ClientLogin';
+import AdminLogin from '@/pages/AdminLogin';
+import AdminRegister from '@/pages/AdminRegister';
 import ClientArea from '@/pages/client/ClientArea';
 import AdminArea from '@/pages/admin/AdminArea';
 import NotFound from '@/pages/NotFound';
@@ -53,6 +54,7 @@ function App() {
               
               {/* Páginas de autenticação */}
               <Route path="/cliente/login" element={<ClientLogin />} />
+              <Route path="/login" element={<ClientLogin />} />
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin/register" element={<AdminRegister />} />
               
