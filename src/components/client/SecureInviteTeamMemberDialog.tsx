@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -22,20 +23,28 @@ export const SecureInviteTeamMemberDialog: React.FC<SecureInviteTeamMemberDialog
   const [hierarchyLevelId, setHierarchyLevelId] = useState('');
   const [message, setMessage] = useState('');
 
-  const { data: hierarchyLevels = [] } = useHierarchyLevels();
+  const { data: hierarchyLevels = [], isLoading: isLoadingLevels } = useHierarchyLevels();
   const inviteTeamMember = useInviteSecureTeamMember();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !name || !hierarchyLevelId) {
+      toast.error('Por favor, preencha todos os campos obrigatórios');
+      return;
+    }
+
+    // Validação básica de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error('Por favor, insira um email válido');
       return;
     }
 
     try {
       await inviteTeamMember.mutateAsync({
-        email,
-        name,
+        email: email.trim(),
+        name: name.trim(),
         hierarchyLevelId,
         message: message.trim() || undefined
       });
@@ -66,7 +75,7 @@ export const SecureInviteTeamMemberDialog: React.FC<SecureInviteTeamMemberDialog
           <div className="space-y-2">
             <Label htmlFor="name" className="flex items-center gap-2">
               <User className="h-4 w-4" />
-              Nome Completo
+              Nome Completo *
             </Label>
             <Input
               id="name"
@@ -81,7 +90,7 @@ export const SecureInviteTeamMemberDialog: React.FC<SecureInviteTeamMemberDialog
           <div className="space-y-2">
             <Label htmlFor="email" className="flex items-center gap-2">
               <Mail className="h-4 w-4" />
-              Email
+              Email *
             </Label>
             <Input
               id="email"
@@ -97,9 +106,13 @@ export const SecureInviteTeamMemberDialog: React.FC<SecureInviteTeamMemberDialog
           <div className="space-y-2">
             <Label htmlFor="hierarchy" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
-              Nível Hierárquico
+              Nível Hierárquico *
             </Label>
-            <Select value={hierarchyLevelId} onValueChange={setHierarchyLevelId} disabled={inviteTeamMember.isPending}>
+            <Select 
+              value={hierarchyLevelId} 
+              onValueChange={setHierarchyLevelId} 
+              disabled={inviteTeamMember.isPending || isLoadingLevels}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o nível hierárquico" />
               </SelectTrigger>

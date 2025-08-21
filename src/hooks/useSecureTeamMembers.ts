@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -190,6 +191,7 @@ export const useInviteSecureTeamMember = () => {
     }) => {
       console.log('📧 Enviando convite para membro da equipe:', { email, name, hierarchyLevelId, message });
 
+      // Primeiro, vamos tentar criar o convite usando a função RPC
       const { data, error } = await supabase.rpc('invite_team_member_secure', {
         p_email: email,
         p_name: name,
@@ -197,11 +199,38 @@ export const useInviteSecureTeamMember = () => {
       });
 
       if (error) {
-        console.error('❌ Erro ao enviar convite:', error);
+        console.error('❌ Erro ao criar convite:', error);
         throw error;
       }
 
-      console.log('✅ Convite enviado com sucesso:', data);
+      console.log('✅ Convite criado no banco:', data);
+
+      // Se temos uma mensagem personalizada, vamos enviar via edge function
+      if (message) {
+        try {
+          const { data: emailData, error: emailError } = await supabase.functions.invoke('send-notification', {
+            body: {
+              type: 'team_invitation',
+              data: {
+                invitedEmail: email,
+                inviterName: 'Sistema', // Será substituído pela função
+                companyName: 'Empresa', // Será substituído pela função
+                inviteUrl: `${window.location.origin}/convite-equipe/cadastro?token=${data}`,
+                message: message
+              }
+            }
+          });
+
+          if (emailError) {
+            console.warn('⚠️ Erro ao enviar email personalizado, mas convite foi criado:', emailError);
+          } else {
+            console.log('✅ Email personalizado enviado:', emailData);
+          }
+        } catch (emailError) {
+          console.warn('⚠️ Erro ao enviar email personalizado, mas convite foi criado:', emailError);
+        }
+      }
+
       return data;
     },
     onSuccess: () => {
@@ -225,6 +254,8 @@ export const useInviteSecureTeamMember = () => {
         errorMessage = 'Este usuário já é membro da equipe';
       } else if (error.message?.includes('Apenas contatos primários')) {
         errorMessage = 'Apenas contatos primários podem convidar membros';
+      } else if (error.message?.includes('Perfil do usuário não encontrado')) {
+        errorMessage = 'Erro de autenticação. Faça login novamente.';
       } else if (error.message) {
         errorMessage = error.message;
       }
