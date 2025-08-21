@@ -2,9 +2,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useOptimizedQuery, useStaticDataQuery } from './useOptimizedQuery';
 
-export interface SecureTeamMember {
+export interface TeamMember {
   id: string;
   company_id: string;
   user_id?: string;
@@ -33,25 +32,20 @@ export interface HierarchyLevel {
   can_manage_permissions: boolean;
 }
 
-export const useHierarchyLevels = () => {
-  return useStaticDataQuery(
-    ['hierarchy-levels'],
-    async () => {
-      const { data, error } = await supabase
-        .from('hierarchy_levels')
-        .select('*')
-        .order('level');
-
-      if (error) throw error;
-      return data as HierarchyLevel[];
-    }
-  );
-};
-
 export const useSecureTeamMembers = () => {
-  return useOptimizedQuery({
+  return useQuery({
     queryKey: ['secure-team-members'],
     queryFn: async () => {
+      console.log('🔍 Buscando membros da equipe...');
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.log('❌ Usuário não autenticado');
+        throw new Error('Usuário não autenticado');
+      }
+
+      console.log('👤 Usuário autenticado:', user.id);
+
       const { data, error } = await supabase
         .from('team_members')
         .select(`
@@ -63,177 +57,61 @@ export const useSecureTeamMembers = () => {
             can_invite_members
           )
         `)
-        .order('created_at', { ascending: false });
+        .order('invited_at', { ascending: false });
 
-      if (error) throw error;
-      return data as SecureTeamMember[];
-    },
-    cacheTTL: 2
-  });
-};
-
-export const useSecureInviteTeamMember = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ email, name, hierarchyLevelId, message }: {
-      email: string;
-      name: string;
-      hierarchyLevelId: string;
-      message?: string;
-    }) => {
-      // Input validation and sanitization
-      const sanitizedEmail = email.trim().toLowerCase();
-      const sanitizedName = name.trim().replace(/[<>'"]/g, '');
-
-      if (!sanitizedEmail || !sanitizedName) {
-        throw new Error('Email e nome são obrigatórios');
-      }
-
-      if (sanitizedEmail.length > 254) {
-        throw new Error('Email muito longo');
-      }
-
-      if (sanitizedName.length > 100) {
-        throw new Error('Nome muito longo');
-      }
-
-      console.log('Enviando convite para:', { email: sanitizedEmail, name: sanitizedName });
-
-      try {
-        // Obter dados do usuário atual
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('Usuário não autenticado');
-
-        const { data: userProfile, error: profileError } = await supabase
-          .from('client_profiles')
-          .select('name, company')
-          .eq('id', user.id)
-          .single();
-
-        if (profileError) {
-          console.error('Erro ao obter perfil do usuário:', profileError);
-          throw new Error('Erro ao obter dados do usuário');
-        }
-
-        // Gerar token único
-        const token = crypto.randomUUID() + '-' + Date.now();
-        
-        // Use the correct domain for the invite URL
-        const baseUrl = 'https://ascalate.com.br';
-        const inviteUrl = `${baseUrl}/convite-equipe/cadastro?token=${token}`;
-        
-        // Criar convite na tabela team_invitations
-        const { data: inviteData, error: inviteError } = await supabase
-          .from('team_invitations')
-          .insert({
-            email: sanitizedEmail,
-            company_id: user.id,
-            company_name: userProfile.company || userProfile.name,
-            inviter_name: userProfile.name,
-            token: token,
-            message: message || 'Você foi convidado para se juntar à nossa equipe na plataforma Ascalate',
-            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-            status: 'pending',
-            hierarchy_level_id: hierarchyLevelId
-          })
-          .select()
-          .single();
-
-        if (inviteError) {
-          console.error('Erro ao criar convite:', inviteError);
-          throw new Error(`Erro ao criar convite: ${inviteError.message}`);
-        }
-
-        // Criar entrada em team_members
-        const { error: memberError } = await supabase
-          .from('team_members')
-          .insert({
-            company_id: user.id,
-            invited_email: sanitizedEmail,
-            name: sanitizedName,
-            hierarchy_level_id: hierarchyLevelId,
-            invited_by: user.id,
-            status: 'pending'
-          });
-
-        if (memberError) {
-          console.error('Erro ao criar membro da equipe:', memberError);
-          // Continue mesmo com erro, pois o convite foi criado
-        }
-
-        console.log('URL do convite:', inviteUrl);
-        console.log('Enviando email via edge function...');
-
-        // Chamar a edge function de notificações
-        const { data: emailData, error: emailError } = await supabase.functions.invoke('send-notification', {
-          body: {
-            type: 'team_invitation',
-            data: {
-              invitedEmail: sanitizedEmail,
-              inviterName: userProfile.name || 'Administrador',
-              companyName: userProfile.company || userProfile.name || 'Sua Empresa',
-              inviteUrl: inviteUrl,
-              message: message || 'Você foi convidado para se juntar à nossa equipe na plataforma Ascalate'
-            }
-          }
-        });
-
-        if (emailError) {
-          console.error('Erro ao enviar email:', emailError);
-          throw new Error(`Erro ao enviar email: ${emailError.message}`);
-        }
-
-        console.log('Email enviado com sucesso:', emailData);
-
-        return { 
-          invitationId: inviteData.id, 
-          token: token,
-          email: emailData,
-          invitedEmail: sanitizedEmail,
-          invitedName: sanitizedName
-        };
-      } catch (error: any) {
-        console.error('Erro detalhado no convite:', error);
+      if (error) {
+        console.error('❌ Erro ao buscar membros da equipe:', error);
         throw error;
       }
+
+      console.log('✅ Membros da equipe encontrados:', data?.length || 0);
+      return data as TeamMember[];
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['secure-team-members'] });
-      queryClient.invalidateQueries({ queryKey: ['company-team-members'] });
-      queryClient.invalidateQueries({ queryKey: ['company-data'] });
-      toast.success(`Convite enviado com sucesso!`, {
-        description: `${data.invitedName} (${data.invitedEmail}) receberá o convite por email em breve.`,
-        duration: 8000
-      });
+    staleTime: 2 * 60 * 1000, // 2 minutos
+    gcTime: 5 * 60 * 1000, // 5 minutos
+    retry: (failureCount, error: any) => {
+      // Não retry em erros de autenticação ou autorização
+      if (error?.code === 'PGRST301' || error?.code === '42501' || error?.status === 401 || error?.status === 403) {
+        return false;
+      }
+      return failureCount < 3;
     },
-    onError: (error: any) => {
-      console.error('Erro ao enviar convite:', error);
-      toast.error(`Erro ao enviar convite: ${error.message}`, {
-        description: 'Verifique se todos os dados estão corretos e tente novamente.',
-        duration: 7000
-      });
-    }
+    retryDelay: 1000,
   });
 };
 
-// Novo hook para listar todos os membros da empresa (incluindo team members)
 export const useSecureCompanyTeamMembers = () => {
-  return useOptimizedQuery({
+  return useQuery({
     queryKey: ['secure-company-team-members'],
     queryFn: async () => {
+      console.log('🔍 Buscando membros da empresa...');
+      
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
+      if (!user) {
+        console.log('❌ Usuário não autenticado');
+        throw new Error('Usuário não autenticado');
+      }
+
+      console.log('👤 Buscando empresa do usuário:', user.id);
 
       // Buscar perfil do usuário atual para obter a empresa
-      const { data: currentProfile, error: profileError } = await supabase
+      const { data: userProfile, error: profileError } = await supabase
         .from('client_profiles')
         .select('company')
         .eq('id', user.id)
         .single();
 
-      if (profileError) throw profileError;
-      if (!currentProfile?.company) return [];
+      if (profileError) {
+        console.error('❌ Erro ao buscar perfil do usuário:', profileError);
+        throw profileError;
+      }
+
+      if (!userProfile?.company) {
+        console.log('⚠️ Usuário não tem empresa definida');
+        return [];
+      }
+
+      console.log('🏢 Empresa do usuário:', userProfile.company);
 
       // Buscar todos os membros da mesma empresa
       const { data, error } = await supabase
@@ -250,13 +128,109 @@ export const useSecureCompanyTeamMembers = () => {
             can_invite_members
           )
         `)
-        .eq('company', currentProfile.company)
+        .eq('company', userProfile.company)
         .order('is_primary_contact', { ascending: false })
         .order('name');
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro ao buscar membros da empresa:', error);
+        throw error;
+      }
+
+      console.log('✅ Membros da empresa encontrados:', data?.length || 0);
+      return data || [];
+    },
+    staleTime: 3 * 60 * 1000, // 3 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+    retry: (failureCount, error: any) => {
+      // Não retry em erros de autenticação ou autorização
+      if (error?.code === 'PGRST301' || error?.code === '42501' || error?.status === 401 || error?.status === 403) {
+        return false;
+      }
+      return failureCount < 3;
+    },
+    retryDelay: 1000,
+  });
+};
+
+export const useHierarchyLevels = () => {
+  return useQuery({
+    queryKey: ['hierarchy-levels'],
+    queryFn: async () => {
+      console.log('🔍 Buscando níveis hierárquicos...');
+      
+      const { data, error } = await supabase
+        .from('hierarchy_levels')
+        .select('*')
+        .order('level');
+
+      if (error) {
+        console.error('❌ Erro ao buscar níveis hierárquicos:', error);
+        throw error;
+      }
+
+      console.log('✅ Níveis hierárquicos encontrados:', data?.length || 0);
+      return data as HierarchyLevel[];
+    },
+    staleTime: 10 * 60 * 1000, // 10 minutos (dados estáticos)
+    gcTime: 30 * 60 * 1000, // 30 minutos
+  });
+};
+
+export const useInviteSecureTeamMember = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ email, name, hierarchyLevelId }: {
+      email: string;
+      name: string;
+      hierarchyLevelId: string;
+    }) => {
+      console.log('📧 Enviando convite para membro da equipe:', { email, name, hierarchyLevelId });
+
+      const { data, error } = await supabase.rpc('invite_team_member_secure', {
+        p_email: email,
+        p_name: name,
+        p_hierarchy_level_id: hierarchyLevelId
+      });
+
+      if (error) {
+        console.error('❌ Erro ao enviar convite:', error);
+        throw error;
+      }
+
+      console.log('✅ Convite enviado com sucesso:', data);
       return data;
     },
-    cacheTTL: 3
+    onSuccess: () => {
+      // Invalidar caches para recarregar dados
+      queryClient.invalidateQueries({ queryKey: ['secure-team-members'] });
+      queryClient.invalidateQueries({ queryKey: ['secure-company-team-members'] });
+      queryClient.invalidateQueries({ queryKey: ['team-members'] });
+      queryClient.invalidateQueries({ queryKey: ['company-team-members'] });
+      
+      toast.success('Convite enviado com sucesso!', {
+        description: 'O membro receberá um email com instruções para se juntar à equipe.',
+      });
+    },
+    onError: (error: any) => {
+      console.error('❌ Erro ao enviar convite:', error);
+      
+      let errorMessage = 'Erro ao enviar convite';
+      
+      if (error.message?.includes('já existe um convite pendente')) {
+        errorMessage = 'Já existe um convite pendente para este email';
+      } else if (error.message?.includes('já é membro')) {
+        errorMessage = 'Este usuário já é membro da equipe';
+      } else if (error.message?.includes('Apenas contatos primários')) {
+        errorMessage = 'Apenas contatos primários podem convidar membros';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      toast.error('Erro ao enviar convite', {
+        description: errorMessage,
+      });
+    }
   });
 };
