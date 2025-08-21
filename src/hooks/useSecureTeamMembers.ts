@@ -101,28 +101,31 @@ export const useSecureInviteTeamMember = () => {
       console.log('Enviando convite para:', { email: sanitizedEmail, name: sanitizedName });
 
       try {
-        // Chamar a função RPC que retorna o ID do convite
-        const { data: invitationId, error: teamMemberError } = await supabase.rpc('invite_team_member_secure', {
+        // Usar a função RPC existente que já funciona
+        const { data: invitationId, error: inviteError } = await supabase.rpc('invite_team_member_secure', {
           p_email: sanitizedEmail,
           p_name: sanitizedName,
           p_hierarchy_level_id: hierarchyLevelId
         });
 
-        if (teamMemberError) {
-          console.error('Erro ao criar registro do membro:', teamMemberError);
-          throw new Error(`Erro ao criar convite: ${teamMemberError.message}`);
+        if (inviteError) {
+          console.error('Erro ao criar convite:', inviteError);
+          throw new Error(`Erro ao criar convite: ${inviteError.message}`);
         }
 
         console.log('Convite criado com sucesso. ID:', invitationId);
 
-        // Buscar o token do convite criado
-        const { data: inviteData, error: tokenError } = await supabase
-          .from('team_members')
-          .select('invitation_token')
-          .eq('id', invitationId)
+        // Buscar o token do convite criado na tabela team_invitations
+        const { data: inviteTokenData, error: tokenError } = await supabase
+          .from('team_invitations')
+          .select('token')
+          .eq('email', sanitizedEmail)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false })
+          .limit(1)
           .single();
 
-        if (tokenError || !inviteData?.invitation_token) {
+        if (tokenError || !inviteTokenData?.token) {
           console.error('Erro ao obter token do convite:', tokenError);
           throw new Error('Erro ao gerar token do convite');
         }
@@ -139,7 +142,7 @@ export const useSecureInviteTeamMember = () => {
           throw new Error('Erro ao obter dados do usuário');
         }
 
-        const inviteUrl = `${window.location.origin}/convite-equipe?token=${inviteData.invitation_token}`;
+        const inviteUrl = `${window.location.origin}/convite-equipe?token=${inviteTokenData.token}`;
         console.log('URL do convite:', inviteUrl);
 
         console.log('Enviando email via edge function...');
@@ -165,7 +168,7 @@ export const useSecureInviteTeamMember = () => {
 
         return { 
           invitationId, 
-          token: inviteData.invitation_token,
+          token: inviteTokenData.token,
           email: emailData,
           invitedEmail: sanitizedEmail,
           invitedName: sanitizedName
@@ -179,7 +182,7 @@ export const useSecureInviteTeamMember = () => {
       queryClient.invalidateQueries({ queryKey: ['secure-team-members'] });
       queryClient.invalidateQueries({ queryKey: ['company-team-members'] });
       toast.success(`Seu convite foi enviado para ${data.invitedName} (${data.invitedEmail})!`, {
-        description: `O convite foi enviado por email. Link do convite: ${window.location.origin}/convite-equipe?token=${data.token}`,
+        description: `O convite foi enviado por email com sucesso.`,
         duration: 8000
       });
     },

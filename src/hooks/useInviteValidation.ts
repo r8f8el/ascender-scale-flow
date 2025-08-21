@@ -31,46 +31,51 @@ export const useInviteValidation = (token: string | null) => {
       try {
         console.log('Validando token:', token);
 
-        // Buscar dados do convite
-        const { data: inviteData, error: inviteError } = await supabase
-          .from('team_members')
-          .select(`
-            id,
-            invited_email,
-            name,
-            status,
-            hierarchy_levels!inner(
-              name,
-              level
-            ),
-            client_profiles!team_members_invited_by_fkey(
-              name
-            )
-          `)
-          .eq('invitation_token', token)
+        // Primeiro buscar na tabela team_invitations que tem o token
+        const { data: invitationData, error: inviteError } = await supabase
+          .from('team_invitations')
+          .select('*')
+          .eq('token', token)
           .eq('status', 'pending')
+          .gt('expires_at', new Date().toISOString())
           .single();
 
-        if (inviteError || !inviteData) {
+        if (inviteError || !invitationData) {
           console.error('Erro ao validar convite:', inviteError);
           setError('Convite inválido, expirado ou já usado');
           return;
         }
 
-        // Buscar dados da empresa
-        const { data: companyData, error: companyError } = await supabase
-          .from('client_profiles')
-          .select('company')
-          .eq('id', inviteData.client_profiles?.name ? inviteData.client_profiles.name : '')
+        // Buscar dados do membro da equipe correspondente
+        const { data: memberData, error: memberError } = await supabase
+          .from('team_members')
+          .select(`
+            id,
+            invited_email,
+            name,
+            hierarchy_levels!inner(
+              name,
+              level
+            )
+          `)
+          .eq('invited_email', invitationData.email)
+          .eq('company_id', invitationData.company_id)
+          .eq('status', 'pending')
           .single();
 
+        if (memberError || !memberData) {
+          console.error('Erro ao buscar dados do membro:', memberError);
+          setError('Dados do convite não encontrados');
+          return;
+        }
+
         setInviteData({
-          id: inviteData.id,
-          invited_email: inviteData.invited_email,
-          name: inviteData.name,
-          inviter_name: inviteData.client_profiles?.name || 'Administrador',
-          company_name: companyData?.company || 'Empresa',
-          hierarchy_level: inviteData.hierarchy_levels
+          id: memberData.id,
+          invited_email: memberData.invited_email,
+          name: memberData.name,
+          inviter_name: invitationData.inviter_name || 'Administrador',
+          company_name: invitationData.company_name || 'Empresa',
+          hierarchy_level: memberData.hierarchy_levels
         });
 
       } catch (error: any) {
