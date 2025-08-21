@@ -26,11 +26,45 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { to, inviterName, invitedName, companyName, inviteUrl, message }: InvitationEmailRequest = await req.json();
+    // Verificar se o corpo da requisição é JSON válido
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (jsonError) {
+      console.error('Invalid JSON in request body:', jsonError);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid JSON in request body',
+          details: 'Request must contain valid JSON data'
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    const { to, inviterName, invitedName, companyName, inviteUrl, message }: InvitationEmailRequest = requestBody;
+    
+    // Validação de campos obrigatórios
+    if (!to || !inviterName || !invitedName || !companyName || !inviteUrl) {
+      console.error('Missing required fields:', { to: !!to, inviterName: !!inviterName, invitedName: !!invitedName, companyName: !!companyName, inviteUrl: !!inviteUrl });
+      return new Response(
+        JSON.stringify({ 
+          error: 'Missing required fields',
+          details: 'to, inviterName, invitedName, companyName, and inviteUrl are required'
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
     console.log('Processing invitation for:', { to, inviterName, invitedName, companyName });
 
     const emailResponse = await resend.emails.send({
-      from: "Ascalate <onboarding@resend.dev>", // Temporário até verificar o domínio
+      from: "Ascalate <onboarding@resend.dev>",
       to: [to],
       subject: `Convite para se juntar à equipe da ${companyName}`,
       html: `
@@ -125,7 +159,7 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        details: 'Verifique se o domínio está configurado no Resend ou use onboarding@resend.dev temporariamente'
+        details: 'Erro ao enviar email de convite. Verifique os logs para mais detalhes.'
       }),
       {
         status: 500,
