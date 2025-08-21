@@ -2859,6 +2859,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      has_company_access: {
+        Args: { p_target_user_id: string; p_user_id: string }
+        Returns: boolean
+      }
       invite_team_member: {
         Args:
           | { p_company_id: string; p_email: string }
@@ -2891,6 +2895,10 @@ export type Database = {
       }
       is_super_admin_secure: {
         Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_team_member_of_company: {
+        Args: { p_company_name: string; p_user_id: string }
         Returns: boolean
       }
       log_security_event: {

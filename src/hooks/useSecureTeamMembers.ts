@@ -120,10 +120,7 @@ export const useSecureInviteTeamMember = () => {
         const token = crypto.randomUUID() + '-' + Date.now();
         
         // Use the correct domain for the invite URL
-        const baseUrl = window.location.hostname.includes('preview--') 
-          ? 'https://ascalate.com.br'  // Use production domain instead of preview
-          : window.location.origin;
-        
+        const baseUrl = 'https://ascalate.com.br';
         const inviteUrl = `${baseUrl}/convite-equipe/cadastro?token=${token}`;
         
         // Criar convite na tabela team_invitations
@@ -137,7 +134,8 @@ export const useSecureInviteTeamMember = () => {
             token: token,
             message: message || 'Você foi convidado para se juntar à nossa equipe na plataforma Ascalate',
             expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-            status: 'pending'
+            status: 'pending',
+            hierarchy_level_id: hierarchyLevelId
           })
           .select()
           .single();
@@ -167,7 +165,7 @@ export const useSecureInviteTeamMember = () => {
         console.log('URL do convite:', inviteUrl);
         console.log('Enviando email via edge function...');
 
-        // Chamar a nova edge function de notificações
+        // Chamar a edge function de notificações
         const { data: emailData, error: emailError } = await supabase.functions.invoke('send-notification', {
           body: {
             type: 'team_invitation',
@@ -203,6 +201,7 @@ export const useSecureInviteTeamMember = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['secure-team-members'] });
       queryClient.invalidateQueries({ queryKey: ['company-team-members'] });
+      queryClient.invalidateQueries({ queryKey: ['company-data'] });
       toast.success(`Convite enviado com sucesso!`, {
         description: `${data.invitedName} (${data.invitedEmail}) receberá o convite por email em breve.`,
         duration: 8000
@@ -218,27 +217,32 @@ export const useSecureInviteTeamMember = () => {
   });
 };
 
+// Novo hook para listar todos os membros da empresa (incluindo team members)
 export const useSecureCompanyTeamMembers = () => {
   return useOptimizedQuery({
     queryKey: ['secure-company-team-members'],
     queryFn: async () => {
-      // Use secure function to get user company
-      const { data: userCompany, error: companyError } = await supabase
-        .rpc('get_user_company');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
 
-      if (companyError) throw companyError;
+      // Buscar perfil do usuário atual para obter a empresa
+      const { data: currentProfile, error: profileError } = await supabase
+        .from('client_profiles')
+        .select('company')
+        .eq('id', user.id)
+        .single();
 
-      if (!userCompany) {
-        return [];
-      }
+      if (profileError) throw profileError;
+      if (!currentProfile?.company) return [];
 
-      // Get team members for the user's company
+      // Buscar todos os membros da mesma empresa
       const { data, error } = await supabase
         .from('client_profiles')
         .select(`
           id,
           name,
           email,
+          is_primary_contact,
           hierarchy_levels(
             name,
             level,
@@ -246,7 +250,8 @@ export const useSecureCompanyTeamMembers = () => {
             can_invite_members
           )
         `)
-        .eq('company', userCompany)
+        .eq('company', currentProfile.company)
+        .order('is_primary_contact', { ascending: false })
         .order('name');
 
       if (error) throw error;

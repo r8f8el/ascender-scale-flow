@@ -1,195 +1,142 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
-interface SecureInviteData {
-  id: string;
-  email: string;
-  inviter_name: string;
-  company_id: string;
-  message?: string;
-  is_valid: boolean;
-}
-
-interface CompanyData {
-  id: string;
-  name: string;
-  company?: string;
-}
-
-interface SignupData {
-  name: string;
+interface InviteSignupData {
   email: string;
   password: string;
+  name: string;
+  token: string;
 }
 
-interface AcceptInviteResult {
-  success: boolean;
-  error?: string;
-  user?: any;
-}
+export const useSecureInviteSignup = () => {
+  const [loading, setLoading] = useState(false);
 
-export const useSecureInviteSignup = (token: string | null) => {
-  const [inviteData, setInviteData] = useState<SecureInviteData | null>(null);
-  const [companyData, setCompanyData] = useState<CompanyData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const loadInviteData = async () => {
-    if (!token) {
-      setError('Token de convite não fornecido');
-      setLoading(false);
-      return;
-    }
-
+  const signUpWithInvite = async (data: InviteSignupData) => {
+    setLoading(true);
+    
     try {
-      setLoading(true);
-      setError(null);
+      console.log('🔐 Iniciando signup com convite:', { email: data.email, token: data.token });
 
-      // Buscar convite usando o token
-      const { data: invite, error: inviteError } = await supabase
-        .from('team_invitations')
-        .select('*')
-        .eq('token', token)
-        .eq('status', 'pending')
-        .single();
+      // Validar o token primeiro
+      const { data: inviteData, error: inviteError } = await supabase
+        .rpc('validate_invitation_token', { p_token: data.token });
 
-      if (inviteError || !invite) {
-        console.error('Erro ao validar convite:', inviteError);
-        setError('Convite não encontrado ou inválido');
-        return;
+      if (inviteError) {
+        console.error('❌ Erro ao validar token:', inviteError);
+        throw new Error('Token de convite inválido');
       }
 
-      // Verificar se o convite não expirou
-      const now = new Date();
-      const expiresAt = new Date(invite.expires_at);
-      
-      if (now > expiresAt) {
-        setError('Este convite expirou');
-        return;
+      if (!inviteData || inviteData.length === 0 || !inviteData[0].is_valid) {
+        throw new Error('Convite inválido ou expirado');
       }
 
-      const mappedInvite: SecureInviteData = {
-        id: invite.id,
-        email: invite.email,
-        inviter_name: invite.inviter_name,
-        company_id: invite.company_id,
-        message: invite.message,
-        is_valid: true
-      };
+      const invitation = inviteData[0];
+      console.log('✅ Convite válido:', invitation);
 
-      setInviteData(mappedInvite);
-
-      // Buscar dados da empresa
-      if (invite.company_id) {
-        const { data: company, error: companyError } = await supabase
-          .from('client_profiles')
-          .select('id, name, company')
-          .eq('id', invite.company_id)
-          .single();
-
-        if (!companyError && company) {
-          setCompanyData({
-            id: company.id,
-            name: company.company || company.name,
-            company: company.company
-          });
-        }
-      }
-
-    } catch (err) {
-      console.error('Erro ao carregar dados do convite:', err);
-      setError('Erro interno ao carregar convite');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const acceptInvite = async (signupData: SignupData): Promise<AcceptInviteResult> => {
-    if (!inviteData) {
-      return { success: false, error: 'Dados do convite não disponíveis' };
-    }
-
-    try {
-      // Criar a conta do usuário
+      // Criar conta do usuário
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: signupData.email,
-        password: signupData.password,
+        email: data.email,
+        password: data.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/cliente/login`,
           data: {
-            full_name: signupData.name,
-            company_id: inviteData.company_id
+            name: data.name,
+            full_name: data.name
           }
         }
       });
 
       if (signUpError) {
-        console.error('Erro na criação da conta:', signUpError);
-        
-        if (signUpError.message.includes('already registered')) {
-          return { success: false, error: 'Este email já está cadastrado' };
-        }
-        
-        return { success: false, error: signUpError.message };
+        console.error('❌ Erro no signup:', signUpError);
+        throw signUpError;
       }
 
       if (!authData.user) {
-        return { success: false, error: 'Erro ao criar usuário' };
+        throw new Error('Erro ao criar conta do usuário');
       }
 
-      // Atualizar o status do convite para aceito
-      const { error: updateError } = await supabase
+      console.log('✅ Usuário criado:', authData.user.id);
+
+      // Buscar dados da empresa do convite
+      const { data: companyData, error: companyError } = await supabase
+        .from('client_profiles')
+        .select('company, cnpj')
+        .eq('id', invitation.company_id)
+        .single();
+
+      if (companyError) {
+        console.error('❌ Erro ao buscar dados da empresa:', companyError);
+        throw new Error('Erro ao obter dados da empresa');
+      }
+
+      console.log('✅ Dados da empresa obtidos:', companyData);
+
+      // Buscar dados do convite na tabela team_invitations para pegar hierarchy_level_id
+      const { data: teamInviteData, error: teamInviteError } = await supabase
         .from('team_invitations')
-        .update({ 
-          status: 'accepted',
-          accepted_at: new Date().toISOString()
-        })
-        .eq('token', token);
+        .select('hierarchy_level_id')
+        .eq('token', data.token)
+        .eq('status', 'pending')
+        .single();
 
-      if (updateError) {
-        console.error('Erro ao atualizar convite:', updateError);
+      if (teamInviteError) {
+        console.error('❌ Erro ao buscar dados do team invite:', teamInviteError);
       }
 
-      // Atualizar team_members com o user_id
-      const { error: teamUpdateError } = await supabase
-        .from('team_members')
-        .update({
-          user_id: authData.user.id,
-          status: 'active',
-          joined_at: new Date().toISOString()
-        })
-        .eq('invited_email', signupData.email)
-        .eq('company_id', inviteData.company_id);
+      // Criar perfil do cliente com os mesmos dados da empresa
+      const { error: profileError } = await supabase
+        .from('client_profiles')
+        .upsert({
+          id: authData.user.id,
+          name: data.name,
+          email: data.email,
+          company: companyData.company,
+          cnpj: companyData.cnpj,
+          is_primary_contact: false,
+          hierarchy_level_id: teamInviteData?.hierarchy_level_id || null
+        });
 
-      if (teamUpdateError) {
-        console.error('Erro ao atualizar membro da equipe:', teamUpdateError);
+      if (profileError) {
+        console.error('❌ Erro ao criar perfil:', profileError);
+        throw new Error('Erro ao criar perfil do usuário');
       }
 
-      return { 
-        success: true, 
-        user: authData.user 
-      };
+      console.log('✅ Perfil criado com sucesso');
 
-    } catch (err) {
-      console.error('Erro ao aceitar convite:', err);
-      return { 
-        success: false, 
-        error: 'Erro interno ao processar inscrição' 
-      };
+      // Aceitar o convite usando a função do banco
+      const { data: acceptData, error: acceptError } = await supabase
+        .rpc('accept_team_invitation', {
+          p_token: data.token,
+          p_user_id: authData.user.id
+        });
+
+      if (acceptError) {
+        console.error('❌ Erro ao aceitar convite:', acceptError);
+        throw new Error('Erro ao aceitar convite da equipe');
+      }
+
+      console.log('✅ Convite aceito com sucesso:', acceptData);
+
+      toast.success('Conta criada com sucesso!', {
+        description: 'Verifique seu email para confirmar a conta e fazer login.'
+      });
+
+      return { success: true, user: authData.user };
+
+    } catch (error: any) {
+      console.error('❌ Erro completo no signup:', error);
+      toast.error('Erro ao criar conta', {
+        description: error.message || 'Tente novamente mais tarde.'
+      });
+      return { success: false, error: error.message };
+    } finally {
+      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadInviteData();
-  }, [token]);
-
   return {
-    inviteData,
-    companyData,
-    loading,
-    error,
-    acceptInvite,
-    reloadInvite: loadInviteData
+    signUpWithInvite,
+    loading
   };
 };
