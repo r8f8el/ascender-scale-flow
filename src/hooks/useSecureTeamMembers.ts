@@ -119,6 +119,13 @@ export const useSecureInviteTeamMember = () => {
         // Gerar token único
         const token = crypto.randomUUID() + '-' + Date.now();
         
+        // Use the correct domain for the invite URL
+        const baseUrl = window.location.hostname.includes('preview--') 
+          ? 'https://ascalate.com.br'  // Use production domain instead of preview
+          : window.location.origin;
+        
+        const inviteUrl = `${baseUrl}/convite-equipe/cadastro?token=${token}`;
+        
         // Criar convite na tabela team_invitations
         const { data: inviteData, error: inviteError } = await supabase
           .from('team_invitations')
@@ -157,9 +164,7 @@ export const useSecureInviteTeamMember = () => {
           // Continue mesmo com erro, pois o convite foi criado
         }
 
-        const inviteUrl = `${window.location.origin}/convite-equipe/cadastro?token=${token}`;
         console.log('URL do convite:', inviteUrl);
-
         console.log('Enviando email via edge function...');
 
         // Chamar a nova edge function de notificações

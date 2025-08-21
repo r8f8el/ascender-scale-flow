@@ -1,11 +1,11 @@
 
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Eye, EyeOff, Lock, Mail, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -19,6 +19,19 @@ const ClientLogin = () => {
   
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+
+  // Check for signup success message
+  const signupSuccess = searchParams.get('signup') === 'success';
+  const stateMessage = location.state?.message;
+  const stateEmail = location.state?.email;
+
+  useEffect(() => {
+    if (stateEmail) {
+      setEmail(stateEmail);
+    }
+  }, [stateEmail]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,8 +50,20 @@ const ClientLogin = () => {
       
       if (result?.error) {
         console.error('❌ Login failed:', result.error);
-        setError('Email ou senha incorretos');
-        toast.error('Erro ao fazer login');
+        
+        // Handle specific error cases
+        if (result.error.message?.includes('Email not confirmed')) {
+          setError('Por favor, confirme seu email antes de fazer login. Verifique sua caixa de entrada.');
+          toast.error('Email não confirmado', {
+            description: 'Verifique sua caixa de entrada e confirme seu email antes de fazer login.'
+          });
+        } else if (result.error.message?.includes('Invalid login credentials')) {
+          setError('Email ou senha incorretos');
+          toast.error('Credenciais inválidas');
+        } else {
+          setError('Email ou senha incorretos');
+          toast.error('Erro ao fazer login');
+        }
       } else {
         console.log('✅ Login successful, redirecting to /cliente');
         toast.success('Login realizado com sucesso!');
@@ -64,12 +89,23 @@ const ClientLogin = () => {
           </h1>
         </div>
 
+        {/* Success Message from Signup */}
+        {signupSuccess && stateMessage && (
+          <Alert className="mb-6 border-green-200 bg-green-50">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-800">
+              {stateMessage}
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Login Card */}
         <Card className="shadow-sm border border-gray-200">
           <CardContent className="p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
                 <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
@@ -138,6 +174,11 @@ const ClientLogin = () => {
         {/* Footer Text */}
         <div className="mt-6 text-center text-sm text-gray-600 space-y-2">
           <p>Entre com suas credenciais de cliente.</p>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
+            <p className="text-blue-800 text-xs">
+              <strong>Importante:</strong> Após criar uma conta através de convite, você deve confirmar seu email antes de fazer login. Verifique sua caixa de entrada.
+            </p>
+          </div>
           <p className="mt-4">
             Não tem uma conta?{' '}
             <button 
