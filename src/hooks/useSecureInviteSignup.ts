@@ -73,13 +73,13 @@ export const useSecureInviteSignup = (token?: string | null) => {
       
       // Buscar dados da empresa
       const { data: companyInfo, error: companyError } = await supabase
-        .from('clients')
-        .select('name')
+        .from('client_profiles')
+        .select('name, company')
         .eq('id', invite.company_id)
         .single();
       
       if (!companyError && companyInfo) {
-        setCompanyData({ name: companyInfo.name });
+        setCompanyData({ name: companyInfo.company || companyInfo.name });
       }
 
       return invite;
@@ -100,7 +100,7 @@ export const useSecureInviteSignup = (token?: string | null) => {
   });
 
   const signupMutation = useMutation({
-    mutationFn: async (data: SignupData) => {
+    mutationFn: async (data: SignupData): Promise<AcceptInviteResult> => {
       if (!token) {
         throw new Error('Token de convite não fornecido');
       }
@@ -155,11 +155,29 @@ export const useSecureInviteSignup = (token?: string | null) => {
         throw acceptError;
       }
 
-      // Verificar se a função retornou sucesso
-      const result = acceptResult as AcceptInviteResult;
-      if (!result || !result.success) {
-        console.error('❌ Erro na função de aceitar convite:', result?.error);
-        throw new Error(result?.error || 'Erro ao processar convite');
+      // Verificar se a função retornou sucesso (pode ser boolean ou objeto)
+      let result: AcceptInviteResult;
+      
+      if (typeof acceptResult === 'boolean') {
+        if (acceptResult) {
+          result = {
+            success: true,
+            company_name: companyData?.name,
+            user_id: authData.user.id
+          };
+        } else {
+          result = {
+            success: false,
+            error: 'Erro ao processar convite'
+          };
+        }
+      } else {
+        result = acceptResult as AcceptInviteResult;
+      }
+
+      if (!result.success) {
+        console.error('❌ Erro na função de aceitar convite:', result.error);
+        throw new Error(result.error || 'Erro ao processar convite');
       }
 
       console.log('✅ Convite aceito com sucesso:', result);
@@ -178,7 +196,7 @@ export const useSecureInviteSignup = (token?: string | null) => {
         success: true,
         user: authData.user,
         session: authData.session,
-        company_name: result.company_name
+        company_name: result.company_name || companyData?.name
       };
     },
     onSuccess: (result) => {
@@ -209,7 +227,7 @@ export const useSecureInviteSignup = (token?: string | null) => {
     }
   });
 
-  const acceptInvite = async (data: SignupData) => {
+  const acceptInvite = async (data: SignupData): Promise<AcceptInviteResult> => {
     return new Promise<AcceptInviteResult>((resolve, reject) => {
       signupMutation.mutate(data, {
         onSuccess: (result) => resolve(result),
