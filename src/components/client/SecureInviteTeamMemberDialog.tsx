@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useHierarchyLevels, useSecureInviteTeamMember } from '@/hooks/useSecureTeamMembers';
+import { useHierarchyLevels, useInviteSecureTeamMember } from '@/hooks/useSecureTeamMembers';
 import { Mail, User, MessageSquare, Shield, Loader2 } from 'lucide-react';
 
 interface SecureInviteTeamMemberDialogProps {
@@ -24,7 +23,7 @@ export const SecureInviteTeamMemberDialog: React.FC<SecureInviteTeamMemberDialog
   const [message, setMessage] = useState('');
 
   const { data: hierarchyLevels = [] } = useHierarchyLevels();
-  const inviteTeamMember = useSecureInviteTeamMember();
+  const inviteTeamMember = useInviteSecureTeamMember();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
