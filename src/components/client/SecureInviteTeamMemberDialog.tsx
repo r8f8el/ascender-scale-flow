@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useHierarchyLevels, useInviteSecureTeamMember } from '@/hooks/useSecureTeamMembers';
+import { toast } from 'sonner';
 import { Mail, User, MessageSquare, Shield, Loader2 } from 'lucide-react';
 
 interface SecureInviteTeamMemberDialogProps {
