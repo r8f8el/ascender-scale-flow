@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -61,16 +60,21 @@ export const useSecureTeamMembers = () => {
 
       if (error) {
         console.error('❌ Erro ao buscar membros da equipe:', error);
+        
+        // Tratamento específico para erros de RLS
+        if (error.code === 'PGRST116' || error.code === '42501') {
+          throw new Error('Sem permissão para visualizar membros da equipe');
+        }
+        
         throw error;
       }
 
       console.log('✅ Membros da equipe encontrados:', data?.length || 0);
       return data as TeamMember[];
     },
-    staleTime: 2 * 60 * 1000, // 2 minutos
-    gcTime: 5 * 60 * 1000, // 5 minutos
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
     retry: (failureCount, error: any) => {
-      // Não retry em erros de autenticação ou autorização
       if (error?.code === 'PGRST301' || error?.code === '42501' || error?.status === 401 || error?.status === 403) {
         return false;
       }
@@ -94,7 +98,6 @@ export const useSecureCompanyTeamMembers = () => {
 
       console.log('👤 Buscando empresa do usuário:', user.id);
 
-      // Buscar perfil do usuário atual para obter a empresa
       const { data: userProfile, error: profileError } = await supabase
         .from('client_profiles')
         .select('company')
@@ -113,7 +116,6 @@ export const useSecureCompanyTeamMembers = () => {
 
       console.log('🏢 Empresa do usuário:', userProfile.company);
 
-      // Buscar todos os membros da mesma empresa
       const { data, error } = await supabase
         .from('client_profiles')
         .select(`
@@ -140,10 +142,9 @@ export const useSecureCompanyTeamMembers = () => {
       console.log('✅ Membros da empresa encontrados:', data?.length || 0);
       return data || [];
     },
-    staleTime: 3 * 60 * 1000, // 3 minutos
-    gcTime: 10 * 60 * 1000, // 10 minutos
+    staleTime: 3 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     retry: (failureCount, error: any) => {
-      // Não retry em erros de autenticação ou autorização
       if (error?.code === 'PGRST301' || error?.code === '42501' || error?.status === 401 || error?.status === 403) {
         return false;
       }
@@ -172,8 +173,8 @@ export const useHierarchyLevels = () => {
       console.log('✅ Níveis hierárquicos encontrados:', data?.length || 0);
       return data as HierarchyLevel[];
     },
-    staleTime: 10 * 60 * 1000, // 10 minutos (dados estáticos)
-    gcTime: 30 * 60 * 1000, // 30 minutos
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
 };
 
@@ -181,12 +182,13 @@ export const useInviteSecureTeamMember = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ email, name, hierarchyLevelId }: {
+    mutationFn: async ({ email, name, hierarchyLevelId, message }: {
       email: string;
       name: string;
       hierarchyLevelId: string;
+      message?: string;
     }) => {
-      console.log('📧 Enviando convite para membro da equipe:', { email, name, hierarchyLevelId });
+      console.log('📧 Enviando convite para membro da equipe:', { email, name, hierarchyLevelId, message });
 
       const { data, error } = await supabase.rpc('invite_team_member_secure', {
         p_email: email,
@@ -203,7 +205,6 @@ export const useInviteSecureTeamMember = () => {
       return data;
     },
     onSuccess: () => {
-      // Invalidar caches para recarregar dados
       queryClient.invalidateQueries({ queryKey: ['secure-team-members'] });
       queryClient.invalidateQueries({ queryKey: ['secure-company-team-members'] });
       queryClient.invalidateQueries({ queryKey: ['team-members'] });
