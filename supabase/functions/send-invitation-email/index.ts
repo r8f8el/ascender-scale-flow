@@ -30,7 +30,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Processing invitation for:', { to, inviterName, invitedName, companyName });
 
     const emailResponse = await resend.emails.send({
-      from: "Ascalate <onboarding@resend.dev>",
+      from: "Ascalate <convites@ascalate.com.br>", // Use seu domínio verificado
       to: [to],
       subject: `Convite para se juntar à equipe da ${companyName}`,
       html: `
@@ -98,6 +98,8 @@ const handler = async (req: Request): Promise<Response> => {
                 Este convite é válido por 7 dias e pode ser usado apenas uma vez.
                 <br><br>
                 <strong>Ascalate</strong> - Plataforma de Gestão Empresarial
+                <br>
+                Email: <a href="mailto:suporte@ascalate.com.br" style="color: #667eea;">suporte@ascalate.com.br</a>
               </p>
             </div>
           </div>
@@ -121,7 +123,10 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("Error in send-invitation-email function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: 'Verifique se o domínio está configurado no Resend'
+      }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
