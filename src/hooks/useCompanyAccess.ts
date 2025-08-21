@@ -25,43 +25,19 @@ export const useCompanyAccess = () => {
 
       console.log('✅ Perfil encontrado:', profile);
 
-      if (!profile?.company) {
-        console.log('⚠️ Usuário não tem empresa definida');
-        return { 
-          profile, 
-          companyMembers: [], 
-          hasCompanyAccess: false,
-          isTeamMember: false 
-        };
-      }
-
-      // Buscar todos os membros da empresa (incluindo membros da equipe)
-      const { data: companyMembers, error: membersError } = await supabase
-        .from('client_profiles')
-        .select(`
-          *,
-          hierarchy_levels(
-            name,
-            level,
-            can_approve,
-            can_invite_members
-          )
-        `)
-        .eq('company', profile.company)
-        .order('is_primary_contact', { ascending: false })
-        .order('name');
-
-      if (membersError) {
-        console.error('❌ Erro ao buscar membros:', membersError);
-        throw membersError;
-      }
-
-      console.log('✅ Membros da empresa encontrados:', companyMembers?.length || 0);
-
-      // Verificar se é membro da equipe ativo
+      // Verificar se é membro da equipe ativo (mesmo sem empresa no perfil)
       const { data: teamMember, error: teamError } = await supabase
         .from('team_members')
-        .select('*')
+        .select(`
+          *,
+          company:client_profiles!team_members_company_id_fkey(
+            id,
+            name,
+            company,
+            email,
+            is_primary_contact
+          )
+        `)
         .eq('user_id', user.id)
         .eq('status', 'active')
         .single();
@@ -70,10 +46,53 @@ export const useCompanyAccess = () => {
 
       console.log('✅ Status do membro da equipe:', isTeamMember ? 'Ativo' : 'Não encontrado');
 
+      // Determinar a empresa a ser usada
+      let companyName = profile?.company;
+      let companyMembers = [];
+
+      if (!companyName && isTeamMember && teamMember.company?.company) {
+        companyName = teamMember.company.company;
+        console.log('📋 Usando empresa do team membership:', companyName);
+
+        // Atualizar o perfil com a empresa encontrada
+        await supabase
+          .from('client_profiles')
+          .update({ company: companyName })
+          .eq('id', user.id);
+      }
+
+      if (companyName) {
+        // Buscar todos os membros da empresa
+        const { data: members, error: membersError } = await supabase
+          .from('client_profiles')
+          .select(`
+            *,
+            hierarchy_levels(
+              name,
+              level,
+              can_approve,
+              can_invite_members
+            )
+          `)
+          .eq('company', companyName)
+          .order('is_primary_contact', { ascending: false })
+          .order('name');
+
+        if (membersError) {
+          console.error('❌ Erro ao buscar membros:', membersError);
+        } else {
+          companyMembers = members || [];
+          console.log('✅ Membros da empresa encontrados:', companyMembers.length);
+        }
+      }
+
       return {
-        profile,
-        companyMembers: companyMembers || [],
-        hasCompanyAccess: true,
+        profile: {
+          ...profile,
+          company: companyName
+        },
+        companyMembers,
+        hasCompanyAccess: !!companyName,
         isTeamMember: !!isTeamMember,
         teamMemberData: teamMember
       };

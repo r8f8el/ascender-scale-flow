@@ -157,37 +157,8 @@ export const useSecureInviteSignup = (token?: string | null) => {
 
       console.log('✅ Usuário criado:', authData.user.id);
 
-      // Buscar dados da empresa do convite
-      const { data: companyDataResult, error: companyError } = await supabase
-        .from('client_profiles')
-        .select('company, cnpj, name')
-        .eq('id', invitation.company_id)
-        .single();
-
-      if (companyError) {
-        console.error('❌ Erro ao buscar dados da empresa:', companyError);
-        throw new Error('Erro ao obter dados da empresa');
-      }
-
-      console.log('✅ Dados da empresa obtidos:', companyDataResult);
-
-      // Buscar dados do convite na tabela team_invitations para pegar hierarchy_level_id e company_name
-      const { data: teamInviteData, error: teamInviteError } = await supabase
-        .from('team_invitations')
-        .select('hierarchy_level_id, company_name')
-        .eq('token', data.token)
-        .eq('status', 'pending')
-        .single();
-
-      if (teamInviteError) {
-        console.error('❌ Erro ao buscar dados do team invite:', teamInviteError);
-      }
-
-      // Definir nome da empresa (usar company_name do convite ou company do perfil)
-      const companyName = teamInviteData?.company_name || companyDataResult?.company || companyDataResult?.name || 'Empresa';
-
-      // Aceitar o convite usando a função do banco
-      const { data: acceptData, error: acceptError } = await supabase
+      // Aceitar o convite usando a função corrigida do banco
+      const { data: acceptResult, error: acceptError } = await supabase
         .rpc('accept_team_invitation', {
           p_token: data.token,
           p_user_id: authData.user.id
@@ -198,22 +169,13 @@ export const useSecureInviteSignup = (token?: string | null) => {
         throw new Error('Erro ao aceitar convite da equipe');
       }
 
-      console.log('✅ Convite aceito com sucesso:', acceptData);
-
-      // Garantir que o perfil do usuário tenha o company correto
-      const { error: updateProfileError } = await supabase
-        .from('client_profiles')
-        .update({ 
-          company: companyName,
-          hierarchy_level_id: teamInviteData?.hierarchy_level_id 
-        })
-        .eq('id', authData.user.id);
-
-      if (updateProfileError) {
-        console.error('⚠️ Aviso: Erro ao atualizar perfil:', updateProfileError);
-      } else {
-        console.log('✅ Perfil atualizado com company:', companyName);
+      // Verificar se a função retornou sucesso
+      if (acceptResult && !acceptResult.success) {
+        console.error('❌ Erro na função de aceitar convite:', acceptResult.error);
+        throw new Error(acceptResult.error || 'Erro ao processar convite');
       }
+
+      console.log('✅ Convite aceito com sucesso:', acceptResult);
 
       toast.success('Conta criada com sucesso!', {
         description: 'Verifique seu email para confirmar a conta e fazer login.'

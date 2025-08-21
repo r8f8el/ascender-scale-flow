@@ -25,6 +25,10 @@ export const useCompanyData = () => {
 
       console.log('✅ Perfil encontrado:', profile);
 
+      let finalProfile = profile;
+      let companyMembers = [];
+
+      // Se não há empresa no perfil, verificar se é membro de equipe
       if (!profile?.company) {
         console.log('⚠️ Usuário não tem empresa definida, verificando se é membro de equipe...');
         
@@ -45,74 +49,62 @@ export const useCompanyData = () => {
           .eq('status', 'active')
           .single();
 
-        if (teamError || !teamMembership?.company) {
-          console.log('⚠️ Usuário não é membro ativo de nenhuma equipe');
-          return { profile, companyMembers: [] };
-        }
+        if (!teamError && teamMembership?.company) {
+          console.log('✅ Usuário é membro de equipe da empresa:', teamMembership.company);
+          
+          const companyName = teamMembership.company.company || teamMembership.company.name;
+          
+          if (companyName) {
+            // Atualizar o perfil com a empresa encontrada
+            const { error: updateError } = await supabase
+              .from('client_profiles')
+              .update({ company: companyName })
+              .eq('id', user.id);
 
-        console.log('✅ Usuário é membro de equipe da empresa:', teamMembership.company);
-        
-        // Usar a empresa do team membership
-        const companyName = teamMembership.company.company || teamMembership.company.name;
-        
-        if (companyName) {
-          // Buscar todos os membros desta empresa
-          const { data: companyMembers, error: membersError } = await supabase
-            .from('client_profiles')
-            .select(`
-              *,
-              hierarchy_levels(
-                name,
-                level,
-                can_approve,
-                can_invite_members
-              )
-            `)
-            .eq('company', companyName)
-            .order('is_primary_contact', { ascending: false })
-            .order('name');
+            if (updateError) {
+              console.error('⚠️ Erro ao atualizar perfil com empresa:', updateError);
+            }
 
-          if (membersError) {
-            console.error('❌ Erro ao buscar membros da empresa:', membersError);
-          }
-
-          return {
-            profile: {
+            finalProfile = {
               ...profile,
               company: companyName,
               isTeamMember: true
-            },
-            companyMembers: companyMembers || []
-          };
+            };
+          }
+        } else {
+          console.log('⚠️ Usuário não é membro ativo de nenhuma equipe');
+          return { profile: finalProfile, companyMembers: [] };
         }
       }
 
-      // Buscar todos os membros da empresa (incluindo membros da equipe)
-      const { data: companyMembers, error: membersError } = await supabase
-        .from('client_profiles')
-        .select(`
-          *,
-          hierarchy_levels(
-            name,
-            level,
-            can_approve,
-            can_invite_members
-          )
-        `)
-        .eq('company', profile.company)
-        .order('is_primary_contact', { ascending: false })
-        .order('name');
+      // Se agora temos uma empresa, buscar os membros
+      if (finalProfile.company) {
+        const { data: members, error: membersError } = await supabase
+          .from('client_profiles')
+          .select(`
+            *,
+            hierarchy_levels(
+              name,
+              level,
+              can_approve,
+              can_invite_members
+            )
+          `)
+          .eq('company', finalProfile.company)
+          .order('is_primary_contact', { ascending: false })
+          .order('name');
 
-      if (membersError) {
-        console.error('❌ Erro ao buscar membros da empresa:', membersError);
-        throw membersError;
+        if (membersError) {
+          console.error('❌ Erro ao buscar membros da empresa:', membersError);
+        } else {
+          companyMembers = members || [];
+          console.log('✅ Membros da empresa encontrados:', companyMembers.length);
+        }
       }
 
-      console.log('✅ Membros da empresa encontrados:', companyMembers?.length || 0);
-
       return {
-        profile,
-        companyMembers: companyMembers || []
+        profile: finalProfile,
+        companyMembers
       };
     },
     staleTime: 5 * 60 * 1000, // 5 minutos
