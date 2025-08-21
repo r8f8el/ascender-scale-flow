@@ -102,10 +102,13 @@ export const useSecureInviteTeamMember = () => {
 
       try {
         // Obter dados do usuário atual
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Usuário não autenticado');
+
         const { data: userProfile, error: profileError } = await supabase
           .from('client_profiles')
           .select('name, company')
-          .eq('id', (await supabase.auth.getUser()).data.user?.id)
+          .eq('id', user.id)
           .single();
 
         if (profileError) {
@@ -121,7 +124,7 @@ export const useSecureInviteTeamMember = () => {
           .from('team_invitations')
           .insert({
             email: sanitizedEmail,
-            company_id: userProfile.id || (await supabase.auth.getUser()).data.user?.id,
+            company_id: user.id,
             company_name: userProfile.company || userProfile.name,
             inviter_name: userProfile.name,
             token: token,
@@ -141,11 +144,11 @@ export const useSecureInviteTeamMember = () => {
         const { error: memberError } = await supabase
           .from('team_members')
           .insert({
-            company_id: userProfile.id || (await supabase.auth.getUser()).data.user?.id,
+            company_id: user.id,
             invited_email: sanitizedEmail,
             name: sanitizedName,
             hierarchy_level_id: hierarchyLevelId,
-            invited_by: (await supabase.auth.getUser()).data.user?.id,
+            invited_by: user.id,
             status: 'pending'
           });
 
