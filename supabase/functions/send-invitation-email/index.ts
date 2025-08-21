@@ -64,7 +64,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Processing invitation for:', { to, inviterName, invitedName, companyName });
 
     const emailResponse = await resend.emails.send({
-      from: "Ascalate <onboarding@resend.dev>",
+      from: "Sistema Ascalate <sistema@ascalate.com.br>",
       to: [to],
       subject: `Convite para se juntar à equipe da ${companyName}`,
       html: `

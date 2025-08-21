@@ -170,7 +170,7 @@ async function handleTeamInvitationNotification(data: any): Promise<Response> {
     console.log('Enviando convite de equipe...');
 
     const emailResponse = await resend.emails.send({
-      from: "Ascalate <onboarding@resend.dev>",
+      from: "Sistema Ascalate <sistema@ascalate.com.br>",
       to: [data.invitedEmail],
       subject: `Convite para se juntar à equipe da ${data.companyName}`,
       html: `
