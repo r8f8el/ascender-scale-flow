@@ -27,6 +27,7 @@ export const useCompanyData = () => {
 
       let finalProfile = profile;
       let companyMembers = [];
+      let isTeamMember = false;
 
       // Se não há empresa no perfil, verificar se é membro de equipe
       if (!profile?.company) {
@@ -67,13 +68,14 @@ export const useCompanyData = () => {
 
             finalProfile = {
               ...profile,
-              company: companyName,
-              isTeamMember: true
+              company: companyName
             };
+            
+            isTeamMember = true;
           }
         } else {
           console.log('⚠️ Usuário não é membro ativo de nenhuma equipe');
-          return { profile: finalProfile, companyMembers: [] };
+          return { profile: finalProfile, companyMembers: [], isTeamMember: false };
         }
       }
 
@@ -104,7 +106,8 @@ export const useCompanyData = () => {
 
       return {
         profile: finalProfile,
-        companyMembers
+        companyMembers,
+        isTeamMember
       };
     },
     staleTime: 5 * 60 * 1000, // 5 minutos

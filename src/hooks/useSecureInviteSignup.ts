@@ -22,6 +22,13 @@ interface CompanyData {
   name: string;
 }
 
+interface AcceptInviteResult {
+  success: boolean;
+  error?: string;
+  company_name?: string;
+  user_id?: string;
+}
+
 export const useSecureInviteSignup = (token?: string | null) => {
   const [loading, setLoading] = useState(false);
   const [inviteData, setInviteData] = useState<InviteData | null>(null);
@@ -162,7 +169,7 @@ export const useSecureInviteSignup = (token?: string | null) => {
         .rpc('accept_team_invitation', {
           p_token: data.token,
           p_user_id: authData.user.id
-        });
+        }) as { data: AcceptInviteResult | null, error: any };
 
       if (acceptError) {
         console.error('❌ Erro ao aceitar convite:', acceptError);
@@ -170,9 +177,9 @@ export const useSecureInviteSignup = (token?: string | null) => {
       }
 
       // Verificar se a função retornou sucesso
-      if (acceptResult && !acceptResult.success) {
-        console.error('❌ Erro na função de aceitar convite:', acceptResult.error);
-        throw new Error(acceptResult.error || 'Erro ao processar convite');
+      if (!acceptResult || !acceptResult.success) {
+        console.error('❌ Erro na função de aceitar convite:', acceptResult?.error);
+        throw new Error(acceptResult?.error || 'Erro ao processar convite');
       }
 
       console.log('✅ Convite aceito com sucesso:', acceptResult);
