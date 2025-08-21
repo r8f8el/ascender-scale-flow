@@ -35,6 +35,9 @@ const handler = async (req: Request): Promise<Response> => {
     const { to, inviterName, invitedName, companyName, inviteUrl, message }: InvitationEmailRequest = await req.json();
     console.log('Processing invitation for:', { to, inviterName, invitedName, companyName });
 
+    // Construir URL de cadastro específica para convites
+    const signupUrl = inviteUrl.replace('/convite-equipe?', '/convite-equipe/cadastro?');
+
     const emailResponse = await resend.emails.send({
       from: "Ascalate <onboarding@resend.dev>",
       to: [to],
@@ -71,7 +74,7 @@ const handler = async (req: Request): Promise<Response> => {
             </p>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${inviteUrl}" 
+              <a href="${signupUrl}" 
                  style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                         color: white; 
                         padding: 15px 30px; 
