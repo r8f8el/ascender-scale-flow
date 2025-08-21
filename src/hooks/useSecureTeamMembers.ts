@@ -129,7 +129,7 @@ export const useSecureInviteTeamMember = () => {
             inviter_name: userProfile.name,
             token: token,
             message: message || 'Você foi convidado para se juntar à nossa equipe na plataforma Ascalate',
-            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 dias
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
             status: 'pending'
           })
           .select()
@@ -162,15 +162,17 @@ export const useSecureInviteTeamMember = () => {
 
         console.log('Enviando email via edge function...');
 
-        // Chamar a edge function para enviar o email
-        const { data: emailData, error: emailError } = await supabase.functions.invoke('send-invitation-email', {
+        // Chamar a nova edge function de notificações
+        const { data: emailData, error: emailError } = await supabase.functions.invoke('send-notification', {
           body: {
-            to: sanitizedEmail,
-            inviterName: userProfile.name || 'Administrador',
-            invitedName: sanitizedName,
-            companyName: userProfile.company || userProfile.name || 'Sua Empresa',
-            inviteUrl: inviteUrl,
-            message: message || 'Você foi convidado para se juntar à nossa equipe na plataforma Ascalate'
+            type: 'team_invitation',
+            data: {
+              invitedEmail: sanitizedEmail,
+              inviterName: userProfile.name || 'Administrador',
+              companyName: userProfile.company || userProfile.name || 'Sua Empresa',
+              inviteUrl: inviteUrl,
+              message: message || 'Você foi convidado para se juntar à nossa equipe na plataforma Ascalate'
+            }
           }
         });
 

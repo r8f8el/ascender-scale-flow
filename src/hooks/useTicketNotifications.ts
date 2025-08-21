@@ -2,48 +2,45 @@
 import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useCreateNotification } from './useNotifications';
 
 export const useTicketNotifications = () => {
-  const createNotification = useCreateNotification();
-
   const notifyNewTicket = useMutation({
-    mutationFn: async ({ ticketNumber, title, userName, userEmail, priority }: {
+    mutationFn: async ({ ticketNumber, title, userName, userEmail, priority, description }: {
       ticketNumber: string;
       title: string;
       userName: string;
       userEmail: string;
       priority: string;
+      description: string;
     }) => {
-      // Buscar todos os membros da Ascalate
-      const { data: ascalateMembers } = await supabase
-        .from('admin_profiles')
-        .select('email, name');
+      console.log('Enviando notificação de novo chamado via edge function...');
+      
+      const { data, error } = await supabase.functions.invoke('send-notification', {
+        body: {
+          type: 'ticket_created',
+          data: {
+            ticketNumber,
+            title,
+            userName,
+            userEmail,
+            priority,
+            description
+          }
+        }
+      });
 
-      if (ascalateMembers) {
-        const notifications = ascalateMembers.map(member => 
-          createNotification.mutateAsync({
-            recipient_email: member.email,
-            subject: `Novo chamado aberto: ${ticketNumber}`,
-            message: `Um novo chamado foi aberto:
-            
-Número: ${ticketNumber}
-Título: ${title}
-Cliente: ${userName} (${userEmail})
-Prioridade: ${priority}
-
-Acesse o painel administrativo para visualizar e atribuir o chamado.`,
-            type: 'system_alert'
-          })
-        );
-
-        await Promise.all(notifications);
+      if (error) {
+        console.error('Erro na edge function de notificação:', error);
+        throw new Error(`Erro ao enviar notificação: ${error.message}`);
       }
+
+      console.log('Notificação enviada com sucesso:', data);
+      return data;
     },
     onSuccess: () => {
       toast.success('Equipe Ascalate notificada sobre o novo chamado!');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Erro ao notificar novo chamado:', error);
       toast.error('Erro ao notificar equipe sobre novo chamado');
     }

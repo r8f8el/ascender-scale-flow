@@ -214,11 +214,13 @@ export const useTicketForm = () => {
           title: ticket.title,
           userName: ticket.user_name,
           userEmail: ticket.user_email,
-          priority: ticket.ticket_priorities?.name || 'Não definida'
+          priority: ticket.ticket_priorities?.name || 'Não definida',
+          description: ticket.description
         });
       } catch (notificationError) {
         console.error('Error sending notification:', notificationError);
         // Não falha o processo se a notificação falhar
+        toast.warning('Chamado criado, mas houve erro no envio da notificação');
       }
 
       toast.success('Chamado criado com sucesso!');
