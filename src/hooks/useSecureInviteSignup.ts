@@ -194,9 +194,8 @@ export const useSecureInviteSignup = (token?: string | null) => {
 
       return {
         success: true,
-        user: authData.user,
-        session: authData.session,
-        company_name: result.company_name || companyData?.name
+        company_name: result.company_name || companyData?.name,
+        user_id: authData.user.id
       };
     },
     onSuccess: (result) => {
