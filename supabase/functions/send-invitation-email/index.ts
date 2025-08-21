@@ -30,7 +30,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Processing invitation for:', { to, inviterName, invitedName, companyName });
 
     const emailResponse = await resend.emails.send({
-      from: "Ascalate <convites@ascalate.com.br>", // Use seu domínio verificado
+      from: "Ascalate <onboarding@resend.dev>", // Temporário até verificar o domínio
       to: [to],
       subject: `Convite para se juntar à equipe da ${companyName}`,
       html: `
@@ -125,7 +125,7 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        details: 'Verifique se o domínio está configurado no Resend'
+        details: 'Verifique se o domínio está configurado no Resend ou use onboarding@resend.dev temporariamente'
       }),
       {
         status: 500,
