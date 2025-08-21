@@ -13,15 +13,14 @@ interface InviteData {
   is_valid: boolean;
 }
 
+interface CompanyData {
+  name: string;
+}
+
 interface SignupData {
   name: string;
   email: string;
   password: string;
-  token: string;
-}
-
-interface CompanyData {
-  name: string;
 }
 
 interface AcceptInviteResult {
@@ -33,26 +32,31 @@ interface AcceptInviteResult {
 
 export const useSecureInviteSignup = (token?: string | null) => {
   const [inviteData, setInviteData] = useState<InviteData | null>(null);
+  const [companyData, setCompanyData] = useState<CompanyData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const validateToken = async (tokenToValidate: string) => {
     try {
       setLoading(true);
+      setError(null);
       console.log('🔍 Validando token de convite:', tokenToValidate);
 
-      const { data, error } = await supabase
+      const { data, error: validationError } = await supabase
         .rpc('validate_invitation_token', {
           p_token: tokenToValidate
         });
 
-      if (error) {
-        console.error('❌ Erro ao validar token:', error);
-        throw error;
+      if (validationError) {
+        console.error('❌ Erro ao validar token:', validationError);
+        setError(validationError.message || 'Erro ao validar token');
+        return null;
       }
 
       if (!data || data.length === 0) {
         console.log('⚠️ Token não encontrado');
+        setError('Token não encontrado ou inválido');
         return null;
       }
 
@@ -61,25 +65,50 @@ export const useSecureInviteSignup = (token?: string | null) => {
 
       if (!invite.is_valid) {
         console.log('❌ Token inválido ou expirado');
+        setError('Token inválido ou expirado');
         return null;
       }
 
       setInviteData(invite);
+      
+      // Buscar dados da empresa
+      const { data: companyInfo, error: companyError } = await supabase
+        .from('clients')
+        .select('name')
+        .eq('id', invite.company_id)
+        .single();
+      
+      if (!companyError && companyInfo) {
+        setCompanyData({ name: companyInfo.name });
+      }
+
       return invite;
-    } catch (error) {
-      console.error('❌ Erro na validação do token:', error);
+    } catch (err) {
+      console.error('❌ Erro na validação do token:', err);
+      setError('Erro interno na validação');
       return null;
     } finally {
       setLoading(false);
     }
   };
 
+  // Validar token automaticamente quando fornecido
+  useState(() => {
+    if (token) {
+      validateToken(token);
+    }
+  });
+
   const signupMutation = useMutation({
     mutationFn: async (data: SignupData) => {
+      if (!token) {
+        throw new Error('Token de convite não fornecido');
+      }
+
       console.log('🚀 Iniciando cadastro com convite...');
 
       // Verificar se o token ainda é válido
-      const validInvite = await validateToken(data.token);
+      const validInvite = await validateToken(token);
       if (!validInvite) {
         throw new Error('Token de convite inválido ou expirado');
       }
@@ -93,7 +122,7 @@ export const useSecureInviteSignup = (token?: string | null) => {
         options: {
           data: {
             name: data.name,
-            invited_via_token: data.token
+            invited_via_token: token
           }
         }
       });
@@ -117,9 +146,9 @@ export const useSecureInviteSignup = (token?: string | null) => {
       // Aceitar o convite da equipe usando a função RPC
       const { data: acceptResult, error: acceptError } = await supabase
         .rpc('accept_team_invitation', {
-          p_token: data.token,
+          p_token: token,
           p_user_id: authData.user.id
-        }) as { data: AcceptInviteResult | null, error: any };
+        });
 
       if (acceptError) {
         console.error('❌ Erro ao aceitar convite:', acceptError);
@@ -127,12 +156,13 @@ export const useSecureInviteSignup = (token?: string | null) => {
       }
 
       // Verificar se a função retornou sucesso
-      if (!acceptResult || !acceptResult.success) {
-        console.error('❌ Erro na função de aceitar convite:', acceptResult?.error);
-        throw new Error(acceptResult?.error || 'Erro ao processar convite');
+      const result = acceptResult as AcceptInviteResult;
+      if (!result || !result.success) {
+        console.error('❌ Erro na função de aceitar convite:', result?.error);
+        throw new Error(result?.error || 'Erro ao processar convite');
       }
 
-      console.log('✅ Convite aceito com sucesso:', acceptResult);
+      console.log('✅ Convite aceito com sucesso:', result);
 
       // Invalidar caches para forçar recarregamento dos dados
       queryClient.invalidateQueries({ queryKey: ['company-access'] });
@@ -145,15 +175,16 @@ export const useSecureInviteSignup = (token?: string | null) => {
       console.log('🔄 Caches invalidados, dados serão recarregados');
 
       return {
+        success: true,
         user: authData.user,
         session: authData.session,
-        companyName: acceptResult.company_name
+        company_name: result.company_name
       };
     },
     onSuccess: (result) => {
       console.log('🎉 Cadastro completado com sucesso!');
       toast.success('Conta criada com sucesso!', {
-        description: `Bem-vindo à ${result.companyName || 'equipe'}! Você pode fazer login agora.`,
+        description: `Bem-vindo à ${result.company_name || 'equipe'}! Você pode fazer login agora.`,
         duration: 8000
       });
     },
@@ -178,10 +209,22 @@ export const useSecureInviteSignup = (token?: string | null) => {
     }
   });
 
+  const acceptInvite = async (data: SignupData) => {
+    return new Promise<AcceptInviteResult>((resolve, reject) => {
+      signupMutation.mutate(data, {
+        onSuccess: (result) => resolve(result),
+        onError: (error) => reject(error)
+      });
+    });
+  };
+
   return {
     inviteData,
+    companyData,
     loading,
+    error,
     validateToken,
+    acceptInvite,
     signup: signupMutation.mutate,
     isSigningUp: signupMutation.isPending,
     signupError: signupMutation.error
