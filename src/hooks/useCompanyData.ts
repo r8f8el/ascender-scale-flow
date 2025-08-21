@@ -48,7 +48,7 @@ export const useCompanyData = () => {
           `)
           .eq('user_id', user.id)
           .eq('status', 'active')
-          .single();
+          .maybeSingle();
 
         if (!teamError && teamMembership?.company) {
           console.log('✅ Usuário é membro de equipe da empresa:', teamMembership.company);
@@ -57,13 +57,19 @@ export const useCompanyData = () => {
           
           if (companyName) {
             // Atualizar o perfil com a empresa encontrada
-            const { error: updateError } = await supabase
-              .from('client_profiles')
-              .update({ company: companyName })
-              .eq('id', user.id);
+            try {
+              const { error: updateError } = await supabase
+                .from('client_profiles')
+                .update({ company: companyName })
+                .eq('id', user.id);
 
-            if (updateError) {
-              console.error('⚠️ Erro ao atualizar perfil com empresa:', updateError);
+              if (updateError) {
+                console.error('⚠️ Erro ao atualizar perfil com empresa:', updateError);
+              } else {
+                console.log('✅ Perfil atualizado com empresa:', companyName);
+              }
+            } catch (error) {
+              console.error('⚠️ Erro ao atualizar perfil:', error);
             }
 
             finalProfile = {
@@ -75,12 +81,40 @@ export const useCompanyData = () => {
           }
         } else {
           console.log('⚠️ Usuário não é membro ativo de nenhuma equipe');
-          return { profile: finalProfile, companyMembers: [], isTeamMember: false };
+          
+          // Se for contato primário sem empresa, usar o nome como empresa
+          if (profile.is_primary_contact && profile.name) {
+            const companyName = profile.name;
+            console.log('📋 Criando empresa baseada no nome do contato primário:', companyName);
+            
+            try {
+              const { error: updateError } = await supabase
+                .from('client_profiles')
+                .update({ company: companyName })
+                .eq('id', user.id);
+
+              if (!updateError) {
+                finalProfile = {
+                  ...profile,
+                  company: companyName
+                };
+                console.log('✅ Empresa criada com sucesso:', companyName);
+              }
+            } catch (error) {
+              console.error('⚠️ Erro ao criar empresa:', error);
+            }
+          }
+          
+          if (!finalProfile.company) {
+            return { profile: finalProfile, companyMembers: [], isTeamMember: false };
+          }
         }
       }
 
       // Se agora temos uma empresa, buscar os membros
       if (finalProfile.company) {
+        console.log('🔍 Buscando membros da empresa:', finalProfile.company);
+        
         const { data: members, error: membersError } = await supabase
           .from('client_profiles')
           .select(`
@@ -104,13 +138,22 @@ export const useCompanyData = () => {
         }
       }
 
+      console.log('🎯 Resultado final dos dados da empresa:', {
+        hasCompany: !!finalProfile.company,
+        companyName: finalProfile.company,
+        isTeamMember,
+        membersCount: companyMembers.length
+      });
+
       return {
         profile: finalProfile,
         companyMembers,
         isTeamMember
       };
     },
-    staleTime: 5 * 60 * 1000, // 5 minutos
-    gcTime: 10 * 60 * 1000 // 10 minutos
+    staleTime: 2 * 60 * 1000, // 2 minutos
+    gcTime: 5 * 60 * 1000, // 5 minutos
+    retry: 3,
+    retryDelay: 1000,
   });
 };
