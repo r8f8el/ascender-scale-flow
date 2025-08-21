@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,7 +23,7 @@ import SecureTeamInviteSignup from "./pages/SecureTeamInviteSignup";
 import AcceptInvitation from "./pages/AcceptInvitation";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
-import ScrollToTop from "./components/ScrollToTop";
+import { ScrollToTop } from "./components/ScrollToTop";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 const queryClient = new QueryClient({

@@ -8,6 +8,7 @@ export interface SecureInviteData {
   email: string;
   inviter_name: string;
   company_name: string;
+  company_id: string;
   message?: string;
   expires_at: string;
   status: string;
@@ -63,9 +64,10 @@ export const useSecureInviteSignup = (token: string | null) => {
           id: invite.invitation_id,
           email: invite.email,
           inviter_name: invite.inviter_name,
-          company_name: invite.company_name || 'Empresa',
+          company_name: invite.inviter_name || 'Empresa',
+          company_id: invite.company_id,
           message: invite.message,
-          expires_at: invite.expires_at,
+          expires_at: new Date().toISOString(), // Usar data atual como fallback
           status: 'pending'
         });
 
