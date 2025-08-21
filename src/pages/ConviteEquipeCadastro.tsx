@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +16,9 @@ const ConviteEquipeCadastro = () => {
   const navigate = useNavigate();
   const token = searchParams.get('token');
 
+  console.log('🔍 ConviteEquipeCadastro - Token recebido:', token);
+  console.log('🔍 ConviteEquipeCadastro - URL atual:', window.location.href);
+
   const { inviteData, companyData, loading, error, acceptInvite } = useSecureInviteSignup(token);
 
   const [formData, setFormData] = useState({
@@ -30,13 +34,21 @@ const ConviteEquipeCadastro = () => {
   const [submitError, setSubmitError] = useState('');
 
   useEffect(() => {
+    console.log('🔍 ConviteEquipeCadastro - Estado atual:', {
+      loading,
+      error,
+      inviteData,
+      companyData,
+      token
+    });
+
     if (inviteData) {
       setFormData(prev => ({
         ...prev,
         email: inviteData.email
       }));
     }
-  }, [inviteData]);
+  }, [inviteData, loading, error]);
 
   const validatePassword = (password: string) => {
     if (password.length < 6) {
@@ -48,6 +60,8 @@ const ConviteEquipeCadastro = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError('');
+
+    console.log('🚀 ConviteEquipeCadastro - Iniciando submit:', formData);
 
     // Validações
     if (!formData.name.trim()) {
@@ -80,6 +94,8 @@ const ConviteEquipeCadastro = () => {
         password: formData.password
       });
 
+      console.log('✅ ConviteEquipeCadastro - Resultado:', result);
+
       if (result.success) {
         toast.success('Conta criada com sucesso!', {
           description: 'Verifique seu email para confirmar a conta antes de fazer login.'
@@ -96,14 +112,36 @@ const ConviteEquipeCadastro = () => {
         setSubmitError(result.error || 'Erro ao criar conta');
       }
     } catch (err) {
-      console.error('Erro ao aceitar convite:', err);
+      console.error('❌ ConviteEquipeCadastro - Erro ao aceitar convite:', err);
       setSubmitError('Erro interno. Tente novamente.');
     } finally {
       setSubmitting(false);
     }
   };
 
+  // Debug: verificar se não há token
+  if (!token) {
+    console.error('❌ ConviteEquipeCadastro - Token não encontrado na URL');
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Token de Convite Necessário</h3>
+            <p className="text-gray-600 mb-4">
+              Esta página requer um token de convite válido.
+            </p>
+            <Button onClick={() => navigate('/')} variant="outline">
+              Ir para página inicial
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (loading) {
+    console.log('🔄 ConviteEquipeCadastro - Carregando...');
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
@@ -117,6 +155,7 @@ const ConviteEquipeCadastro = () => {
   }
 
   if (error || !inviteData) {
+    console.error('❌ ConviteEquipeCadastro - Erro ou dados de convite não encontrados:', { error, inviteData });
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
@@ -134,6 +173,8 @@ const ConviteEquipeCadastro = () => {
       </div>
     );
   }
+
+  console.log('✅ ConviteEquipeCadastro - Renderizando formulário com dados:', { inviteData, companyData });
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">

@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -93,11 +93,11 @@ export const useSecureInviteSignup = (token?: string | null) => {
   };
 
   // Validar token automaticamente quando fornecido
-  useState(() => {
+  useEffect(() => {
     if (token) {
       validateToken(token);
     }
-  });
+  }, [token]);
 
   const signupMutation = useMutation({
     mutationFn: async (data: SignupData): Promise<AcceptInviteResult> => {
@@ -171,8 +171,13 @@ export const useSecureInviteSignup = (token?: string | null) => {
             error: 'Erro ao processar convite'
           };
         }
-      } else {
+      } else if (acceptResult && typeof acceptResult === 'object') {
         result = acceptResult as AcceptInviteResult;
+      } else {
+        result = {
+          success: false,
+          error: 'Resposta inválida do servidor'
+        };
       }
 
       if (!result.success) {
