@@ -1,27 +1,13 @@
 
 import React, { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Mail, User, MessageCircle, Shield, Send } from 'lucide-react';
-import { useSecureInviteTeamMember, useHierarchyLevels } from '@/hooks/useSecureTeamMembers';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useHierarchyLevels, useSecureInviteTeamMember } from '@/hooks/useSecureTeamMembers';
+import { Mail, User, MessageSquare, Shield, Loader2 } from 'lucide-react';
 
 interface SecureInviteTeamMemberDialogProps {
   open: boolean;
@@ -30,233 +16,151 @@ interface SecureInviteTeamMemberDialogProps {
 
 export const SecureInviteTeamMemberDialog: React.FC<SecureInviteTeamMemberDialogProps> = ({
   open,
-  onOpenChange,
+  onOpenChange
 }) => {
-  const [formData, setFormData] = useState({
-    email: '',
-    name: '',
-    hierarchyLevelId: '',
-    message: ''
-  });
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [hierarchyLevelId, setHierarchyLevelId] = useState('');
+  const [message, setMessage] = useState('');
 
   const { data: hierarchyLevels = [] } = useHierarchyLevels();
   const inviteTeamMember = useSecureInviteTeamMember();
 
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email é obrigatório';
-    } else if (!emailRegex.test(formData.email.trim())) {
-      newErrors.email = 'Email inválido';
-    }
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Nome é obrigatório';
-    } else if (formData.name.trim().length < 2) {
-      newErrors.name = 'Nome deve ter pelo menos 2 caracteres';
-    }
-
-    if (!formData.hierarchyLevelId) {
-      newErrors.hierarchyLevelId = 'Nível hierárquico é obrigatório';
-    }
-
-    if (formData.message.length > 500) {
-      newErrors.message = 'Mensagem muito longa (máximo 500 caracteres)';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSendInvite = async () => {
-    if (!validateForm()) {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !name || !hierarchyLevelId) {
       return;
     }
 
     try {
       await inviteTeamMember.mutateAsync({
-        email: formData.email.trim().toLowerCase(),
-        name: formData.name.trim(),
-        hierarchyLevelId: formData.hierarchyLevelId
+        email,
+        name,
+        hierarchyLevelId,
+        message: message.trim() || undefined
       });
-      
-      // Reset form and close dialog
-      setFormData({ email: '', name: '', hierarchyLevelId: '', message: '' });
-      setErrors({});
+
+      // Limpar formulário e fechar dialog
+      setEmail('');
+      setName('');
+      setHierarchyLevelId('');
+      setMessage('');
       onOpenChange(false);
     } catch (error) {
-      // Error handled by the mutation
+      // Erro será tratado pelo hook
+      console.error('Erro no formulário:', error);
     }
-  };
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
-  };
-
-  const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen) {
-      setFormData({ email: '', name: '', hierarchyLevelId: '', message: '' });
-      setErrors({});
-    }
-    onOpenChange(newOpen);
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center">
-            <Shield className="w-5 h-5 mr-2 text-blue-600" />
-            Convidar Membro da Equipe
+          <DialogTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Convidar Novo Membro da Equipe
           </DialogTitle>
-          <DialogDescription>
-            Envie um convite seguro por email para que a pessoa se cadastre e tenha acesso ao painel da empresa.
-          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="secure-invite-email" className="text-sm font-medium">
-              Email *
+            <Label htmlFor="name" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Nome Completo
             </Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                id="secure-invite-email"
-                type="email"
-                placeholder="email@exemplo.com"
-                value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                className={`pl-10 ${errors.email ? 'border-red-500' : ''}`}
-                disabled={inviteTeamMember.isPending}
-              />
-            </div>
-            {errors.email && (
-              <p className="text-xs text-red-600">{errors.email}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="secure-invite-name" className="text-sm font-medium">
-              Nome Completo *
-            </Label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                id="secure-invite-name"
-                type="text"
-                placeholder="Nome da pessoa"
-                value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                className={`pl-10 ${errors.name ? 'border-red-500' : ''}`}
-                disabled={inviteTeamMember.isPending}
-              />
-            </div>
-            {errors.name && (
-              <p className="text-xs text-red-600">{errors.name}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">
-              Nível Hierárquico *
-            </Label>
-            <Select 
-              value={formData.hierarchyLevelId} 
-              onValueChange={(value) => handleInputChange('hierarchyLevelId', value)}
+            <Input
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Digite o nome completo"
+              required
               disabled={inviteTeamMember.isPending}
-            >
-              <SelectTrigger className={errors.hierarchyLevelId ? 'border-red-500' : ''}>
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email" className="flex items-center gap-2">
+              <Mail className="h-4 w-4" />
+              Email
+            </Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Digite o email"
+              required
+              disabled={inviteTeamMember.isPending}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="hierarchy" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Nível Hierárquico
+            </Label>
+            <Select value={hierarchyLevelId} onValueChange={setHierarchyLevelId} disabled={inviteTeamMember.isPending}>
+              <SelectTrigger>
                 <SelectValue placeholder="Selecione o nível hierárquico" />
               </SelectTrigger>
               <SelectContent>
                 {hierarchyLevels.map((level) => (
                   <SelectItem key={level.id} value={level.id}>
-                    <div className="flex flex-col">
-                      <span className="font-medium">{level.name}</span>
-                      {level.description && (
-                        <span className="text-xs text-muted-foreground">
-                          {level.description}
-                        </span>
-                      )}
-                    </div>
+                    {level.name} (Nível {level.level})
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {errors.hierarchyLevelId && (
-              <p className="text-xs text-red-600">{errors.hierarchyLevelId}</p>
-            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="secure-invite-message" className="text-sm font-medium">
-              Mensagem Personalizada (Opcional)
+            <Label htmlFor="message" className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Mensagem Personalizada (opcional)
             </Label>
-            <div className="relative">
-              <MessageCircle className="absolute left-3 top-3 text-gray-400 w-4 h-4" />
-              <Textarea
-                id="secure-invite-message"
-                placeholder="Adicione uma mensagem personalizada ao convite..."
-                value={formData.message}
-                onChange={(e) => handleInputChange('message', e.target.value)}
-                className={`pl-10 min-h-[80px] resize-none ${errors.message ? 'border-red-500' : ''}`}
-                disabled={inviteTeamMember.isPending}
-                maxLength={500}
-              />
-            </div>
-            {errors.message && (
-              <p className="text-xs text-red-600">{errors.message}</p>
-            )}
-            <p className="text-xs text-gray-500">
-              {formData.message.length}/500 caracteres
+            <Textarea
+              id="message"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Adicione uma mensagem personalizada ao convite..."
+              rows={3}
+              disabled={inviteTeamMember.isPending}
+              maxLength={500}
+            />
+            <p className="text-sm text-gray-500">
+              {message.length}/500 caracteres
             </p>
           </div>
 
-          <Alert>
-            <Shield className="h-4 w-4" />
-            <AlertDescription className="text-sm">
-              O convite expira em 7 dias e usa tokens seguros. O novo membro terá acesso ao mesmo painel da sua empresa.
-            </AlertDescription>
-          </Alert>
-        </div>
-
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => handleOpenChange(false)}
-            disabled={inviteTeamMember.isPending}
-          >
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleSendInvite}
-            disabled={inviteTeamMember.isPending}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            {inviteTeamMember.isPending ? (
-              <>
-                <Send className="w-4 h-4 mr-2 animate-spin" />
-                Enviando...
-              </>
-            ) : (
-              <>
-                <Send className="w-4 h-4 mr-2" />
-                Enviar Convite
-              </>
-            )}
-          </Button>
-        </DialogFooter>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={inviteTeamMember.isPending}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              disabled={!email || !name || !hierarchyLevelId || inviteTeamMember.isPending}
+            >
+              {inviteTeamMember.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Enviando Convite...
+                </>
+              ) : (
+                <>
+                  <Mail className="h-4 w-4 mr-2" />
+                  Enviar Convite
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
 };
-
-export default SecureInviteTeamMemberDialog;

@@ -76,10 +76,11 @@ export const useSecureInviteTeamMember = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ email, name, hierarchyLevelId }: {
+    mutationFn: async ({ email, name, hierarchyLevelId, message }: {
       email: string;
       name: string;
       hierarchyLevelId: string;
+      message?: string;
     }) => {
       // Input validation and sanitization
       const sanitizedEmail = email.trim().toLowerCase();
@@ -97,23 +98,80 @@ export const useSecureInviteTeamMember = () => {
         throw new Error('Nome muito longo');
       }
 
-      const { data, error } = await supabase.rpc('invite_team_member_secure', {
+      console.log('Enviando convite para:', { email: sanitizedEmail, name: sanitizedName });
+
+      // Primeiro, criar o registro na tabela team_members
+      const { data: teamMemberData, error: teamMemberError } = await supabase.rpc('invite_team_member_secure', {
         p_email: sanitizedEmail,
         p_name: sanitizedName,
         p_hierarchy_level_id: hierarchyLevelId
       });
 
-      if (error) throw error;
-      return data;
+      if (teamMemberError) {
+        console.error('Erro ao criar registro do membro:', teamMemberError);
+        throw teamMemberError;
+      }
+
+      console.log('Membro criado com sucesso:', teamMemberData);
+
+      // Obter dados da empresa atual
+      const { data: userProfile, error: profileError } = await supabase
+        .from('client_profiles')
+        .select('name, company')
+        .eq('id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (profileError) {
+        console.error('Erro ao obter perfil do usuário:', profileError);
+        throw profileError;
+      }
+
+      // Gerar URL de convite
+      const baseUrl = window.location.origin;
+      const inviteUrl = `${baseUrl}/convite-equipe?token=${teamMemberData?.invitation_token || 'temp-token'}`;
+
+      console.log('Enviando email via edge function...');
+
+      // Chamar a edge function para enviar o email
+      const { data: emailData, error: emailError } = await supabase.functions.invoke('send-invitation-email', {
+        body: {
+          to: sanitizedEmail,
+          inviterName: userProfile.name || 'Administrador',
+          invitedName: sanitizedName,
+          companyName: userProfile.company || 'Sua Empresa',
+          inviteUrl: inviteUrl,
+          message: message || ''
+        }
+      });
+
+      if (emailError) {
+        console.error('Erro ao enviar email:', emailError);
+        throw new Error(`Erro ao enviar email: ${emailError.message}`);
+      }
+
+      console.log('Email enviado com sucesso:', emailData);
+
+      return { 
+        teamMember: teamMemberData, 
+        email: emailData,
+        invitedEmail: sanitizedEmail,
+        invitedName: sanitizedName
+      };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['secure-team-members'] });
       queryClient.invalidateQueries({ queryKey: ['company-team-members'] });
-      toast.success('Convite seguro enviado com sucesso!');
+      toast.success(`Convite enviado com sucesso para ${data.invitedName} (${data.invitedEmail})!`, {
+        description: 'O convite foi enviado por email e a pessoa poderá aceitar clicando no link recebido.',
+        duration: 5000
+      });
     },
     onError: (error: any) => {
       console.error('Erro ao enviar convite:', error);
-      toast.error(`Erro ao enviar convite: ${error.message}`);
+      toast.error(`Erro ao enviar convite: ${error.message}`, {
+        description: 'Verifique se o email está correto e tente novamente.',
+        duration: 7000
+      });
     }
   });
 };
