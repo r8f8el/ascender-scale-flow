@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -100,8 +99,8 @@ export const useSecureInviteTeamMember = () => {
 
       console.log('Enviando convite para:', { email: sanitizedEmail, name: sanitizedName });
 
-      // Primeiro, criar o registro na tabela team_members
-      const { data: teamMemberData, error: teamMemberError } = await supabase.rpc('invite_team_member_secure', {
+      // Chamar a função RPC que retorna o ID do convite
+      const { data: invitationId, error: teamMemberError } = await supabase.rpc('invite_team_member_secure', {
         p_email: sanitizedEmail,
         p_name: sanitizedName,
         p_hierarchy_level_id: hierarchyLevelId
@@ -112,7 +111,7 @@ export const useSecureInviteTeamMember = () => {
         throw teamMemberError;
       }
 
-      console.log('Membro criado com sucesso:', teamMemberData);
+      console.log('Convite criado com sucesso. ID:', invitationId);
 
       // Obter dados da empresa atual
       const { data: userProfile, error: profileError } = await supabase
@@ -126,10 +125,6 @@ export const useSecureInviteTeamMember = () => {
         throw profileError;
       }
 
-      // Gerar URL de convite
-      const baseUrl = window.location.origin;
-      const inviteUrl = `${baseUrl}/convite-equipe?token=${teamMemberData?.invitation_token || 'temp-token'}`;
-
       console.log('Enviando email via edge function...');
 
       // Chamar a edge function para enviar o email
@@ -139,8 +134,8 @@ export const useSecureInviteTeamMember = () => {
           inviterName: userProfile.name || 'Administrador',
           invitedName: sanitizedName,
           companyName: userProfile.company || 'Sua Empresa',
-          inviteUrl: inviteUrl,
-          message: message || ''
+          inviteUrl: `${window.location.origin}/convite-equipe?token=temp-token`,
+          message: message || 'Você foi convidado para se juntar à nossa equipe na plataforma Ascalate'
         }
       });
 
@@ -152,7 +147,7 @@ export const useSecureInviteTeamMember = () => {
       console.log('Email enviado com sucesso:', emailData);
 
       return { 
-        teamMember: teamMemberData, 
+        invitationId, 
         email: emailData,
         invitedEmail: sanitizedEmail,
         invitedName: sanitizedName
@@ -161,7 +156,7 @@ export const useSecureInviteTeamMember = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['secure-team-members'] });
       queryClient.invalidateQueries({ queryKey: ['company-team-members'] });
-      toast.success(`Convite enviado com sucesso para ${data.invitedName} (${data.invitedEmail})!`, {
+      toast.success(`Seu convite foi enviado para ${data.invitedName} (${data.invitedEmail})!`, {
         description: 'O convite foi enviado por email e a pessoa poderá aceitar clicando no link recebido.',
         duration: 5000
       });
