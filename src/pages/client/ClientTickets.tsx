@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -110,7 +109,7 @@ const ClientTickets = () => {
 
   const handleNewTicket = () => {
     console.log('Navegando para abrir chamado...');
-    window.location.href = '/abrir-chamado';
+    navigate('/abrir-chamado');
   };
 
   const handleDeleteTicket = async (ticketId: string) => {
@@ -185,7 +184,6 @@ const ClientTickets = () => {
         </Button>
       </div>
 
-      {/* Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4">
@@ -224,7 +222,6 @@ const ClientTickets = () => {
         </Card>
       </div>
 
-      {/* Filtros e busca */}
       <Card>
         <CardContent className="p-4">
           <div className="flex gap-4">
@@ -266,7 +263,6 @@ const ClientTickets = () => {
         </CardContent>
       </Card>
 
-      {/* Lista de chamados com opção de exclusão */}
       <div className="space-y-4">
         {filteredTickets.length === 0 ? (
           <Card>
