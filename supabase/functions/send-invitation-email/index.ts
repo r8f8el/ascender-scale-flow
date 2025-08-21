@@ -26,7 +26,6 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    // Verificar se o corpo da requisição é JSON válido
     let requestBody;
     try {
       requestBody = await req.json();
@@ -46,9 +45,23 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { to, inviterName, invitedName, companyName, inviteUrl, message }: InvitationEmailRequest = requestBody;
     
-    // Validação de campos obrigatórios
+    console.log('Dados do convite recebidos:', {
+      to,
+      inviterName,
+      invitedName,
+      companyName,
+      inviteUrl,
+      message
+    });
+    
     if (!to || !inviterName || !invitedName || !companyName || !inviteUrl) {
-      console.error('Missing required fields:', { to: !!to, inviterName: !!inviterName, invitedName: !!invitedName, companyName: !!companyName, inviteUrl: !!inviteUrl });
+      console.error('Missing required fields:', { 
+        to: !!to, 
+        inviterName: !!inviterName, 
+        invitedName: !!invitedName, 
+        companyName: !!companyName, 
+        inviteUrl: !!inviteUrl 
+      });
       return new Response(
         JSON.stringify({ 
           error: 'Missing required fields',
@@ -61,7 +74,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log('Processing invitation for:', { to, inviterName, invitedName, companyName });
+    console.log('Processing invitation for:', { to, inviterName, invitedName, companyName, inviteUrl });
 
     const emailResponse = await resend.emails.send({
       from: "Sistema Ascalate <sistema@ascalate.com.br>",
@@ -125,6 +138,13 @@ const handler = async (req: Request): Promise<Response> => {
               </ul>
             </div>
             
+            <div style="background: #fffbf0; padding: 15px; border-left: 4px solid #f59e0b; margin: 20px 0;">
+              <p style="margin: 0; font-size: 14px; color: #92400e;">
+                <strong>Link direto:</strong><br>
+                <a href="${inviteUrl}" style="color: #667eea; word-break: break-all;">${inviteUrl}</a>
+              </p>
+            </div>
+            
             <div style="border-top: 1px solid #e0e0e0; margin-top: 30px; padding-top: 20px;">
               <p style="font-size: 12px; color: #999; text-align: center; margin: 0;">
                 Se você não esperava este convite, pode ignorar este email com segurança.
@@ -146,7 +166,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     return new Response(JSON.stringify({ 
       success: true, 
-      messageId: emailResponse.data?.id 
+      messageId: emailResponse.data?.id,
+      inviteUrl: inviteUrl
     }), {
       status: 200,
       headers: {

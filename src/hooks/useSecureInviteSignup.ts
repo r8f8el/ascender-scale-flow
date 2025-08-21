@@ -95,6 +95,7 @@ export const useSecureInviteSignup = (token?: string | null) => {
   // Validar token automaticamente quando fornecido
   useEffect(() => {
     if (token) {
+      console.log('🔍 useSecureInviteSignup - Validando token:', token);
       validateToken(token);
     }
   }, [token]);
@@ -155,7 +156,7 @@ export const useSecureInviteSignup = (token?: string | null) => {
         throw acceptError;
       }
 
-      // Verificar se a função retornou sucesso (pode ser boolean ou objeto)
+      // Verificar se a função retornou sucesso
       let result: AcceptInviteResult;
       
       if (typeof acceptResult === 'boolean') {
