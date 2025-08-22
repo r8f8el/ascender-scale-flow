@@ -39,7 +39,7 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   
-  console.log('🚀 BRAND NEW AdminAuthProvider: Context initialized');
+  console.log('🚀 COMPLETELY NEW AdminAuthProvider: Context initialized with new structure');
 
   const createAdminProfile = async (user: User) => {
     console.log('👤 Creating admin profile for:', user.email);
@@ -135,61 +135,61 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
     };
   }, []);
   
-  // Função completamente nova com nome único
-  const performAdminLogin = async (email: string, password: string): Promise<boolean> => {
-    console.log('🎯 BRAND NEW AdminLogin: Function called with:', email);
-    console.log('🎯 BRAND NEW AdminLogin: Password provided:', !!password);
+  // Nova função de login com nome completamente diferente
+  const executeAdminAuthentication = async (email: string, password: string): Promise<boolean> => {
+    console.log('🎯 EXECUTE ADMIN AUTH: Starting authentication process');
+    console.log('🎯 EXECUTE ADMIN AUTH: Email:', email);
+    console.log('🎯 EXECUTE ADMIN AUTH: Password provided:', !!password);
     
     if (!email || !password) {
-      console.error('❌ BRAND NEW AdminLogin: Missing credentials');
+      console.error('❌ EXECUTE ADMIN AUTH: Missing credentials');
       return false;
     }
 
     try {
       setLoading(true);
-      console.log('🎯 BRAND NEW AdminLogin: Setting loading to true');
+      console.log('🎯 EXECUTE ADMIN AUTH: Setting loading state');
 
-      // Clear any existing session
-      console.log('🎯 BRAND NEW AdminLogin: Clearing existing session...');
+      // Clear existing session
+      console.log('🎯 EXECUTE ADMIN AUTH: Clearing existing session');
       await supabase.auth.signOut();
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      console.log('🎯 BRAND NEW AdminLogin: Attempting Supabase login...');
+      console.log('🎯 EXECUTE ADMIN AUTH: Attempting Supabase sign in');
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password,
       });
 
-      console.log('🎯 BRAND NEW AdminLogin: Supabase response:', { 
-        hasUser: !!data?.user, 
-        hasSession: !!data?.session, 
-        error: error?.message 
-      });
+      console.log('🎯 EXECUTE ADMIN AUTH: Supabase response received');
+      console.log('🎯 EXECUTE ADMIN AUTH: Has user:', !!data?.user);
+      console.log('🎯 EXECUTE ADMIN AUTH: Has session:', !!data?.session);
+      console.log('🎯 EXECUTE ADMIN AUTH: Error:', error?.message || 'none');
 
       if (error) {
-        console.error('❌ BRAND NEW AdminLogin: Supabase error:', error.message);
+        console.error('❌ EXECUTE ADMIN AUTH: Authentication failed:', error.message);
         return false;
       }
 
       if (!data?.user || !data?.session) {
-        console.error('❌ BRAND NEW AdminLogin: No user or session returned');
+        console.error('❌ EXECUTE ADMIN AUTH: No user or session returned');
         return false;
       }
 
       if (!data.user.email?.endsWith('@ascalate.com.br')) {
-        console.error('❌ BRAND NEW AdminLogin: Invalid domain:', data.user.email);
+        console.error('❌ EXECUTE ADMIN AUTH: Invalid email domain:', data.user.email);
         await supabase.auth.signOut();
         return false;
       }
 
-      console.log('✅ BRAND NEW AdminLogin: Login successful!');
+      console.log('✅ EXECUTE ADMIN AUTH: Authentication successful');
       return true;
       
     } catch (error) {
-      console.error('❌ BRAND NEW AdminLogin: Exception:', error);
+      console.error('❌ EXECUTE ADMIN AUTH: Exception occurred:', error);
       return false;
     } finally {
-      console.log('🎯 BRAND NEW AdminLogin: Finally block - setting loading to false');
+      console.log('🎯 EXECUTE ADMIN AUTH: Cleaning up - setting loading to false');
       setLoading(false);
     }
   };
@@ -212,12 +212,13 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
     admin, 
     user,
     session,
-    adminLogin: performAdminLogin, // Nova função
+    adminLogin: executeAdminAuthentication,
     adminLogout,
     loading
   };
   
-  console.log('🎯 BRAND NEW AdminAuthProvider: Rendering with performAdminLogin function:', typeof contextValue.adminLogin);
+  console.log('🎯 COMPLETELY NEW AdminAuthProvider: Context value created with executeAdminAuthentication');
+  console.log('🎯 COMPLETELY NEW AdminAuthProvider: adminLogin function type:', typeof contextValue.adminLogin);
   
   return (
     <AdminAuthContext.Provider value={contextValue}>
