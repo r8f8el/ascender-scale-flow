@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,7 @@ import { useOptimizedQuery } from '@/hooks/useOptimizedQuery';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
+import { CreateProjectDialog } from '@/components/admin/CreateProjectDialog';
 
 interface Project {
   id: string;
@@ -32,6 +32,7 @@ interface Task {
 const ProjectsAdmin = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // Fetch projects with optimized caching
@@ -124,9 +125,15 @@ const ProjectsAdmin = () => {
     return { byStatus, byMonth };
   };
 
-  const handleCreateProject = async () => {
-    // Logic to create new project would go here
-    toast.success('Funcionalidade em desenvolvimento');
+  const handleCreateProject = () => {
+    console.log('Opening create project dialog');
+    setCreateDialogOpen(true);
+  };
+
+  const handleProjectCreated = () => {
+    console.log('Project created, refreshing data');
+    queryClient.invalidateQueries({ queryKey: ['admin-projects'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-tasks'] });
   };
 
   const handleDeleteProject = async (projectId: string) => {
@@ -349,6 +356,13 @@ const ProjectsAdmin = () => {
           })
         )}
       </div>
+
+      {/* Create Project Dialog */}
+      <CreateProjectDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onProjectCreated={handleProjectCreated}
+      />
     </div>
   );
 };
