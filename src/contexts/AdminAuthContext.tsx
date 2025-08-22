@@ -46,10 +46,10 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
   const { rateLimitState, checkRateLimit, resetRateLimit } = useAuthRateLimit();
   const { logAuthAttempt, logSecurityEvent } = useSecurityAudit();
   
-  console.log('🚀 SECURE AdminAuthProvider: Context initialized with security features');
+  console.log('🚀 AdminAuthProvider: Context initialized');
 
   const createAdminProfile = async (user: User) => {
-    console.log('👤 Creating secure admin profile for:', user.email);
+    console.log('👤 Creating admin profile for:', user.email);
     
     try {
       const { data: profile } = await supabase
@@ -88,7 +88,7 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
 
   useEffect(() => {
     let mounted = true;
-    console.log('🔄 Secure AdminAuth: Initializing...');
+    console.log('🔄 AdminAuth: Initializing...');
 
     const initAuth = async () => {
       try {
@@ -104,7 +104,6 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
           setIsAdminAuthenticated(true);
           await createAdminProfile(currentSession.user);
           
-          // Log successful session restoration
           await logSecurityEvent({
             action: 'admin_session_restored',
             resourceType: 'authentication',
@@ -131,7 +130,7 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
           setIsAdminAuthenticated(true);
           if (event === 'SIGNED_IN') {
             await createAdminProfile(session.user);
-            resetRateLimit(); // Reset rate limit on successful login
+            resetRateLimit();
           }
         } else {
           setIsAdminAuthenticated(false);
@@ -150,7 +149,7 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
     };
   }, [resetRateLimit, logSecurityEvent]);
   
-  // Simplified admin authentication function
+  // Função de login simplificada e corrigida
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
     console.log('🎯 ADMIN LOGIN: Starting authentication');
     console.log('🎯 ADMIN LOGIN: Email:', email);
@@ -202,6 +201,8 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
 
       console.log('✅ ADMIN LOGIN: Authentication successful');
       await logAuthAttempt(email, true);
+      
+      // A autenticação bem-sucedida será tratada pelo onAuthStateChange
       return true;
       
     } catch (error) {
@@ -229,7 +230,7 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
       setUser(null);
       setSession(null);
       setIsAdminAuthenticated(false);
-      console.log('✅ Secure logout complete');
+      console.log('✅ Logout complete');
     } catch (error) {
       console.error('❌ Logout error:', error);
     }
@@ -246,8 +247,8 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
     rateLimitState
   };
   
-  console.log('🎯 SECURE AdminAuthProvider: Context value created');
-  console.log('🎯 SECURE AdminAuthProvider: adminLogin function type:', typeof contextValue.adminLogin);
+  console.log('🎯 AdminAuthProvider: Context value created');
+  console.log('🎯 AdminAuthProvider: adminLogin function type:', typeof contextValue.adminLogin);
   
   return (
     <AdminAuthContext.Provider value={contextValue}>
