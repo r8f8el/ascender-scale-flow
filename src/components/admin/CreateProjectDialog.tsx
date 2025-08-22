@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,12 @@ interface CreateProjectDialogProps {
   onProjectCreated: () => void;
 }
 
+interface ClientOption {
+  id: string;
+  name: string;
+  company: string;
+}
+
 export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({
   open,
   onOpenChange,
@@ -24,6 +30,9 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({
 }) => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [clients, setClients] = useState<ClientOption[]>([]);
+  const [loadingClients, setLoadingClients] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -31,8 +40,51 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({
     priority: 'medium' as const,
     start_date: '',
     end_date: '',
-    budget: ''
+    budget: '',
+    client_id: ''
   });
+
+  // Verificar se é admin e carregar clientes
+  useEffect(() => {
+    const checkAdminAndLoadClients = async () => {
+      if (!user?.id || !open) return;
+
+      // Verificar se é admin
+      const { data: adminProfile } = await supabase
+        .from('admin_profiles')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+
+      const userIsAdmin = !!adminProfile;
+      setIsAdmin(userIsAdmin);
+
+      if (userIsAdmin) {
+        // Carregar lista de clientes
+        setLoadingClients(true);
+        try {
+          const { data: clientsData, error } = await supabase
+            .from('client_profiles')
+            .select('id, name, company')
+            .order('name');
+
+          if (error) throw error;
+          
+          setClients(clientsData || []);
+        } catch (error) {
+          console.error('Erro ao carregar clientes:', error);
+          toast.error('Erro ao carregar lista de clientes');
+        } finally {
+          setLoadingClients(false);
+        }
+      } else {
+        // Se não for admin, usar o próprio usuário como cliente
+        setFormData(prev => ({ ...prev, client_id: user.id }));
+      }
+    };
+
+    checkAdminAndLoadClients();
+  }, [user?.id, open]);
 
   const resetForm = () => {
     setFormData({
@@ -42,7 +94,8 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({
       priority: 'medium',
       start_date: '',
       end_date: '',
-      budget: ''
+      budget: '',
+      client_id: isAdmin ? '' : user?.id || ''
     });
   };
 
@@ -69,19 +122,26 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({
       return;
     }
 
+    if (isAdmin && !formData.client_id) {
+      toast.error('Selecione um cliente para o projeto');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // Primeiro, verificar se o usuário tem um perfil de cliente
+      const clientId = formData.client_id || user.id;
+
+      // Verificar se o cliente existe
       const { data: clientProfile, error: clientError } = await supabase
         .from('client_profiles')
         .select('id')
-        .eq('id', user.id)
+        .eq('id', clientId)
         .single();
 
       if (clientError || !clientProfile) {
         console.error('Client profile not found:', clientError);
-        toast.error('Perfil de usuário não encontrado. Entre em contato com o administrador.');
+        toast.error('Perfil de cliente não encontrado. Entre em contato com o administrador.');
         return;
       }
 
@@ -93,7 +153,7 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({
         start_date: formData.start_date,
         end_date: formData.end_date,
         budget: formData.budget ? parseFloat(formData.budget) : null,
-        client_id: user.id, // Agora sabemos que existe
+        client_id: clientId,
         created_by: user.id,
         progress: 0,
         is_active: true
@@ -120,7 +180,7 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({
     } catch (error: any) {
       console.error('Error creating project:', error);
       if (error.message?.includes('foreign key constraint')) {
-        toast.error('Erro: Perfil de usuário não encontrado. Entre em contato com o administrador.');
+        toast.error('Erro: Perfil de cliente não encontrado. Entre em contato com o administrador.');
       } else {
         toast.error(`Erro ao criar projeto: ${error.message}`);
       }
@@ -142,6 +202,35 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Seletor de Cliente - apenas para admins */}
+          {isAdmin && (
+            <div>
+              <Label htmlFor="client">Cliente *</Label>
+              {loadingClients ? (
+                <div className="flex items-center gap-2 p-2 border rounded-md">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm text-gray-500">Carregando clientes...</span>
+                </div>
+              ) : (
+                <Select 
+                  value={formData.client_id} 
+                  onValueChange={(value) => setFormData({ ...formData, client_id: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name} {client.company && `(${client.company})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="name">Nome do Projeto *</Label>
@@ -252,7 +341,7 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({
             </Button>
             <Button 
               type="submit" 
-              disabled={isLoading || !formData.name.trim() || !formData.start_date || !formData.end_date}
+              disabled={isLoading || !formData.name.trim() || !formData.start_date || !formData.end_date || (isAdmin && !formData.client_id)}
             >
               {isLoading ? (
                 <>
