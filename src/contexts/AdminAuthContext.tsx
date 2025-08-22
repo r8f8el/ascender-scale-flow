@@ -39,6 +39,8 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   
+  console.log('🚀 AdminAuthProvider: Context initialized');
+
   const createAdminProfile = async (user: User) => {
     console.log('👤 Creating admin profile for:', user.email);
     
@@ -134,55 +136,59 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
   }, []);
   
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
-    console.log('🔐 AdminLogin: Starting login for:', email);
+    console.log('🎯 NEW AdminLogin: Function called with email:', email);
+    console.log('🎯 NEW AdminLogin: Password provided:', !!password);
     
     if (!email || !password) {
-      console.error('❌ Missing credentials');
+      console.error('❌ NEW AdminLogin: Missing credentials');
       return false;
     }
 
     try {
       setLoading(true);
+      console.log('🎯 NEW AdminLogin: Setting loading to true');
 
       // Clear any existing session
+      console.log('🎯 NEW AdminLogin: Clearing existing session...');
       await supabase.auth.signOut();
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      console.log('🔐 Attempting Supabase login...');
+      console.log('🎯 NEW AdminLogin: Attempting Supabase login...');
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password,
       });
 
-      console.log('🔐 Supabase response:', { 
+      console.log('🎯 NEW AdminLogin: Supabase response:', { 
         hasUser: !!data?.user, 
         hasSession: !!data?.session, 
         error: error?.message 
       });
 
       if (error) {
-        console.error('❌ Supabase error:', error.message);
+        console.error('❌ NEW AdminLogin: Supabase error:', error.message);
         return false;
       }
 
       if (!data?.user || !data?.session) {
-        console.error('❌ No user or session returned');
+        console.error('❌ NEW AdminLogin: No user or session returned');
         return false;
       }
 
       if (!data.user.email?.endsWith('@ascalate.com.br')) {
-        console.error('❌ Invalid domain:', data.user.email);
+        console.error('❌ NEW AdminLogin: Invalid domain:', data.user.email);
         await supabase.auth.signOut();
         return false;
       }
 
-      console.log('✅ Login successful');
+      console.log('✅ NEW AdminLogin: Login successful!');
       return true;
       
     } catch (error) {
-      console.error('❌ Login exception:', error);
+      console.error('❌ NEW AdminLogin: Exception:', error);
       return false;
     } finally {
+      console.log('🎯 NEW AdminLogin: Finally block - setting loading to false');
       setLoading(false);
     }
   };
@@ -209,6 +215,8 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
     adminLogout,
     loading
   };
+  
+  console.log('🎯 AdminAuthProvider: Rendering with adminLogin function:', typeof contextValue.adminLogin);
   
   return (
     <AdminAuthContext.Provider value={contextValue}>
