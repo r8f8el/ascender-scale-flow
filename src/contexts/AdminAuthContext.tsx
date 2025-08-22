@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
@@ -158,18 +159,19 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
   };
   
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
+    console.log('🔐 AdminAuth: ===== FUNÇÃO adminLogin CHAMADA =====');
+    console.log('🔐 AdminAuth: Parâmetros recebidos - Email:', email, 'Password length:', password?.length || 0);
+    
     try {
-      console.log('🔐 AdminAuth: ===== INÍCIO DO LOGIN =====');
-      console.log('🔐 AdminAuth: Email:', email);
-      console.log('🔐 AdminAuth: Password length:', password?.length || 0);
-      
+      console.log('🔐 AdminAuth: Entrando no try block...');
       setLoading(true);
+      console.log('🔐 AdminAuth: Loading state set to true');
 
       // Step 1: Clear any existing session
       console.log('🔐 AdminAuth: Step 1 - Clearing existing session...');
       try {
-        await supabase.auth.signOut();
-        console.log('✅ AdminAuth: Session cleared successfully');
+        const signOutResult = await supabase.auth.signOut();
+        console.log('🔐 AdminAuth: SignOut result:', signOutResult);
       } catch (signOutError) {
         console.error('❌ AdminAuth: Error clearing session:', signOutError);
       }
@@ -183,10 +185,15 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
       console.log('🔐 AdminAuth: Using email:', email.trim());
       console.log('🔐 AdminAuth: Using password length:', password.length);
       
-      const loginResult = await supabase.auth.signInWithPassword({
+      const loginParams = {
         email: email.trim(),
         password: password,
-      });
+      };
+      console.log('🔐 AdminAuth: Login parameters prepared:', { email: loginParams.email, passwordLength: loginParams.password.length });
+      
+      console.log('🔐 AdminAuth: Calling supabase.auth.signInWithPassword...');
+      const loginResult = await supabase.auth.signInWithPassword(loginParams);
+      console.log('🔐 AdminAuth: Supabase login call completed');
 
       console.log('🔐 AdminAuth: Raw Supabase response:');
       console.log('  - Full data object:', loginResult.data);
@@ -204,16 +211,19 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
           code: loginResult.error.code,
           status: loginResult.error.status
         });
+        console.log('🔐 AdminAuth: Returning false due to Supabase error');
         return false;
       }
 
       if (!loginResult.data?.user) {
         console.error('❌ AdminAuth: No user returned from Supabase');
+        console.log('🔐 AdminAuth: Returning false due to no user');
         return false;
       }
 
       if (!loginResult.data?.session) {
         console.error('❌ AdminAuth: No session returned from Supabase');
+        console.log('🔐 AdminAuth: Returning false due to no session');
         return false;
       }
 
@@ -231,6 +241,7 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
         
         // Sign out the non-admin user
         await supabase.auth.signOut();
+        console.log('🔐 AdminAuth: Returning false due to domain verification failure');
         return false;
       }
 
@@ -247,6 +258,7 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
       await loadAdminProfile(loginResult.data.user);
       
       console.log('🎉 AdminAuth: Login process completed successfully');
+      console.log('🔐 AdminAuth: Returning true - login successful');
       return true;
       
     } catch (error) {
@@ -255,6 +267,7 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
       console.error('  - Error message:', error instanceof Error ? error.message : 'Unknown error');
       console.error('  - Full error object:', error);
       console.error('  - Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
+      console.log('🔐 AdminAuth: Returning false due to exception');
       return false;
     } finally {
       console.log('🏁 AdminAuth: Login process finished, setting loading to false');
@@ -276,6 +289,8 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
     setIsAdminAuthenticated(false);
     console.log('✅ AdminAuth: Logout complete');
   };
+  
+  console.log('🔧 AdminAuth: Providing context with adminLogin function:', typeof adminLogin);
   
   return (
     <AdminAuthContext.Provider 
