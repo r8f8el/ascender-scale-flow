@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Logo } from '../components/Logo';
@@ -21,10 +20,13 @@ const AdminLogin = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('🔑 AdminLogin: Form submitted for:', email);
+    console.log('🔑 AdminLogin: INÍCIO - Form submitted');
+    console.log('  - Email:', email);
+    console.log('  - Password length:', password?.length || 0);
+    console.log('  - Email validation:', /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
     
     if (!email || !password) {
-      console.log('❌ AdminLogin: Empty fields');
+      console.log('❌ AdminLogin: Validation failed - Empty fields');
       toast({
         title: "Campos vazios",
         description: "Por favor, preencha todos os campos.",
@@ -32,23 +34,36 @@ const AdminLogin = () => {
       });
       return;
     }
+
+    if (!email.includes('@ascalate.com.br')) {
+      console.log('❌ AdminLogin: Validation failed - Invalid domain');
+      toast({
+        title: "Email inválido",
+        description: "Use um email @ascalate.com.br para acessar o painel administrativo.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     setIsLoading(true);
+    console.log('🔑 AdminLogin: Starting login process...');
     
     try {
       console.log('🔑 AdminLogin: Calling adminLogin function...');
       const success = await adminLogin(email, password);
-      console.log('🔑 AdminLogin: adminLogin result:', success);
+      console.log('🔑 AdminLogin: adminLogin returned:', success);
       
       if (success) {
-        console.log('✅ AdminLogin: Login successful, navigating to admin');
+        console.log('✅ AdminLogin: Login successful, showing success toast');
         toast({
           title: "Login realizado com sucesso",
           description: "Bem-vindo ao Painel Administrativo Ascalate."
         });
+        
+        console.log('✅ AdminLogin: Navigating to /admin');
         navigate('/admin');
       } else {
-        console.log('❌ AdminLogin: Login failed');
+        console.log('❌ AdminLogin: Login failed, showing error toast');
         toast({
           title: "Falha no login",
           description: "Email ou senha inválidos, ou você não tem permissão de administrador.",
@@ -56,13 +71,18 @@ const AdminLogin = () => {
         });
       }
     } catch (error) {
-      console.error('❌ AdminLogin: Exception during login:', error);
+      console.error('❌ AdminLogin: Exception during login process:');
+      console.error('  - Error type:', typeof error);
+      console.error('  - Error message:', error instanceof Error ? error.message : 'Unknown');
+      console.error('  - Full error:', error);
+      
       toast({
         title: "Erro",
         description: "Ocorreu um erro ao realizar o login. Tente novamente mais tarde.",
         variant: "destructive"
       });
     } finally {
+      console.log('🏁 AdminLogin: Setting loading to false');
       setIsLoading(false);
     }
   };

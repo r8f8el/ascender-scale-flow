@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
@@ -160,23 +159,40 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
   
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
     try {
-      console.log('🔐 AdminAuth: Starting login attempt for:', email);
+      console.log('🔐 AdminAuth: INÍCIO - Login attempt for:', email);
+      console.log('🔐 AdminAuth: Password length:', password?.length || 0);
       setLoading(true);
 
-      // Step 1: Attempt Supabase authentication
-      console.log('🔐 AdminAuth: Step 1 - Attempting Supabase login...');
+      // Step 1: Limpar sessão anterior
+      console.log('🔐 AdminAuth: Step 1 - Clearing any existing session...');
+      await supabase.auth.signOut();
+      
+      // Step 2: Aguardar um pouco para garantir limpeza
+      console.log('🔐 AdminAuth: Step 2 - Waiting for session cleanup...');
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Step 3: Tentar login no Supabase
+      console.log('🔐 AdminAuth: Step 3 - Attempting Supabase login...');
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: email.trim(),
+        password: password,
       });
 
-      console.log('🔐 AdminAuth: Supabase auth result:', { 
-        user: data.user?.email || 'none', 
-        error: error?.message || 'none' 
-      });
+      console.log('🔐 AdminAuth: Supabase auth response:');
+      console.log('  - User exists:', !!data.user);
+      console.log('  - User email:', data.user?.email || 'none');
+      console.log('  - Session exists:', !!data.session);
+      console.log('  - Error exists:', !!error);
+      console.log('  - Error message:', error?.message || 'none');
+      console.log('  - Error code:', error?.code || 'none');
 
       if (error) {
-        console.error('❌ AdminAuth: Supabase login failed:', error.message);
+        console.error('❌ AdminAuth: Supabase authentication failed');
+        console.error('  - Error details:', {
+          message: error.message,
+          code: error.code,
+          status: error.status
+        });
         return false;
       }
 
@@ -185,23 +201,47 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
         return false;
       }
 
-      // Step 2: Check domain after successful authentication
-      console.log('🔐 AdminAuth: Step 2 - Checking domain for:', data.user.email);
+      if (!data.session) {
+        console.error('❌ AdminAuth: No session returned from Supabase');
+        return false;
+      }
+
+      console.log('✅ AdminAuth: Supabase authentication successful');
+
+      // Step 4: Verificar domínio
+      console.log('🔐 AdminAuth: Step 4 - Checking admin domain...');
+      console.log('  - User email:', data.user.email);
+      console.log('  - Domain check:', data.user.email?.includes('@ascalate.com.br'));
+
       if (!data.user.email?.endsWith('@ascalate.com.br')) {
-        console.error('❌ AdminAuth: User domain not allowed:', data.user.email);
-        // Sign out the non-admin user
+        console.error('❌ AdminAuth: Domain verification failed');
+        console.error('  - Email:', data.user.email);
+        console.error('  - Expected domain: @ascalate.com.br');
+        
+        // Fazer logout do usuário não-admin
         await supabase.auth.signOut();
         return false;
       }
 
-      console.log('✅ AdminAuth: Domain check passed');
-      console.log('🎉 AdminAuth: Login successful for:', data.user.email);
+      console.log('✅ AdminAuth: Domain verification passed');
+
+      // Step 5: O contexto deve ser atualizado automaticamente pelo listener
+      console.log('🔐 AdminAuth: Step 5 - Waiting for context update...');
+      
+      // Aguardar um pouco para o listener processar
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      console.log('🎉 AdminAuth: Login process completed successfully');
       return true;
       
     } catch (error) {
-      console.error('❌ AdminAuth: Login exception:', error);
+      console.error('❌ AdminAuth: Login exception occurred:');
+      console.error('  - Error type:', typeof error);
+      console.error('  - Error message:', error instanceof Error ? error.message : 'Unknown error');
+      console.error('  - Full error:', error);
       return false;
     } finally {
+      console.log('🏁 AdminAuth: Login process finished, setting loading to false');
       setLoading(false);
     }
   };
