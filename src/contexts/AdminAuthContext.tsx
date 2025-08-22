@@ -2,6 +2,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
+import { useAuthRateLimit } from '@/hooks/useAuthRateLimit';
+import { useSecurityAudit } from '@/hooks/useSecurityAudit';
 
 interface Admin {
   id: string;
@@ -18,6 +20,7 @@ interface AdminAuthContextType {
   adminLogin: (email: string, password: string) => Promise<boolean>;
   adminLogout: () => void;
   loading: boolean;
+  rateLimitState: any;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType>({
@@ -28,6 +31,7 @@ const AdminAuthContext = createContext<AdminAuthContextType>({
   adminLogin: async () => false,
   adminLogout: () => {},
   loading: true,
+  rateLimitState: { isBlocked: false, attemptsRemaining: 5, resetTime: null }
 });
 
 export const useAdminAuth = () => useContext(AdminAuthContext);
@@ -39,10 +43,13 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   
-  console.log('🚀 COMPLETELY NEW AdminAuthProvider: Context initialized with new structure');
+  const { rateLimitState, checkRateLimit, resetRateLimit } = useAuthRateLimit();
+  const { logAuthAttempt, logSecurityEvent } = useSecurityAudit();
+  
+  console.log('🚀 SECURE AdminAuthProvider: Context initialized with security features');
 
   const createAdminProfile = async (user: User) => {
-    console.log('👤 Creating admin profile for:', user.email);
+    console.log('👤 Creating secure admin profile for:', user.email);
     
     try {
       const { data: profile } = await supabase
@@ -81,7 +88,7 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
 
   useEffect(() => {
     let mounted = true;
-    console.log('🔄 AdminAuth: Initializing...');
+    console.log('🔄 Secure AdminAuth: Initializing...');
 
     const initAuth = async () => {
       try {
@@ -96,6 +103,13 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
           setUser(currentSession.user);
           setIsAdminAuthenticated(true);
           await createAdminProfile(currentSession.user);
+          
+          // Log successful session restoration
+          await logSecurityEvent({
+            action: 'admin_session_restored',
+            resourceType: 'authentication',
+            details: { email: currentSession.user.email }
+          });
         }
       } catch (error) {
         console.error('❌ Init error:', error);
@@ -117,6 +131,7 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
           setIsAdminAuthenticated(true);
           if (event === 'SIGNED_IN') {
             await createAdminProfile(session.user);
+            resetRateLimit(); // Reset rate limit on successful login
           }
         } else {
           setIsAdminAuthenticated(false);
@@ -133,75 +148,105 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [resetRateLimit, logSecurityEvent]);
   
-  // Nova função de login com nome completamente diferente
+  // Secure admin authentication function
   const executeAdminAuthentication = async (email: string, password: string): Promise<boolean> => {
-    console.log('🎯 EXECUTE ADMIN AUTH: Starting authentication process');
-    console.log('🎯 EXECUTE ADMIN AUTH: Email:', email);
-    console.log('🎯 EXECUTE ADMIN AUTH: Password provided:', !!password);
+    console.log('🎯 SECURE ADMIN AUTH: Starting authentication process');
+    console.log('🎯 SECURE ADMIN AUTH: Email:', email);
+    console.log('🎯 SECURE ADMIN AUTH: Password provided:', !!password);
     
     if (!email || !password) {
-      console.error('❌ EXECUTE ADMIN AUTH: Missing credentials');
+      console.error('❌ SECURE ADMIN AUTH: Missing credentials');
+      await logAuthAttempt(email, false, 'Missing credentials');
+      return false;
+    }
+
+    // Check rate limit
+    const rateLimitOk = await checkRateLimit(email, 'admin_login');
+    if (!rateLimitOk) {
+      console.error('❌ SECURE ADMIN AUTH: Rate limit exceeded');
+      await logSecurityEvent({
+        action: 'admin_login_rate_limited',
+        resourceType: 'authentication',
+        details: { email }
+      });
       return false;
     }
 
     try {
       setLoading(true);
-      console.log('🎯 EXECUTE ADMIN AUTH: Setting loading state');
+      console.log('🎯 SECURE ADMIN AUTH: Setting loading state');
 
       // Clear existing session
-      console.log('🎯 EXECUTE ADMIN AUTH: Clearing existing session');
+      console.log('🎯 SECURE ADMIN AUTH: Clearing existing session');
       await supabase.auth.signOut();
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      console.log('🎯 EXECUTE ADMIN AUTH: Attempting Supabase sign in');
+      console.log('🎯 SECURE ADMIN AUTH: Attempting Supabase sign in');
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password,
       });
 
-      console.log('🎯 EXECUTE ADMIN AUTH: Supabase response received');
-      console.log('🎯 EXECUTE ADMIN AUTH: Has user:', !!data?.user);
-      console.log('🎯 EXECUTE ADMIN AUTH: Has session:', !!data?.session);
-      console.log('🎯 EXECUTE ADMIN AUTH: Error:', error?.message || 'none');
+      console.log('🎯 SECURE ADMIN AUTH: Supabase response received');
+      console.log('🎯 SECURE ADMIN AUTH: Has user:', !!data?.user);
+      console.log('🎯 SECURE ADMIN AUTH: Has session:', !!data?.session);
+      console.log('🎯 SECURE ADMIN AUTH: Error:', error?.message || 'none');
 
       if (error) {
-        console.error('❌ EXECUTE ADMIN AUTH: Authentication failed:', error.message);
+        console.error('❌ SECURE ADMIN AUTH: Authentication failed:', error.message);
+        await logAuthAttempt(email, false, error.message);
         return false;
       }
 
       if (!data?.user || !data?.session) {
-        console.error('❌ EXECUTE ADMIN AUTH: No user or session returned');
+        console.error('❌ SECURE ADMIN AUTH: No user or session returned');
+        await logAuthAttempt(email, false, 'No user or session returned');
         return false;
       }
 
       if (!data.user.email?.endsWith('@ascalate.com.br')) {
-        console.error('❌ EXECUTE ADMIN AUTH: Invalid email domain:', data.user.email);
+        console.error('❌ SECURE ADMIN AUTH: Invalid email domain:', data.user.email);
         await supabase.auth.signOut();
+        await logSecurityEvent({
+          action: 'admin_login_invalid_domain',
+          resourceType: 'authentication',
+          details: { email: data.user.email }
+        });
         return false;
       }
 
-      console.log('✅ EXECUTE ADMIN AUTH: Authentication successful');
+      console.log('✅ SECURE ADMIN AUTH: Authentication successful');
+      await logAuthAttempt(email, true);
       return true;
       
     } catch (error) {
-      console.error('❌ EXECUTE ADMIN AUTH: Exception occurred:', error);
+      console.error('❌ SECURE ADMIN AUTH: Exception occurred:', error);
+      await logAuthAttempt(email, false, `Exception: ${error}`);
       return false;
     } finally {
-      console.log('🎯 EXECUTE ADMIN AUTH: Cleaning up - setting loading to false');
+      console.log('🎯 SECURE ADMIN AUTH: Cleaning up - setting loading to false');
       setLoading(false);
     }
   };
   
   const adminLogout = async () => {
     try {
+      if (user?.email) {
+        await logSecurityEvent({
+          action: 'admin_logout',
+          resourceType: 'authentication',
+          details: { email: user.email }
+        });
+      }
+      
       await supabase.auth.signOut();
       setAdmin(null);
       setUser(null);
       setSession(null);
       setIsAdminAuthenticated(false);
-      console.log('✅ Logout complete');
+      console.log('✅ Secure logout complete');
     } catch (error) {
       console.error('❌ Logout error:', error);
     }
@@ -214,11 +259,12 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
     session,
     adminLogin: executeAdminAuthentication,
     adminLogout,
-    loading
+    loading,
+    rateLimitState
   };
   
-  console.log('🎯 COMPLETELY NEW AdminAuthProvider: Context value created with executeAdminAuthentication');
-  console.log('🎯 COMPLETELY NEW AdminAuthProvider: adminLogin function type:', typeof contextValue.adminLogin);
+  console.log('🎯 SECURE AdminAuthProvider: Context value created with security features');
+  console.log('🎯 SECURE AdminAuthProvider: adminLogin function type:', typeof contextValue.adminLogin);
   
   return (
     <AdminAuthContext.Provider value={contextValue}>
