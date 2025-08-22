@@ -159,77 +159,92 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
   
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
     try {
-      console.log('🔐 AdminAuth: INÍCIO - Login attempt for:', email);
+      console.log('🔐 AdminAuth: ===== INÍCIO DO LOGIN =====');
+      console.log('🔐 AdminAuth: Email:', email);
       console.log('🔐 AdminAuth: Password length:', password?.length || 0);
+      
       setLoading(true);
 
-      // Step 1: Limpar sessão anterior
-      console.log('🔐 AdminAuth: Step 1 - Clearing any existing session...');
-      await supabase.auth.signOut();
+      // Step 1: Clear any existing session
+      console.log('🔐 AdminAuth: Step 1 - Clearing existing session...');
+      try {
+        await supabase.auth.signOut();
+        console.log('✅ AdminAuth: Session cleared successfully');
+      } catch (signOutError) {
+        console.error('❌ AdminAuth: Error clearing session:', signOutError);
+      }
       
-      // Step 2: Aguardar um pouco para garantir limpeza
-      console.log('🔐 AdminAuth: Step 2 - Waiting for session cleanup...');
+      // Step 2: Wait for cleanup
+      console.log('🔐 AdminAuth: Step 2 - Waiting for cleanup...');
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Step 3: Tentar login no Supabase
+      // Step 3: Attempt Supabase authentication
       console.log('🔐 AdminAuth: Step 3 - Attempting Supabase login...');
-      const { data, error } = await supabase.auth.signInWithPassword({
+      console.log('🔐 AdminAuth: Using email:', email.trim());
+      console.log('🔐 AdminAuth: Using password length:', password.length);
+      
+      const loginResult = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password,
       });
 
-      console.log('🔐 AdminAuth: Supabase auth response:');
-      console.log('  - User exists:', !!data.user);
-      console.log('  - User email:', data.user?.email || 'none');
-      console.log('  - Session exists:', !!data.session);
-      console.log('  - Error exists:', !!error);
-      console.log('  - Error message:', error?.message || 'none');
-      console.log('  - Error code:', error?.code || 'none');
+      console.log('🔐 AdminAuth: Raw Supabase response:');
+      console.log('  - Full data object:', loginResult.data);
+      console.log('  - Full error object:', loginResult.error);
+      console.log('  - User exists:', !!loginResult.data?.user);
+      console.log('  - User email:', loginResult.data?.user?.email || 'none');
+      console.log('  - Session exists:', !!loginResult.data?.session);
+      console.log('  - Error message:', loginResult.error?.message || 'none');
+      console.log('  - Error code:', loginResult.error?.code || 'none');
 
-      if (error) {
+      if (loginResult.error) {
         console.error('❌ AdminAuth: Supabase authentication failed');
         console.error('  - Error details:', {
-          message: error.message,
-          code: error.code,
-          status: error.status
+          message: loginResult.error.message,
+          code: loginResult.error.code,
+          status: loginResult.error.status
         });
         return false;
       }
 
-      if (!data.user) {
+      if (!loginResult.data?.user) {
         console.error('❌ AdminAuth: No user returned from Supabase');
         return false;
       }
 
-      if (!data.session) {
+      if (!loginResult.data?.session) {
         console.error('❌ AdminAuth: No session returned from Supabase');
         return false;
       }
 
       console.log('✅ AdminAuth: Supabase authentication successful');
 
-      // Step 4: Verificar domínio
+      // Step 4: Check domain
       console.log('🔐 AdminAuth: Step 4 - Checking admin domain...');
-      console.log('  - User email:', data.user.email);
-      console.log('  - Domain check:', data.user.email?.includes('@ascalate.com.br'));
+      console.log('  - User email:', loginResult.data.user.email);
+      console.log('  - Domain check:', loginResult.data.user.email?.includes('@ascalate.com.br'));
 
-      if (!data.user.email?.endsWith('@ascalate.com.br')) {
+      if (!loginResult.data.user.email?.endsWith('@ascalate.com.br')) {
         console.error('❌ AdminAuth: Domain verification failed');
-        console.error('  - Email:', data.user.email);
+        console.error('  - Email:', loginResult.data.user.email);
         console.error('  - Expected domain: @ascalate.com.br');
         
-        // Fazer logout do usuário não-admin
+        // Sign out the non-admin user
         await supabase.auth.signOut();
         return false;
       }
 
       console.log('✅ AdminAuth: Domain verification passed');
 
-      // Step 5: O contexto deve ser atualizado automaticamente pelo listener
-      console.log('🔐 AdminAuth: Step 5 - Waiting for context update...');
+      // Step 5: Update context state manually
+      console.log('🔐 AdminAuth: Step 5 - Updating context state...');
+      setSession(loginResult.data.session);
+      setUser(loginResult.data.user);
+      setIsAdminAuthenticated(true);
       
-      // Aguardar um pouco para o listener processar
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Load admin profile
+      console.log('🔐 AdminAuth: Step 6 - Loading admin profile...');
+      await loadAdminProfile(loginResult.data.user);
       
       console.log('🎉 AdminAuth: Login process completed successfully');
       return true;
@@ -238,7 +253,8 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
       console.error('❌ AdminAuth: Login exception occurred:');
       console.error('  - Error type:', typeof error);
       console.error('  - Error message:', error instanceof Error ? error.message : 'Unknown error');
-      console.error('  - Full error:', error);
+      console.error('  - Full error object:', error);
+      console.error('  - Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
       return false;
     } finally {
       console.log('🏁 AdminAuth: Login process finished, setting loading to false');

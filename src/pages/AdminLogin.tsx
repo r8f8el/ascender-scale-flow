@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Logo } from '../components/Logo';
@@ -20,10 +21,10 @@ const AdminLogin = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('🔑 AdminLogin: INÍCIO - Form submitted');
-    console.log('  - Email:', email);
-    console.log('  - Password length:', password?.length || 0);
-    console.log('  - Email validation:', /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
+    console.log('🔑 AdminLogin: ===== FORM SUBMITTED =====');
+    console.log('🔑 AdminLogin: Email:', email);
+    console.log('🔑 AdminLogin: Password length:', password?.length || 0);
+    console.log('🔑 AdminLogin: Email validation:', /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
     
     if (!email || !password) {
       console.log('❌ AdminLogin: Validation failed - Empty fields');
@@ -50,10 +51,14 @@ const AdminLogin = () => {
     
     try {
       console.log('🔑 AdminLogin: Calling adminLogin function...');
+      console.log('🔑 AdminLogin: adminLogin function type:', typeof adminLogin);
+      console.log('🔑 AdminLogin: adminLogin function:', adminLogin);
+      
       const success = await adminLogin(email, password);
       console.log('🔑 AdminLogin: adminLogin returned:', success);
+      console.log('🔑 AdminLogin: adminLogin return type:', typeof success);
       
-      if (success) {
+      if (success === true) {
         console.log('✅ AdminLogin: Login successful, showing success toast');
         toast({
           title: "Login realizado com sucesso",
@@ -64,6 +69,7 @@ const AdminLogin = () => {
         navigate('/admin');
       } else {
         console.log('❌ AdminLogin: Login failed, showing error toast');
+        console.log('❌ AdminLogin: Success value was:', success);
         toast({
           title: "Falha no login",
           description: "Email ou senha inválidos, ou você não tem permissão de administrador.",
@@ -73,8 +79,10 @@ const AdminLogin = () => {
     } catch (error) {
       console.error('❌ AdminLogin: Exception during login process:');
       console.error('  - Error type:', typeof error);
+      console.error('  - Error name:', error instanceof Error ? error.name : 'Unknown');
       console.error('  - Error message:', error instanceof Error ? error.message : 'Unknown');
-      console.error('  - Full error:', error);
+      console.error('  - Full error object:', error);
+      console.error('  - Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
       
       toast({
         title: "Erro",
