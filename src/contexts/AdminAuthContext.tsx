@@ -52,11 +52,16 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
     console.log('👤 Creating admin profile for:', user.email);
     
     try {
-      const { data: profile } = await supabase
+      const { data: profile, error } = await supabase
         .from('admin_profiles')
         .select('*')
         .eq('id', user.id)
         .single();
+
+      if (error) {
+        console.error('❌ Error fetching admin profile:', error);
+        return false;
+      }
 
       if (profile) {
         console.log('✅ Found admin profile:', profile);
