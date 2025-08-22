@@ -150,89 +150,66 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
     };
   }, [resetRateLimit, logSecurityEvent]);
   
-  // Fixed admin authentication function
-  const executeAdminAuthentication = async (email: string, password: string): Promise<boolean> => {
-    console.log('🎯 SECURE ADMIN AUTH: Starting authentication process');
-    console.log('🎯 SECURE ADMIN AUTH: Email:', email);
-    console.log('🎯 SECURE ADMIN AUTH: Password provided:', !!password);
+  // Simplified admin authentication function
+  const adminLogin = async (email: string, password: string): Promise<boolean> => {
+    console.log('🎯 ADMIN LOGIN: Starting authentication');
+    console.log('🎯 ADMIN LOGIN: Email:', email);
+    console.log('🎯 ADMIN LOGIN: Password provided:', !!password);
     
     if (!email || !password) {
-      console.error('❌ SECURE ADMIN AUTH: Missing credentials');
-      await logAuthAttempt(email, false, 'Missing credentials');
+      console.error('❌ ADMIN LOGIN: Missing credentials');
+      return false;
+    }
+
+    // Check domain
+    if (!email.endsWith('@ascalate.com.br')) {
+      console.error('❌ ADMIN LOGIN: Invalid domain');
       return false;
     }
 
     // Check rate limit
     const rateLimitOk = await checkRateLimit(email, 'admin_login');
     if (!rateLimitOk) {
-      console.error('❌ SECURE ADMIN AUTH: Rate limit exceeded');
-      await logSecurityEvent({
-        action: 'admin_login_rate_limited',
-        resourceType: 'authentication',
-        details: { email }
-      });
+      console.error('❌ ADMIN LOGIN: Rate limit exceeded');
       return false;
     }
 
     try {
       setLoading(true);
-      console.log('🎯 SECURE ADMIN AUTH: Setting loading state');
+      console.log('🎯 ADMIN LOGIN: Attempting Supabase sign in');
 
-      // Clear existing session first
-      console.log('🎯 SECURE ADMIN AUTH: Clearing existing session');
-      await supabase.auth.signOut();
-      
-      // Add a small delay to ensure session is cleared
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      console.log('🎯 SECURE ADMIN AUTH: Attempting Supabase sign in');
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password,
       });
 
-      console.log('🎯 SECURE ADMIN AUTH: Supabase response received');
-      console.log('🎯 SECURE ADMIN AUTH: Has user:', !!data?.user);
-      console.log('🎯 SECURE ADMIN AUTH: Has session:', !!data?.session);
-      console.log('🎯 SECURE ADMIN AUTH: Error:', error?.message || 'none');
+      console.log('🎯 ADMIN LOGIN: Supabase response received');
+      console.log('🎯 ADMIN LOGIN: Has user:', !!data?.user);
+      console.log('🎯 ADMIN LOGIN: Has session:', !!data?.session);
+      console.log('🎯 ADMIN LOGIN: Error:', error?.message || 'none');
 
       if (error) {
-        console.error('❌ SECURE ADMIN AUTH: Authentication failed:', error.message);
+        console.error('❌ ADMIN LOGIN: Authentication failed:', error.message);
         await logAuthAttempt(email, false, error.message);
         return false;
       }
 
       if (!data?.user || !data?.session) {
-        console.error('❌ SECURE ADMIN AUTH: No user or session returned');
+        console.error('❌ ADMIN LOGIN: No user or session returned');
         await logAuthAttempt(email, false, 'No user or session returned');
         return false;
       }
 
-      if (!data.user.email?.endsWith('@ascalate.com.br')) {
-        console.error('❌ SECURE ADMIN AUTH: Invalid email domain:', data.user.email);
-        await supabase.auth.signOut();
-        await logSecurityEvent({
-          action: 'admin_login_invalid_domain',
-          resourceType: 'authentication',
-          details: { email: data.user.email }
-        });
-        return false;
-      }
-
-      console.log('✅ SECURE ADMIN AUTH: Authentication successful');
-      
-      // The auth state change handler will update the state
-      // So we don't need to manually set session/user here
-      
+      console.log('✅ ADMIN LOGIN: Authentication successful');
       await logAuthAttempt(email, true);
       return true;
       
     } catch (error) {
-      console.error('❌ SECURE ADMIN AUTH: Exception occurred:', error);
+      console.error('❌ ADMIN LOGIN: Exception occurred:', error);
       await logAuthAttempt(email, false, `Exception: ${error}`);
       return false;
     } finally {
-      console.log('🎯 SECURE ADMIN AUTH: Cleaning up - setting loading to false');
+      console.log('🎯 ADMIN LOGIN: Setting loading to false');
       setLoading(false);
     }
   };
@@ -263,13 +240,13 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
     admin, 
     user,
     session,
-    adminLogin: executeAdminAuthentication,
+    adminLogin,
     adminLogout,
     loading,
     rateLimitState
   };
   
-  console.log('🎯 SECURE AdminAuthProvider: Context value created with security features');
+  console.log('🎯 SECURE AdminAuthProvider: Context value created');
   console.log('🎯 SECURE AdminAuthProvider: adminLogin function type:', typeof contextValue.adminLogin);
   
   return (
