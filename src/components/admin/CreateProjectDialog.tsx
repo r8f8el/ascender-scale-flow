@@ -72,6 +72,19 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({
     setIsLoading(true);
 
     try {
+      // Primeiro, verificar se o usuário tem um perfil de cliente
+      const { data: clientProfile, error: clientError } = await supabase
+        .from('client_profiles')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+
+      if (clientError || !clientProfile) {
+        console.error('Client profile not found:', clientError);
+        toast.error('Perfil de usuário não encontrado. Entre em contato com o administrador.');
+        return;
+      }
+
       const projectData = {
         name: formData.name.trim(),
         description: formData.description.trim() || null,
@@ -80,7 +93,7 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({
         start_date: formData.start_date,
         end_date: formData.end_date,
         budget: formData.budget ? parseFloat(formData.budget) : null,
-        client_id: user.id,
+        client_id: user.id, // Agora sabemos que existe
         created_by: user.id,
         progress: 0,
         is_active: true
@@ -106,7 +119,11 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({
       onProjectCreated();
     } catch (error: any) {
       console.error('Error creating project:', error);
-      toast.error(`Erro ao criar projeto: ${error.message}`);
+      if (error.message?.includes('foreign key constraint')) {
+        toast.error('Erro: Perfil de usuário não encontrado. Entre em contato com o administrador.');
+      } else {
+        toast.error(`Erro ao criar projeto: ${error.message}`);
+      }
     } finally {
       setIsLoading(false);
     }
