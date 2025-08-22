@@ -56,33 +56,24 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
         .from('admin_profiles')
         .select('*')
         .eq('id', user.id)
-        .maybeSingle();
+        .single();
 
       if (profile) {
-        console.log('✅ Found existing admin profile');
+        console.log('✅ Found admin profile:', profile);
         setAdmin({
           id: profile.id,
           name: profile.name,
           email: profile.email,
           role: profile.role as 'admin' | 'super_admin'
         });
+        return true;
       } else {
-        console.log('➕ Creating temporary admin profile');
-        setAdmin({
-          id: user.id,
-          name: user.email?.split('@')[0] || 'Admin',
-          email: user.email || '',
-          role: 'admin'
-        });
+        console.log('❌ No admin profile found for user');
+        return false;
       }
     } catch (error) {
-      console.error('❌ Error with admin profile:', error);
-      setAdmin({
-        id: user.id,
-        name: user.email?.split('@')[0] || 'Admin',
-        email: user.email || '',
-        role: 'admin'
-      });
+      console.error('❌ Error fetching admin profile:', error);
+      return false;
     }
   };
 
@@ -101,14 +92,16 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
           console.log('✅ Valid admin session found');
           setSession(currentSession);
           setUser(currentSession.user);
-          setIsAdminAuthenticated(true);
-          await createAdminProfile(currentSession.user);
           
-          await logSecurityEvent({
-            action: 'admin_session_restored',
-            resourceType: 'authentication',
-            details: { email: currentSession.user.email }
-          });
+          const hasProfile = await createAdminProfile(currentSession.user);
+          if (hasProfile) {
+            setIsAdminAuthenticated(true);
+            await logSecurityEvent({
+              action: 'admin_session_restored',
+              resourceType: 'authentication',
+              details: { email: currentSession.user.email }
+            });
+          }
         }
       } catch (error) {
         console.error('❌ Init error:', error);
@@ -127,10 +120,12 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
         setUser(session?.user ?? null);
         
         if (session?.user?.email?.endsWith('@ascalate.com.br')) {
-          setIsAdminAuthenticated(true);
-          if (event === 'SIGNED_IN') {
-            await createAdminProfile(session.user);
-            resetRateLimit();
+          const hasProfile = await createAdminProfile(session.user);
+          if (hasProfile) {
+            setIsAdminAuthenticated(true);
+            if (event === 'SIGNED_IN') {
+              resetRateLimit();
+            }
           }
         } else {
           setIsAdminAuthenticated(false);
@@ -149,7 +144,6 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
     };
   }, [resetRateLimit, logSecurityEvent]);
   
-  // Função de login simplificada e corrigida
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
     console.log('🎯 ADMIN LOGIN: Starting authentication');
     console.log('🎯 ADMIN LOGIN: Email:', email);
@@ -201,8 +195,6 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
 
       console.log('✅ ADMIN LOGIN: Authentication successful');
       await logAuthAttempt(email, true);
-      
-      // A autenticação bem-sucedida será tratada pelo onAuthStateChange
       return true;
       
     } catch (error) {
@@ -210,7 +202,6 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
       await logAuthAttempt(email, false, `Exception: ${error}`);
       return false;
     } finally {
-      console.log('🎯 ADMIN LOGIN: Setting loading to false');
       setLoading(false);
     }
   };
@@ -248,7 +239,8 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
   };
   
   console.log('🎯 AdminAuthProvider: Context value created');
-  console.log('🎯 AdminAuthProvider: adminLogin function type:', typeof contextValue.adminLogin);
+  console.log('🎯 AdminAuthProvider: isAdminAuthenticated:', isAdminAuthenticated);
+  console.log('🎯 AdminAuthProvider: admin:', admin);
   
   return (
     <AdminAuthContext.Provider value={contextValue}>
