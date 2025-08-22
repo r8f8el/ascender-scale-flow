@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Logo } from '../components/Logo';
@@ -16,7 +15,7 @@ const AdminLogin = () => {
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { adminLogin } = useAdminAuth();
+  const { adminLogin, loading: contextLoading } = useAdminAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +23,8 @@ const AdminLogin = () => {
     console.log('🔑 AdminLogin: ===== FORM SUBMITTED =====');
     console.log('🔑 AdminLogin: Email:', email);
     console.log('🔑 AdminLogin: Password length:', password?.length || 0);
-    console.log('🔑 AdminLogin: Email validation:', /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
+    console.log('🔑 AdminLogin: Context loading:', contextLoading);
+    console.log('🔑 AdminLogin: Form loading:', isLoading);
     
     if (!email || !password) {
       console.log('❌ AdminLogin: Validation failed - Empty fields');
@@ -51,25 +51,27 @@ const AdminLogin = () => {
     
     try {
       console.log('🔑 AdminLogin: Calling adminLogin function...');
-      console.log('🔑 AdminLogin: adminLogin function type:', typeof adminLogin);
-      console.log('🔑 AdminLogin: adminLogin function:', adminLogin);
+      console.log('🔑 AdminLogin: adminLogin function exists:', typeof adminLogin === 'function');
       
-      const success = await adminLogin(email, password);
-      console.log('🔑 AdminLogin: adminLogin returned:', success);
-      console.log('🔑 AdminLogin: adminLogin return type:', typeof success);
+      const loginResult = await adminLogin(email, password);
+      console.log('🔑 AdminLogin: Login result:', loginResult);
+      console.log('🔑 AdminLogin: Login result type:', typeof loginResult);
       
-      if (success === true) {
+      if (loginResult === true) {
         console.log('✅ AdminLogin: Login successful, showing success toast');
         toast({
           title: "Login realizado com sucesso",
           description: "Bem-vindo ao Painel Administrativo Ascalate."
         });
         
-        console.log('✅ AdminLogin: Navigating to /admin');
-        navigate('/admin');
+        // Aguardar um pouco para o contexto atualizar
+        setTimeout(() => {
+          console.log('✅ AdminLogin: Navigating to /admin');
+          navigate('/admin');
+        }, 100);
       } else {
-        console.log('❌ AdminLogin: Login failed, showing error toast');
-        console.log('❌ AdminLogin: Success value was:', success);
+        console.log('❌ AdminLogin: Login failed');
+        console.log('❌ AdminLogin: Login result was:', loginResult);
         toast({
           title: "Falha no login",
           description: "Email ou senha inválidos, ou você não tem permissão de administrador.",
@@ -77,12 +79,8 @@ const AdminLogin = () => {
         });
       }
     } catch (error) {
-      console.error('❌ AdminLogin: Exception during login process:');
-      console.error('  - Error type:', typeof error);
-      console.error('  - Error name:', error instanceof Error ? error.name : 'Unknown');
-      console.error('  - Error message:', error instanceof Error ? error.message : 'Unknown');
-      console.error('  - Full error object:', error);
-      console.error('  - Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
+      console.error('❌ AdminLogin: Exception during login:');
+      console.error('  - Error:', error);
       
       toast({
         title: "Erro",
@@ -198,9 +196,9 @@ const AdminLogin = () => {
             <Button
               type="submit"
               className="w-full bg-[#0056b3] hover:bg-[#003d7f]"
-              disabled={isLoading}
+              disabled={isLoading || contextLoading}
             >
-              {isLoading ? "Entrando..." : "Entrar"}
+              {isLoading || contextLoading ? "Entrando..." : "Entrar"}
             </Button>
             
             <Button
