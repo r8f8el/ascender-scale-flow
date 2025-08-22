@@ -39,27 +39,18 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   
-  console.log('🔧 AdminAuth: Provider renderizando...');
-  
-  const loadAdminProfile = async (user: User) => {
+  const createAdminProfile = async (user: User) => {
+    console.log('👤 Creating admin profile for:', user.email);
+    
     try {
-      console.log('👤 AdminAuth: Loading admin profile for:', user.email);
-      
-      const { data: profile, error } = await supabase
+      const { data: profile } = await supabase
         .from('admin_profiles')
         .select('*')
         .eq('id', user.id)
         .maybeSingle();
 
-      console.log('👤 AdminAuth: Profile query result:', { profile, error });
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('❌ AdminAuth: Error loading admin profile:', error);
-        return;
-      }
-
       if (profile) {
-        console.log('✅ AdminAuth: Admin profile loaded:', profile);
+        console.log('✅ Found existing admin profile');
         setAdmin({
           id: profile.id,
           name: profile.name,
@@ -67,7 +58,7 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
           role: profile.role as 'admin' | 'super_admin'
         });
       } else {
-        console.log('⚠️ AdminAuth: No admin profile found, creating temporary profile');
+        console.log('➕ Creating temporary admin profile');
         setAdmin({
           id: user.id,
           name: user.email?.split('@')[0] || 'Admin',
@@ -76,47 +67,38 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
         });
       }
     } catch (error) {
-      console.error('❌ AdminAuth: Exception loading admin profile:', error);
+      console.error('❌ Error with admin profile:', error);
+      setAdmin({
+        id: user.id,
+        name: user.email?.split('@')[0] || 'Admin',
+        email: user.email || '',
+        role: 'admin'
+      });
     }
   };
 
   useEffect(() => {
     let mounted = true;
-    console.log('🔧 AdminAuth: useEffect iniciando...');
+    console.log('🔄 AdminAuth: Initializing...');
 
-    const initializeAuth = async () => {
+    const initAuth = async () => {
       try {
-        console.log('🔍 AdminAuth: Initializing authentication...');
-        setLoading(true);
-        
         const { data: { session: currentSession } } = await supabase.auth.getSession();
-        console.log('🔍 AdminAuth: Current session:', currentSession?.user?.email || 'none');
+        console.log('🔍 Current session:', currentSession?.user?.email || 'none');
         
         if (!mounted) return;
 
-        if (currentSession?.user) {
-          console.log('✅ AdminAuth: Found existing session for:', currentSession.user.email);
+        if (currentSession?.user?.email?.endsWith('@ascalate.com.br')) {
+          console.log('✅ Valid admin session found');
           setSession(currentSession);
           setUser(currentSession.user);
-          
-          if (currentSession.user.email?.endsWith('@ascalate.com.br')) {
-            console.log('✅ AdminAuth: User has admin domain');
-            setIsAdminAuthenticated(true);
-            await loadAdminProfile(currentSession.user);
-          } else {
-            console.log('❌ AdminAuth: User does not have admin domain');
-            setIsAdminAuthenticated(false);
-          }
-        } else {
-          console.log('ℹ️ AdminAuth: No existing session found');
+          setIsAdminAuthenticated(true);
+          await createAdminProfile(currentSession.user);
         }
       } catch (error) {
-        console.error('❌ AdminAuth: Error initializing:', error);
+        console.error('❌ Init error:', error);
       } finally {
-        if (mounted) {
-          console.log('🏁 AdminAuth: Initialization complete');
-          setLoading(false);
-        }
+        if (mounted) setLoading(false);
       }
     };
 
@@ -124,23 +106,17 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
       async (event, session) => {
         if (!mounted) return;
         
-        console.log('🔄 AdminAuth: Auth state changed:', event, session?.user?.email || 'none');
+        console.log('🔄 Auth state change:', event, session?.user?.email || 'none');
         
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user && session.user.email?.endsWith('@ascalate.com.br')) {
-          console.log('✅ AdminAuth: Setting admin authenticated');
+        if (session?.user?.email?.endsWith('@ascalate.com.br')) {
           setIsAdminAuthenticated(true);
           if (event === 'SIGNED_IN') {
-            setTimeout(() => {
-              if (mounted) {
-                loadAdminProfile(session.user);
-              }
-            }, 100);
+            await createAdminProfile(session.user);
           }
         } else {
-          console.log('❌ AdminAuth: Clearing admin authentication');
           setIsAdminAuthenticated(false);
           setAdmin(null);
         }
@@ -149,107 +125,80 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
       }
     );
 
-    initializeAuth();
+    initAuth();
 
     return () => {
-      console.log('🧹 AdminAuth: Cleanup - unmounting');
       mounted = false;
       subscription.unsubscribe();
     };
   }, []);
   
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
-    console.log('🔐 AdminAuth: ===== adminLogin FUNCTION CALLED =====');
-    console.log('🔐 AdminAuth: Input email:', email);
-    console.log('🔐 AdminAuth: Input password length:', password?.length || 0);
-    console.log('🔐 AdminAuth: Function context this:', typeof this);
-    console.log('🔐 AdminAuth: Current loading state:', loading);
+    console.log('🔐 AdminLogin: Starting login for:', email);
     
     if (!email || !password) {
-      console.error('❌ AdminAuth: Missing email or password');
+      console.error('❌ Missing credentials');
       return false;
     }
 
     try {
-      console.log('🔐 AdminAuth: Setting loading to true');
       setLoading(true);
 
-      console.log('🔐 AdminAuth: Clearing existing session...');
-      const { error: signOutError } = await supabase.auth.signOut();
-      if (signOutError) {
-        console.error('⚠️ AdminAuth: SignOut error (continuing):', signOutError);
-      }
-      
-      console.log('🔐 AdminAuth: Waiting for cleanup...');
+      // Clear any existing session
+      await supabase.auth.signOut();
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      console.log('🔐 AdminAuth: Attempting Supabase signInWithPassword...');
+      console.log('🔐 Attempting Supabase login...');
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password,
       });
 
-      console.log('🔐 AdminAuth: Supabase response received');
-      console.log('🔐 AdminAuth: Data:', data);
-      console.log('🔐 AdminAuth: Error:', error);
-      console.log('🔐 AdminAuth: User exists:', !!data?.user);
-      console.log('🔐 AdminAuth: Session exists:', !!data?.session);
+      console.log('🔐 Supabase response:', { 
+        hasUser: !!data?.user, 
+        hasSession: !!data?.session, 
+        error: error?.message 
+      });
 
       if (error) {
-        console.error('❌ AdminAuth: Supabase authentication failed:', error);
+        console.error('❌ Supabase error:', error.message);
         return false;
       }
 
       if (!data?.user || !data?.session) {
-        console.error('❌ AdminAuth: No user or session returned');
+        console.error('❌ No user or session returned');
         return false;
       }
 
-      console.log('🔐 AdminAuth: Checking domain...');
       if (!data.user.email?.endsWith('@ascalate.com.br')) {
-        console.error('❌ AdminAuth: Domain verification failed for:', data.user.email);
+        console.error('❌ Invalid domain:', data.user.email);
         await supabase.auth.signOut();
         return false;
       }
 
-      console.log('✅ AdminAuth: Domain verification passed');
-      console.log('🔐 AdminAuth: Updating context state...');
-      
-      setSession(data.session);
-      setUser(data.user);
-      setIsAdminAuthenticated(true);
-      
-      console.log('🔐 AdminAuth: Loading admin profile...');
-      await loadAdminProfile(data.user);
-      
-      console.log('🎉 AdminAuth: Login successful!');
+      console.log('✅ Login successful');
       return true;
       
     } catch (error) {
-      console.error('❌ AdminAuth: Login exception:', error);
+      console.error('❌ Login exception:', error);
       return false;
     } finally {
-      console.log('🏁 AdminAuth: Setting loading to false');
       setLoading(false);
     }
   };
   
   const adminLogout = async () => {
     try {
-      console.log('🚪 AdminAuth: Logging out...');
       await supabase.auth.signOut();
+      setAdmin(null);
+      setUser(null);
+      setSession(null);
+      setIsAdminAuthenticated(false);
+      console.log('✅ Logout complete');
     } catch (error) {
-      console.error('❌ AdminAuth: Logout error:', error);
+      console.error('❌ Logout error:', error);
     }
-    
-    setAdmin(null);
-    setUser(null);
-    setSession(null);
-    setIsAdminAuthenticated(false);
-    console.log('✅ AdminAuth: Logout complete');
   };
-  
-  console.log('🔧 AdminAuth: Creating context value with adminLogin:', typeof adminLogin);
   
   const contextValue = {
     isAdminAuthenticated, 
@@ -260,16 +209,6 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
     adminLogout,
     loading
   };
-  
-  console.log('🔧 AdminAuth: Context value created:', {
-    isAdminAuthenticated,
-    adminExists: !!admin,
-    userExists: !!user,
-    sessionExists: !!session,
-    adminLoginType: typeof adminLogin,
-    adminLogoutType: typeof adminLogout,
-    loading
-  });
   
   return (
     <AdminAuthContext.Provider value={contextValue}>
