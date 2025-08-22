@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
@@ -40,7 +41,6 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
   
   useEffect(() => {
     let mounted = true;
-    let profileLoaded = false;
 
     const initializeAuth = async () => {
       try {
@@ -51,16 +51,17 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
         
         if (!mounted) return;
 
-        if (currentSession?.user && currentSession.user.email?.endsWith('@ascalate.com.br')) {
-          console.log('Found existing admin session:', currentSession.user.email);
+        if (currentSession?.user) {
+          console.log('Found existing session:', currentSession.user.email);
           setSession(currentSession);
           setUser(currentSession.user);
-          setIsAdminAuthenticated(true);
           
-          // Load admin profile only once
-          if (!profileLoaded) {
-            profileLoaded = true;
+          // Check if user is admin by email domain
+          if (currentSession.user.email?.endsWith('@ascalate.com.br')) {
+            setIsAdminAuthenticated(true);
             await loadAdminProfile(currentSession.user);
+          } else {
+            setIsAdminAuthenticated(false);
           }
         }
       } catch (error) {
@@ -74,7 +75,7 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         if (!mounted) return;
         
         console.log('Admin auth state changed:', event, session?.user?.email);
@@ -84,9 +85,7 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
         
         if (session?.user && session.user.email?.endsWith('@ascalate.com.br')) {
           setIsAdminAuthenticated(true);
-          // Load profile only if not already loaded and avoid infinite loops
-          if (!profileLoaded && event === 'SIGNED_IN') {
-            profileLoaded = true;
+          if (event === 'SIGNED_IN') {
             setTimeout(() => {
               if (mounted) {
                 loadAdminProfile(session.user);
@@ -96,7 +95,6 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
         } else {
           setIsAdminAuthenticated(false);
           setAdmin(null);
-          profileLoaded = false;
         }
         
         setLoading(false);
@@ -113,6 +111,8 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
 
   const loadAdminProfile = async (user: User) => {
     try {
+      console.log('Loading admin profile for:', user.email);
+      
       const { data: profile, error } = await supabase
         .from('admin_profiles')
         .select('*')
@@ -125,11 +125,21 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
       }
 
       if (profile) {
+        console.log('Admin profile loaded:', profile);
         setAdmin({
           id: profile.id,
           name: profile.name,
           email: profile.email,
           role: profile.role as 'admin' | 'super_admin'
+        });
+      } else {
+        console.log('No admin profile found, user may need to be added to admin_profiles table');
+        // Still allow login if email is from correct domain
+        setAdmin({
+          id: user.id,
+          name: user.email?.split('@')[0] || 'Admin',
+          email: user.email || '',
+          role: 'admin'
         });
       }
     } catch (error) {
@@ -139,32 +149,36 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
   
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
     try {
+      console.log('Attempting admin login for:', email);
       setLoading(true);
 
-      // Verificar se é email da Ascalate
-      if (!email.endsWith('@ascalate.com.br')) {
-        console.error('Email não é da Ascalate');
-        return false;
-      }
-      
+      // Try login first, then check domain
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        console.error('Admin login error:', error);
+        console.error('Login error:', error.message);
         return false;
       }
 
       if (data.user) {
-        console.log('Admin login successful');
+        // Check if user is from ascalate domain after successful login
+        if (!data.user.email?.endsWith('@ascalate.com.br')) {
+          console.error('User is not from Ascalate domain');
+          // Sign out the non-admin user
+          await supabase.auth.signOut();
+          return false;
+        }
+        
+        console.log('Admin login successful for:', data.user.email);
         return true;
       }
       
       return false;
     } catch (error) {
-      console.error('Admin login error:', error);
+      console.error('Admin login exception:', error);
       return false;
     } finally {
       setLoading(false);

@@ -33,18 +33,21 @@ const AdminLogin = () => {
     setIsLoading(true);
     
     try {
+      console.log('Submitting login for:', email);
       const success = await adminLogin(email, password);
       
       if (success) {
+        console.log('Login successful, navigating to admin');
         toast({
           title: "Login realizado com sucesso",
           description: "Bem-vindo ao Painel Administrativo Ascalate."
         });
         navigate('/admin');
       } else {
+        console.log('Login failed');
         toast({
           title: "Falha no login",
-          description: "Email ou senha inválidos. Verifique suas credenciais ou redefina sua senha.",
+          description: "Email ou senha inválidos, ou você não tem permissão de administrador.",
           variant: "destructive"
         });
       }
@@ -65,15 +68,6 @@ const AdminLogin = () => {
       toast({
         title: "Email necessário",
         description: "Por favor, informe seu email para redefinir a senha.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!email.endsWith('@ascalate.com.br')) {
-      toast({
-        title: "Email inválido",
-        description: "Apenas emails @ascalate.com.br são permitidos.",
         variant: "destructive"
       });
       return;
