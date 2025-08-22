@@ -21,7 +21,10 @@ const AdminLogin = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('🔑 AdminLogin: Form submitted for:', email);
+    
     if (!email || !password) {
+      console.log('❌ AdminLogin: Empty fields');
       toast({
         title: "Campos vazios",
         description: "Por favor, preencha todos os campos.",
@@ -33,18 +36,19 @@ const AdminLogin = () => {
     setIsLoading(true);
     
     try {
-      console.log('Submitting login for:', email);
+      console.log('🔑 AdminLogin: Calling adminLogin function...');
       const success = await adminLogin(email, password);
+      console.log('🔑 AdminLogin: adminLogin result:', success);
       
       if (success) {
-        console.log('Login successful, navigating to admin');
+        console.log('✅ AdminLogin: Login successful, navigating to admin');
         toast({
           title: "Login realizado com sucesso",
           description: "Bem-vindo ao Painel Administrativo Ascalate."
         });
         navigate('/admin');
       } else {
-        console.log('Login failed');
+        console.log('❌ AdminLogin: Login failed');
         toast({
           title: "Falha no login",
           description: "Email ou senha inválidos, ou você não tem permissão de administrador.",
@@ -52,7 +56,7 @@ const AdminLogin = () => {
         });
       }
     } catch (error) {
-      console.error('Error during login:', error);
+      console.error('❌ AdminLogin: Exception during login:', error);
       toast({
         title: "Erro",
         description: "Ocorreu um erro ao realizar o login. Tente novamente mais tarde.",
