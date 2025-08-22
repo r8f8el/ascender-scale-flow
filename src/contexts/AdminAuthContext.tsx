@@ -150,7 +150,7 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
     };
   }, [resetRateLimit, logSecurityEvent]);
   
-  // Secure admin authentication function
+  // Fixed admin authentication function
   const executeAdminAuthentication = async (email: string, password: string): Promise<boolean> => {
     console.log('🎯 SECURE ADMIN AUTH: Starting authentication process');
     console.log('🎯 SECURE ADMIN AUTH: Email:', email);
@@ -178,10 +178,12 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
       setLoading(true);
       console.log('🎯 SECURE ADMIN AUTH: Setting loading state');
 
-      // Clear existing session
+      // Clear existing session first
       console.log('🎯 SECURE ADMIN AUTH: Clearing existing session');
       await supabase.auth.signOut();
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Add a small delay to ensure session is cleared
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       console.log('🎯 SECURE ADMIN AUTH: Attempting Supabase sign in');
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -218,6 +220,10 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
       }
 
       console.log('✅ SECURE ADMIN AUTH: Authentication successful');
+      
+      // The auth state change handler will update the state
+      // So we don't need to manually set session/user here
+      
       await logAuthAttempt(email, true);
       return true;
       
