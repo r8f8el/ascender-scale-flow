@@ -2,8 +2,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
-import { useAuthRateLimit } from '@/hooks/useAuthRateLimit';
-import { useSecurityAudit } from '@/hooks/useSecurityAudit';
 
 interface Admin {
   id: string;
@@ -20,7 +18,6 @@ interface AdminAuthContextType {
   adminLogin: (email: string, password: string) => Promise<boolean>;
   adminLogout: () => void;
   loading: boolean;
-  rateLimitState: any;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType>({
@@ -31,7 +28,6 @@ const AdminAuthContext = createContext<AdminAuthContextType>({
   adminLogin: async () => false,
   adminLogout: () => {},
   loading: true,
-  rateLimitState: { isBlocked: false, attemptsRemaining: 5, resetTime: null }
 });
 
 export const useAdminAuth = () => useContext(AdminAuthContext);
@@ -43,12 +39,9 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   
-  const { rateLimitState, checkRateLimit, resetRateLimit } = useAuthRateLimit();
-  const { logAuthAttempt, logSecurityEvent } = useSecurityAudit();
-  
   console.log('🚀 AdminAuthProvider: Context initialized');
 
-  const checkAndSetAdminProfile = async (user: User) => {
+  const checkAdminProfile = async (user: User): Promise<boolean> => {
     console.log('👤 Checking admin profile for:', user.email);
     
     try {
@@ -58,6 +51,7 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
         return false;
       }
 
+      // Buscar perfil admin
       const { data: profile, error } = await supabase
         .from('admin_profiles')
         .select('*')
@@ -79,10 +73,11 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
         });
         setIsAdminAuthenticated(true);
         return true;
-      } else {
-        console.log('❌ No admin profile found');
-        return false;
       }
+
+      console.log('❌ No admin profile found');
+      return false;
+      
     } catch (error) {
       console.error('❌ Exception checking admin profile:', error);
       return false;
@@ -93,56 +88,68 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
     let mounted = true;
     console.log('🔄 AdminAuth: Setting up authentication listener');
 
+    const initializeAuth = async () => {
+      try {
+        // Verificar sessão atual primeiro
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        console.log('🔍 Initial session check:', currentSession?.user?.email || 'none');
+        
+        if (mounted) {
+          setSession(currentSession);
+          setUser(currentSession?.user ?? null);
+          
+          if (currentSession?.user) {
+            const isAdmin = await checkAdminProfile(currentSession.user);
+            if (!isAdmin) {
+              setIsAdminAuthenticated(false);
+              setAdmin(null);
+            }
+          } else {
+            setIsAdminAuthenticated(false);
+            setAdmin(null);
+          }
+          
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('❌ Error in initial auth check:', error);
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    // Configurar listener de mudanças de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
         
         console.log('🔄 Auth state change:', event, session?.user?.email || 'none');
         
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          const isAdmin = await checkAndSetAdminProfile(session.user);
-          if (!isAdmin) {
+        try {
+          setSession(session);
+          setUser(session?.user ?? null);
+          
+          if (session?.user) {
+            const isAdmin = await checkAdminProfile(session.user);
+            if (!isAdmin) {
+              setIsAdminAuthenticated(false);
+              setAdmin(null);
+            }
+          } else {
             setIsAdminAuthenticated(false);
             setAdmin(null);
           }
-        } else {
+        } catch (error) {
+          console.error('❌ Error in auth state change:', error);
           setIsAdminAuthenticated(false);
           setAdmin(null);
         }
-        
-        setLoading(false);
       }
     );
 
-    // Check initial session
-    const initAuth = async () => {
-      try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        console.log('🔍 Initial session check:', currentSession?.user?.email || 'none');
-        
-        if (!mounted) return;
-
-        if (currentSession?.user) {
-          setSession(currentSession);
-          setUser(currentSession.user);
-          
-          const isAdmin = await checkAndSetAdminProfile(currentSession.user);
-          if (!isAdmin) {
-            setIsAdminAuthenticated(false);
-            setAdmin(null);
-          }
-        }
-      } catch (error) {
-        console.error('❌ Init auth error:', error);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-
-    initAuth();
+    // Inicializar auth
+    initializeAuth();
 
     return () => {
       mounted = false;
@@ -151,7 +158,7 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
   }, []);
   
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
-    console.log('🎯 ADMIN LOGIN: Starting authentication');
+    console.log('🎯 ADMIN LOGIN: Starting authentication for:', email);
     
     if (!email || !password) {
       console.error('❌ Missing credentials');
@@ -183,7 +190,6 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
       }
 
       console.log('✅ ADMIN LOGIN: Authentication successful');
-      // O onAuthStateChange vai lidar com a verificação do perfil admin
       return true;
       
     } catch (error) {
@@ -196,6 +202,7 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
   
   const adminLogout = async () => {
     try {
+      setLoading(true);
       await supabase.auth.signOut();
       setAdmin(null);
       setUser(null);
@@ -204,6 +211,8 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
       console.log('✅ Logout complete');
     } catch (error) {
       console.error('❌ Logout error:', error);
+    } finally {
+      setLoading(false);
     }
   };
   
@@ -214,8 +223,7 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
     session,
     adminLogin,
     adminLogout,
-    loading,
-    rateLimitState
+    loading
   };
   
   console.log('🎯 AdminAuthProvider: Context value:', {

@@ -1,7 +1,7 @@
 
 import { Navigate } from 'react-router-dom';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 interface AdminProtectedRouteProps {
@@ -15,17 +15,31 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
 }) => {
   const { isAdminAuthenticated, admin, loading } = useAdminAuth();
   const { toast } = useToast();
+  const [hasTimeout, setHasTimeout] = useState(false);
 
   console.log('🔐 AdminProtectedRoute:', {
     loading,
     isAdminAuthenticated,
     hasAdmin: !!admin,
     adminEmail: admin?.email,
-    adminRole: admin?.role
+    adminRole: admin?.role,
+    hasTimeout
   });
 
+  // Timeout para evitar loading infinito
   useEffect(() => {
-    if (!loading && !isAdminAuthenticated) {
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.log('⏰ AdminProtectedRoute: Loading timeout reached');
+        setHasTimeout(true);
+      }
+    }, 10000); // 10 segundos de timeout
+
+    return () => clearTimeout(timeout);
+  }, [loading]);
+
+  useEffect(() => {
+    if (!loading && !isAdminAuthenticated && !hasTimeout) {
       console.log('🚫 AdminProtectedRoute: Access denied - not authenticated');
       toast({
         title: "Acesso Negado",
@@ -46,7 +60,13 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
         variant: "destructive"
       });
     }
-  }, [isAdminAuthenticated, admin, requiredRole, toast, loading]);
+  }, [isAdminAuthenticated, admin, requiredRole, toast, loading, hasTimeout]);
+
+  // Se houve timeout, redirecionar para login
+  if (hasTimeout) {
+    console.log('⏰ AdminProtectedRoute: Timeout - redirecting to login');
+    return <Navigate to="/admin/login" replace />;
+  }
 
   if (loading) {
     return (
@@ -54,6 +74,7 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
         <div className="flex flex-col items-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           <div className="text-lg text-gray-600">Carregando...</div>
+          <div className="text-sm text-gray-500">Verificando permissões de acesso</div>
         </div>
       </div>
     );
