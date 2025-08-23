@@ -1,9 +1,9 @@
-
 import React, { useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { ClientHeader } from '@/components/client/ClientHeader';
 import { ClientNavigation } from '@/components/client/ClientNavigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import ClientDocumentSync from '@/components/client/ClientDocumentSync';
 import { Chat } from '@/components/Chat';
