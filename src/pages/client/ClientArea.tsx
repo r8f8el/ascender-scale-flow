@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { ClientHeader } from '@/components/client/ClientHeader';
 import { ClientNavigation } from '@/components/client/ClientNavigation';
@@ -8,6 +8,7 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import ClientDocumentSync from '@/components/client/ClientDocumentSync';
 import { Chat } from '@/components/Chat';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import { PageLoader } from '@/components/ui/page-loader';
 
 // Client pages
 import ClientDocuments from './ClientDocuments';
@@ -37,10 +38,38 @@ import ClientFPACommunication from './fpa/ClientFPACommunication';
 import ClientBIDashboard from './fpa/ClientBIDashboard';
 
 const ClientArea = () => {
-  const { client, logout } = useAuth();
+  const { client, logout, loading, user } = useAuth();
   const navigate = useNavigate();
 
-  console.log('🔍 ClientArea: Renderizando com cliente:', client?.name);
+  console.log('🔍 ClientArea: loading:', loading, 'user:', user?.id, 'client:', client?.name);
+
+  // Check if user is admin and redirect
+  useEffect(() => {
+    const checkAdminRedirect = async () => {
+      if (!loading && user) {
+        try {
+          const { data: adminData } = await supabase.auth.getUser();
+          if (adminData?.user) {
+            const { data: isAdmin } = await supabase
+              .from('admin_profiles')
+              .select('id')
+              .eq('id', adminData.user.id)
+              .maybeSingle();
+            
+            if (isAdmin) {
+              console.log('🔄 Admin user detected in client area, redirecting...');
+              window.location.href = '/admin';
+              return;
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error checking admin status:', error);
+        }
+      }
+    };
+
+    checkAdminRedirect();
+  }, [loading, user]);
 
   const handleLogout = () => {
     console.log('👋 ClientArea: Fazendo logout');
@@ -48,7 +77,13 @@ const ClientArea = () => {
     navigate('/login');
   };
 
-  if (!client) {
+  // Show loading while checking authentication
+  if (loading) {
+    return <PageLoader text="Carregando área do cliente..." />;
+  }
+
+  // Show warning if no client profile but user is authenticated
+  if (!client && user) {
     console.log('⚠️ ClientArea: Cliente não encontrado, mas usuário autenticado');
   }
 
@@ -60,7 +95,7 @@ const ClientArea = () => {
           
           <SidebarInset className="flex-1">
             <ClientHeader 
-              clientName={client?.name || 'Usuário'}
+              clientName={client?.name || user?.email || 'Usuário'}
               onLogout={handleLogout}
             />
             
