@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Logo } from '../components/Logo';
@@ -5,14 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Shield } from 'lucide-react';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isResettingPassword, setIsResettingPassword] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { adminLogin, loading: contextLoading } = useAdminAuth();
@@ -20,14 +19,9 @@ const AdminLogin = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('🔑 AdminLogin: ===== FORM SUBMITTED =====');
-    console.log('🔑 AdminLogin: Email:', email);
-    console.log('🔑 AdminLogin: Password length:', password?.length || 0);
-    console.log('🔑 AdminLogin: Context loading:', contextLoading);
-    console.log('🔑 AdminLogin: Form loading:', isLoading);
+    console.log('🔑 AdminLogin: Form submitted');
     
     if (!email || !password) {
-      console.log('❌ AdminLogin: Validation failed - Empty fields');
       toast({
         title: "Campos vazios",
         description: "Por favor, preencha todos os campos.",
@@ -37,7 +31,6 @@ const AdminLogin = () => {
     }
 
     if (!email.includes('@ascalate.com.br')) {
-      console.log('❌ AdminLogin: Validation failed - Invalid domain');
       toast({
         title: "Email inválido",
         description: "Use um email @ascalate.com.br para acessar o painel administrativo.",
@@ -47,31 +40,23 @@ const AdminLogin = () => {
     }
     
     setIsLoading(true);
-    console.log('🔑 AdminLogin: Starting login process...');
     
     try {
-      console.log('🔑 AdminLogin: Calling adminLogin function...');
-      console.log('🔑 AdminLogin: adminLogin function exists:', typeof adminLogin === 'function');
+      console.log('🔑 AdminLogin: Calling adminLogin...');
+      const success = await adminLogin(email, password);
       
-      const loginResult = await adminLogin(email, password);
-      console.log('🔑 AdminLogin: Login result:', loginResult);
-      console.log('🔑 AdminLogin: Login result type:', typeof loginResult);
-      
-      if (loginResult === true) {
-        console.log('✅ AdminLogin: Login successful, showing success toast');
+      if (success) {
+        console.log('✅ AdminLogin: Login successful');
         toast({
           title: "Login realizado com sucesso",
           description: "Bem-vindo ao Painel Administrativo Ascalate."
         });
         
-        // Aguardar um pouco para o contexto atualizar
         setTimeout(() => {
-          console.log('✅ AdminLogin: Navigating to /admin');
           navigate('/admin');
-        }, 100);
+        }, 500);
       } else {
         console.log('❌ AdminLogin: Login failed');
-        console.log('❌ AdminLogin: Login result was:', loginResult);
         toast({
           title: "Falha no login",
           description: "Email ou senha inválidos, ou você não tem permissão de administrador.",
@@ -79,59 +64,14 @@ const AdminLogin = () => {
         });
       }
     } catch (error) {
-      console.error('❌ AdminLogin: Exception during login:');
-      console.error('  - Error:', error);
-      
+      console.error('❌ AdminLogin: Exception:', error);
       toast({
         title: "Erro",
-        description: "Ocorreu um erro ao realizar o login. Tente novamente mais tarde.",
+        description: "Ocorreu um erro ao realizar o login. Tente novamente.",
         variant: "destructive"
       });
     } finally {
-      console.log('🏁 AdminLogin: Setting loading to false');
       setIsLoading(false);
-    }
-  };
-
-  const handlePasswordReset = async () => {
-    if (!email) {
-      toast({
-        title: "Email necessário",
-        description: "Por favor, informe seu email para redefinir a senha.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsResettingPassword(true);
-    
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/admin/login`
-      });
-
-      if (error) {
-        console.error('Password reset error:', error);
-        toast({
-          title: "Erro ao redefinir senha",
-          description: error.message,
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Email enviado",
-          description: "Verifique sua caixa de entrada para redefinir sua senha."
-        });
-      }
-    } catch (error) {
-      console.error('Error during password reset:', error);
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao enviar o email. Tente novamente mais tarde.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsResettingPassword(false);
     }
   };
 
@@ -192,7 +132,7 @@ const AdminLogin = () => {
             </div>
           </div>
           
-          <div className="space-y-3">
+          <div>
             <Button
               type="submit"
               className="w-full bg-[#0056b3] hover:bg-[#003d7f]"
@@ -200,33 +140,13 @@ const AdminLogin = () => {
             >
               {isLoading || contextLoading ? "Entrando..." : "Entrar"}
             </Button>
-            
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              onClick={handlePasswordReset}
-              disabled={isResettingPassword}
-            >
-              {isResettingPassword ? "Enviando..." : "Esqueci minha senha"}
-            </Button>
           </div>
 
           <div className="mt-4 text-center text-sm text-gray-600">
             <p>Entre com suas credenciais de administrador.</p>
             <p>Apenas usuários com email @ascalate.com.br podem acessar.</p>
-            <p className="mt-2">
-              Não tem uma conta? 
-              <a href="/admin/register" className="text-blue-600 hover:text-blue-500 ml-1">
-                Cadastre-se aqui
-              </a>
-            </p>
           </div>
         </form>
-        
-        <p className="mt-4 text-center text-sm text-gray-600">
-          Área restrita a administradores. Em caso de problemas, contate o suporte técnico.
-        </p>
       </div>
     </div>
   );

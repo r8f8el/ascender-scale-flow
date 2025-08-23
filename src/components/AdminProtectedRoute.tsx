@@ -16,12 +16,20 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
   const { isAdminAuthenticated, admin, loading } = useAdminAuth();
   const { toast } = useToast();
 
-  // Always call useEffect first - hooks must be called in consistent order
+  console.log('🔐 AdminProtectedRoute:', {
+    loading,
+    isAdminAuthenticated,
+    hasAdmin: !!admin,
+    adminEmail: admin?.email,
+    adminRole: admin?.role
+  });
+
   useEffect(() => {
     if (!loading && !isAdminAuthenticated) {
+      console.log('🚫 AdminProtectedRoute: Access denied - not authenticated');
       toast({
         title: "Acesso Negado",
-        description: "Você precisa estar autenticado para acessar esta área.",
+        description: "Você precisa estar autenticado como administrador para acessar esta área.",
         variant: "destructive"
       });
     } else if (
@@ -31,6 +39,7 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
       admin.role !== requiredRole && 
       admin.role !== 'super_admin'
     ) {
+      console.log('🚫 AdminProtectedRoute: Access denied - insufficient role');
       toast({
         title: "Permissão Insuficiente",
         description: "Você não tem permissão para acessar este recurso.",
@@ -39,7 +48,6 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
     }
   }, [isAdminAuthenticated, admin, requiredRole, toast, loading]);
 
-  // Show loading while checking authentication
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -51,16 +59,16 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
     );
   }
 
-  // Verificação real de autenticação
   if (!isAdminAuthenticated) {
+    console.log('🔄 AdminProtectedRoute: Redirecting to admin login');
     return <Navigate to="/admin/login" replace />;
   }
 
-  // Verificação de permissões baseada em função
   if (requiredRole && admin && admin.role !== requiredRole && admin.role !== 'super_admin') {
     return <Navigate to="/admin/unauthorized" replace />;
   }
 
+  console.log('✅ AdminProtectedRoute: Access granted');
   return <>{children}</>;
 };
 
