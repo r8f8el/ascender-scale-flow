@@ -2,7 +2,6 @@
 import React from 'react';
 import { Logo } from './Logo';
 import { motion } from 'framer-motion';
-import { Mail, Phone, MapPin } from 'lucide-react';
 
 const Footer = () => {
   const footerLinks = [
@@ -11,12 +10,6 @@ const Footer = () => {
     { href: "#mission", label: "Missão e Valores" },
     { href: "#clients", label: "Clientes" },
     { href: "#contact", label: "Contato" }
-  ];
-
-  const contactInfo = [
-    { icon: Mail, text: "contato@ascalate.com.br" },
-    { icon: Phone, text: "(11) 99999-9999" },
-    { icon: MapPin, text: "São Paulo, SP" }
   ];
 
   return (
@@ -33,14 +26,6 @@ const Footer = () => {
             <p className="text-gray-400 mb-6 max-w-sm">
               Transformando desafios em oportunidades de crescimento através de planejamento financeiro, estratégico e orçamentário.
             </p>
-            <div className="space-y-3">
-              {contactInfo.map((item, index) => (
-                <div key={index} className="flex items-center">
-                  <item.icon className="h-5 w-5 text-blue-400 mr-3" />
-                  <span className="text-gray-300">{item.text}</span>
-                </div>
-              ))}
-            </div>
           </motion.div>
           
           <motion.div
