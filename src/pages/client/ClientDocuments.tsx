@@ -65,31 +65,6 @@ const ClientDocuments = () => {
   console.log('  - session:', session ? 'exists' : 'null');
   console.log('  - client:', client ? { id: client.id, name: client.name, email: client.email } : null);
 
-  // Se ainda está carregando autenticação, mostrar spinner
-  if (authLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-96">
-        <LoadingSpinner 
-          size="xl" 
-          text="Carregando perfil..." 
-          color="primary"
-        />
-      </div>
-    );
-  }
-
-  // Se não tem usuário autenticado, mostrar erro
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="text-center">
-          <h2 className="text-lg font-medium text-gray-900">Usuário não autenticado</h2>
-          <p className="text-gray-500">Faça login para acessar seus documentos.</p>
-        </div>
-      </div>
-    );
-  }
-
   const categories = [
     'Contratos',
     'Relatórios',
@@ -487,6 +462,31 @@ const ClientDocuments = () => {
     const lastDoc = documents.sort((a, b) => new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime())[0];
     return formatDate(lastDoc.uploaded_at);
   };
+
+  // Se ainda está carregando autenticação, mostrar spinner
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <LoadingSpinner 
+          size="xl" 
+          text="Carregando perfil..." 
+          color="primary"
+        />
+      </div>
+    );
+  }
+
+  // Se não tem usuário autenticado, mostrar erro
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-center">
+          <h2 className="text-lg font-medium text-gray-900">Usuário não autenticado</h2>
+          <p className="text-gray-500">Faça login para acessar seus documentos.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
