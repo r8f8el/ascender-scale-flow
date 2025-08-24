@@ -32,7 +32,9 @@ export const useGanttTasks = (projectId: string) => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchTasks = useCallback(async () => {
-    if (!projectId) {
+    if (!projectId || projectId === '1' || projectId === '2') {
+      console.log('⚠️ Invalid projectId, skipping fetch:', projectId);
+      setTasks([]);
       setLoading(false);
       return;
     }

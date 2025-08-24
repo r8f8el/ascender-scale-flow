@@ -43,86 +43,18 @@ export const useGanttProjects = (clientId?: string) => {
 
       if (fetchError) throw fetchError;
       
-      // Se não houver projetos, criar alguns projetos de exemplo
-      if (!data || data.length === 0) {
-        const mockProjects: GanttProject[] = [
-          {
-            id: '1',
-            name: 'Projeto de Consultoria Financeira',
-            description: 'Análise e planejamento financeiro para empresa de médio porte',
-            client_id: clientId || '1',
-            created_by: '1',
-            start_date: '2024-01-01',
-            end_date: '2024-12-31',
-            progress: 65,
-            status: 'active',
-            priority: 'high',
-            budget: 50000,
-            is_active: true,
-            created_at: '2024-01-01T00:00:00Z',
-            updated_at: '2024-01-01T00:00:00Z'
-          },
-          {
-            id: '2',
-            name: 'Implementação de Sistema FP&A',
-            description: 'Sistema de planejamento financeiro e análise',
-            client_id: clientId || '1',
-            created_by: '1',
-            start_date: '2024-03-01',
-            end_date: '2024-08-31',
-            progress: 30,
-            status: 'active',
-            priority: 'medium',
-            budget: 75000,
-            is_active: true,
-            created_at: '2024-03-01T00:00:00Z',
-            updated_at: '2024-03-01T00:00:00Z'
-          }
-        ];
-        setProjects(mockProjects);
-      } else {
+      if (data && data.length > 0) {
         setProjects(data);
+      } else {
+        // Se não há projetos, retorna array vazio
+        setProjects([]);
       }
     } catch (error) {
       console.error('Error fetching gantt projects:', error);
       setError(error instanceof Error ? error.message : 'Erro desconhecido');
       
-      // Em caso de erro, usar projetos de exemplo
-      const mockProjects: GanttProject[] = [
-        {
-          id: '1',
-          name: 'Projeto de Consultoria Financeira',
-          description: 'Análise e planejamento financeiro para empresa de médio porte',
-          client_id: clientId || '1',
-          created_by: '1',
-          start_date: '2024-01-01',
-          end_date: '2024-12-31',
-          progress: 65,
-          status: 'active',
-          priority: 'high',
-          budget: 50000,
-          is_active: true,
-          created_at: '2024-01-01T00:00:00Z',
-          updated_at: '2024-01-01T00:00:00Z'
-        },
-        {
-          id: '2',
-          name: 'Implementação de Sistema FP&A',
-          description: 'Sistema de planejamento financeiro e análise',
-          client_id: clientId || '1',
-          created_by: '1',
-          start_date: '2024-03-01',
-          end_date: '2024-08-31',
-          progress: 30,
-          status: 'active',
-          priority: 'medium',
-          budget: 75000,
-          is_active: true,
-          created_at: '2024-03-01T00:00:00Z',
-          updated_at: '2024-03-01T00:00:00Z'
-        }
-      ];
-      setProjects(mockProjects);
+      // Em caso de erro, retorna array vazio
+      setProjects([]);
     } finally {
       setLoading(false);
     }

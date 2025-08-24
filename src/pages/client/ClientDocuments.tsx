@@ -48,7 +48,7 @@ interface UploadFile {
 }
 
 const ClientDocuments = () => {
-  const { client } = useAuth();
+  const { client, loading: authLoading } = useAuth();
   const { toast } = useToast();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -60,6 +60,31 @@ const ClientDocuments = () => {
   const [isUploading, setIsUploading] = useState(false);
 
   console.log('📄 ClientDocuments - Cliente:', client?.name);
+
+  // Se ainda está carregando autenticação, mostrar spinner
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <LoadingSpinner 
+          size="xl" 
+          text="Carregando perfil..." 
+          color="primary"
+        />
+      </div>
+    );
+  }
+
+  // Se não tem cliente autenticado, mostrar erro
+  if (!client) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-center">
+          <h2 className="text-lg font-medium text-gray-900">Perfil não encontrado</h2>
+          <p className="text-gray-500">Não foi possível carregar seus documentos.</p>
+        </div>
+      </div>
+    );
+  }
 
   const categories = [
     'Contratos',
