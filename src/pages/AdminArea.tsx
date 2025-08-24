@@ -24,6 +24,7 @@ import AdminFPAClientManagement from './admin/fpa/AdminFPAClientManagement';
 import AdminFPADataIntegrationReal from './admin/fpa/AdminFPADataIntegrationReal';
 import AdminFPAReportBuilder from './admin/fpa/AdminFPAReportBuilder';
 import AdminFPAVarianceAnalysis from './admin/fpa/AdminFPAVarianceAnalysis';
+import AdminFPABIEmbeds from './admin/fpa/AdminFPABIEmbeds';
 import KanbanAdmin from './admin/KanbanAdmin';
 import GanttAdmin from './admin/GanttAdmin';
 import AdminFPAModeling from './admin/fpa/AdminFPAModeling';
@@ -65,6 +66,7 @@ const AdminArea = () => {
               <Route path="fpa/relatorios" element={<AdminFPAReportBuilder />} />
               <Route path="fpa/variancia" element={<AdminFPAVarianceAnalysis />} />
               <Route path="fpa/modelagem" element={<AdminFPAModeling />} />
+              <Route path="fpa/bi" element={<AdminFPABIEmbeds />} />
             </Routes>
           </main>
         </SidebarInset>
