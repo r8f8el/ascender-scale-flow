@@ -10,7 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { KanbanBoard } from '@/components/kanban/KanbanBoard';
 import { BoardEditDialog } from '@/components/kanban/BoardEditDialog';
 import { useKanbanBoards } from '@/hooks/useKanbanBoards';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { Kanban, Plus, Users, MoreVertical, Edit, Trash2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 

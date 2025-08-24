@@ -26,7 +26,7 @@ import {
   List,
   Building2
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { TaskModal } from '@/components/gantt/TaskModal';
 import { GanttExport } from '@/components/gantt/GanttExport';
@@ -56,7 +56,7 @@ interface GanttProject {
 }
 
 export default function GanttAdmin() {
-  const { user } = useAuth();
+  const { user } = useAdminAuth();
   const { toast } = useToast();
   
   // Estados dos modais

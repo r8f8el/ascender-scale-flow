@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, Plus, Edit, Trash2, Mail, Building, Users, UserPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useCreateFPAClientFromProfile } from '@/hooks/useFPAClients';
 
 interface ClientProfile {
@@ -30,7 +30,7 @@ interface FPAClient {
 }
 
 const ClientesAdmin = () => {
-  const { user } = useAuth();
+  const { user } = useAdminAuth();
   const { toast } = useToast();
   const [clients, setClients] = useState<ClientProfile[]>([]);
   const [fpaClients, setFpaClients] = useState<FPAClient[]>([]);

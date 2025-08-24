@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useDocumentCategories } from '@/hooks/useDocumentCategories';
 import { toast } from 'sonner';
 import { Upload, X, FileText } from 'lucide-react';
@@ -27,7 +27,7 @@ const AdminDocumentUpload: React.FC<AdminDocumentUploadProps> = ({
   onClose,
   onUploadComplete
 }) => {
-  const { user } = useAuth();
+  const { user } = useAdminAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClient, setSelectedClient] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');

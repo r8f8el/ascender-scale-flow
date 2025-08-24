@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import AdminDocumentUpload from './AdminDocumentUpload';
 import { useDocumentCategories } from '@/hooks/useDocumentCategories';
 import { 
@@ -51,7 +51,7 @@ const DocumentManager: React.FC<{ clientId?: string; isAdmin?: boolean }> = ({
   clientId, 
   isAdmin = false 
 }) => {
-  const { user } = useAuth();
+  const { user } = useAdminAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);

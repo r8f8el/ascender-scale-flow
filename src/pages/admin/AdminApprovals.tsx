@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAllSolicitacoes, useSolicitacaoPendentes } from '@/hooks/useSolicitacoes';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { DetalheSolicitacaoDialog } from '@/components/aprovacoes/DetalheSolicitacaoDialog';
 import { Solicitacao } from '@/types/aprovacoes';
 import { 
@@ -29,7 +29,7 @@ interface SolicitacaoWithProfile extends Solicitacao {
 }
 
 const AdminApprovals: React.FC = () => {
-  const { user } = useAuth();
+  const { user } = useAdminAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedSolicitacao, setSelectedSolicitacao] = useState<SolicitacaoWithProfile | null>(null);
