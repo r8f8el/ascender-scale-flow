@@ -81,21 +81,21 @@ const ClientRegister = () => {
     try {
       console.log('🔐 Iniciando registro de cliente:', formData.email);
 
-      // Registrar usuário no Supabase Auth
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/cliente/login`,
-          data: {
-            name: formData.name,
-            company: formData.company,
-            cnpj: formData.cnpj,
-            phone: formData.phone,
-            is_primary_contact: true
+        // Registrar usuário no Supabase Auth
+        const { data: authData, error: signUpError } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/confirmar-email`,
+            data: {
+              name: formData.name,
+              company: formData.company,
+              cnpj: formData.cnpj,
+              phone: formData.phone,
+              is_primary_contact: true
+            }
           }
-        }
-      });
+        });
 
       if (signUpError) {
         console.error('❌ Erro no registro:', signUpError);
@@ -132,9 +132,7 @@ const ClientRegister = () => {
           body: {
             email: formData.email,
             name: formData.name,
-            confirmationUrl: authData.user.email_confirmed_at ? 
-              `${window.location.origin}/cliente/login` :
-              `https://klcfzhpttcsjuynumzgi.supabase.co/auth/v1/verify?token=${authData.user.id}&type=signup&redirect_to=${window.location.origin}/cliente/login`
+            loginUrl: `${window.location.origin}/cliente/login`
           }
         });
 

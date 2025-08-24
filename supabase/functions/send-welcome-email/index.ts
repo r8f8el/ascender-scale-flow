@@ -11,7 +11,7 @@ const corsHeaders = {
 interface WelcomeEmailRequest {
   email: string;
   name: string;
-  confirmationUrl: string;
+  loginUrl: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -30,7 +30,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, name, confirmationUrl }: WelcomeEmailRequest = await req.json();
+    const { email, name, loginUrl }: WelcomeEmailRequest = await req.json();
 
     console.log('Sending welcome email to:', email);
 
@@ -55,12 +55,12 @@ const handler = async (req: Request): Promise<Response> => {
             <h2 style="color: #333; margin-top: 0;">Olá, ${name}!</h2>
             
             <p style="font-size: 16px; margin-bottom: 20px;">
-              Obrigado por se cadastrar na nossa plataforma. Para começar a usar todos os recursos disponíveis, 
-              você precisa confirmar seu endereço de email.
+              Sua conta foi criada com sucesso! Para começar a usar nossa plataforma, 
+              você precisa primeiro confirmar seu email através do link que será enviado separadamente pelo sistema.
             </p>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${confirmationUrl}" 
+              <a href="${loginUrl}" 
                  style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                         color: white; 
                         padding: 15px 30px; 
@@ -69,27 +69,28 @@ const handler = async (req: Request): Promise<Response> => {
                         font-weight: bold; 
                         font-size: 16px;
                         display: inline-block;">
-                Confirmar Email
+                Ir para Login
               </a>
             </div>
             
-            <p style="font-size: 14px; color: #666; margin-top: 30px;">
-              Se o botão não funcionar, copie e cole o link abaixo no seu navegador:
-            </p>
-            <p style="font-size: 12px; color: #888; word-break: break-all; background: #e9ecef; padding: 10px; border-radius: 5px;">
-              ${confirmationUrl}
-            </p>
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <p style="margin: 0; font-size: 14px; color: #856404;">
+                <strong>📧 Importante:</strong> Você receberá um email separado com o link de confirmação. 
+                Clique nesse link para ativar sua conta antes de fazer login.
+              </p>
+            </div>
             
             <hr style="border: none; height: 1px; background: #ddd; margin: 30px 0;">
             
             <p style="font-size: 14px; color: #666;">
-              <strong>Próximos passos após a confirmação:</strong>
+              <strong>Próximos passos:</strong>
             </p>
             <ul style="color: #666; font-size: 14px;">
+              <li>Aguarde o email de confirmação do sistema</li>
+              <li>Clique no link de confirmação</li>
               <li>Faça login na plataforma</li>
               <li>Complete seu perfil</li>
               <li>Explore todos os recursos disponíveis</li>
-              <li>Entre em contato conosco se precisar de ajuda</li>
             </ul>
             
             <div style="background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0;">
