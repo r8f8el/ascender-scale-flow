@@ -131,7 +131,7 @@ const ClientRegister = () => {
       });
 
       // Redirecionar para login com mensagem de sucesso
-      navigate('/cliente/login?signup=success&message=Cadastro realizado! Verifique seu email e faça login.');
+      navigate('/cliente/login?signup=success&message=Cadastro realizado! Verifique seu email (incluindo spam) e faça login.');
       
     } catch (error: any) {
       console.error('❌ Erro durante o cadastro:', error);
@@ -139,11 +139,14 @@ const ClientRegister = () => {
       let errorMessage = 'Ocorreu um erro durante o cadastro. Tente novamente.';
       
       if (error.message?.includes('User already registered')) {
-        errorMessage = 'Este email já está cadastrado. Tente fazer login ou usar outro email.';
+        errorMessage = 'Este email já está cadastrado. Verifique sua caixa de entrada (incluindo spam) para confirmar sua conta, ou tente fazer login.';
       } else if (error.message?.includes('Invalid email')) {
         errorMessage = 'Email inválido. Por favor, verifique o formato do email.';
       } else if (error.message?.includes('Password')) {
         errorMessage = 'Senha inválida. A senha deve ter pelo menos 6 caracteres.';
+      } else if (error.code === '23505' || error.message?.includes('duplicate key')) {
+        // Email já existe na base de dados
+        errorMessage = 'Este email já possui uma conta. Verifique sua caixa de entrada (incluindo spam) para confirmar sua conta, ou tente fazer login.';
       }
       
       setError(errorMessage);
@@ -167,6 +170,12 @@ const ClientRegister = () => {
           <p className="text-gray-600 mt-2">
             Registre-se para acessar nossa plataforma
           </p>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
+            <p className="text-blue-800 text-xs">
+              <strong>📧 Importante:</strong> Após o cadastro, você receberá um email de confirmação. 
+              <strong>Verifique também sua caixa de spam</strong> se não receber o email.
+            </p>
+          </div>
         </div>
 
         {/* Registration Form */}

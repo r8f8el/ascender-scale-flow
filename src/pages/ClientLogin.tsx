@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Eye, EyeOff, Lock, Mail, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const ClientLogin = () => {
@@ -167,6 +168,33 @@ const ClientLogin = () => {
               >
                 Esqueci minha senha
               </button>
+              
+              <div className="mt-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!email) {
+                      toast.error('Digite seu email primeiro');
+                      return;
+                    }
+                    try {
+                      await supabase.auth.resend({ 
+                        type: 'signup', 
+                        email: email,
+                        options: {
+                          emailRedirectTo: `${window.location.origin}/cliente/login`
+                        }
+                      });
+                      toast.success('Email de confirmação reenviado! Verifique sua caixa de entrada e spam.');
+                    } catch (error) {
+                      toast.error('Erro ao reenviar email. Verifique se o email está correto.');
+                    }
+                  }}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  Reenviar email de confirmação
+                </button>
+              </div>
             </div>
           </CardContent>
         </Card>
