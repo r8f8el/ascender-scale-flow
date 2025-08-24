@@ -2,8 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Monitor, Star, Clock, Layers, RefreshCw } from 'lucide-react';
+import { Monitor, Star, Clock } from 'lucide-react';
 import { ClientBIEmbed } from '@/hooks/useClientBIEmbeds';
 
 interface BIEmbedSelectorProps {
@@ -33,19 +32,6 @@ const BIEmbedSelector: React.FC<BIEmbedSelectorProps> = ({
         return '📋';
       default:
         return '📊';
-    }
-  };
-
-  const getCategoryColor = (category: string) => {
-    switch (category?.toLowerCase()) {
-      case 'financial':
-        return 'bg-green-100 text-green-800';
-      case 'operational':
-        return 'bg-blue-100 text-blue-800';
-      case 'strategic':
-        return 'bg-purple-100 text-purple-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -102,9 +88,6 @@ const BIEmbedSelector: React.FC<BIEmbedSelectorProps> = ({
             </Badge>
           </CardTitle>
         </div>
-        <p className="text-xs text-gray-500 mt-1">
-          Selecione um dashboard para visualizar
-        </p>
       </CardHeader>
 
       <CardContent className="p-3 space-y-2 max-h-[600px] overflow-y-auto">
@@ -118,7 +101,6 @@ const BIEmbedSelector: React.FC<BIEmbedSelectorProps> = ({
                 : 'bg-white border-gray-200 hover:border-blue-200 hover:bg-blue-50/50'
             }`}
           >
-            {/* Conteúdo principal */}
             <div className="space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -144,15 +126,7 @@ const BIEmbedSelector: React.FC<BIEmbedSelectorProps> = ({
                 )}
               </div>
 
-              {/* Badges e metadata */}
               <div className="flex items-center gap-2 flex-wrap">
-                <Badge 
-                  variant="secondary" 
-                  className={`text-xs px-2 py-0.5 ${getCategoryColor(embed.category)}`}
-                >
-                  {embed.category || 'Dashboard'}
-                </Badge>
-                
                 <Badge variant="outline" className="text-xs px-2 py-0.5">
                   {embed.provider || 'BI'}
                 </Badge>
@@ -166,7 +140,6 @@ const BIEmbedSelector: React.FC<BIEmbedSelectorProps> = ({
               </div>
             </div>
 
-            {/* Indicador de seleção */}
             {selectedEmbed?.id === embed.id && (
               <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-l-lg"></div>
             )}
