@@ -8,13 +8,17 @@ const fetchClientProfile = async (userId: string) => {
   try {
     console.log('👤 Buscando perfil do cliente para userId:', userId);
     console.log('👤 Timestamp:', new Date().toISOString());
+    console.log('👤 Email específico debug:', userId === '7bc0eb34-02f4-49eb-be9c-d4db80b02c59' ? 'USUARIO PROBLEMA DETECTADO' : 'outro usuario');
     
     // First check if user is admin - if so, return null (admins don't need client profiles)
+    console.log('🔍 Verificando se é admin...');
     const { data: adminData, error: adminError } = await supabase
       .from('admin_profiles')
       .select('id')
       .eq('id', userId)
       .maybeSingle();
+
+    console.log('🔍 Resultado admin check:', { adminData, adminError });
 
     if (adminError) {
       console.error('❌ Error checking admin profile:', adminError);
@@ -28,14 +32,18 @@ const fetchClientProfile = async (userId: string) => {
     console.log('🔍 User is not admin, fetching client profile...');
 
     // Fetch client profile
+    console.log('🔍 Executando query client_profiles para userId:', userId);
     const { data: clientProfile, error: clientError } = await supabase
       .from('client_profiles')
       .select('*')
       .eq('id', userId)
       .maybeSingle();
 
+    console.log('🔍 Resultado client_profiles query:', { clientProfile, clientError });
+
     if (clientError) {
       console.error('❌ Error fetching client profile:', clientError);
+      console.log('❌ Detalhes do erro:', JSON.stringify(clientError, null, 2));
       return null;
     }
 
