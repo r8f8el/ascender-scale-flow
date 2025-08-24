@@ -17,21 +17,16 @@ const AdminLogin = () => {
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { adminLogin, isAdminAuthenticated, loading } = useAdminAuth();
-
-  console.log('🔍 AdminLogin render - isAuthenticated:', isAdminAuthenticated, 'loading:', loading);
+  const { adminLogin, isAdminAuthenticated } = useAdminAuth();
 
   // Redirect if already authenticated
-  if (isAdminAuthenticated && !loading) {
-    console.log('🔄 Already authenticated, redirecting to admin panel');
+  if (isAdminAuthenticated) {
     navigate('/admin');
     return null;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    console.log('📝 Login form submitted for:', email);
     
     if (!email || !password) {
       toast({
@@ -54,22 +49,18 @@ const AdminLogin = () => {
     setIsLoading(true);
     
     try {
-      console.log('🔐 Calling adminLogin function...');
       const success = await adminLogin(email, password);
       
       if (success) {
-        console.log('✅ Login successful, showing success message');
         toast({
           title: "Login realizado com sucesso",
           description: "Bem-vindo ao Painel Administrativo Ascalate."
         });
         
-        // Pequeno delay para mostrar a mensagem antes do redirect
         setTimeout(() => {
           navigate('/admin');
         }, 1000);
       } else {
-        console.log('❌ Login failed');
         toast({
           title: "Falha no login",
           description: "Email ou senha inválidos. Verifique suas credenciais.",
@@ -77,7 +68,6 @@ const AdminLogin = () => {
         });
       }
     } catch (error) {
-      console.error('❌ Exception during login:', error);
       toast({
         title: "Erro",
         description: "Ocorreu um erro ao realizar o login. Tente novamente.",
@@ -139,16 +129,6 @@ const AdminLogin = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <div className="text-lg text-gray-600">Verificando autenticação...</div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -239,14 +219,6 @@ const AdminLogin = () => {
           </div>
         </form>
         
-        <div className="mt-4 p-3 bg-blue-50 rounded-md">
-          <p className="text-xs text-blue-800">
-            <strong>Debug Info:</strong><br/>
-            • Email deve terminar com @ascalate.com.br<br/>
-            • Verifique o console para logs detalhados<br/>
-            • Status: {loading ? 'Carregando...' : isAdminAuthenticated ? 'Autenticado' : 'Não autenticado'}
-          </p>
-        </div>
         
         <p className="mt-4 text-center text-sm text-gray-600">
           Área restrita a administradores. Em caso de problemas, contate o suporte técnico.
