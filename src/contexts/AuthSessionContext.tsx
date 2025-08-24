@@ -8,7 +8,7 @@ const fetchClientProfile = async (userId: string) => {
   try {
     console.log('👤 Buscando perfil do cliente para userId:', userId);
     
-    // Check if user is admin first
+    // Check if user is admin first using RPC call
     const { data: adminData } = await supabase
       .from('admin_profiles')
       .select('id, email')
@@ -25,19 +25,33 @@ const fetchClientProfile = async (userId: string) => {
       return null;
     }
 
-    // Fetch client profile
-    console.log('🔍 Executando query client_profiles para userId:', userId);
-    const { data: clientProfile, error: clientError } = await supabase
+    // Use RPC function to bypass RLS issues
+    console.log('🔍 Executando RPC get_client_profile_bypass para userId:', userId);
+    const { data: clientProfile, error: clientError } = await supabase.rpc(
+      'get_client_profile_bypass', 
+      { p_user_id: userId }
+    );
+
+    console.log('🔍 Resultado RPC query:', { clientProfile, clientError });
+
+    if (clientProfile && clientProfile.id) {
+      console.log('✅ Found existing CLIENT profile via RPC:', clientProfile);
+      return clientProfile;
+    }
+
+    // Fallback to regular query if RPC fails
+    console.log('🔄 Fallback: Tentando query direta client_profiles');
+    const { data: directProfile, error: directError } = await supabase
       .from('client_profiles')
       .select('*')
       .eq('id', userId)
       .maybeSingle();
 
-    console.log('🔍 Resultado client_profiles query:', { clientProfile, clientError });
+    console.log('🔍 Resultado query direta:', { directProfile, directError });
 
-    if (clientProfile) {
-      console.log('✅ Found existing CLIENT profile:', clientProfile);
-      return clientProfile;
+    if (directProfile) {
+      console.log('✅ Found CLIENT profile via direct query:', directProfile);
+      return directProfile;
     }
 
     console.log('⚠️ No client profile found for user:', userId);

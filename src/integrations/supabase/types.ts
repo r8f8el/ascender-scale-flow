@@ -2835,6 +2835,10 @@ export type Database = {
           details: Json
         }[]
       }
+      debug_auth_context: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       generate_period_name: {
         Args: { period_type: string; start_date: string }
         Returns: string
@@ -2860,6 +2864,26 @@ export type Database = {
       }
       get_client_dashboard_data: {
         Args: { client_id: string }
+        Returns: Json
+      }
+      get_client_profile_bypass: {
+        Args: { p_user_id: string }
+        Returns: {
+          cargo_id: string | null
+          cnpj: string | null
+          company: string | null
+          created_at: string
+          email: string
+          hierarchy_level_id: string | null
+          id: string
+          is_primary_contact: boolean | null
+          name: string
+          pode_aprovar: boolean | null
+          updated_at: string
+        }
+      }
+      get_client_profile_debug: {
+        Args: { p_user_id: string }
         Returns: Json
       }
       get_current_user_role: {
