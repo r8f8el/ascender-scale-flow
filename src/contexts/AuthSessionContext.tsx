@@ -7,8 +7,6 @@ import { useClient } from './ClientContext';
 const fetchClientProfile = async (userId: string) => {
   try {
     console.log('👤 Buscando perfil do cliente para userId:', userId);
-    console.log('👤 Timestamp:', new Date().toISOString());
-    console.log('👤 Email específico debug:', userId === '7bc0eb34-02f4-49eb-be9c-d4db80b02c59' ? 'USUARIO PROBLEMA DETECTADO' : 'outro usuario');
     
     // First check if user is admin - if so, return null (admins don't need client profiles)
     console.log('🔍 Verificando se é admin...');
@@ -20,10 +18,6 @@ const fetchClientProfile = async (userId: string) => {
 
     console.log('🔍 Resultado admin check:', { adminData, adminError });
 
-    if (adminError) {
-      console.error('❌ Error checking admin profile:', adminError);
-    }
-
     if (adminData) {
       console.log('✅ User is ADMIN, skipping client profile');
       return null;
@@ -31,7 +25,7 @@ const fetchClientProfile = async (userId: string) => {
 
     console.log('🔍 User is not admin, fetching client profile...');
 
-    // Fetch client profile
+    // Fetch client profile - with better error handling
     console.log('🔍 Executando query client_profiles para userId:', userId);
     const { data: clientProfile, error: clientError } = await supabase
       .from('client_profiles')
@@ -41,9 +35,10 @@ const fetchClientProfile = async (userId: string) => {
 
     console.log('🔍 Resultado client_profiles query:', { clientProfile, clientError });
 
-    if (clientError) {
+    // If there's an error but it's not a "not found" error, return null but don't fail
+    if (clientError && clientError.code !== 'PGRST116') {
       console.error('❌ Error fetching client profile:', clientError);
-      console.log('❌ Detalhes do erro:', JSON.stringify(clientError, null, 2));
+      // Don't return null immediately - maybe we can still work without the profile
       return null;
     }
 
@@ -52,39 +47,14 @@ const fetchClientProfile = async (userId: string) => {
       return clientProfile;
     }
 
-    console.log('⚠️ No client profile found for user:', userId);
-
-    // No profile found - create one
-    console.log('⚠️ No client profile found, creating basic profile');
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user?.email) {
-      console.error('❌ No user email found for profile creation');
-      return null;
-    }
-
-    const { data: newProfile, error: createError } = await supabase
-      .from('client_profiles')
-      .insert({
-        id: userId,
-        name: user.email.split('@')[0],
-        email: user.email,
-        is_primary_contact: true
-      })
-      .select()
-      .maybeSingle();
-
-    if (createError) {
-      console.error('❌ Error creating client profile:', createError);
-      return null;
-    }
-
-    console.log('✅ Created new CLIENT profile:', newProfile);
-    return newProfile;
+    // If no profile found, that's okay - return null without trying to create
+    // This prevents authentication loops
+    console.log('⚠️ No client profile found for user:', userId, '- this is OK, user can still be authenticated');
+    return null;
     
   } catch (error) {
     console.error('❌ Exception in fetchClientProfile:', error);
+    // Don't let profile fetching errors break authentication
     return null;
   }
 };
