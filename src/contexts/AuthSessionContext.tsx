@@ -8,62 +8,64 @@ const fetchClientProfile = async (userId: string) => {
   try {
     console.log('👤 Buscando perfil do cliente para userId:', userId);
     
-    // First check if user is admin
-    const { data: adminData, error: adminError } = await supabase
+    // First check if user is admin - if so, return null (admins don't need client profiles)
+    const { data: adminData } = await supabase
       .from('admin_profiles')
-      .select('*')
+      .select('id')
       .eq('id', userId)
       .maybeSingle();
 
-    if (adminData && !adminError) {
-      console.log('✅ User is ADMIN:', adminData);
-      return null; // Admin users don't need client profile
+    if (adminData) {
+      console.log('✅ User is ADMIN, skipping client profile');
+      return null;
     }
 
-    // If not admin, fetch client profile
-    const { data, error } = await supabase
+    // Fetch client profile
+    const { data: clientProfile, error: clientError } = await supabase
       .from('client_profiles')
       .select('*')
       .eq('id', userId)
       .maybeSingle();
 
-    if (error) {
-      console.error('❌ Error fetching client profile:', error);
+    if (clientError) {
+      console.error('❌ Error fetching client profile:', clientError);
       return null;
     }
 
-    if (!data) {
-      console.log('⚠️ No client profile found, creating basic client profile');
-      // Create a basic client profile if none exists
-      const userEmail = supabase.auth.getUser().then(({ data }) => data.user?.email);
-      if (userEmail) {
-        const email = await userEmail;
-        if (email) {
-          const { data: newProfile, error: createError } = await supabase
-            .from('client_profiles')
-            .insert({
-              id: userId,
-              name: email.split('@')[0],
-              email: email,
-              is_primary_contact: true
-            })
-            .select()
-            .maybeSingle();
+    if (clientProfile) {
+      console.log('✅ Found existing CLIENT profile:', clientProfile);
+      return clientProfile;
+    }
 
-          if (createError) {
-            console.error('❌ Error creating client profile:', createError);
-            return null;
-          }
-
-          console.log('✅ Created new CLIENT profile:', newProfile);
-          return newProfile;
-        }
-      }
+    // No profile found - create one
+    console.log('⚠️ No client profile found, creating basic profile');
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user?.email) {
+      console.error('❌ No user email found for profile creation');
       return null;
     }
 
-    console.log('✅ Found existing CLIENT profile:', data);
-    return data;
+    const { data: newProfile, error: createError } = await supabase
+      .from('client_profiles')
+      .insert({
+        id: userId,
+        name: user.email.split('@')[0],
+        email: user.email,
+        is_primary_contact: true
+      })
+      .select()
+      .maybeSingle();
+
+    if (createError) {
+      console.error('❌ Error creating client profile:', createError);
+      return null;
+    }
+
+    console.log('✅ Created new CLIENT profile:', newProfile);
+    return newProfile;
+    
   } catch (error) {
     console.error('❌ Exception in fetchClientProfile:', error);
     return null;
