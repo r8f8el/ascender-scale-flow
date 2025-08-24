@@ -8,6 +8,7 @@ import ErrorFallback from '@/components/ErrorFallback';
 import { ScrollToTop } from '@/components/ScrollToTop';
 import AdminAuthProvider from '@/contexts/AdminAuthContext';
 import AdminProtectedRoute from '@/components/AdminProtectedRoute';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 // Pages
 import Index from '@/pages/Index';
@@ -79,8 +80,15 @@ function App() {
                 <Route path="/team-invite-signup" element={<TeamInviteSignup />} />
                 <Route path="/secure-team-invite" element={<SecureTeamInviteSignup />} />
                 
-                {/* Área do cliente */}
-                <Route path="/cliente/*" element={<ClientArea />} />
+                {/* Área do cliente - protegida */}
+                <Route 
+                  path="/cliente/*" 
+                  element={
+                    <ProtectedRoute>
+                      <ClientArea />
+                    </ProtectedRoute>
+                  } 
+                />
                 
                 {/* Área do admin - protegida */}
                 <Route 
