@@ -8,7 +8,24 @@ const fetchClientProfile = async (userId: string) => {
   try {
     console.log('👤 Buscando perfil do cliente para userId:', userId);
     
-    // Simplified approach - just check if client profile exists without RLS complications
+    // Check if user is admin first
+    const { data: adminData } = await supabase
+      .from('admin_profiles')
+      .select('id, email')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (adminData) {
+      console.log('✅ User is ADMIN, redirecting to admin area');
+      // If accessing client area, redirect to admin area
+      if (window.location.pathname.startsWith('/cliente')) {
+        window.location.href = '/admin';
+        return null;
+      }
+      return null;
+    }
+
+    // Fetch client profile
     console.log('🔍 Executando query client_profiles para userId:', userId);
     const { data: clientProfile, error: clientError } = await supabase
       .from('client_profiles')
@@ -23,12 +40,11 @@ const fetchClientProfile = async (userId: string) => {
       return clientProfile;
     }
 
-    console.log('⚠️ No client profile found for user:', userId, '- this is OK, user can still be authenticated');
+    console.log('⚠️ No client profile found for user:', userId);
     return null;
     
   } catch (error) {
     console.error('❌ Exception in fetchClientProfile:', error);
-    // Don't let profile fetching errors break authentication
     return null;
   }
 };
