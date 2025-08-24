@@ -6,7 +6,7 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 
 // Admin pages
 import AdminDashboard from './admin/AdminDashboard';
-import ClientesAdmin from './admin/ClientesAdmin';
+import ClientesAdminFixed from './admin/ClientesAdminFixed';
 import CollaboratorsAdmin from './admin/CollaboratorsAdmin';
 import ProjectsAdmin from './admin/ProjectsAdmin';
 import TasksAdmin from './admin/TasksAdmin';
@@ -42,7 +42,7 @@ const AdminArea = () => {
             <Routes>
               <Route index element={<AdminDashboard />} />
               <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="clientes" element={<ClientesAdmin />} />
+              <Route path="clientes" element={<ClientesAdminFixed />} />
               <Route path="colaboradores" element={<CollaboratorsAdmin />} />
               <Route path="projetos" element={<ProjectsAdmin />} />
               <Route path="tarefas" element={<TasksAdmin />} />
