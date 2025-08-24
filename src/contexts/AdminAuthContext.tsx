@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
@@ -56,22 +55,15 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
         .eq('id', user.id)
         .single();
 
-      if (error) {
-        console.error('❌ Error loading admin profile:', error);
-        // Se não encontrar o profile, vamos criar um básico
-        console.log('🔧 Creating basic admin profile...');
+      if (error || !profile) {
+        console.log('🔧 Creating basic admin profile (no profile found)');
         setAdmin({
           id: user.id,
           name: user.email?.split('@')[0] || 'Admin',
           email: user.email || '',
           role: 'admin'
         });
-        console.log('✅ Basic admin profile created, setting loading to false');
-        setLoading(false);
-        return;
-      }
-
-      if (profile) {
+      } else {
         console.log('✅ Admin profile loaded successfully:', profile);
         setAdmin({
           id: profile.id,
@@ -79,77 +71,62 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
           email: profile.email,
           role: profile.role as 'admin' | 'super_admin'
         });
-        console.log('✅ Admin profile set, setting loading to false');
-        setLoading(false);
       }
     } catch (error) {
       console.error('❌ Exception loading admin profile:', error);
-      // Fallback para admin básico
       setAdmin({
         id: user.id,
         name: user.email?.split('@')[0] || 'Admin',
         email: user.email || '',
         role: 'admin'
       });
-      console.log('✅ Fallback admin profile created, setting loading to false');
+    } finally {
+      console.log('✅ Setting loading to false after profile load');
+      setLoading(false);
+    }
+  };
+
+  const checkSession = async () => {
+    try {
+      console.log('🔍 Checking initial session...');
+      const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('❌ Error getting session:', error);
+        setLoading(false);
+        return;
+      }
+
+      if (currentSession?.user) {
+        const userEmail = currentSession.user.email || '';
+        
+        if (isAscalateEmail(userEmail)) {
+          console.log('✅ Valid admin session found');
+          setSession(currentSession);
+          setUser(currentSession.user);
+          setIsAdminAuthenticated(true);
+          await loadAdminProfile(currentSession.user);
+        } else {
+          console.log('❌ Invalid email domain, signing out');
+          await supabase.auth.signOut();
+          setLoading(false);
+        }
+      } else {
+        console.log('❌ No session found');
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error('❌ Error checking session:', error);
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    let mounted = true;
-
-    const initializeAuth = async () => {
-      try {
-        console.log('🚀 Initializing admin auth...');
-        
-        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('❌ Error getting session:', error);
-          setLoading(false);
-          return;
-        }
-
-        if (!mounted) return;
-
-        console.log('📋 Current session:', currentSession?.user?.email || 'None');
-
-        if (currentSession?.user) {
-          const userEmail = currentSession.user.email || '';
-          console.log('👤 Found user session for:', userEmail);
-          
-          if (isAscalateEmail(userEmail)) {
-            console.log('✅ Valid Ascalate email, setting authenticated state');
-            setSession(currentSession);
-            setUser(currentSession.user);
-            setIsAdminAuthenticated(true);
-            await loadAdminProfile(currentSession.user);
-          } else {
-            console.log('❌ Invalid email domain, signing out');
-            await supabase.auth.signOut();
-            setIsAdminAuthenticated(false);
-            setAdmin(null);
-            setUser(null);
-            setSession(null);
-            setLoading(false);
-          }
-        } else {
-          console.log('❌ No session found');
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error('❌ Error in initializeAuth:', error);
-      } finally {
-        // Loading é gerenciado individualmente em cada branch
-        console.log('🏁 InitializeAuth completed');
-      }
-    };
-
+    console.log('🚀 Initializing admin auth...');
+    
+    // Set up auth listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (!mounted) return;
-        
         console.log('🔄 Auth state changed:', event, session?.user?.email || 'No user');
         
         if (event === 'SIGNED_OUT' || !session?.user) {
@@ -173,24 +150,19 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
             
             if (event === 'SIGNED_IN') {
               await loadAdminProfile(session.user);
-            } else {
-              setLoading(false);
             }
           } else {
             console.log('❌ Non-admin user detected, signing out');
             await supabase.auth.signOut();
-            setLoading(false);
           }
-        } else {
-          setLoading(false);
         }
       }
     );
 
-    initializeAuth();
+    // Check initial session
+    checkSession();
 
     return () => {
-      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
@@ -202,6 +174,7 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
 
       if (!isAscalateEmail(email)) {
         console.error('❌ Email is not from Ascalate domain');
+        setLoading(false);
         return false;
       }
       
@@ -218,7 +191,6 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
 
       if (data.user && data.session) {
         console.log('✅ Login successful for:', data.user.email);
-        // Loading será definido pelo onAuthStateChange
         return true;
       }
       

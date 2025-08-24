@@ -21,8 +21,8 @@ const AdminLogin = () => {
 
   console.log('🔍 AdminLogin render - isAuthenticated:', isAdminAuthenticated, 'loading:', loading);
 
-  // Redirect if already authenticated (mesmo se loading estiver true)
-  if (isAdminAuthenticated) {
+  // Redirect if already authenticated
+  if (isAdminAuthenticated && !loading) {
     console.log('🔄 Already authenticated, redirecting to admin panel');
     navigate('/admin');
     return null;
@@ -139,8 +139,7 @@ const AdminLogin = () => {
     }
   };
 
-  // Show loading screen apenas se não estiver autenticado
-  if (loading && !isAdminAuthenticated) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center space-y-4">
