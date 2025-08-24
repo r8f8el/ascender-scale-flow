@@ -8,24 +8,7 @@ const fetchClientProfile = async (userId: string) => {
   try {
     console.log('👤 Buscando perfil do cliente para userId:', userId);
     
-    // First check if user is admin - if so, return null (admins don't need client profiles)
-    console.log('🔍 Verificando se é admin...');
-    const { data: adminData, error: adminError } = await supabase
-      .from('admin_profiles')
-      .select('id')
-      .eq('id', userId)
-      .maybeSingle();
-
-    console.log('🔍 Resultado admin check:', { adminData, adminError });
-
-    if (adminData) {
-      console.log('✅ User is ADMIN, skipping client profile');
-      return null;
-    }
-
-    console.log('🔍 User is not admin, fetching client profile...');
-
-    // Fetch client profile - with better error handling
+    // Simplified approach - just check if client profile exists without RLS complications
     console.log('🔍 Executando query client_profiles para userId:', userId);
     const { data: clientProfile, error: clientError } = await supabase
       .from('client_profiles')
@@ -35,20 +18,11 @@ const fetchClientProfile = async (userId: string) => {
 
     console.log('🔍 Resultado client_profiles query:', { clientProfile, clientError });
 
-    // If there's an error but it's not a "not found" error, return null but don't fail
-    if (clientError && clientError.code !== 'PGRST116') {
-      console.error('❌ Error fetching client profile:', clientError);
-      // Don't return null immediately - maybe we can still work without the profile
-      return null;
-    }
-
     if (clientProfile) {
       console.log('✅ Found existing CLIENT profile:', clientProfile);
       return clientProfile;
     }
 
-    // If no profile found, that's okay - return null without trying to create
-    // This prevents authentication loops
     console.log('⚠️ No client profile found for user:', userId, '- this is OK, user can still be authenticated');
     return null;
     
@@ -77,7 +51,7 @@ export const AuthSessionProvider: React.FC<{ children: React.ReactNode }> = ({ c
           
           if (session?.user) {
             console.log('✅ User authenticated, setting profile fetch timeout');
-            // Use setTimeout to prevent blocking the auth state change
+            // Defer profile fetching to prevent auth interference
             setTimeout(async () => {
               try {
                 console.log('⏱️ Fetching profile in timeout for user:', session.user.id);
@@ -86,9 +60,10 @@ export const AuthSessionProvider: React.FC<{ children: React.ReactNode }> = ({ c
                 setClient(profile);
               } catch (error) {
                 console.error('❌ Error fetching profile in timeout:', error);
+                // Don't clear user session on profile error
                 setClient(null);
               }
-            }, 100); // Small delay to ensure auth state is properly set
+            }, 500); // Longer delay to ensure auth is stable
           } else {
             console.log('❌ No user in session, clearing client');
             setClient(null);
