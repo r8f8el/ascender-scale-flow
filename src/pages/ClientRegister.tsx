@@ -81,7 +81,18 @@ const ClientRegister = () => {
     try {
       console.log('🔐 Iniciando registro de cliente:', formData.email);
 
-        // Registrar usuário no Supabase Auth
+      // Primeiro, verificar se já existe uma conta ativa com este email
+      const { data: existingUsers } = await supabase
+        .from('client_profiles')
+        .select('id, email, created_at')
+        .eq('email', formData.email)
+        .limit(1);
+
+      if (existingUsers && existingUsers.length > 0) {
+        throw new Error('Este email já possui uma conta ativa. Faça login ou use "Esqueci minha senha" se não conseguir acessar.');
+      }
+
+      // Registrar usuário no Supabase Auth
         const { data: authData, error: signUpError } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,

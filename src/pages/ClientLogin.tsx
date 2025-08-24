@@ -17,6 +17,8 @@ const ClientLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showAccountHelp, setShowAccountHelp] = useState(false);
+  const [cleanupLoading, setCleanupLoading] = useState(false);
   
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -76,6 +78,77 @@ const ClientLogin = () => {
       toast.error('Erro ao fazer login');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!email) {
+      toast.error('Por favor, digite seu email primeiro');
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/confirmar-email`
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success('Email de confirmação reenviado!', {
+        description: 'Verifique sua caixa de entrada (incluindo spam).'
+      });
+    } catch (error: any) {
+      toast.error('Erro ao reenviar email', {
+        description: error.message
+      });
+    }
+  };
+
+  const handleAccountCleanup = async () => {
+    if (!email) {
+      toast.error('Por favor, digite seu email primeiro');
+      return;
+    }
+
+    setCleanupLoading(true);
+    try {
+      // Verificar se existe perfil ativo
+      const { data: profile } = await supabase
+        .from('client_profiles')
+        .select('id, email, created_at')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (profile) {
+        toast.error('Este email já possui uma conta ativa', {
+          description: 'Use "Esqueci minha senha" se não lembrar da senha.'
+        });
+        return;
+      }
+
+      toast.success('Verificação concluída!', {
+        description: 'Este email não possui conta ativa. Você pode tentar se registrar novamente.'
+      });
+      
+      // Redirecionar para registro
+      navigate('/cliente/registro', { 
+        state: { 
+          email: email,
+          message: 'Email verificado. Você pode criar sua conta agora.'
+        }
+      });
+      
+    } catch (error: any) {
+      console.error('Erro na limpeza:', error);
+      toast.error('Erro ao verificar conta', {
+        description: 'Tente novamente ou entre em contato com o suporte.'
+      });
+    } finally {
+      setCleanupLoading(false);
     }
   };
 
@@ -172,27 +245,22 @@ const ClientLogin = () => {
               <div className="mt-2">
                 <button
                   type="button"
-                  onClick={async () => {
-                    if (!email) {
-                      toast.error('Digite seu email primeiro');
-                      return;
-                    }
-                    try {
-                      await supabase.auth.resend({ 
-                        type: 'signup', 
-                        email: email,
-                        options: {
-                          emailRedirectTo: `${window.location.origin}/cliente/login`
-                        }
-                      });
-                      toast.success('Email de confirmação reenviado! Verifique sua caixa de entrada e spam.');
-                    } catch (error) {
-                      toast.error('Erro ao reenviar email. Verifique se o email está correto.');
-                    }
-                  }}
+                  onClick={handleResendConfirmation}
                   className="text-sm text-blue-600 hover:text-blue-800"
                 >
                   Reenviar email de confirmação
+                </button>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <p className="text-sm text-gray-600 mb-2">Problemas para criar conta?</p>
+                <button
+                  type="button"
+                  onClick={handleAccountCleanup}
+                  disabled={cleanupLoading}
+                  className="text-sm text-orange-600 hover:text-orange-800 disabled:opacity-50"
+                >
+                  {cleanupLoading ? 'Verificando...' : 'Verificar se posso criar conta com este email'}
                 </button>
               </div>
             </div>
@@ -204,9 +272,22 @@ const ClientLogin = () => {
           <p>Entre com suas credenciais de cliente.</p>
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
             <p className="text-blue-800 text-xs">
-              <strong>Importante:</strong> Após criar uma conta através de convite, você deve confirmar seu email antes de fazer login. Verifique sua caixa de entrada.
+              <strong>Importante:</strong> Após criar uma conta, você deve confirmar seu email antes de fazer login. Verifique sua caixa de entrada (incluindo spam).
             </p>
           </div>
+          
+          {/* Account Help Section */}
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mt-4">
+            <p className="text-orange-800 text-xs mb-2">
+              <strong>Não consegue criar conta?</strong> Se aparece "já existe conta" mas você não consegue fazer login:
+            </p>
+            <ol className="text-orange-800 text-xs list-decimal list-inside space-y-1">
+              <li>Digite seu email no campo acima</li>
+              <li>Clique em "Verificar se posso criar conta"</li>
+              <li>Se não tiver conta ativa, será direcionado para o registro</li>
+            </ol>
+          </div>
+          
           <p className="mt-4">
             Não tem uma conta?{' '}
             <Link 

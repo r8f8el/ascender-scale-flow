@@ -2815,6 +2815,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_invitation_rate_limit: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
       check_rate_limit: {
         Args: {
           p_action_type: string
@@ -2823,6 +2827,13 @@ export type Database = {
           p_window_minutes?: number
         }
         Returns: boolean
+      }
+      cleanup_orphaned_users: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          cleaned_users_count: number
+          details: Json
+        }[]
       }
       generate_period_name: {
         Args: { period_type: string; start_date: string }
@@ -2926,6 +2937,19 @@ export type Database = {
         Returns: {
           company_id: string
           email: string
+          invitation_id: string
+          inviter_name: string
+          is_valid: boolean
+          message: string
+        }[]
+      }
+      validate_invitation_token_secure: {
+        Args: { p_token: string }
+        Returns: {
+          company_id: string
+          company_name: string
+          email: string
+          hierarchy_level_id: string
           invitation_id: string
           inviter_name: string
           is_valid: boolean
