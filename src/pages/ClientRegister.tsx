@@ -122,7 +122,12 @@ const ClientRegister = () => {
 
       if (profileError) {
         console.error('❌ Erro ao criar perfil:', profileError);
-        // Continuar mesmo se houver erro no perfil, pois o trigger deve criar automaticamente
+        
+        // Se o erro foi de email duplicado, é porque já existe uma conta
+        if (profileError.code === '23505' || profileError.message?.includes('duplicate key')) {
+          throw new Error('Já existe uma conta com este email. Faça login ou use "Esqueci minha senha".');
+        }
+        // Continuar mesmo se houver outros erros no perfil, pois o trigger deve criar automaticamente
       }
 
       // Enviar email de boas-vindas personalizado
@@ -159,14 +164,16 @@ const ClientRegister = () => {
       let errorMessage = 'Ocorreu um erro durante o cadastro. Tente novamente.';
       
       if (error.message?.includes('User already registered')) {
-        errorMessage = 'Este email já está cadastrado. Verifique sua caixa de entrada (incluindo spam) para confirmar sua conta, ou tente fazer login.';
+        errorMessage = 'Este email já possui uma conta ativa. Faça login ou use "Esqueci minha senha" se não lembrar da senha.';
       } else if (error.message?.includes('Invalid email')) {
         errorMessage = 'Email inválido. Por favor, verifique o formato do email.';
       } else if (error.message?.includes('Password')) {
         errorMessage = 'Senha inválida. A senha deve ter pelo menos 6 caracteres.';
+      } else if (error.message?.includes('Já existe uma conta com este email')) {
+        errorMessage = 'Este email já possui uma conta ativa. Faça login ou clique em "Esqueci minha senha" se não lembrar da senha.';
       } else if (error.code === '23505' || error.message?.includes('duplicate key')) {
         // Email já existe na base de dados
-        errorMessage = 'Este email já possui uma conta. Verifique sua caixa de entrada (incluindo spam) para confirmar sua conta, ou tente fazer login.';
+        errorMessage = 'Este email já possui uma conta ativa. Faça login ou clique em "Esqueci minha senha" se não lembrar da senha.';
       }
       
       setError(errorMessage);
