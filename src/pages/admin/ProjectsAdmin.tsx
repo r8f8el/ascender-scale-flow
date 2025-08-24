@@ -4,19 +4,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Calendar, Users, BarChart3, Search, Filter } from 'lucide-react';
+import { Search, BarChart3, Calendar, Users } from 'lucide-react';
 import { useOptimizedQuery } from '@/hooks/useOptimizedQuery';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
+import { ProjectCreateDialog } from '@/components/admin/ProjectCreateDialog';
 
 interface Project {
   id: string;
   name: string;
   description: string;
   status: 'planning' | 'active' | 'completed' | 'on_hold';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
   start_date: string;
   end_date: string;
+  progress: number;
+  budget?: number;
   created_at: string;
 }
 
@@ -57,7 +61,6 @@ const ProjectsAdmin = () => {
   const { 
     data: tasksData = [], 
     isLoading: tasksLoading,
-    refetch: refetchTasks 
   } = useOptimizedQuery({
     queryKey: ['admin-tasks'],
     queryFn: async () => {
@@ -71,9 +74,9 @@ const ProjectsAdmin = () => {
       return data.map(task => ({
         id: task.id,
         project_id: task.project_id,
-        title: task.name || 'Untitled Task', // Use 'name' field from database
+        title: task.name || 'Untitled Task',
         status: task.progress === 100 ? 'completed' : 
-               task.progress > 0 ? 'in_progress' : 'todo', // Map based on progress
+               task.progress > 0 ? 'in_progress' : 'todo',
         assigned_to: task.assigned_to || '',
         created_at: task.created_at
       })) as Task[];
@@ -101,32 +104,6 @@ const ProjectsAdmin = () => {
     completionRate: Array.isArray(tasks) && tasks.length > 0 
       ? Math.round((tasks.filter(t => t.status === 'completed').length / tasks.length) * 100) 
       : 0
-  };
-
-  // Get project statistics
-  const getProjectStats = () => {
-    if (!Array.isArray(projects)) return { byStatus: {}, byMonth: {} };
-    
-    const byStatus = projects.reduce((acc, project) => {
-      acc[project.status] = (acc[project.status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const byMonth = projects.reduce((acc, project) => {
-      const month = new Date(project.created_at).toLocaleDateString('pt-BR', { 
-        month: 'short', 
-        year: 'numeric' 
-      });
-      acc[month] = (acc[month] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    return { byStatus, byMonth };
-  };
-
-  const handleCreateProject = async () => {
-    // Logic to create new project would go here
-    toast.success('Funcionalidade em desenvolvimento');
   };
 
   const handleDeleteProject = async (projectId: string) => {
@@ -171,6 +148,16 @@ const ProjectsAdmin = () => {
     return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
+  const getPriorityColor = (priority: string) => {
+    const colors = {
+      low: 'bg-gray-100 text-gray-800',
+      medium: 'bg-blue-100 text-blue-800',
+      high: 'bg-orange-100 text-orange-800',
+      urgent: 'bg-red-100 text-red-800'
+    };
+    return colors[priority as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+  };
+
   const getStatusLabel = (status: string) => {
     const labels = {
       planning: 'Planejamento',
@@ -181,7 +168,15 @@ const ProjectsAdmin = () => {
     return labels[status as keyof typeof labels] || status;
   };
 
-  const projectStats = getProjectStats();
+  const getPriorityLabel = (priority: string) => {
+    const labels = {
+      low: 'Baixa',
+      medium: 'Média',
+      high: 'Alta',
+      urgent: 'Urgente'
+    };
+    return labels[priority as keyof typeof labels] || priority;
+  };
 
   if (projectsLoading || tasksLoading) {
     return (
@@ -202,10 +197,7 @@ const ProjectsAdmin = () => {
           <h1 className="text-2xl font-bold text-gray-900">Gerenciamento de Projetos</h1>
           <p className="text-gray-600">Visualize e gerencie todos os projetos do sistema</p>
         </div>
-        <Button onClick={handleCreateProject}>
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Projeto
-        </Button>
+        <ProjectCreateDialog onSuccess={() => refetchProjects()} />
       </div>
 
       {/* Statistics Cards */}
@@ -296,6 +288,9 @@ const ProjectsAdmin = () => {
         {filteredProjects.length === 0 ? (
           <div className="col-span-full text-center py-12">
             <p className="text-gray-500">Nenhum projeto encontrado</p>
+            <p className="text-sm text-gray-400 mt-2">
+              {projects.length === 0 ? 'Comece criando seu primeiro projeto' : 'Tente ajustar os filtros de busca'}
+            </p>
           </div>
         ) : (
           filteredProjects.map((project) => {
@@ -306,9 +301,14 @@ const ProjectsAdmin = () => {
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <CardTitle className="text-lg">{project.name}</CardTitle>
-                    <Badge className={getStatusColor(project.status)}>
-                      {getStatusLabel(project.status)}
-                    </Badge>
+                    <div className="flex flex-col gap-1">
+                      <Badge className={getStatusColor(project.status)}>
+                        {getStatusLabel(project.status)}
+                      </Badge>
+                      <Badge variant="outline" className={getPriorityColor(project.priority)}>
+                        {getPriorityLabel(project.priority)}
+                      </Badge>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -317,6 +317,10 @@ const ProjectsAdmin = () => {
                   </p>
                   
                   <div className="space-y-2 text-sm text-gray-500">
+                    <div className="flex justify-between">
+                      <span>Progresso:</span>
+                      <span className="font-medium">{project.progress}%</span>
+                    </div>
                     <div className="flex justify-between">
                       <span>Início:</span>
                       <span>{new Date(project.start_date).toLocaleDateString('pt-BR')}</span>
@@ -329,6 +333,12 @@ const ProjectsAdmin = () => {
                       <span>Tarefas:</span>
                       <span>{projectTasks.length}</span>
                     </div>
+                    {project.budget && (
+                      <div className="flex justify-between">
+                        <span>Orçamento:</span>
+                        <span>R$ {project.budget.toLocaleString('pt-BR')}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="mt-4 flex gap-2">
