@@ -50,6 +50,14 @@ const ClientArea = () => {
 
   if (!client) {
     console.log('⚠️ ClientArea: Cliente não encontrado, mas usuário autenticado');
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-lg font-semibold">Carregando perfil...</h2>
+          <p className="text-gray-600">Aguarde enquanto carregamos suas informações.</p>
+        </div>
+      </div>
+    );
   }
 
   return (

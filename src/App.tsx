@@ -60,7 +60,7 @@ function App() {
               <Route path="/newsletter" element={<NewsletterSignup />} />
               <Route path="/participant-data" element={<ParticipantData />} />
               
-              {/* Páginas de autenticação */}
+              {/* Páginas de autenticação de cliente */}
               <Route path="/cliente/login" element={<ClientLogin />} />
               <Route path="/cliente/registro" element={<ClientRegister />} />
               <Route path="/confirmar-email" element={<EmailConfirmation />} />
@@ -74,7 +74,7 @@ function App() {
               <Route path="/team-invite-signup" element={<TeamInviteSignup />} />
               <Route path="/secure-team-invite" element={<SecureTeamInviteSignup />} />
               
-              {/* Área do cliente - com seu próprio contexto de auth */}
+              {/* Área do cliente - com contexto de autenticação isolado */}
               <Route 
                 path="/cliente/*" 
                 element={
@@ -84,7 +84,7 @@ function App() {
                 } 
               />
               
-              {/* Área do admin - com contexto de admin separado */}
+              {/* Área do admin - com contexto separado */}
               <Route 
                 path="/admin/*" 
                 element={
@@ -96,7 +96,7 @@ function App() {
                 } 
               />
               
-              {/* Admin login pages - with admin context */}
+              {/* Admin login pages */}
               <Route 
                 path="/admin/login" 
                 element={
