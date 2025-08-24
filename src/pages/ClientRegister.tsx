@@ -123,11 +123,17 @@ const ClientRegister = () => {
       if (profileError) {
         console.error('❌ Erro ao criar perfil:', profileError);
         
-        // Se o erro foi de email duplicado, é porque já existe uma conta
-        if (profileError.code === '23505' || profileError.message?.includes('duplicate key')) {
-          throw new Error('Já existe uma conta com este email. Faça login ou use "Esqueci minha senha".');
+        // Se o erro foi de email duplicado, significa que já existe uma conta
+        if (profileError.code === '23505' && profileError.message?.includes('client_profiles_email_key')) {
+          // Tentar limpar o usuário duplicado do auth se o perfil já existe
+          console.warn('⚠️ Perfil já existe, mas usuário auth foi criado. Isso indica possível duplicação.');
+          throw new Error('Este email já possui uma conta ativa. Faça login ou use "Esqueci minha senha" se não conseguir acessar.');
         }
-        // Continuar mesmo se houver outros erros no perfil, pois o trigger deve criar automaticamente
+        
+        // Para outros erros de perfil, continuar (o trigger pode ter criado automaticamente)
+        console.warn('⚠️ Erro ao criar perfil, mas continuando (trigger pode ter criado automaticamente)');
+      } else {
+        console.log('✅ Perfil criado com sucesso');
       }
 
       // Enviar email de boas-vindas personalizado
@@ -163,8 +169,9 @@ const ClientRegister = () => {
       
       let errorMessage = 'Ocorreu um erro durante o cadastro. Tente novamente.';
       
+      // Verificar se é erro específico de usuário duplicado
       if (error.message?.includes('User already registered')) {
-        errorMessage = 'Este email já possui uma conta ativa. Faça login ou use "Esqueci minha senha" se não lembrar da senha.';
+        errorMessage = 'Este email já possui uma conta. Verifique sua caixa de entrada (incluindo spam) para confirmar, ou tente fazer login.';
       } else if (error.message?.includes('Invalid email')) {
         errorMessage = 'Email inválido. Por favor, verifique o formato do email.';
       } else if (error.message?.includes('Password')) {
@@ -172,8 +179,12 @@ const ClientRegister = () => {
       } else if (error.message?.includes('Já existe uma conta com este email')) {
         errorMessage = 'Este email já possui uma conta ativa. Faça login ou clique em "Esqueci minha senha" se não lembrar da senha.';
       } else if (error.code === '23505' || error.message?.includes('duplicate key')) {
-        // Email já existe na base de dados
-        errorMessage = 'Este email já possui uma conta ativa. Faça login ou clique em "Esqueci minha senha" se não lembrar da senha.';
+        // Verificar se é problema de perfil duplicado ou usuário duplicado
+        if (error.message?.includes('client_profiles_email_key')) {
+          errorMessage = 'Já existe uma conta com este email. Se você não consegue fazer login, clique em "Esqueci minha senha".';
+        } else {
+          errorMessage = 'Este email já está em uso. Tente fazer login ou use "Esqueci minha senha".';
+        }
       }
       
       setError(errorMessage);
