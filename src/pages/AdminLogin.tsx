@@ -6,14 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { Shield } from 'lucide-react';
+import { Shield, Eye, EyeOff } from 'lucide-react';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isResettingPassword, setIsResettingPassword] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { adminLogin } = useAdminAuth();
@@ -23,8 +22,17 @@ const AdminLogin = () => {
     
     if (!email || !password) {
       toast({
-        title: "Campos vazios",
-        description: "Por favor, preencha todos os campos.",
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha email e senha.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!email.endsWith('@ascalate.com.br')) {
+      toast({
+        title: "Acesso restrito",
+        description: "Apenas emails @ascalate.com.br são permitidos.",
         variant: "destructive"
       });
       return;
@@ -33,81 +41,36 @@ const AdminLogin = () => {
     setIsLoading(true);
     
     try {
+      console.log('🔐 Tentando login para:', email);
+      
       const success = await adminLogin(email, password);
       
       if (success) {
         toast({
           title: "Login realizado com sucesso",
-          description: "Bem-vindo ao Painel Administrativo Ascalate."
+          description: "Redirecionando para o painel administrativo..."
         });
-        navigate('/admin');
+        
+        // Pequeno delay para mostrar o toast
+        setTimeout(() => {
+          navigate('/admin');
+        }, 1000);
       } else {
         toast({
-          title: "Falha no login",
-          description: "Email ou senha inválidos. Verifique suas credenciais ou redefina sua senha.",
+          title: "Falha na autenticação",
+          description: "Email ou senha incorretos. Verifique suas credenciais.",
           variant: "destructive"
         });
       }
     } catch (error) {
-      console.error('Error during login:', error);
+      console.error('❌ Erro durante login:', error);
       toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao realizar o login. Tente novamente mais tarde.",
+        title: "Erro no sistema",
+        description: "Ocorreu um erro interno. Tente novamente em alguns instantes.",
         variant: "destructive"
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handlePasswordReset = async () => {
-    if (!email) {
-      toast({
-        title: "Email necessário",
-        description: "Por favor, informe seu email para redefinir a senha.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!email.endsWith('@ascalate.com.br')) {
-      toast({
-        title: "Email inválido",
-        description: "Apenas emails @ascalate.com.br são permitidos.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsResettingPassword(true);
-    
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/admin/login`
-      });
-
-      if (error) {
-        console.error('Password reset error:', error);
-        toast({
-          title: "Erro ao redefinir senha",
-          description: error.message,
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Email enviado",
-          description: "Verifique sua caixa de entrada para redefinir sua senha."
-        });
-      }
-    } catch (error) {
-      console.error('Error during password reset:', error);
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao enviar o email. Tente novamente mais tarde.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsResettingPassword(false);
     }
   };
 
@@ -131,7 +94,7 @@ const AdminLogin = () => {
           <div className="space-y-4 rounded-md shadow-sm">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email
+                Email Corporativo
               </label>
               <div className="mt-1">
                 <Input
@@ -140,6 +103,7 @@ const AdminLogin = () => {
                   type="email"
                   autoComplete="email"
                   required
+                  disabled={isLoading}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="seu.email@ascalate.com.br"
@@ -152,57 +116,58 @@ const AdminLogin = () => {
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Senha
               </label>
-              <div className="mt-1">
+              <div className="mt-1 relative">
                 <Input
                   id="password"
                   name="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   required
+                  disabled={isLoading}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="mt-1"
+                  className="mt-1 pr-10"
                 />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
+                </button>
               </div>
             </div>
           </div>
           
-          <div className="space-y-3">
+          <div>
             <Button
               type="submit"
-              className="w-full bg-[#0056b3] hover:bg-[#003d7f]"
+              className="w-full bg-[#0056b3] hover:bg-[#003d7f] disabled:opacity-50"
               disabled={isLoading}
             >
-              {isLoading ? "Entrando..." : "Entrar"}
-            </Button>
-            
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              onClick={handlePasswordReset}
-              disabled={isResettingPassword}
-            >
-              {isResettingPassword ? "Enviando..." : "Esqueci minha senha"}
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Autenticando...
+                </div>
+              ) : (
+                "Entrar no Painel"
+              )}
             </Button>
           </div>
 
           <div className="mt-4 text-center text-sm text-gray-600">
-            <p>Entre com suas credenciais de administrador.</p>
-            <p>Apenas usuários com email @ascalate.com.br podem acessar.</p>
-            <p className="mt-2">
-              Não tem uma conta? 
-              <a href="/admin/register" className="text-blue-600 hover:text-blue-500 ml-1">
-                Cadastre-se aqui
-              </a>
+            <p>Sistema de Gestão Ascalate</p>
+            <p className="mt-1 text-xs">
+              Apenas colaboradores autorizados podem acessar
             </p>
           </div>
         </form>
-        
-        <p className="mt-4 text-center text-sm text-gray-600">
-          Área restrita a administradores. Em caso de problemas, contate o suporte técnico.
-        </p>
       </div>
     </div>
   );

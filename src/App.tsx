@@ -1,86 +1,94 @@
 
-import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { ErrorBoundary } from 'react-error-boundary';
-import ErrorFallback from '@/components/ErrorFallback';
-import { ScrollToTop } from '@/components/ScrollToTop';
-import Index from '@/pages/Index';
-import ClientLogin from '@/pages/ClientLogin';
-import AdminLogin from '@/pages/AdminLogin';
-import AdminRegister from '@/pages/AdminRegister';
-import ClientArea from '@/pages/client/ClientArea';
-import AdminArea from '@/pages/admin/AdminArea';
-import NotFound from '@/pages/NotFound';
-import AcceptInvitation from '@/pages/AcceptInvitation';
-import TeamInviteSignup from '@/pages/TeamInviteSignup';
-import SecureTeamInviteSignup from '@/pages/SecureTeamInviteSignup';
-import AbrirChamado from '@/pages/AbrirChamado';
-import NewsletterSignup from '@/pages/NewsletterSignup';
-import ParticipantData from '@/pages/ParticipantData';
-import ConviteEquipeCadastro from '@/pages/ConviteEquipeCadastro';
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Index from "./pages/Index";
+import ClientLogin from "./pages/ClientLogin";
+import AdminLogin from "./pages/AdminLogin";
+import AdminRegister from "./pages/AdminRegister";
+import AdminArea from "./pages/AdminArea";
+import ClientArea from "./pages/client/ClientArea";
+import AbrirChamado from "./pages/AbrirChamado";
+import ParticipantData from "./pages/ParticipantData";
+import NewsletterSignup from "./pages/NewsletterSignup";
+import NotFound from "./pages/NotFound";
+import AcceptInvitation from "./pages/AcceptInvitation";
+import TeamInviteSignup from "./pages/TeamInviteSignup";
+import ConviteEquipeCadastro from "./pages/ConviteEquipeCadastro";
+import SecureTeamInviteSignup from "./pages/SecureTeamInviteSignup";
+import AdminUnauthorized from "./pages/AdminUnauthorized";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 60 * 1000, // 1 minute
-    },
-  },
-});
+// Contexts
+import { AuthProvider } from "./contexts/AuthContext";
+import { ClientProvider } from "./contexts/ClientContext";
+import { UserProvider } from "./contexts/UserContext";
+import AdminAuthProvider from "./contexts/AdminAuthContext";
 
-const QueryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// Protected Routes
+import ProtectedRoute from "./components/ProtectedRoute";
+import AdminProtectedRoute from "./components/AdminProtectedRoute";
+
+const queryClient = new QueryClient();
+
+const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
-      <ReactQueryDevtools initialIsOpen={false} />
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <AdminAuthProvider>
+              <UserProvider>
+                <ClientProvider>
+                  <Routes>
+                    {/* Public Routes */}
+                    <Route path="/" element={<Index />} />
+                    <Route path="/cliente/login" element={<ClientLogin />} />
+                    <Route path="/abrir-chamado" element={<AbrirChamado />} />
+                    <Route path="/dados-participante" element={<ParticipantData />} />
+                    <Route path="/newsletter" element={<NewsletterSignup />} />
+                    <Route path="/aceitar-convite" element={<AcceptInvitation />} />
+                    <Route path="/convite-cadastro" element={<TeamInviteSignup />} />
+                    <Route path="/convite-equipe" element={<ConviteEquipeCadastro />} />
+                    <Route path="/convite-seguro" element={<SecureTeamInviteSignup />} />
+                    
+                    {/* Admin Routes */}
+                    <Route path="/admin/login" element={<AdminLogin />} />
+                    <Route path="/admin/register" element={<AdminRegister />} />
+                    <Route path="/admin/unauthorized" element={<AdminUnauthorized />} />
+                    <Route 
+                      path="/admin/*" 
+                      element={
+                        <AdminProtectedRoute>
+                          <AdminArea />
+                        </AdminProtectedRoute>
+                      } 
+                    />
+                    
+                    {/* Client Routes */}
+                    <Route 
+                      path="/cliente/*" 
+                      element={
+                        <ProtectedRoute>
+                          <ClientArea />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    
+                    {/* 404 Route */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </ClientProvider>
+              </UserProvider>
+            </AdminAuthProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
     </QueryClientProvider>
   );
 };
-
-function App() {
-  return (
-    <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <QueryProvider>
-        <Router>
-          <div className="App">
-            <ScrollToTop />
-            <Routes>
-              {/* Páginas públicas */}
-              <Route path="/" element={<Index />} />
-              <Route path="/abrir-chamado" element={<AbrirChamado />} />
-              <Route path="/newsletter" element={<NewsletterSignup />} />
-              <Route path="/participant-data" element={<ParticipantData />} />
-              
-              {/* Páginas de autenticação */}
-              <Route path="/cliente/login" element={<ClientLogin />} />
-              <Route path="/login" element={<ClientLogin />} />
-              <Route path="/admin/login" element={<AdminLogin />} />
-              <Route path="/admin/register" element={<AdminRegister />} />
-              
-              {/* Página de cadastro por convite */}
-              <Route path="/convite-equipe" element={<ConviteEquipeCadastro />} />
-              <Route path="/convite-equipe/cadastro" element={<ConviteEquipeCadastro />} />
-              
-              {/* Páginas de convites antigos (manter compatibilidade) */}
-              <Route path="/aceitar-convite" element={<AcceptInvitation />} />
-              <Route path="/team-invite-signup" element={<TeamInviteSignup />} />
-              <Route path="/secure-team-invite" element={<SecureTeamInviteSignup />} />
-              
-              {/* Área do cliente */}
-              <Route path="/cliente/*" element={<ClientArea />} />
-              
-              {/* Área do admin */}
-              <Route path="/admin/*" element={<AdminArea />} />
-              
-              {/* 404 */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </div>
-        </Router>
-      </QueryProvider>
-    </ErrorBoundary>
-  );
-}
 
 export default App;
