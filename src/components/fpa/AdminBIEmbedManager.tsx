@@ -20,9 +20,7 @@ import {
   BarChart3,
   TrendingUp,
   Activity,
-  PieChart,
-  MoveUp,
-  MoveDown
+  PieChart
 } from 'lucide-react';
 import { ClientBIEmbed, useUpsertClientBIEmbed, useDeleteClientBIEmbed } from '@/hooks/useClientBIEmbeds';
 import { useToast } from '@/components/ui/use-toast';
@@ -118,6 +116,8 @@ const AdminBIEmbedManager: React.FC<AdminBIEmbedManagerProps> = ({ clientId, emb
     }
 
     try {
+      console.log('🔄 Iniciando salvamento do embed...');
+      
       await upsert.mutateAsync({
         id: editingEmbed?.id,
         fpa_client_id: clientId,
@@ -137,14 +137,13 @@ const AdminBIEmbedManager: React.FC<AdminBIEmbedManagerProps> = ({ clientId, emb
         title: 'Sucesso', 
         description: editingEmbed ? 'Embed atualizado com sucesso' : 'Embed criado com sucesso' 
       });
+      
       setIsDialogOpen(false);
       resetForm();
+      
     } catch (err: any) {
-      toast({ 
-        title: 'Erro ao salvar', 
-        description: err.message || 'Verifique os campos', 
-        variant: 'destructive' 
-      });
+      console.error('❌ Erro no handleSave:', err);
+      // O toast de erro já foi exibido no hook
     }
   };
 
@@ -155,7 +154,8 @@ const AdminBIEmbedManager: React.FC<AdminBIEmbedManagerProps> = ({ clientId, emb
       await deleteEmbed.mutateAsync({ id: embed.id, clientId });
       toast({ title: 'Sucesso', description: 'Embed excluído com sucesso' });
     } catch (err: any) {
-      toast({ title: 'Erro', description: err.message || 'Erro ao excluir embed', variant: 'destructive' });
+      console.error('❌ Erro no handleDelete:', err);
+      // O toast de erro já foi exibido no hook
     }
   };
 
