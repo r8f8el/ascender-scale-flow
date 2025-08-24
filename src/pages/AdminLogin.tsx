@@ -52,9 +52,10 @@ const AdminLogin = () => {
           description: "Bem-vindo ao Painel Administrativo Ascalate."
         });
         
+        // Aguardar um pouco para garantir que o contexto seja atualizado
         setTimeout(() => {
           navigate('/admin');
-        }, 500);
+        }, 1000);
       } else {
         console.log('❌ AdminLogin: Login failed');
         toast({
@@ -74,6 +75,8 @@ const AdminLogin = () => {
       setIsLoading(false);
     }
   };
+
+  const isButtonDisabled = isLoading || contextLoading;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -108,6 +111,7 @@ const AdminLogin = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="seu.email@ascalate.com.br"
                   className="mt-1"
+                  disabled={isButtonDisabled}
                 />
               </div>
             </div>
@@ -127,6 +131,7 @@ const AdminLogin = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="mt-1"
+                  disabled={isButtonDisabled}
                 />
               </div>
             </div>
@@ -136,9 +141,9 @@ const AdminLogin = () => {
             <Button
               type="submit"
               className="w-full bg-[#0056b3] hover:bg-[#003d7f]"
-              disabled={isLoading || contextLoading}
+              disabled={isButtonDisabled}
             >
-              {isLoading || contextLoading ? "Entrando..." : "Entrar"}
+              {isButtonDisabled ? "Entrando..." : "Entrar"}
             </Button>
           </div>
 

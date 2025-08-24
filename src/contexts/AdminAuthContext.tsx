@@ -126,25 +126,21 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
         
         console.log('🔄 Auth state change:', event, session?.user?.email || 'none');
         
-        try {
-          setSession(session);
-          setUser(session?.user ?? null);
-          
-          if (session?.user) {
-            const isAdmin = await checkAdminProfile(session.user);
-            if (!isAdmin) {
-              setIsAdminAuthenticated(false);
-              setAdmin(null);
-            }
-          } else {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          const isAdmin = await checkAdminProfile(session.user);
+          if (!isAdmin) {
             setIsAdminAuthenticated(false);
             setAdmin(null);
           }
-        } catch (error) {
-          console.error('❌ Error in auth state change:', error);
+        } else {
           setIsAdminAuthenticated(false);
           setAdmin(null);
         }
+        
+        setLoading(false);
       }
     );
 
@@ -181,22 +177,24 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
 
       if (error) {
         console.error('❌ ADMIN LOGIN: Supabase auth error:', error.message);
+        setLoading(false);
         return false;
       }
 
       if (!data?.user || !data?.session) {
         console.error('❌ ADMIN LOGIN: No user or session in response');
+        setLoading(false);
         return false;
       }
 
       console.log('✅ ADMIN LOGIN: Authentication successful');
+      // O loading será definido como false pelo listener onAuthStateChange
       return true;
       
     } catch (error) {
       console.error('❌ ADMIN LOGIN: Exception:', error);
-      return false;
-    } finally {
       setLoading(false);
+      return false;
     }
   };
   
