@@ -75,12 +75,20 @@ const Navbar = () => {
             <NavItem to="#mission" isHashLink>Sobre</NavItem>
             <NavItem to="/abrir-chamado">Suporte</NavItem>
             <NavItem to="#contact" isHashLink>Contato</NavItem>
-            <Link 
-              to="/cliente/login" 
-              className="bg-blue hover:bg-blue/90 text-blue-foreground px-4 py-2 rounded-md text-sm font-medium transition-colors"
-            >
-              Área do Cliente
-            </Link>
+            <div className="flex items-center space-x-3">
+              <Link 
+                to="/cliente/registro" 
+                className="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors"
+              >
+                Criar Conta
+              </Link>
+              <Link 
+                to="/cliente/login" 
+                className="bg-blue hover:bg-blue/90 text-blue-foreground px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                Entrar
+              </Link>
+            </div>
           </div>
 
           {/* Mobile menu button */}
@@ -121,20 +129,29 @@ const Navbar = () => {
                   >
                     Suporte
                   </Link>
-                  <a 
-                    href="#contact" 
+                  <Link 
+                    to="#contact" 
                     className="text-gray-700 block px-3 py-2 text-base font-medium transition-colors"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Contato
-                  </a>
-                  <Link 
-                    to="/cliente/login" 
-                    className="bg-blue hover:bg-blue/90 text-blue-foreground block px-3 py-2 text-base font-medium transition-colors rounded-md mt-4"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Área do Cliente
                   </Link>
+                  <div className="border-t border-gray-200 mt-4 pt-4">
+                    <Link 
+                      to="/cliente/registro" 
+                      className="text-gray-700 block px-3 py-2 text-base font-medium transition-colors"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Criar Conta
+                    </Link>
+                    <Link 
+                      to="/cliente/login" 
+                      className="bg-blue hover:bg-blue/90 text-blue-foreground block px-3 py-2 text-base font-medium transition-colors rounded-md mt-2"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Entrar
+                    </Link>
+                  </div>
                 </div>
               </SheetContent>
             </Sheet>

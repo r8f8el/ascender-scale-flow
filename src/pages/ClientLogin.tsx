@@ -181,12 +181,12 @@ const ClientLogin = () => {
           </div>
           <p className="mt-4">
             Não tem uma conta?{' '}
-            <button 
-              onClick={() => navigate('/#contact')}
+            <Link 
+              to="/cliente/registro"
               className="text-blue-600 hover:text-blue-700"
             >
-              Entre em contato
-            </button>
+              Criar conta
+            </Link>
           </p>
         </div>
 

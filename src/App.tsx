@@ -12,6 +12,7 @@ import AdminProtectedRoute from '@/components/AdminProtectedRoute';
 // Pages
 import Index from '@/pages/Index';
 import ClientLogin from '@/pages/ClientLogin';
+import ClientRegister from '@/pages/ClientRegister';
 import AdminLogin from '@/pages/AdminLogin';
 import AdminRegister from '@/pages/AdminRegister';
 import AdminUnauthorized from '@/pages/AdminUnauthorized';
@@ -60,7 +61,9 @@ function App() {
                 
                 {/* Páginas de autenticação */}
                 <Route path="/cliente/login" element={<ClientLogin />} />
+                <Route path="/cliente/registro" element={<ClientRegister />} />
                 <Route path="/login" element={<ClientLogin />} />
+                <Route path="/registro" element={<ClientRegister />} />
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin/register" element={<AdminRegister />} />
                 <Route path="/admin/unauthorized" element={<AdminUnauthorized />} />
