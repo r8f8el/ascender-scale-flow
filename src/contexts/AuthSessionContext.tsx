@@ -76,6 +76,7 @@ export const AuthSessionProvider: React.FC<{ children: React.ReactNode }> = ({ c
           setUser(session?.user ?? null);
           
           if (session?.user) {
+            console.log('✅ User authenticated, setting profile fetch timeout');
             // Use setTimeout to prevent blocking the auth state change
             setTimeout(async () => {
               try {
@@ -87,15 +88,19 @@ export const AuthSessionProvider: React.FC<{ children: React.ReactNode }> = ({ c
                 console.error('❌ Error fetching profile in timeout:', error);
                 setClient(null);
               }
-            }, 0);
+            }, 100); // Small delay to ensure auth state is properly set
           } else {
+            console.log('❌ No user in session, clearing client');
             setClient(null);
           }
         } catch (error) {
           console.error('❌ Error in auth state change handler:', error);
           setClient(null);
         } finally {
-          setLoading(false);
+          // Only set loading to false after auth state is processed
+          setTimeout(() => {
+            setLoading(false);
+          }, 200);
         }
       }
     );
@@ -125,7 +130,9 @@ export const AuthSessionProvider: React.FC<{ children: React.ReactNode }> = ({ c
       } catch (error) {
         console.error('❌ Error in checkInitialSession:', error);
       } finally {
-        setLoading(false);
+        setTimeout(() => {
+          setLoading(false);
+        }, 200);
       }
     };
 
