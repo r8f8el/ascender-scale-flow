@@ -16,7 +16,6 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
   const { isAdminAuthenticated, admin, loading } = useAdminAuth();
   const { toast } = useToast();
 
-  // Always call useEffect first - hooks must be called in consistent order
   useEffect(() => {
     if (!loading && !isAdminAuthenticated) {
       toast({
@@ -51,12 +50,12 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
     );
   }
 
-  // Verificação real de autenticação
+  // Check authentication
   if (!isAdminAuthenticated) {
     return <Navigate to="/admin/login" replace />;
   }
 
-  // Verificação de permissões baseada em função
+  // Check role permissions
   if (requiredRole && admin && admin.role !== requiredRole && admin.role !== 'super_admin') {
     return <Navigate to="/admin/unauthorized" replace />;
   }

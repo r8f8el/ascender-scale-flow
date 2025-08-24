@@ -16,7 +16,13 @@ const AdminLogin = () => {
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { adminLogin } = useAdminAuth();
+  const { adminLogin, isAdminAuthenticated, loading } = useAdminAuth();
+
+  // Redirect if already authenticated
+  if (isAdminAuthenticated && !loading) {
+    navigate('/admin');
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,6 +31,15 @@ const AdminLogin = () => {
       toast({
         title: "Campos vazios",
         description: "Por favor, preencha todos os campos.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!email.endsWith('@ascalate.com.br')) {
+      toast({
+        title: "Email inválido",
+        description: "Apenas emails @ascalate.com.br são permitidos no painel administrativo.",
         variant: "destructive"
       });
       return;
@@ -44,7 +59,7 @@ const AdminLogin = () => {
       } else {
         toast({
           title: "Falha no login",
-          description: "Email ou senha inválidos. Verifique suas credenciais ou redefina sua senha.",
+          description: "Email ou senha inválidos. Verifique suas credenciais.",
           variant: "destructive"
         });
       }
@@ -52,7 +67,7 @@ const AdminLogin = () => {
       console.error('Error during login:', error);
       toast({
         title: "Erro",
-        description: "Ocorreu um erro ao realizar o login. Tente novamente mais tarde.",
+        description: "Ocorreu um erro ao realizar o login. Tente novamente.",
         variant: "destructive"
       });
     } finally {
@@ -103,13 +118,24 @@ const AdminLogin = () => {
       console.error('Error during password reset:', error);
       toast({
         title: "Erro",
-        description: "Ocorreu um erro ao enviar o email. Tente novamente mais tarde.",
+        description: "Ocorreu um erro ao enviar o email. Tente novamente.",
         variant: "destructive"
       });
     } finally {
       setIsResettingPassword(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="text-lg text-gray-600">Carregando...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -186,17 +212,6 @@ const AdminLogin = () => {
             >
               {isResettingPassword ? "Enviando..." : "Esqueci minha senha"}
             </Button>
-          </div>
-
-          <div className="mt-4 text-center text-sm text-gray-600">
-            <p>Entre com suas credenciais de administrador.</p>
-            <p>Apenas usuários com email @ascalate.com.br podem acessar.</p>
-            <p className="mt-2">
-              Não tem uma conta? 
-              <a href="/admin/register" className="text-blue-600 hover:text-blue-500 ml-1">
-                Cadastre-se aqui
-              </a>
-            </p>
           </div>
         </form>
         

@@ -6,12 +6,17 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ErrorBoundary } from 'react-error-boundary';
 import ErrorFallback from '@/components/ErrorFallback';
 import { ScrollToTop } from '@/components/ScrollToTop';
+import AdminAuthProvider from '@/contexts/AdminAuthContext';
+import AdminProtectedRoute from '@/components/AdminProtectedRoute';
+
+// Pages
 import Index from '@/pages/Index';
 import ClientLogin from '@/pages/ClientLogin';
 import AdminLogin from '@/pages/AdminLogin';
 import AdminRegister from '@/pages/AdminRegister';
+import AdminUnauthorized from '@/pages/AdminUnauthorized';
 import ClientArea from '@/pages/client/ClientArea';
-import AdminArea from '@/pages/admin/AdminArea';
+import AdminArea from '@/pages/AdminArea';
 import NotFound from '@/pages/NotFound';
 import AcceptInvitation from '@/pages/AcceptInvitation';
 import TeamInviteSignup from '@/pages/TeamInviteSignup';
@@ -42,42 +47,52 @@ function App() {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <QueryProvider>
-        <Router>
-          <div className="App">
-            <ScrollToTop />
-            <Routes>
-              {/* Páginas públicas */}
-              <Route path="/" element={<Index />} />
-              <Route path="/abrir-chamado" element={<AbrirChamado />} />
-              <Route path="/newsletter" element={<NewsletterSignup />} />
-              <Route path="/participant-data" element={<ParticipantData />} />
-              
-              {/* Páginas de autenticação */}
-              <Route path="/cliente/login" element={<ClientLogin />} />
-              <Route path="/login" element={<ClientLogin />} />
-              <Route path="/admin/login" element={<AdminLogin />} />
-              <Route path="/admin/register" element={<AdminRegister />} />
-              
-              {/* Página de cadastro por convite */}
-              <Route path="/convite-equipe" element={<ConviteEquipeCadastro />} />
-              <Route path="/convite-equipe/cadastro" element={<ConviteEquipeCadastro />} />
-              
-              {/* Páginas de convites antigos (manter compatibilidade) */}
-              <Route path="/aceitar-convite" element={<AcceptInvitation />} />
-              <Route path="/team-invite-signup" element={<TeamInviteSignup />} />
-              <Route path="/secure-team-invite" element={<SecureTeamInviteSignup />} />
-              
-              {/* Área do cliente */}
-              <Route path="/cliente/*" element={<ClientArea />} />
-              
-              {/* Área do admin */}
-              <Route path="/admin/*" element={<AdminArea />} />
-              
-              {/* 404 */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </div>
-        </Router>
+        <AdminAuthProvider>
+          <Router>
+            <div className="App">
+              <ScrollToTop />
+              <Routes>
+                {/* Páginas públicas */}
+                <Route path="/" element={<Index />} />
+                <Route path="/abrir-chamado" element={<AbrirChamado />} />
+                <Route path="/newsletter" element={<NewsletterSignup />} />
+                <Route path="/participant-data" element={<ParticipantData />} />
+                
+                {/* Páginas de autenticação */}
+                <Route path="/cliente/login" element={<ClientLogin />} />
+                <Route path="/login" element={<ClientLogin />} />
+                <Route path="/admin/login" element={<AdminLogin />} />
+                <Route path="/admin/register" element={<AdminRegister />} />
+                <Route path="/admin/unauthorized" element={<AdminUnauthorized />} />
+                
+                {/* Página de cadastro por convite */}
+                <Route path="/convite-equipe" element={<ConviteEquipeCadastro />} />
+                <Route path="/convite-equipe/cadastro" element={<ConviteEquipeCadastro />} />
+                
+                {/* Páginas de convites antigos (manter compatibilidade) */}
+                <Route path="/aceitar-convite" element={<AcceptInvitation />} />
+                <Route path="/team-invite-signup" element={<TeamInviteSignup />} />
+                <Route path="/secure-team-invite" element={<SecureTeamInviteSignup />} />
+                
+                {/* Área do cliente */}
+                <Route path="/cliente/*" element={<ClientArea />} />
+                
+                {/* Área do admin - protegida */}
+                <Route 
+                  path="/admin/*" 
+                  element={
+                    <AdminProtectedRoute>
+                      <AdminArea />
+                    </AdminProtectedRoute>
+                  } 
+                />
+                
+                {/* 404 */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </div>
+          </Router>
+        </AdminAuthProvider>
       </QueryProvider>
     </ErrorBoundary>
   );
