@@ -35,7 +35,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Sending welcome email to:', email);
 
     const emailResponse = await resend.emails.send({
-      from: "Ascalate <onboarding@resend.dev>",
+      from: "Ascalate <sistema@ascalate.com.br>",
       to: [email],
       subject: "Confirme sua conta - Ascalate",
       html: `
@@ -106,7 +106,7 @@ const handler = async (req: Request): Promise<Response> => {
               <p style="font-size: 14px; color: #666; margin: 0;">
                 <strong>Ascalate Consultoria</strong><br>
                 Telefone: (11) 99999-9999<br>
-                Email: <a href="mailto:contato@ascalate.com.br" style="color: #667eea;">contato@ascalate.com.br</a>
+                Email: <a href="mailto:sistema@ascalate.com.br" style="color: #667eea;">sistema@ascalate.com.br</a>
               </p>
             </div>
           </div>

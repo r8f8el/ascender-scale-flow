@@ -125,6 +125,28 @@ const ClientRegister = () => {
         // Continuar mesmo se houver erro no perfil, pois o trigger deve criar automaticamente
       }
 
+      // Enviar email de boas-vindas personalizado
+      try {
+        console.log('📧 Enviando email de boas-vindas personalizado...');
+        const { error: emailError } = await supabase.functions.invoke('send-welcome-email', {
+          body: {
+            email: formData.email,
+            name: formData.name,
+            confirmationUrl: authData.user.email_confirmed_at ? 
+              `${window.location.origin}/cliente/login` :
+              `https://klcfzhpttcsjuynumzgi.supabase.co/auth/v1/verify?token=${authData.user.id}&type=signup&redirect_to=${window.location.origin}/cliente/login`
+          }
+        });
+
+        if (emailError) {
+          console.error('❌ Erro ao enviar email personalizado:', emailError);
+        } else {
+          console.log('✅ Email personalizado enviado com sucesso');
+        }
+      } catch (emailError) {
+        console.error('❌ Exceção ao enviar email personalizado:', emailError);
+      }
+
       toast({
         title: "Cadastro realizado com sucesso!",
         description: "Verifique seu email para confirmar sua conta, depois faça login.",
