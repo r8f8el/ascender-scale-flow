@@ -6,20 +6,20 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Shield } from 'lucide-react';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { adminLogin, loading: contextLoading } = useAdminAuth();
+  const { adminLogin } = useAdminAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    console.log('🔑 AdminLogin: Form submitted');
     
     if (!email || !password) {
       toast({
@@ -29,46 +29,30 @@ const AdminLogin = () => {
       });
       return;
     }
-
-    if (!email.includes('@ascalate.com.br')) {
-      toast({
-        title: "Email inválido",
-        description: "Use um email @ascalate.com.br para acessar o painel administrativo.",
-        variant: "destructive"
-      });
-      return;
-    }
     
     setIsLoading(true);
     
     try {
-      console.log('🔑 AdminLogin: Calling adminLogin...');
       const success = await adminLogin(email, password);
       
       if (success) {
-        console.log('✅ AdminLogin: Login successful');
         toast({
           title: "Login realizado com sucesso",
           description: "Bem-vindo ao Painel Administrativo Ascalate."
         });
-        
-        // Aguardar um pouco para garantir que o contexto seja atualizado
-        setTimeout(() => {
-          navigate('/admin');
-        }, 1000);
+        navigate('/admin');
       } else {
-        console.log('❌ AdminLogin: Login failed');
         toast({
           title: "Falha no login",
-          description: "Email ou senha inválidos, ou você não tem permissão de administrador.",
+          description: "Email ou senha inválidos. Verifique suas credenciais ou redefina sua senha.",
           variant: "destructive"
         });
       }
     } catch (error) {
-      console.error('❌ AdminLogin: Exception:', error);
+      console.error('Error during login:', error);
       toast({
         title: "Erro",
-        description: "Ocorreu um erro ao realizar o login. Tente novamente.",
+        description: "Ocorreu um erro ao realizar o login. Tente novamente mais tarde.",
         variant: "destructive"
       });
     } finally {
@@ -76,7 +60,56 @@ const AdminLogin = () => {
     }
   };
 
-  const isButtonDisabled = isLoading || contextLoading;
+  const handlePasswordReset = async () => {
+    if (!email) {
+      toast({
+        title: "Email necessário",
+        description: "Por favor, informe seu email para redefinir a senha.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!email.endsWith('@ascalate.com.br')) {
+      toast({
+        title: "Email inválido",
+        description: "Apenas emails @ascalate.com.br são permitidos.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsResettingPassword(true);
+    
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/admin/login`
+      });
+
+      if (error) {
+        console.error('Password reset error:', error);
+        toast({
+          title: "Erro ao redefinir senha",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Email enviado",
+          description: "Verifique sua caixa de entrada para redefinir sua senha."
+        });
+      }
+    } catch (error) {
+      console.error('Error during password reset:', error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao enviar o email. Tente novamente mais tarde.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -111,7 +144,6 @@ const AdminLogin = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="seu.email@ascalate.com.br"
                   className="mt-1"
-                  disabled={isButtonDisabled}
                 />
               </div>
             </div>
@@ -131,27 +163,46 @@ const AdminLogin = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="mt-1"
-                  disabled={isButtonDisabled}
                 />
               </div>
             </div>
           </div>
           
-          <div>
+          <div className="space-y-3">
             <Button
               type="submit"
               className="w-full bg-[#0056b3] hover:bg-[#003d7f]"
-              disabled={isButtonDisabled}
+              disabled={isLoading}
             >
-              {isButtonDisabled ? "Entrando..." : "Entrar"}
+              {isLoading ? "Entrando..." : "Entrar"}
+            </Button>
+            
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={handlePasswordReset}
+              disabled={isResettingPassword}
+            >
+              {isResettingPassword ? "Enviando..." : "Esqueci minha senha"}
             </Button>
           </div>
 
           <div className="mt-4 text-center text-sm text-gray-600">
             <p>Entre com suas credenciais de administrador.</p>
             <p>Apenas usuários com email @ascalate.com.br podem acessar.</p>
+            <p className="mt-2">
+              Não tem uma conta? 
+              <a href="/admin/register" className="text-blue-600 hover:text-blue-500 ml-1">
+                Cadastre-se aqui
+              </a>
+            </p>
           </div>
         </form>
+        
+        <p className="mt-4 text-center text-sm text-gray-600">
+          Área restrita a administradores. Em caso de problemas, contate o suporte técnico.
+        </p>
       </div>
     </div>
   );
