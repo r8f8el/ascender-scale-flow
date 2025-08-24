@@ -66,6 +66,8 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
           email: user.email || '',
           role: 'admin'
         });
+        console.log('✅ Basic admin profile created, setting loading to false');
+        setLoading(false);
         return;
       }
 
@@ -77,6 +79,8 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
           email: profile.email,
           role: profile.role as 'admin' | 'super_admin'
         });
+        console.log('✅ Admin profile set, setting loading to false');
+        setLoading(false);
       }
     } catch (error) {
       console.error('❌ Exception loading admin profile:', error);
@@ -87,6 +91,8 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
         email: user.email || '',
         role: 'admin'
       });
+      console.log('✅ Fallback admin profile created, setting loading to false');
+      setLoading(false);
     }
   };
 
@@ -126,16 +132,17 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
             setAdmin(null);
             setUser(null);
             setSession(null);
+            setLoading(false);
           }
         } else {
           console.log('❌ No session found');
+          setLoading(false);
         }
       } catch (error) {
         console.error('❌ Error in initializeAuth:', error);
       } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+        // Loading é gerenciado individualmente em cada branch
+        console.log('🏁 InitializeAuth completed');
       }
     };
 
@@ -166,14 +173,17 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
             
             if (event === 'SIGNED_IN') {
               await loadAdminProfile(session.user);
+            } else {
+              setLoading(false);
             }
           } else {
             console.log('❌ Non-admin user detected, signing out');
             await supabase.auth.signOut();
+            setLoading(false);
           }
+        } else {
+          setLoading(false);
         }
-        
-        setLoading(false);
       }
     );
 
@@ -202,21 +212,23 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
 
       if (error) {
         console.error('❌ Login error:', error.message);
+        setLoading(false);
         return false;
       }
 
       if (data.user && data.session) {
         console.log('✅ Login successful for:', data.user.email);
+        // Loading será definido pelo onAuthStateChange
         return true;
       }
       
       console.log('❌ Login failed - no user or session returned');
+      setLoading(false);
       return false;
     } catch (error) {
       console.error('❌ Exception during login:', error);
-      return false;
-    } finally {
       setLoading(false);
+      return false;
     }
   };
   
