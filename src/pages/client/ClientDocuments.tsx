@@ -48,7 +48,7 @@ interface UploadFile {
 }
 
 const ClientDocuments = () => {
-  const { client, loading: authLoading } = useAuth();
+  const { client, loading: authLoading, user, session } = useAuth();
   const { toast } = useToast();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -59,7 +59,11 @@ const ClientDocuments = () => {
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
-  console.log('📄 ClientDocuments - Cliente:', client?.name);
+  console.log('📄 ClientDocuments Debug:');
+  console.log('  - authLoading:', authLoading);
+  console.log('  - user:', user ? { id: user.id, email: user.email } : null);
+  console.log('  - session:', session ? 'exists' : 'null');
+  console.log('  - client:', client ? { id: client.id, name: client.name, email: client.email } : null);
 
   // Se ainda está carregando autenticação, mostrar spinner
   if (authLoading) {
@@ -74,13 +78,13 @@ const ClientDocuments = () => {
     );
   }
 
-  // Se não tem cliente autenticado, mostrar erro
-  if (!client) {
+  // Se não tem usuário autenticado, mostrar erro
+  if (!user) {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
-          <h2 className="text-lg font-medium text-gray-900">Perfil não encontrado</h2>
-          <p className="text-gray-500">Não foi possível carregar seus documentos.</p>
+          <h2 className="text-lg font-medium text-gray-900">Usuário não autenticado</h2>
+          <p className="text-gray-500">Faça login para acessar seus documentos.</p>
         </div>
       </div>
     );
@@ -96,8 +100,8 @@ const ClientDocuments = () => {
   ];
 
   const fetchDocuments = async () => {
-    if (!client?.id) {
-      // Evitar spinner infinito quando não há perfil de cliente
+    const userId = client?.id || user?.id;
+    if (!userId) {
       setLoading(false);
       return;
     }
@@ -108,12 +112,12 @@ const ClientDocuments = () => {
         supabase
           .from('client_documents')
           .select('*')
-          .eq('user_id', client.id)
+          .eq('user_id', userId)
           .order('uploaded_at', { ascending: false }),
         supabase
           .from('documents')
           .select('*, document_categories(name)')
-          .eq('user_id', client.id)
+          .eq('user_id', userId)
           .order('created_at', { ascending: false })
       ]);
 
@@ -146,12 +150,13 @@ const ClientDocuments = () => {
   };
 
   useEffect(() => {
-    if (!client?.id) {
+    const userId = client?.id || user?.id;
+    if (!userId) {
       setLoading(false);
       return;
     }
     fetchDocuments();
-  }, [client?.id]);
+  }, [client?.id, user?.id]);
 
   const handleFilesSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -202,10 +207,11 @@ const ClientDocuments = () => {
   };
 
   const uploadSingleFile = async (uploadFile: UploadFile, index: number): Promise<boolean> => {
-    if (!client?.id) {
+    const userId = client?.id || user?.id;
+    if (!userId) {
       updateUploadFile(index, { 
         status: 'error', 
-        error: 'Cliente não identificado' 
+        error: 'Usuário não identificado' 
       });
       return false;
     }
@@ -226,7 +232,7 @@ const ClientDocuments = () => {
       const randomString = Math.random().toString(36).substring(2, 15);
       const fileExtension = uploadFile.file.name.split('.').pop();
       const uniqueFileName = `${timestamp}_${randomString}.${fileExtension}`;
-      const filePath = `client-${client.id}/${uniqueFileName}`;
+      const filePath = `client-${userId}/${uniqueFileName}`;
 
       updateUploadFile(index, { progress: 25 });
 
@@ -249,7 +255,7 @@ const ClientDocuments = () => {
       const { error: dbError } = await supabase
         .from('client_documents')
         .insert({
-          user_id: client.id, // Explicitamente definir o user_id
+          user_id: userId, // Explicitamente definir o user_id
           filename: uploadFile.file.name,
           file_path: filePath,
           content_type: uploadFile.file.type,
@@ -290,10 +296,11 @@ const ClientDocuments = () => {
       return;
     }
 
-    if (!client?.id) {
+    const userId = client?.id || user?.id;
+    if (!userId) {
       toast({
         title: "Erro",
-        description: "Cliente não identificado. Faça login novamente.",
+        description: "Usuário não identificado. Faça login novamente.",
         variant: "destructive"
       });
       return;

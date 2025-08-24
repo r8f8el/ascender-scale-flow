@@ -7,18 +7,25 @@ import { useClient } from './ClientContext';
 const fetchClientProfile = async (userId: string) => {
   try {
     console.log('👤 Buscando perfil do cliente para userId:', userId);
+    console.log('👤 Timestamp:', new Date().toISOString());
     
     // First check if user is admin - if so, return null (admins don't need client profiles)
-    const { data: adminData } = await supabase
+    const { data: adminData, error: adminError } = await supabase
       .from('admin_profiles')
       .select('id')
       .eq('id', userId)
       .maybeSingle();
 
+    if (adminError) {
+      console.error('❌ Error checking admin profile:', adminError);
+    }
+
     if (adminData) {
       console.log('✅ User is ADMIN, skipping client profile');
       return null;
     }
+
+    console.log('🔍 User is not admin, fetching client profile...');
 
     // Fetch client profile
     const { data: clientProfile, error: clientError } = await supabase
@@ -36,6 +43,8 @@ const fetchClientProfile = async (userId: string) => {
       console.log('✅ Found existing CLIENT profile:', clientProfile);
       return clientProfile;
     }
+
+    console.log('⚠️ No client profile found for user:', userId);
 
     // No profile found - create one
     console.log('⚠️ No client profile found, creating basic profile');
@@ -92,7 +101,9 @@ export const AuthSessionProvider: React.FC<{ children: React.ReactNode }> = ({ c
             // Use setTimeout to prevent blocking the auth state change
             setTimeout(async () => {
               try {
+                console.log('⏱️ Fetching profile in timeout for user:', session.user.id);
                 const profile = await fetchClientProfile(session.user.id);
+                console.log('⏱️ Profile fetch result:', profile ? 'SUCCESS' : 'NULL');
                 setClient(profile);
               } catch (error) {
                 console.error('❌ Error fetching profile in timeout:', error);
