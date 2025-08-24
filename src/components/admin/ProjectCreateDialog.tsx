@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
+import { useClients } from '@/hooks/useClients';
 
 interface ProjectCreateDialogProps {
   onSuccess?: () => void;
@@ -26,6 +27,7 @@ export const ProjectCreateDialog: React.FC<ProjectCreateDialogProps> = ({ onSucc
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    client_id: '',
     status: 'planning' as const,
     priority: 'medium' as const,
     start_date: new Date(),
@@ -33,6 +35,7 @@ export const ProjectCreateDialog: React.FC<ProjectCreateDialogProps> = ({ onSucc
     budget: ''
   });
   const queryClient = useQueryClient();
+  const { data: clients = [], isLoading: clientsLoading } = useClients();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +45,7 @@ export const ProjectCreateDialog: React.FC<ProjectCreateDialogProps> = ({ onSucc
       const projectData = {
         name: formData.name.trim(),
         description: formData.description.trim() || null,
+        client_id: formData.client_id || null,
         status: formData.status,
         priority: formData.priority,
         start_date: format(formData.start_date, 'yyyy-MM-dd'),
@@ -65,6 +69,7 @@ export const ProjectCreateDialog: React.FC<ProjectCreateDialogProps> = ({ onSucc
       setFormData({
         name: '',
         description: '',
+        client_id: '',
         status: 'planning',
         priority: 'medium',
         start_date: new Date(),
@@ -124,6 +129,28 @@ export const ProjectCreateDialog: React.FC<ProjectCreateDialogProps> = ({ onSucc
                 placeholder="Descreva o projeto (opcional)"
                 rows={3}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Cliente</Label>
+              <Select value={formData.client_id} onValueChange={(value) => updateFormData('client_id', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um cliente (opcional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clientsLoading ? (
+                    <SelectItem value="loading" disabled>Carregando clientes...</SelectItem>
+                  ) : clients.length === 0 ? (
+                    <SelectItem value="no-clients" disabled>Nenhum cliente encontrado</SelectItem>
+                  ) : (
+                    clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.company || client.name} ({client.email})
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
