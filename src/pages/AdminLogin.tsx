@@ -7,25 +7,31 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Shield } from 'lucide-react';
+import { Shield, Eye, EyeOff } from 'lucide-react';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { adminLogin, isAdminAuthenticated, loading } = useAdminAuth();
 
+  console.log('🔍 AdminLogin render - isAuthenticated:', isAdminAuthenticated, 'loading:', loading);
+
   // Redirect if already authenticated
   if (isAdminAuthenticated && !loading) {
+    console.log('🔄 Already authenticated, redirecting to admin panel');
     navigate('/admin');
     return null;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log('📝 Login form submitted for:', email);
     
     if (!email || !password) {
       toast({
@@ -48,15 +54,22 @@ const AdminLogin = () => {
     setIsLoading(true);
     
     try {
+      console.log('🔐 Calling adminLogin function...');
       const success = await adminLogin(email, password);
       
       if (success) {
+        console.log('✅ Login successful, showing success message');
         toast({
           title: "Login realizado com sucesso",
           description: "Bem-vindo ao Painel Administrativo Ascalate."
         });
-        navigate('/admin');
+        
+        // Pequeno delay para mostrar a mensagem antes do redirect
+        setTimeout(() => {
+          navigate('/admin');
+        }, 1000);
       } else {
+        console.log('❌ Login failed');
         toast({
           title: "Falha no login",
           description: "Email ou senha inválidos. Verifique suas credenciais.",
@@ -64,7 +77,7 @@ const AdminLogin = () => {
         });
       }
     } catch (error) {
-      console.error('Error during login:', error);
+      console.error('❌ Exception during login:', error);
       toast({
         title: "Erro",
         description: "Ocorreu um erro ao realizar o login. Tente novamente.",
@@ -102,7 +115,7 @@ const AdminLogin = () => {
       });
 
       if (error) {
-        console.error('Password reset error:', error);
+        console.error('❌ Password reset error:', error);
         toast({
           title: "Erro ao redefinir senha",
           description: error.message,
@@ -115,7 +128,7 @@ const AdminLogin = () => {
         });
       }
     } catch (error) {
-      console.error('Error during password reset:', error);
+      console.error('❌ Exception during password reset:', error);
       toast({
         title: "Erro",
         description: "Ocorreu um erro ao enviar o email. Tente novamente.",
@@ -131,7 +144,7 @@ const AdminLogin = () => {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <div className="text-lg text-gray-600">Carregando...</div>
+          <div className="text-lg text-gray-600">Verificando autenticação...</div>
         </div>
       </div>
     );
@@ -178,18 +191,29 @@ const AdminLogin = () => {
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Senha
               </label>
-              <div className="mt-1">
+              <div className="mt-1 relative">
                 <Input
                   id="password"
                   name="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="mt-1"
+                  className="mt-1 pr-10"
                 />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
+                </button>
               </div>
             </div>
           </div>
@@ -214,6 +238,15 @@ const AdminLogin = () => {
             </Button>
           </div>
         </form>
+        
+        <div className="mt-4 p-3 bg-blue-50 rounded-md">
+          <p className="text-xs text-blue-800">
+            <strong>Debug Info:</strong><br/>
+            • Email deve terminar com @ascalate.com.br<br/>
+            • Verifique o console para logs detalhados<br/>
+            • Status: {loading ? 'Carregando...' : isAdminAuthenticated ? 'Autenticado' : 'Não autenticado'}
+          </p>
+        </div>
         
         <p className="mt-4 text-center text-sm text-gray-600">
           Área restrita a administradores. Em caso de problemas, contate o suporte técnico.
