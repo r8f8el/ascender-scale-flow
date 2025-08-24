@@ -1,7 +1,7 @@
 
 import { Navigate } from 'react-router-dom';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 interface AdminProtectedRouteProps {
@@ -15,22 +15,13 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
 }) => {
   const { isAdminAuthenticated, admin, loading } = useAdminAuth();
   const { toast } = useToast();
-  const [timeoutReached, setTimeoutReached] = useState(false);
 
-  useEffect(() => {
-    // Timeout para evitar loading infinito
-    const timeout = setTimeout(() => {
-      setTimeoutReached(true);
-    }, 10000); // 10 segundos
-
-    return () => clearTimeout(timeout);
-  }, []);
-
+  // Always call useEffect first - hooks must be called in consistent order
   useEffect(() => {
     if (!loading && !isAdminAuthenticated) {
       toast({
         title: "Acesso Negado",
-        description: "Você precisa estar autenticado como administrador.",
+        description: "Você precisa estar autenticado para acessar esta área.",
         variant: "destructive"
       });
     } else if (
@@ -42,27 +33,26 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
     ) {
       toast({
         title: "Permissão Insuficiente",
-        description: `Você precisa ter o papel de ${requiredRole} para acessar este recurso.`,
+        description: "Você não tem permissão para acessar este recurso.",
         variant: "destructive"
       });
     }
   }, [isAdminAuthenticated, admin, requiredRole, toast, loading]);
 
   // Show loading while checking authentication
-  if (loading && !timeoutReached) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          <div className="text-lg text-gray-600">Verificando autenticação...</div>
+          <div className="text-lg text-gray-600">Carregando...</div>
         </div>
       </div>
     );
   }
 
-  // Se o timeout foi atingido ou não está autenticado
-  if (timeoutReached || !isAdminAuthenticated) {
-    console.log('🚫 Redirecting to admin login - authenticated:', isAdminAuthenticated, 'timeout:', timeoutReached);
+  // Verificação real de autenticação
+  if (!isAdminAuthenticated) {
     return <Navigate to="/admin/login" replace />;
   }
 
@@ -71,7 +61,6 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
     return <Navigate to="/admin/unauthorized" replace />;
   }
 
-  console.log('✅ Admin access granted for:', admin?.email);
   return <>{children}</>;
 };
 
