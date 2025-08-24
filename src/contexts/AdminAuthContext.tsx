@@ -46,20 +46,9 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
       try {
         console.log('🔄 Initializing admin auth...');
         
-        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+        // Get current session
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
         
-        if (error) {
-          console.error('❌ Error getting session:', error);
-          if (mounted) {
-            setSession(null);
-            setUser(null);
-            setIsAdminAuthenticated(false);
-            setAdmin(null);
-            setLoading(false);
-          }
-          return;
-        }
-
         if (!mounted) return;
 
         console.log('📧 Current session user email:', currentSession?.user?.email);
@@ -70,6 +59,7 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
           setUser(currentSession.user);
           setIsAdminAuthenticated(true);
           
+          // Load admin profile
           await loadAdminProfile(currentSession.user);
         } else {
           console.log('❌ No valid admin session');
@@ -80,12 +70,10 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
         }
       } catch (error) {
         console.error('❌ Error initializing admin auth:', error);
-        if (mounted) {
-          setSession(null);
-          setUser(null);
-          setIsAdminAuthenticated(false);
-          setAdmin(null);
-        }
+        setSession(null);
+        setUser(null);
+        setIsAdminAuthenticated(false);
+        setAdmin(null);
       } finally {
         if (mounted) {
           setLoading(false);
@@ -93,6 +81,7 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
       }
     };
 
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
@@ -143,17 +132,10 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
         .from('admin_profiles')
         .select('*')
         .eq('id', user.id)
-        .maybeSingle();
+        .single();
 
       if (error) {
         console.error('❌ Error loading admin profile:', error);
-        // Create a basic admin profile if it doesn't exist
-        setAdmin({
-          id: user.id,
-          name: user.email?.split('@')[0] || 'Admin',
-          email: user.email || '',
-          role: 'admin'
-        });
         return;
       }
 
@@ -165,24 +147,9 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
           email: profile.email,
           role: profile.role as 'admin' | 'super_admin'
         });
-      } else {
-        // Create basic profile if none exists
-        setAdmin({
-          id: user.id,
-          name: user.email?.split('@')[0] || 'Admin',
-          email: user.email || '',
-          role: 'admin'
-        });
       }
     } catch (error) {
       console.error('❌ Error loading admin profile:', error);
-      // Fallback to basic profile
-      setAdmin({
-        id: user.id,
-        name: user.email?.split('@')[0] || 'Admin',
-        email: user.email || '',
-        role: 'admin'
-      });
     }
   };
   
@@ -190,6 +157,7 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
     try {
       console.log('🔐 Attempting admin login for:', email);
       
+      // Verificar se é email da Ascalate
       if (!email.endsWith('@ascalate.com.br')) {
         console.error('❌ Email não é da Ascalate');
         return false;
@@ -221,9 +189,7 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
     try {
       console.log('🚪 Admin logout');
       const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('❌ Admin logout error:', error);
-      }
+      if (error) throw error;
     } catch (error) {
       console.error('❌ Admin logout error:', error);
     }

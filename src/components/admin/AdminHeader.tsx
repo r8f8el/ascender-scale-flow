@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { useSecureAuth } from '@/hooks/useSecureAuth';
 import { Button } from '@/components/ui/button';
 import { LogOut, User } from 'lucide-react';
 import {
@@ -12,7 +12,7 @@ import {
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
 const AdminHeader = () => {
-  const { admin, adminLogout } = useAdminAuth();
+  const { user, secureSignOut } = useSecureAuth();
 
   return (
     <header className="border-b bg-background px-6 py-3 flex items-center justify-between">
@@ -26,11 +26,11 @@ const AdminHeader = () => {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="flex items-center gap-2">
               <User className="h-4 w-4" />
-              {admin?.name || admin?.email || 'Admin'}
+              {user?.email}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={adminLogout}>
+            <DropdownMenuItem onClick={secureSignOut}>
               <LogOut className="h-4 w-4 mr-2" />
               Sair
             </DropdownMenuItem>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -56,9 +56,8 @@ export const useKanbanBoards = (clientId?: string) => {
   const [boards, setBoards] = useState<KanbanBoard[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchBoards = useCallback(async () => {
+  const fetchBoards = async () => {
     try {
-      setLoading(true);
       let query = supabase
         .from('kanban_boards')
         .select('*')
@@ -79,9 +78,9 @@ export const useKanbanBoards = (clientId?: string) => {
     } finally {
       setLoading(false);
     }
-  }, [clientId]);
+  };
 
-  const createBoard = useCallback(async (board: Omit<KanbanBoard, 'id' | 'created_at' | 'updated_at'>) => {
+  const createBoard = async (board: Omit<KanbanBoard, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       const { data, error } = await supabase
         .from('kanban_boards')
@@ -98,9 +97,9 @@ export const useKanbanBoards = (clientId?: string) => {
       console.error('Error creating kanban board:', error);
       toast.error('Erro ao criar quadro');
     }
-  }, []);
+  };
 
-  const updateBoard = useCallback(async (id: string, updates: Partial<KanbanBoard>) => {
+  const updateBoard = async (id: string, updates: Partial<KanbanBoard>) => {
     try {
       const { data, error } = await supabase
         .from('kanban_boards')
@@ -118,9 +117,9 @@ export const useKanbanBoards = (clientId?: string) => {
       console.error('Error updating kanban board:', error);
       toast.error('Erro ao atualizar quadro');
     }
-  }, []);
+  };
 
-  const deleteBoard = useCallback(async (id: string) => {
+  const deleteBoard = async (id: string) => {
     try {
       const { error } = await supabase
         .from('kanban_boards')
@@ -135,11 +134,11 @@ export const useKanbanBoards = (clientId?: string) => {
       console.error('Error deleting kanban board:', error);
       toast.error('Erro ao excluir quadro');
     }
-  }, []);
+  };
 
   useEffect(() => {
     fetchBoards();
-  }, [fetchBoards]);
+  }, [clientId]);
 
   return {
     boards,

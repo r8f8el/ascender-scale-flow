@@ -15,11 +15,19 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
 }) => {
   const { isAdminAuthenticated, admin, loading } = useAdminAuth();
   const { toast } = useToast();
-  const [hasShownError, setHasShownError] = useState(false);
+  const [timeoutReached, setTimeoutReached] = useState(false);
 
   useEffect(() => {
-    if (!loading && !isAdminAuthenticated && !hasShownError) {
-      setHasShownError(true);
+    // Timeout para evitar loading infinito
+    const timeout = setTimeout(() => {
+      setTimeoutReached(true);
+    }, 10000); // 10 segundos
+
+    return () => clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
+    if (!loading && !isAdminAuthenticated) {
       toast({
         title: "Acesso Negado",
         description: "Você precisa estar autenticado como administrador.",
@@ -27,23 +35,21 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
       });
     } else if (
       !loading &&
-      isAdminAuthenticated &&
       requiredRole && 
       admin && 
       admin.role !== requiredRole && 
-      admin.role !== 'super_admin' &&
-      !hasShownError
+      admin.role !== 'super_admin'
     ) {
-      setHasShownError(true);
       toast({
         title: "Permissão Insuficiente",
         description: `Você precisa ter o papel de ${requiredRole} para acessar este recurso.`,
         variant: "destructive"
       });
     }
-  }, [isAdminAuthenticated, admin, requiredRole, toast, loading, hasShownError]);
+  }, [isAdminAuthenticated, admin, requiredRole, toast, loading]);
 
-  if (loading) {
+  // Show loading while checking authentication
+  if (loading && !timeoutReached) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center space-y-4">
@@ -54,11 +60,13 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
     );
   }
 
-  if (!isAdminAuthenticated) {
-    console.log('🚫 Redirecting to admin login - not authenticated');
+  // Se o timeout foi atingido ou não está autenticado
+  if (timeoutReached || !isAdminAuthenticated) {
+    console.log('🚫 Redirecting to admin login - authenticated:', isAdminAuthenticated, 'timeout:', timeoutReached);
     return <Navigate to="/admin/login" replace />;
   }
 
+  // Verificação de permissões baseada em função
   if (requiredRole && admin && admin.role !== requiredRole && admin.role !== 'super_admin') {
     return <Navigate to="/admin/unauthorized" replace />;
   }
