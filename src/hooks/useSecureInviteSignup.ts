@@ -44,7 +44,7 @@ export const useSecureInviteSignup = (token?: string | null) => {
       console.log('🔍 Validando token de convite:', tokenToValidate);
 
       const { data, error: validationError } = await supabase
-        .rpc('validate_invitation_token', {
+        .rpc('get_invitation_by_token', {
           p_token: tokenToValidate
         });
 

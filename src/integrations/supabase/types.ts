@@ -2890,6 +2890,19 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_invitation_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          company_id: string
+          company_name: string
+          email: string
+          hierarchy_level_id: string
+          invitation_id: string
+          inviter_name: string
+          is_valid: boolean
+          message: string
+        }[]
+      }
       get_user_company: {
         Args: Record<PropertyKey, never>
         Returns: string
