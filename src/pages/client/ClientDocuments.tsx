@@ -1,18 +1,28 @@
 
 import React from 'react';
 import { useCompanyAccess } from '@/hooks/useCompanyAccess';
+import { useAccountMigration } from '@/hooks/useAccountMigration';
 import CompanyDashboard from '@/components/client/CompanyDashboard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Building2, UserPlus, Mail } from 'lucide-react';
+import { Building2, UserPlus, Mail, Loader2 } from 'lucide-react';
 
 const ClientDocuments = () => {
+  // Primeiro executar migração se necessário
+  const { data: migrationData, isLoading: isMigrating } = useAccountMigration();
+  
+  // Depois verificar acesso à empresa
   const { data: companyAccess, isLoading } = useCompanyAccess();
 
-  if (isLoading) {
+  if (isMigrating || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="text-gray-600">
+            {isMigrating ? 'Configurando sua conta...' : 'Carregando dados da empresa...'}
+          </p>
+        </div>
       </div>
     );
   }

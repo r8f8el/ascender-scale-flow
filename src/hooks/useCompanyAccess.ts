@@ -48,17 +48,60 @@ export const useCompanyAccess = () => {
       // Determinar a empresa a ser usada
       let companyName = profile?.company;
       let companyMembers = [];
+      let shouldUpdateProfile = false;
 
       // Se não tem empresa no perfil mas é membro da equipe, usar empresa da equipe
       if (!companyName && isTeamMember && teamMember.company?.company) {
         companyName = teamMember.company.company;
         console.log('📋 Usando empresa do team membership:', companyName);
+        shouldUpdateProfile = true;
+      }
 
-        // Atualizar o perfil com a empresa encontrada
+      // Se ainda não tem empresa, verificar se é contato primário e criar empresa baseada no nome/email
+      if (!companyName && profile?.is_primary_contact) {
+        // Para contas primárias existentes, usar o nome como empresa se disponível
+        if (profile.name && profile.name.trim()) {
+          companyName = profile.name.trim();
+          console.log('📋 Criando empresa baseada no nome (contato primário):', companyName);
+          shouldUpdateProfile = true;
+        } else {
+          // Usar parte do email como fallback
+          const emailParts = profile.email.split('@');
+          companyName = emailParts[0].replace(/[^a-zA-Z0-9\s]/g, '').trim();
+          console.log('📋 Criando empresa baseada no email (contato primário):', companyName);
+          shouldUpdateProfile = true;
+        }
+      }
+
+      // Se ainda não tem empresa e não é contato primário, mas tem perfil, assumir que é uma conta existente
+      if (!companyName && profile) {
+        console.log('⚠️ Conta existente sem empresa definida, criando empresa padrão');
+        if (profile.name && profile.name.trim()) {
+          companyName = profile.name.trim();
+        } else {
+          const emailParts = profile.email.split('@');
+          companyName = emailParts[0].replace(/[^a-zA-Z0-9\s]/g, '').trim();
+        }
+        
+        // Marcar como contato primário se não há empresa definida (conta existente)
+        shouldUpdateProfile = true;
+        
+        console.log('📋 Empresa criada para conta existente:', companyName);
+      }
+
+      // Atualizar o perfil se necessário
+      if (shouldUpdateProfile && companyName) {
         try {
+          const updateData: any = { company: companyName };
+          
+          // Se não tem empresa e está criando uma, marcar como contato primário
+          if (!profile.company) {
+            updateData.is_primary_contact = true;
+          }
+
           const { error: updateError } = await supabase
             .from('client_profiles')
-            .update({ company: companyName })
+            .update(updateData)
             .eq('id', user.id);
 
           if (updateError) {
@@ -69,12 +112,6 @@ export const useCompanyAccess = () => {
         } catch (error) {
           console.error('⚠️ Erro ao atualizar perfil:', error);
         }
-      }
-
-      // Se ainda não tem empresa, verificar se é contato primário
-      if (!companyName && profile?.is_primary_contact) {
-        companyName = profile.name; // Usar nome como empresa se for contato primário
-        console.log('📋 Usando nome como empresa (contato primário):', companyName);
       }
 
       // Buscar membros da empresa se temos uma empresa
@@ -108,13 +145,15 @@ export const useCompanyAccess = () => {
         hasCompanyAccess,
         companyName,
         isTeamMember: !!isTeamMember,
-        membersCount: companyMembers.length
+        membersCount: companyMembers.length,
+        profileUpdated: shouldUpdateProfile
       });
 
       return {
         profile: {
           ...profile,
-          company: companyName
+          company: companyName,
+          is_primary_contact: !profile.company ? true : profile.is_primary_contact
         },
         companyMembers,
         hasCompanyAccess,
@@ -122,8 +161,8 @@ export const useCompanyAccess = () => {
         teamMemberData: teamMember
       };
     },
-    staleTime: 2 * 60 * 1000, // 2 minutos (reduzido para atualizar mais frequentemente)
-    gcTime: 5 * 60 * 1000, // 5 minutos
+    staleTime: 1 * 60 * 1000, // 1 minuto (reduzido para detectar mudanças mais rapidamente)
+    gcTime: 3 * 60 * 1000, // 3 minutos
     retry: 3,
     retryDelay: 1000,
   });
