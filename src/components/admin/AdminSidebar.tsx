@@ -20,7 +20,8 @@ import {
   FileBarChart,
   BarChart3,
   Layers,
-  Kanban
+  Kanban,
+  MessageCircle
 } from 'lucide-react';
 import {
   Sidebar,
@@ -80,6 +81,11 @@ const navigation = [
     name: 'Meus Chamados',
     href: '/admin/meus-chamados',
     icon: Ticket,
+  },
+  {
+    name: 'Chat',
+    href: '/admin/chat',
+    icon: MessageCircle,
   },
   {
     name: 'Aprovações',

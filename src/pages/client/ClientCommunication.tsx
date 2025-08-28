@@ -22,17 +22,8 @@ import {
   Mic
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useChat } from '@/hooks/useChat';
 import { toast } from 'sonner';
-
-interface Message {
-  id: string;
-  content: string;
-  sender_id: string;
-  sender_name: string;
-  sender_type: 'client' | 'admin';
-  created_at: string;
-  chat_room_id: string;
-}
 
 const ClientCommunication = () => {
   const { user, client, loading } = useAuth();
@@ -40,18 +31,15 @@ const ClientCommunication = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Mock messages for demo
-  const messages: Message[] = [
-    {
-      id: '1',
-      content: 'Olá! Como posso ajudá-lo hoje?',
-      sender_id: 'admin',
-      sender_name: 'Rafael Gontijo',
-      sender_type: 'admin',
-      created_at: new Date().toISOString(),
-      chat_room_id: 'room1'
-    }
-  ];
+  // Use real chat hook
+  const { 
+    messages, 
+    currentRoom, 
+    loading: chatLoading,
+    sending,
+    sendMessage,
+    createOrFindRoom
+  } = useChat(false);
   // Equipe Ascalate
   const ascalateTeam = [
     {
@@ -85,19 +73,32 @@ const ClientCommunication = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Initialize chat room on component mount
+  useEffect(() => {
+    if (user && client && !currentRoom) {
+      createOrFindRoom();
+    }
+  }, [user, client, currentRoom, createOrFindRoom]);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  // Handle send message (demo version)
+  // Handle send message (real implementation)
   const handleSendMessage = async () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || sending) return;
 
     try {
-      console.log('📤 Would send message:', newMessage.substring(0, 50));
-      toast.success('Mensagem enviada! (Demo)');
-      setNewMessage('');
-      inputRef.current?.focus();
+      console.log('📤 Sending message:', newMessage.substring(0, 50));
+      const success = await sendMessage(newMessage.trim());
+      
+      if (success) {
+        setNewMessage('');
+        inputRef.current?.focus();
+        toast.success('Mensagem enviada!');
+      } else {
+        toast.error('Erro ao enviar mensagem');
+      }
     } catch (error) {
       console.error('❌ Error in handleSendMessage:', error);
       toast.error('Erro ao enviar mensagem');
@@ -129,15 +130,15 @@ const ClientCommunication = () => {
     });
   };
 
-  // Group messages by date
-  const groupedMessages = messages.reduce((groups: { [key: string]: Message[] }, message) => {
-    const date = new Date(message.created_at).toDateString();
-    if (!groups[date]) {
-      groups[date] = [];
-    }
-    groups[date].push(message);
-    return groups;
-  }, {});
+  // Group messages by date - remove this as it's not being used
+  // const groupedMessages = messages.reduce((groups: { [key: string]: any[] }, message) => {
+  //   const date = new Date(message.created_at).toDateString();
+  //   if (!groups[date]) {
+  //     groups[date] = [];
+  //   }
+  //   groups[date].push(message);
+  //   return groups;
+  // }, {});
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -152,7 +153,7 @@ const ClientCommunication = () => {
     }
   };
 
-  if (loading) {
+  if (loading || chatLoading) {
     return (
       <div className="flex items-center justify-center min-h-[600px]">
         <div className="flex flex-col items-center gap-4">
@@ -317,10 +318,14 @@ const ClientCommunication = () => {
                   </Button>
                   <Button
                     onClick={handleSendMessage}
-                    disabled={!newMessage.trim()}
+                    disabled={!newMessage.trim() || sending}
                     className="h-[44px] w-[44px] rounded-xl hover-scale"
                   >
-                    <Send className="h-4 w-4" />
+                    {sending ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
               </div>

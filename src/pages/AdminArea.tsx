@@ -18,6 +18,7 @@ import ConfiguracoesAdmin from './admin/ConfiguracoesAdmin';
 import LogsAdmin from './admin/LogsAdmin';
 import AdminApprovals from './admin/AdminApprovals';
 import TestingDashboard from './admin/TestingDashboard';
+import ChatAdmin from './admin/ChatAdmin';
 
 // FP&A Admin pages
 import AdminFPAClientManagement from './admin/fpa/AdminFPAClientManagement';
@@ -49,6 +50,7 @@ const AdminArea = () => {
               <Route path="tarefas" element={<TasksAdmin />} />
               <Route path="chamados" element={<TicketsAdmin />} />
               <Route path="meus-chamados" element={<MyTickets />} />
+              <Route path="chat" element={<ChatAdmin />} />
               <Route path="arquivos" element={<ClientDocumentsAdmin />} />
               <Route path="documentos" element={<ClientDocumentsAdmin />} />
               <Route path="configuracoes" element={<ConfiguracoesAdmin />} />
