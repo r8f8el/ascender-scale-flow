@@ -64,7 +64,7 @@ const ClientTeam = () => {
       console.log('👥 Membros encontrados:', members);
       return members || [];
     },
-    enabled: !!companyAccess?.hasAccess && !accessLoading
+    enabled: !!companyAccess?.hasCompanyAccess && !accessLoading
   });
 
   const { data: pendingInvitations } = useQuery({
@@ -87,7 +87,7 @@ const ClientTeam = () => {
 
       return data || [];
     },
-    enabled: !!companyAccess?.hasAccess && !accessLoading
+    enabled: !!companyAccess?.hasCompanyAccess && !accessLoading
   });
 
   if (accessLoading) {
@@ -98,7 +98,7 @@ const ClientTeam = () => {
     );
   }
 
-  if (!companyAccess?.hasAccess) {
+  if (!companyAccess?.hasCompanyAccess) {
     return (
       <div className="container mx-auto p-6">
         <Alert>
@@ -151,13 +151,13 @@ const ClientTeam = () => {
           </p>
         </div>
         
-        {companyAccess?.isPrimaryContact && (
+        {companyAccess?.profile?.is_primary_contact && (
           <SecureInviteTeamMemberDialog onInviteSuccess={() => refetch()} />
         )}
       </div>
 
       {/* Alertas de segurança */}
-      {companyAccess?.isPrimaryContact && (
+      {companyAccess?.profile?.is_primary_contact && (
         <Alert className="border-blue-200 bg-blue-50">
           <Shield className="h-4 w-4 text-blue-600" />
           <AlertDescription className="text-blue-800">
@@ -224,7 +224,7 @@ const ClientTeam = () => {
             <div className="text-center py-8">
               <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500 mb-4">Nenhum membro da equipe encontrado</p>
-              {companyAccess?.isPrimaryContact && (
+              {companyAccess?.profile?.is_primary_contact && (
                 <p className="text-sm text-gray-400">
                   Use o botão "Convidar Membro" para adicionar pessoas à sua equipe
                 </p>
@@ -244,8 +244,8 @@ const ClientTeam = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <h3 className="font-medium">{member.name}</h3>
-                        {companyAccess?.isPrimaryContact && (
-                          <Crown className="h-4 w-4 text-yellow-500" title="Contato Principal" />
+                        {companyAccess?.profile?.is_primary_contact && (
+                          <Crown className="h-4 w-4 text-yellow-500" />
                         )}
                       </div>
                       <p className="text-sm text-gray-500">{member.invited_email}</p>
