@@ -8,8 +8,10 @@ interface InviteData {
   invitation_id: string;
   email: string;
   company_id: string;
+  company_name: string;
   inviter_name: string;
   message: string;
+  hierarchy_level_id: string;
   is_valid: boolean;
 }
 
@@ -50,42 +52,50 @@ export const useSecureInviteSignup = (token?: string | null) => {
 
       if (validationError) {
         console.error('❌ Erro ao validar token:', validationError);
-        setError(validationError.message || 'Erro ao validar token');
+        setError('Erro ao validar convite: ' + validationError.message);
         return null;
       }
 
+      console.log('📋 Dados retornados pela função RPC:', data);
+
       if (!data || data.length === 0) {
         console.log('⚠️ Token não encontrado');
-        setError('Token não encontrado ou inválido');
+        setError('Convite não encontrado ou token inválido');
         return null;
       }
 
       const invite = data[0];
-      console.log('✅ Token válido:', invite);
+      console.log('✅ Convite encontrado:', invite);
 
       if (!invite.is_valid) {
         console.log('❌ Token inválido ou expirado');
-        setError('Token inválido ou expirado');
+        setError('Convite inválido ou expirado');
         return null;
       }
 
-      setInviteData(invite);
+      // Estruturar os dados do convite
+      const inviteDataFormatted: InviteData = {
+        invitation_id: invite.invitation_id,
+        email: invite.email,
+        company_id: invite.company_id,
+        company_name: invite.company_name || 'Empresa',
+        inviter_name: invite.inviter_name || 'Administrador',
+        message: invite.message || '',
+        hierarchy_level_id: invite.hierarchy_level_id || '',
+        is_valid: invite.is_valid
+      };
+
+      setInviteData(inviteDataFormatted);
       
-      // Buscar dados da empresa
-      const { data: companyInfo, error: companyError } = await supabase
-        .from('client_profiles')
-        .select('name, company')
-        .eq('id', invite.company_id)
-        .single();
-      
-      if (!companyError && companyInfo) {
-        setCompanyData({ name: companyInfo.company || companyInfo.name });
-      }
+      // Definir dados da empresa
+      setCompanyData({ 
+        name: invite.company_name || 'Empresa' 
+      });
 
       return invite;
     } catch (err) {
       console.error('❌ Erro na validação do token:', err);
-      setError('Erro interno na validação');
+      setError('Erro interno na validação do convite');
       return null;
     } finally {
       setLoading(false);
@@ -124,7 +134,8 @@ export const useSecureInviteSignup = (token?: string | null) => {
           data: {
             name: data.name,
             invited_via_token: token
-          }
+          },
+          emailRedirectTo: `${window.location.origin}/cliente/login`
         }
       });
 
@@ -156,37 +167,7 @@ export const useSecureInviteSignup = (token?: string | null) => {
         throw acceptError;
       }
 
-      // Verificar se a função retornou sucesso
-      let result: AcceptInviteResult;
-      
-      if (typeof acceptResult === 'boolean') {
-        if (acceptResult) {
-          result = {
-            success: true,
-            company_name: companyData?.name,
-            user_id: authData.user.id
-          };
-        } else {
-          result = {
-            success: false,
-            error: 'Erro ao processar convite'
-          };
-        }
-      } else if (acceptResult && typeof acceptResult === 'object') {
-        result = acceptResult as AcceptInviteResult;
-      } else {
-        result = {
-          success: false,
-          error: 'Resposta inválida do servidor'
-        };
-      }
-
-      if (!result.success) {
-        console.error('❌ Erro na função de aceitar convite:', result.error);
-        throw new Error(result.error || 'Erro ao processar convite');
-      }
-
-      console.log('✅ Convite aceito com sucesso:', result);
+      console.log('✅ Resultado do aceite do convite:', acceptResult);
 
       // Invalidar caches para forçar recarregamento dos dados
       queryClient.invalidateQueries({ queryKey: ['company-access'] });
@@ -200,7 +181,7 @@ export const useSecureInviteSignup = (token?: string | null) => {
 
       return {
         success: true,
-        company_name: result.company_name || companyData?.name,
+        company_name: companyData?.name,
         user_id: authData.user.id
       };
     },

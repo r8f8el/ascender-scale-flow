@@ -1,260 +1,279 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { 
-  Users, 
-  Search, 
-  Mail, 
-  Shield,
-  CheckCircle,
-  Clock,
-  UserPlus,
-  Eye
-} from 'lucide-react';
-import { useSecureTeamMembers, useSecureCompanyTeamMembers } from '@/hooks/useSecureTeamMembers';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Users, Crown, Mail, Calendar, Shield, AlertCircle } from 'lucide-react';
 import { SecureInviteTeamMemberDialog } from '@/components/client/SecureInviteTeamMemberDialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useCompanyAccess } from '@/hooks/useCompanyAccess';
 
 const ClientTeam = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const { data: companyAccess, isLoading: accessLoading } = useCompanyAccess();
+  
+  const { data: teamMembers, isLoading, refetch } = useQuery({
+    queryKey: ['secure-team-members'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
 
-  const { data: teamMembers = [], isLoading: teamLoading } = useSecureTeamMembers();
-  const { data: companyMembers = [], isLoading: companyLoading } = useSecureCompanyTeamMembers();
+      console.log('🔍 Buscando membros da equipe para o usuário:', user.id);
+      
+      // Buscar o perfil do usuário para obter a empresa
+      const { data: profile } = await supabase
+        .from('client_profiles')
+        .select('company, is_primary_contact')
+        .eq('id', user.id)
+        .single();
 
-  // Combinar dados de membros da empresa com dados de convites da equipe
-  const allTeamData = companyMembers.map(member => {
-    const teamMemberData = teamMembers.find(tm => tm.user_id === member.id);
-    return {
-      ...member,
-      status: teamMemberData?.status || 'active',
-      hierarchy_level: member.hierarchy_levels || { name: 'Sem nível', level: 99, can_approve: false }
-    };
+      if (!profile?.company) {
+        console.log('⚠️ Usuário não tem empresa definida');
+        return [];
+      }
+
+      console.log('🏢 Empresa do usuário:', profile.company);
+
+      // Buscar todos os membros da equipe da mesma empresa
+      const { data: members, error } = await supabase
+        .from('team_members')
+        .select(`
+          id,
+          user_id,
+          invited_email,
+          name,
+          status,
+          joined_at,
+          created_at,
+          hierarchy_level_id,
+          hierarchy_levels (
+            name,
+            level,
+            can_approve
+          )
+        `)
+        .eq('company_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('❌ Erro ao buscar membros:', error);
+        throw error;
+      }
+
+      console.log('👥 Membros encontrados:', members);
+      return members || [];
+    },
+    enabled: !!companyAccess?.hasAccess && !accessLoading
   });
 
-  // Adicionar convites pendentes que ainda não têm user_id
-  const pendingInvites = teamMembers.filter(tm => !tm.user_id);
-  
-  const combinedTeamData = [
-    ...allTeamData,
-    ...pendingInvites.map(invite => ({
-      id: invite.id,
-      name: invite.name,
-      email: invite.invited_email,
-      status: invite.status,
-      hierarchy_level: invite.hierarchy_levels || { name: 'Sem nível', level: 99, can_approve: false },
-      invited_at: invite.invited_at
-    }))
-  ];
+  const { data: pendingInvitations } = useQuery({
+    queryKey: ['pending-invitations'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
 
-  const filteredMembers = combinedTeamData.filter(member =>
-    member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.hierarchy_level.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      const { data, error } = await supabase
+        .from('team_invitations')
+        .select('email, inviter_name, created_at, expires_at')
+        .eq('company_id', user.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active':
-        return <Badge className="bg-green-100 text-green-700"><CheckCircle className="h-3 w-3 mr-1" />Ativo</Badge>;
-      case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-700"><Clock className="h-3 w-3 mr-1" />Pendente</Badge>;
-      case 'inactive':
-        return <Badge variant="outline" className="text-gray-500">Inativo</Badge>;
-      default:
-        return <Badge className="bg-green-100 text-green-700"><CheckCircle className="h-3 w-3 mr-1" />Ativo</Badge>;
-    }
-  };
+      if (error) {
+        console.error('Erro ao buscar convites pendentes:', error);
+        return [];
+      }
 
-  const isLoading = teamLoading || companyLoading;
+      return data || [];
+    },
+    enabled: !!companyAccess?.hasAccess && !accessLoading
+  });
 
-  if (isLoading) {
+  if (accessLoading) {
     return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
+  if (!companyAccess?.hasAccess) {
+    return (
+      <div className="container mx-auto p-6">
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Você precisa estar associado a uma empresa para gerenciar equipes.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusMap = {
+      active: { label: 'Ativo', variant: 'default' as const },
+      pending: { label: 'Pendente', variant: 'secondary' as const },
+      inactive: { label: 'Inativo', variant: 'destructive' as const }
+    };
+    
+    const statusInfo = statusMap[status as keyof typeof statusMap] || 
+                      { label: status, variant: 'outline' as const };
+    
+    return (
+      <Badge variant={statusInfo.variant}>
+        {statusInfo.label}
+      </Badge>
+    );
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Nossa Equipe</h1>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <Users className="h-8 w-8 text-blue-600" />
+            Equipe
+          </h1>
           <p className="text-gray-600 mt-1">
-            Gerencie os membros da sua equipe e convide novos colaboradores
+            Gerencie os membros da sua equipe e convites
           </p>
         </div>
         
-        <div className="flex gap-2">
-          <Button 
-            variant="outline"
-            onClick={() => window.open('/convite-equipe', '_blank')}
-          >
-            <Eye className="h-4 w-4 mr-2" />
-            Ver Página de Convite
-          </Button>
-          <Button onClick={() => setInviteDialogOpen(true)}>
-            <UserPlus className="h-4 w-4 mr-2" />
-            Convidar Membro
-          </Button>
-        </div>
+        {companyAccess?.isPrimaryContact && (
+          <SecureInviteTeamMemberDialog onInviteSuccess={() => refetch()} />
+        )}
       </div>
 
-      {/* Estatísticas da Equipe */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Alertas de segurança */}
+      {companyAccess?.isPrimaryContact && (
+        <Alert className="border-blue-200 bg-blue-50">
+          <Shield className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-800">
+            <strong>Sistema de Convites Seguro:</strong> Os convites agora utilizam tokens seguros 
+            com validade de 24 horas para garantir máxima segurança.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Convites Pendentes */}
+      {pendingInvitations && pendingInvitations.length > 0 && (
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Users className="h-8 w-8 text-blue-500" />
-              <div>
-                <p className="text-sm text-gray-600">Total de Membros</p>
-                <p className="text-2xl font-bold">{combinedTeamData.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <CheckCircle className="h-8 w-8 text-green-500" />
-              <div>
-                <p className="text-sm text-gray-600">Membros Ativos</p>
-                <p className="text-2xl font-bold">
-                  {combinedTeamData.filter(m => m.status === 'active').length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Clock className="h-8 w-8 text-yellow-500" />
-              <div>
-                <p className="text-sm text-gray-600">Convites Pendentes</p>
-                <p className="text-2xl font-bold">
-                  {combinedTeamData.filter(m => m.status === 'pending').length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <Shield className="h-8 w-8 text-purple-500" />
-              <div>
-                <p className="text-sm text-gray-600">Podem Aprovar</p>
-                <p className="text-2xl font-bold">
-                  {combinedTeamData.filter(m => m.hierarchy_level.can_approve).length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Busca */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Buscar Membros da Equipe</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Buscar por nome, email ou cargo..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Lista da Equipe */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {filteredMembers.map((member) => (
-          <Card key={member.id} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-start gap-4">
-                {/* Avatar */}
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                  {member.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                </div>
-                
-                {/* Informações */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900 truncate">
-                      {member.name}
-                    </h3>
-                    {getStatusBadge(member.status)}
-                  </div>
-                  
-                  <div className="flex items-center gap-2 mb-3">
-                    <Shield className="h-4 w-4 text-purple-500" />
-                    <span className="text-purple-600 font-medium">{member.hierarchy_level.name}</span>
-                    {member.hierarchy_level.can_approve && (
-                      <Badge variant="secondary" className="text-xs">Pode Aprovar</Badge>
-                    )}
-                  </div>
-                  
-                  {/* Contato */}
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Mail className="h-4 w-4" />
-                      <span className="truncate">{member.email}</span>
-                    </div>
-                  </div>
-
-                  {/* Status específico para convites pendentes */}
-                  {member.status === 'pending' && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mt-3">
-                      <p className="text-sm text-yellow-800">
-                        <Clock className="h-4 w-4 inline mr-1" />
-                        Convite enviado - aguardando confirmação
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-orange-500" />
+              Convites Pendentes
+            </CardTitle>
+            <CardDescription>
+              Convites enviados que ainda não foram aceitos
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {pendingInvitations.map((invitation, index) => (
+                <div key={index} className="flex items-center justify-between p-3 border rounded-lg bg-orange-50">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-orange-100 text-orange-600">
+                        <Mail className="h-4 w-4" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium">{invitation.email}</p>
+                      <p className="text-sm text-gray-500">
+                        Convidado por {invitation.inviter_name} • {new Date(invitation.created_at).toLocaleDateString()}
                       </p>
                     </div>
-                  )}
+                  </div>
+                  <Badge variant="secondary">Pendente</Badge>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {filteredMembers.length === 0 && (
-        <Card>
-          <CardContent className="text-center py-12">
-            <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum membro encontrado</h3>
-            <p className="text-gray-600 mb-4">
-              {combinedTeamData.length === 0 
-                ? "Sua equipe ainda não tem membros. Comece convidando colaboradores!"
-                : "Nenhum membro corresponde aos filtros aplicados."
-              }
-            </p>
-            {combinedTeamData.length === 0 && (
-              <Button onClick={() => setInviteDialogOpen(true)}>
-                <UserPlus className="h-4 w-4 mr-2" />
-                Convidar Primeiro Membro
-              </Button>
-            )}
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Dialog de convite */}
-      <SecureInviteTeamMemberDialog 
-        open={inviteDialogOpen}
-        onOpenChange={setInviteDialogOpen}
-      />
+      {/* Lista de Membros */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-blue-600" />
+            Membros da Equipe
+          </CardTitle>
+          <CardDescription>
+            {teamMembers?.length || 0} membro(s) na equipe
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+          ) : !teamMembers || teamMembers.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500 mb-4">Nenhum membro da equipe encontrado</p>
+              {companyAccess?.isPrimaryContact && (
+                <p className="text-sm text-gray-400">
+                  Use o botão "Convidar Membro" para adicionar pessoas à sua equipe
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {teamMembers.map((member) => (
+                <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-10 w-10">
+                      <AvatarFallback className="bg-blue-100 text-blue-600">
+                        {getInitials(member.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium">{member.name}</h3>
+                        {companyAccess?.isPrimaryContact && (
+                          <Crown className="h-4 w-4 text-yellow-500" title="Contato Principal" />
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-500">{member.invited_email}</p>
+                      {member.hierarchy_levels && (
+                        <p className="text-xs text-blue-600">
+                          {member.hierarchy_levels.name} (Nível {member.hierarchy_levels.level})
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      {getStatusBadge(member.status)}
+                      {member.joined_at && (
+                        <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          Entrou em {new Date(member.joined_at).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
