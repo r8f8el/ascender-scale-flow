@@ -233,23 +233,32 @@ export const useChat = (isAdmin = false) => {
     let channel: any = null;
     
     if (user && currentRoom) {
-      console.log('🔄 Setting up realtime for user:', user.id, 'room:', currentRoom);
+      console.log('🔄 Setting up realtime for user:', user.id, 'room:', currentRoom, 'isAdmin:', isAdmin);
       
-      const channelName = `chat-room-${currentRoom}`;
+      const channelName = `chat-room-${currentRoom}-${Date.now()}`;
       
       channel = supabase
         .channel(channelName)
         .on('postgres_changes', 
-          { event: 'INSERT', schema: 'public', table: 'chat_messages' }, 
+          { 
+            event: 'INSERT', 
+            schema: 'public', 
+            table: 'chat_messages',
+            filter: `chat_room_id=eq.${currentRoom}`
+          }, 
           (payload) => {
             const newMessage = payload.new as any;
-            console.log('📨 New message received:', newMessage);
+            console.log('📨 New message received via realtime:', newMessage);
             
             if (newMessage.chat_room_id === currentRoom) {
               setMessages(prev => {
                 const exists = prev.some(msg => msg.id === newMessage.id);
-                if (exists) return prev;
+                if (exists) {
+                  console.log('📨 Message already exists, skipping');
+                  return prev;
+                }
                 
+                console.log('📨 Adding new message to state');
                 return [...prev, {
                   ...newMessage,
                   sender_type: newMessage.sender_type as 'client' | 'admin'
@@ -258,18 +267,29 @@ export const useChat = (isAdmin = false) => {
             }
           }
         )
+        .on('postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public', 
+            table: 'chat_rooms',
+            filter: `id=eq.${currentRoom}`
+          },
+          (payload) => {
+            console.log('📨 Chat room updated:', payload.new);
+          }
+        )
         .subscribe((status) => {
-          console.log('📡 Realtime status:', status);
+          console.log('📡 Realtime channel status:', status, 'for room:', currentRoom);
         });
     }
 
     return () => {
       if (channel) {
-        console.log('🧹 Cleaning up realtime subscriptions');
+        console.log('🧹 Cleaning up realtime subscriptions for room:', currentRoom);
         supabase.removeChannel(channel);
       }
     };
-  }, [currentRoom]); // Only depend on currentRoom, not user
+  }, [currentRoom, user?.id, isAdmin]); // Depend on currentRoom and user ID
 
   // Load rooms separately
   useEffect(() => {
