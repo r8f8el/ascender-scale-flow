@@ -7,7 +7,7 @@ import { Kanban } from 'lucide-react';
 
 export default function ClientKanban() {
   const { user } = useAuth();
-  const { boards, loading } = useKanbanBoards(user?.id);
+  const { boards, loading } = useKanbanBoards();
   const [selectedBoardId, setSelectedBoardId] = useState<string>('');
 
   React.useEffect(() => {

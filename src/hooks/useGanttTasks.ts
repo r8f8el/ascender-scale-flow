@@ -45,6 +45,53 @@ export const useGanttTasks = (projectId: string) => {
       
       console.log('🔍 Buscando tarefas para projeto:', projectId);
 
+      // Verificar acesso ao projeto primeiro
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+
+      // Buscar perfil do usuário para obter empresa
+      const { data: profile } = await supabase
+        .from('client_profiles')
+        .select('company')
+        .eq('id', user.id)
+        .single();
+
+      let userCompany = profile?.company;
+
+      // Se não tem empresa no perfil, verificar se é membro da equipe
+      if (!userCompany) {
+        const { data: teamMember } = await supabase
+          .from('team_members')
+          .select(`
+            company:client_profiles!team_members_company_id_fkey(company)
+          `)
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (teamMember?.company?.company) {
+          userCompany = teamMember.company.company;
+        }
+      }
+
+      // Verificar se o projeto pertence à empresa do usuário
+      const { data: project } = await supabase
+        .from('gantt_projects')
+        .select(`
+          id,
+          client_profiles!gantt_projects_client_id_fkey(company)
+        `)
+        .eq('id', projectId)
+        .eq('client_profiles.company', userCompany)
+        .single();
+
+      if (!project) {
+        console.log('⚠️ Usuário não tem acesso a este projeto');
+        setTasks([]);
+        setLoading(false);
+        return;
+      }
+
       const { data, error: fetchError } = await supabase
         .from('gantt_tasks')
         .select('*')

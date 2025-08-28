@@ -28,12 +28,46 @@ export const useCompanyProjects = () => {
     queryFn: async () => {
       console.log('🔍 Buscando projetos da empresa...');
       
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+
+      // Buscar perfil do usuário para obter empresa
+      const { data: profile } = await supabase
+        .from('client_profiles')
+        .select('company')
+        .eq('id', user.id)
+        .single();
+
+      let userCompany = profile?.company;
+
+      // Se não tem empresa no perfil, verificar se é membro da equipe
+      if (!userCompany) {
+        const { data: teamMember } = await supabase
+          .from('team_members')
+          .select(`
+            company:client_profiles!team_members_company_id_fkey(company)
+          `)
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (teamMember?.company?.company) {
+          userCompany = teamMember.company.company;
+        }
+      }
+
+      if (!userCompany) {
+        console.log('⚠️ Usuário não pertence a nenhuma empresa');
+        return [];
+      }
+
       const { data, error } = await supabase
         .from('gantt_projects')
         .select(`
           *,
-          owner:client_profiles(name, email)
+          owner:client_profiles!gantt_projects_client_id_fkey(name, email, company)
         `)
+        .eq('client_profiles.company', userCompany)
         .order('updated_at', { ascending: false });
 
       if (error) {
@@ -45,7 +79,7 @@ export const useCompanyProjects = () => {
       
       return data?.map(project => ({
         ...project,
-        owner: project.owner?.[0] || { name: 'Usuário', email: '' }
+        owner: project.owner || { name: 'Usuário', email: '' }
       })) || [];
     },
     staleTime: 2 * 60 * 1000, // 2 minutos

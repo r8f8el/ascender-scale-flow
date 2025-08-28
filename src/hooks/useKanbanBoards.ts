@@ -58,19 +58,50 @@ export const useKanbanBoards = (clientId?: string) => {
 
   const fetchBoards = async () => {
     try {
-      let query = supabase
-        .from('kanban_boards')
-        .select('*')
-        .eq('is_active', true)
-        .order('board_order');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
 
-      if (clientId) {
-        query = query.eq('client_id', clientId);
+      console.log('🔍 Buscando quadros Kanban para usuário:', user.id);
+
+      // Buscar perfil do usuário para obter empresa
+      const { data: profile } = await supabase
+        .from('client_profiles')
+        .select('company')
+        .eq('id', user.id)
+        .single();
+
+      let userCompany = profile?.company;
+
+      // Se não tem empresa no perfil, verificar se é membro da equipe
+      if (!userCompany) {
+        const { data: teamMember } = await supabase
+          .from('team_members')
+          .select(`
+            company:client_profiles!team_members_company_id_fkey(company)
+          `)
+          .eq('user_id', user.id)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (teamMember?.company?.company) {
+          userCompany = teamMember.company.company;
+        }
       }
 
-      const { data, error } = await query;
+      // Buscar quadros da empresa
+      const { data, error } = await supabase
+        .from('kanban_boards')
+        .select(`
+          *,
+          client_profiles!kanban_boards_client_id_fkey(company)
+        `)
+        .eq('is_active', true)
+        .eq('client_profiles.company', userCompany)
+        .order('board_order');
 
       if (error) throw error;
+      
+      console.log('✅ Quadros Kanban encontrados:', data?.length || 0);
       setBoards(data || []);
     } catch (error) {
       console.error('Error fetching kanban boards:', error);
