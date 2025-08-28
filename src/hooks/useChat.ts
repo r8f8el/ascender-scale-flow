@@ -160,23 +160,33 @@ export const useChat = (isAdmin = false) => {
 
   // Enviar mensagem
   const sendMessage = useCallback(async (content: string, roomId?: string) => {
-    if (!user || !content.trim()) return false;
+    if (!user || !content.trim()) {
+      console.log('⚠️ sendMessage: Invalid user or content');
+      return false;
+    }
 
     try {
+      console.log('📤 Sending message:', content.substring(0, 50));
       setSending(true);
       
       let targetRoomId = roomId || currentRoom;
       
       // Se não há sala atual e não é admin, criar uma
       if (!targetRoomId && !isAdmin) {
+        console.log('🔄 Creating room before sending message');
         targetRoomId = await createOrFindRoom();
-        if (!targetRoomId) throw new Error('Não foi possível criar sala de chat');
+        if (!targetRoomId) {
+          console.error('❌ Failed to create chat room');
+          throw new Error('Não foi possível criar sala de chat');
+        }
       }
 
       if (!targetRoomId) {
+        console.error('❌ No target room available');
         throw new Error('Nenhuma sala selecionada');
       }
 
+      console.log('📤 Inserting message into room:', targetRoomId);
       const { error } = await supabase
         .from('chat_messages')
         .insert({
@@ -187,10 +197,15 @@ export const useChat = (isAdmin = false) => {
           chat_room_id: targetRoomId
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Database insert error:', error);
+        throw error;
+      }
+      
+      console.log('✅ Message sent successfully');
       return true;
     } catch (error) {
-      console.error('Erro ao enviar mensagem:', error);
+      console.error('❌ Error sending message:', error);
       toast({
         title: "Erro",
         description: "Erro ao enviar mensagem",
@@ -202,62 +217,57 @@ export const useChat = (isAdmin = false) => {
     }
   }, [user, client, currentRoom, isAdmin, createOrFindRoom, toast]);
 
-  // Configurar realtime - fixed to avoid multiple subscriptions
+  // Configurar realtime - properly manage subscriptions
   useEffect(() => {
-    if (!user) return;
-
-    console.log('🔄 Setting up realtime subscriptions for user:', user.id);
+    let channel: any = null;
     
-    // Create a unique channel name to avoid conflicts
-    const channelName = `chat-updates-${user.id}-${Date.now()}`;
-    
-    const channel = supabase
-      .channel(channelName)
-      .on('postgres_changes', 
-        { event: 'INSERT', schema: 'public', table: 'chat_messages' }, 
-        (payload) => {
-          const newMessage = payload.new as any;
-          console.log('📨 New message received:', newMessage);
-          
-          if (newMessage.chat_room_id === currentRoom) {
-            setMessages(prev => {
-              // Avoid duplicate messages
-              const exists = prev.some(msg => msg.id === newMessage.id);
-              if (exists) return prev;
-              
-              return [...prev, {
-                ...newMessage,
-                sender_type: newMessage.sender_type as 'client' | 'admin'
-              }];
-            });
+    if (user && currentRoom) {
+      console.log('🔄 Setting up realtime for user:', user.id, 'room:', currentRoom);
+      
+      const channelName = `chat-room-${currentRoom}`;
+      
+      channel = supabase
+        .channel(channelName)
+        .on('postgres_changes', 
+          { event: 'INSERT', schema: 'public', table: 'chat_messages' }, 
+          (payload) => {
+            const newMessage = payload.new as any;
+            console.log('📨 New message received:', newMessage);
+            
+            if (newMessage.chat_room_id === currentRoom) {
+              setMessages(prev => {
+                const exists = prev.some(msg => msg.id === newMessage.id);
+                if (exists) return prev;
+                
+                return [...prev, {
+                  ...newMessage,
+                  sender_type: newMessage.sender_type as 'client' | 'admin'
+                }];
+              });
+            }
           }
-          loadChatRooms(); // Atualizar lista de salas
-        }
-      )
-      .on('postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'chat_rooms' },
-        () => {
-          console.log('🏠 New chat room created');
-          loadChatRooms();
-        }
-      )
-      .subscribe((status) => {
-        console.log('📡 Realtime status:', status);
-      });
+        )
+        .subscribe((status) => {
+          console.log('📡 Realtime status:', status);
+        });
+    }
 
     return () => {
-      console.log('🧹 Cleaning up realtime subscriptions');
-      supabase.removeChannel(channel);
+      if (channel) {
+        console.log('🧹 Cleaning up realtime subscriptions');
+        supabase.removeChannel(channel);
+      }
     };
-  }, [user, currentRoom, loadChatRooms]);
+  }, [currentRoom]); // Only depend on currentRoom, not user
 
-  // Carregar salas inicialmente - only once
+  // Load rooms separately
   useEffect(() => {
-    if (user && rooms.length === 0) {
-      console.log('🔄 Initial chat rooms load for user:', user.id);
+    if (user && !loading) {
+      console.log('🔄 Loading chat rooms for user:', user.id);
       loadChatRooms();
     }
-  }, [user]); // Removed loadChatRooms from dependencies to avoid infinite loops
+  }, [user]); // Only run once when user changes
+
 
   return {
     messages,

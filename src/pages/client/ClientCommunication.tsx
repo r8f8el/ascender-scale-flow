@@ -73,13 +73,26 @@ const ClientCommunication = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Initialize chat room on component mount - simplified
+  // Initialize chat room and load messages
   useEffect(() => {
-    if (user && client && !currentRoom && !loading) {
+    if (user && client && !currentRoom && !loading && !chatLoading) {
       console.log('🏠 Initializing chat room for client:', client.name);
-      createOrFindRoom();
+      createOrFindRoom().then((roomId) => {
+        if (roomId) {
+          console.log('✅ Room created/found, loading messages for room:', roomId);
+          // No need to call loadMessages here, it will be loaded automatically
+        }
+      });
     }
-  }, [user, client, currentRoom, loading, createOrFindRoom]);
+  }, [user, client, currentRoom, loading, chatLoading, createOrFindRoom]);
+
+  // Load messages when currentRoom changes
+  useEffect(() => {
+    if (currentRoom && !chatLoading) {
+      console.log('📄 Loading messages for room:', currentRoom);
+      // Messages will be loaded by the loadMessages function or via realtime
+    }
+  }, [currentRoom, chatLoading]);
 
   useEffect(() => {
     scrollToBottom();
