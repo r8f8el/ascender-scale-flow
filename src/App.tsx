@@ -75,6 +75,7 @@ function App() {
                 <Route path="/aceitar-convite" element={<AcceptInvitation />} />
                 <Route path="/team-invite-signup" element={<TeamInviteSignup />} />
                 <Route path="/secure-team-invite" element={<SecureTeamInviteSignup />} />
+                <Route path="/convite-seguro" element={<SecureTeamInviteSignup />} />
                 
                 {/* Área do cliente - com contexto de autenticação */}
                 <Route 
