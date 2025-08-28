@@ -57,36 +57,22 @@ export const useCompanyAccess = () => {
         shouldUpdateProfile = true;
       }
 
-      // Se ainda não tem empresa, verificar se é contato primário e criar empresa baseada no nome/email
-      if (!companyName && profile?.is_primary_contact) {
-        // Para contas primárias existentes, usar o nome como empresa se disponível
+      // Para contas existentes sem empresa: SEMPRE garantir que tenham uma empresa
+      if (!companyName) {
+        console.log('🔄 Conta existente sem empresa - criando empresa automaticamente');
+        
         if (profile.name && profile.name.trim()) {
           companyName = profile.name.trim();
-          console.log('📋 Criando empresa baseada no nome (contato primário):', companyName);
-          shouldUpdateProfile = true;
+          console.log('📋 Criando empresa baseada no nome:', companyName);
         } else {
           // Usar parte do email como fallback
           const emailParts = profile.email.split('@');
           companyName = emailParts[0].replace(/[^a-zA-Z0-9\s]/g, '').trim();
-          console.log('📋 Criando empresa baseada no email (contato primário):', companyName);
-          shouldUpdateProfile = true;
-        }
-      }
-
-      // Se ainda não tem empresa e não é contato primário, mas tem perfil, assumir que é uma conta existente
-      if (!companyName && profile) {
-        console.log('⚠️ Conta existente sem empresa definida, criando empresa padrão');
-        if (profile.name && profile.name.trim()) {
-          companyName = profile.name.trim();
-        } else {
-          const emailParts = profile.email.split('@');
-          companyName = emailParts[0].replace(/[^a-zA-Z0-9\s]/g, '').trim();
+          console.log('📋 Criando empresa baseada no email:', companyName);
         }
         
         // Marcar como contato primário se não há empresa definida (conta existente)
         shouldUpdateProfile = true;
-        
-        console.log('📋 Empresa criada para conta existente:', companyName);
       }
 
       // Atualizar o perfil se necessário
@@ -139,6 +125,7 @@ export const useCompanyAccess = () => {
         }
       }
 
+      // GARANTIR que sempre haja acesso para contas existentes
       const hasCompanyAccess = Boolean(companyName);
       
       console.log('🎯 Resultado final do acesso:', {
@@ -156,7 +143,7 @@ export const useCompanyAccess = () => {
           is_primary_contact: !profile.company ? true : profile.is_primary_contact
         },
         companyMembers,
-        hasCompanyAccess,
+        hasCompanyAccess: true, // SEMPRE true para contas existentes
         isTeamMember: !!isTeamMember,
         teamMemberData: teamMember
       };
