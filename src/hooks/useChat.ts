@@ -26,6 +26,8 @@ export const useChat = (isAdmin = false) => {
   const { user, client } = useAuth();
   const { toast } = useToast();
   
+  console.log('🔄 useChat hook initialized - user:', user?.id, 'client:', client?.id, 'isAdmin:', isAdmin);
+  
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [currentRoom, setCurrentRoom] = useState<string | null>(null);
@@ -34,9 +36,13 @@ export const useChat = (isAdmin = false) => {
 
   // Carregar salas de chat
   const loadChatRooms = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('⚠️ loadChatRooms: No user, skipping');
+      return;
+    }
 
     try {
+      console.log('🔄 Loading chat rooms for user:', user.id);
       setLoading(true);
       
       let query = supabase.from('chat_rooms').select('*');
@@ -47,10 +53,15 @@ export const useChat = (isAdmin = false) => {
       
       const { data, error } = await query.order('last_message_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error loading chat rooms:', error);
+        throw error;
+      }
+      
+      console.log('✅ Chat rooms loaded:', data?.length);
       setRooms(data || []);
     } catch (error) {
-      console.error('Erro ao carregar salas de chat:', error);
+      console.error('❌ Exception in loadChatRooms:', error);
     } finally {
       setLoading(false);
     }
@@ -91,24 +102,32 @@ export const useChat = (isAdmin = false) => {
 
   // Criar ou encontrar sala de chat para cliente
   const createOrFindRoom = useCallback(async () => {
-    if (!user || !client || isAdmin) return null;
+    if (!user || !client || isAdmin) {
+      console.log('⚠️ createOrFindRoom: Missing requirements - user:', !!user, 'client:', !!client, 'isAdmin:', isAdmin);
+      return null;
+    }
 
     try {
+      console.log('🔄 Creating/finding room for user:', user.id);
       // Verificar se já existe uma sala para este cliente
       const { data: existingRoom, error: findError } = await supabase
         .from('chat_rooms')
         .select('*')
         .eq('client_id', user.id)
-        .single();
+        .maybeSingle(); // Changed to maybeSingle to avoid errors when no room exists
 
-      if (findError && findError.code !== 'PGRST116') {
+      if (findError) {
+        console.error('❌ Error finding existing room:', findError);
         throw findError;
       }
 
       if (existingRoom) {
+        console.log('✅ Found existing room:', existingRoom.id);
+        setCurrentRoom(existingRoom.id);
         return existingRoom.id;
       }
 
+      console.log('🔄 Creating new room for client:', client.name);
       // Criar nova sala
       const { data: newRoom, error: createError } = await supabase
         .from('chat_rooms')
@@ -119,12 +138,17 @@ export const useChat = (isAdmin = false) => {
         .select()
         .single();
 
-      if (createError) throw createError;
+      if (createError) {
+        console.error('❌ Error creating room:', createError);
+        throw createError;
+      }
       
+      console.log('✅ New room created:', newRoom.id);
       await loadChatRooms();
+      setCurrentRoom(newRoom.id);
       return newRoom.id;
     } catch (error) {
-      console.error('Erro ao criar/encontrar sala:', error);
+      console.error('❌ Exception in createOrFindRoom:', error);
       return null;
     }
   }, [user, client, isAdmin, loadChatRooms]);

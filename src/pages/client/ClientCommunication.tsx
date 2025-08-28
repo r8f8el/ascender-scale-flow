@@ -92,7 +92,12 @@ const ClientCommunication = () => {
   // Initialize chat room on component mount
   useEffect(() => {
     if (user && client) {
-      createOrFindRoom();
+      try {
+        console.log('🔄 Initializing chat room for user:', user.id);
+        createOrFindRoom();
+      } catch (error) {
+        console.error('❌ Error initializing chat room:', error);
+      }
     }
   }, [user, client, createOrFindRoom]);
 
@@ -101,12 +106,13 @@ const ClientCommunication = () => {
     if (!newMessage.trim() || !currentRoom) return;
 
     try {
+      console.log('📤 Sending message:', newMessage.substring(0, 50));
       await sendMessage(newMessage, currentRoom);
       setNewMessage('');
       inputRef.current?.focus();
     } catch (error) {
+      console.error('❌ Error in handleSendMessage:', error);
       toast.error('Erro ao enviar mensagem');
-      console.error('Error sending message:', error);
     }
   };
 

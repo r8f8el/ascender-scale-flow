@@ -49,6 +49,8 @@ const QueryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 };
 
 function App() {
+  console.log('🚀 App component initializing');
+  
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <QueryProvider>

@@ -9,11 +9,15 @@ const fetchClientProfile = async (userId: string) => {
     console.log('👤 Buscando perfil do cliente para userId:', userId);
     
     // Check if user is admin first using RPC call
-    const { data: adminData } = await supabase
+    const { data: adminData, error: adminError } = await supabase
       .from('admin_profiles')
       .select('id, email')
       .eq('id', userId)
       .maybeSingle();
+
+    if (adminError) {
+      console.error('❌ Error checking admin profile:', adminError);
+    }
 
     if (adminData) {
       console.log('✅ User is ADMIN, redirecting to admin area');
@@ -34,6 +38,11 @@ const fetchClientProfile = async (userId: string) => {
 
     console.log('🔍 Resultado RPC query:', { clientProfile, clientError });
 
+    if (clientError) {
+      console.error('❌ RPC Error:', clientError);
+      throw clientError;
+    }
+
     if (clientProfile && clientProfile.id) {
       console.log('✅ Found existing CLIENT profile via RPC:', clientProfile);
       return clientProfile;
@@ -49,6 +58,11 @@ const fetchClientProfile = async (userId: string) => {
 
     console.log('🔍 Resultado query direta:', { directProfile, directError });
 
+    if (directError) {
+      console.error('❌ Direct query error:', directError);
+      throw directError;
+    }
+
     if (directProfile) {
       console.log('✅ Found CLIENT profile via direct query:', directProfile);
       return directProfile;
@@ -59,7 +73,7 @@ const fetchClientProfile = async (userId: string) => {
     
   } catch (error) {
     console.error('❌ Exception in fetchClientProfile:', error);
-    return null;
+    throw error; // Re-throw to be caught by caller
   }
 };
 
@@ -90,7 +104,7 @@ export const AuthSessionProvider: React.FC<{ children: React.ReactNode }> = ({ c
                 setClient(profile);
               } catch (error) {
                 console.error('❌ Error fetching profile in timeout:', error);
-                // Don't clear user session on profile error
+                // Don't clear user session on profile error - set client to null but keep user
                 setClient(null);
               }
             }, 500); // Longer delay to ensure auth is stable
@@ -104,6 +118,7 @@ export const AuthSessionProvider: React.FC<{ children: React.ReactNode }> = ({ c
         } finally {
           // Only set loading to false after auth state is processed
           setTimeout(() => {
+            console.log('⏱️ Setting loading to false');
             setLoading(false);
           }, 200);
         }
@@ -117,6 +132,9 @@ export const AuthSessionProvider: React.FC<{ children: React.ReactNode }> = ({ c
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
           console.error('❌ Error getting initial session:', error);
+          setSession(null);
+          setUser(null);
+          setClient(null);
         } else {
           console.log('🔍 Initial session check:', session?.user?.id);
           setSession(session);
@@ -134,8 +152,12 @@ export const AuthSessionProvider: React.FC<{ children: React.ReactNode }> = ({ c
         }
       } catch (error) {
         console.error('❌ Error in checkInitialSession:', error);
+        setSession(null);
+        setUser(null);
+        setClient(null);
       } finally {
         setTimeout(() => {
+          console.log('⏱️ Initial session check complete, setting loading to false');
           setLoading(false);
         }, 200);
       }

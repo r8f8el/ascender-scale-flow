@@ -30,6 +30,12 @@ class ErrorBoundary extends React.Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     const errorId = this.state.errorId;
     console.error(`ErrorBoundary [${errorId}] caught an error:`, error, errorInfo);
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('Component stack:', errorInfo.componentStack);
+    console.error('Current URL:', window.location.href);
+    console.error('User agent:', navigator.userAgent);
     
     // Em produção, enviar erro para serviço de monitoramento
     if (process.env.NODE_ENV === 'production') {
