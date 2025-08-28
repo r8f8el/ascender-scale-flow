@@ -107,7 +107,7 @@ const ClientArea = () => {
                 <Route path="/fpa/bi" element={<ClientBIDashboard />} />
                 
                 {/* Communication - direct with Ascalate */}
-                <Route path="/comunicacao" element={<ClientCommunicationSimple />} />
+                <Route path="/comunicacao" element={<ClientCommunication />} />
               </Routes>
             </main>
           </SidebarInset>
