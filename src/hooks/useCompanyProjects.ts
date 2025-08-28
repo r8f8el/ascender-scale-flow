@@ -26,59 +26,15 @@ export const useCompanyProjects = () => {
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ['company-projects'],
     queryFn: async () => {
-      console.log('🔍 [PROJECTS DEBUG] Buscando projetos da empresa...');
+      console.log('🔍 [PROJECTS DEBUG] Buscando projetos...');
       
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
-
-      console.log('🔍 [PROJECTS DEBUG] Usuário autenticado:', user.id);
-
-      // Buscar perfil do usuário para obter empresa
-      const { data: profile, error: profileError } = await supabase
-        .from('client_profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      console.log('🔍 [PROJECTS DEBUG] Perfil:', profile, 'Erro:', profileError);
-
-      let userCompany = profile?.company;
-
-      // Se não tem empresa no perfil, verificar se é membro da equipe
-      if (!userCompany) {
-        console.log('🔍 [PROJECTS DEBUG] Sem empresa no perfil, verificando team_members...');
-        const { data: teamMember, error: teamError } = await supabase
-          .from('team_members')
-          .select(`
-            *,
-            company:client_profiles!team_members_company_id_fkey(*)
-          `)
-          .eq('user_id', user.id)
-          .eq('status', 'active')
-          .maybeSingle();
-
-        console.log('🔍 [PROJECTS DEBUG] Team member:', teamMember, 'Erro:', teamError);
-
-        if (teamMember?.company?.company) {
-          userCompany = teamMember.company.company;
-          console.log('🔍 [PROJECTS DEBUG] Empresa obtida do team member:', userCompany);
-        }
-      }
-
-      if (!userCompany) {
-        console.log('⚠️ [PROJECTS DEBUG] Usuário não pertence a nenhuma empresa');
-        return [];
-      }
-
-      console.log('🔍 [PROJECTS DEBUG] Buscando projetos da empresa:', userCompany);
-
+      // Agora as políticas RLS já fazem a verificação de acesso por empresa
       const { data, error } = await supabase
         .from('gantt_projects')
         .select(`
           *,
-          owner:client_profiles!gantt_projects_client_id_fkey(name, email, company)
+          owner:client_profiles!gantt_projects_client_id_fkey(name, email)
         `)
-        .eq('client_profiles.company', userCompany)
         .order('updated_at', { ascending: false });
 
       console.log('🔍 [PROJECTS DEBUG] Resultado busca projetos:', data, 'Erro:', error);

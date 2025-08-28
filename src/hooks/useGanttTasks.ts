@@ -33,7 +33,7 @@ export const useGanttTasks = (projectId: string) => {
 
   const fetchTasks = useCallback(async () => {
     if (!projectId || projectId === '1' || projectId === '2') {
-      console.log('⚠️ Invalid projectId, skipping fetch:', projectId);
+      console.log('⚠️ [GANTT DEBUG] Invalid projectId, skipping fetch:', projectId);
       setTasks([]);
       setLoading(false);
       return;
@@ -43,67 +43,23 @@ export const useGanttTasks = (projectId: string) => {
       setLoading(true);
       setError(null);
       
-      console.log('🔍 Buscando tarefas para projeto:', projectId);
+      console.log('🔍 [GANTT DEBUG] Buscando tarefas para projeto:', projectId);
 
-      // Verificar acesso ao projeto primeiro
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
-
-      // Buscar perfil do usuário para obter empresa
-      const { data: profile } = await supabase
-        .from('client_profiles')
-        .select('company')
-        .eq('id', user.id)
-        .single();
-
-      let userCompany = profile?.company;
-
-      // Se não tem empresa no perfil, verificar se é membro da equipe
-      if (!userCompany) {
-        const { data: teamMember } = await supabase
-          .from('team_members')
-          .select(`
-            company:client_profiles!team_members_company_id_fkey(company)
-          `)
-          .eq('user_id', user.id)
-          .eq('status', 'active')
-          .maybeSingle();
-
-        if (teamMember?.company?.company) {
-          userCompany = teamMember.company.company;
-        }
-      }
-
-      // Verificar se o projeto pertence à empresa do usuário
-      const { data: project } = await supabase
-        .from('gantt_projects')
-        .select(`
-          id,
-          client_profiles!gantt_projects_client_id_fkey(company)
-        `)
-        .eq('id', projectId)
-        .eq('client_profiles.company', userCompany)
-        .single();
-
-      if (!project) {
-        console.log('⚠️ Usuário não tem acesso a este projeto');
-        setTasks([]);
-        setLoading(false);
-        return;
-      }
-
+      // Agora as políticas RLS já fazem a verificação de acesso
       const { data, error: fetchError } = await supabase
         .from('gantt_tasks')
         .select('*')
         .eq('project_id', projectId)
         .order('start_date', { ascending: true });
 
+      console.log('🔍 [GANTT DEBUG] Resultado busca tarefas:', data, 'Erro:', fetchError);
+
       if (fetchError) {
-        console.error('❌ Erro ao buscar tarefas:', fetchError);
+        console.error('❌ [GANTT DEBUG] Erro ao buscar tarefas:', fetchError);
         throw fetchError;
       }
 
-      console.log('✅ Tarefas encontradas:', data);
+      console.log('✅ [GANTT DEBUG] Tarefas encontradas:', data);
       
       // Type conversion to ensure proper types
       const convertedTasks: GanttTask[] = (data || []).map(task => ({
