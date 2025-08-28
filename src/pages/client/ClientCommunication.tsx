@@ -22,8 +22,6 @@ import {
   Mic
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useChat } from '@/hooks/useChat';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface Message {
@@ -37,21 +35,23 @@ interface Message {
 }
 
 const ClientCommunication = () => {
-  const { user, client } = useAuth();
+  const { user, client, loading } = useAuth();
   const [newMessage, setNewMessage] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  
-  const {
-    messages,
-    currentRoom,
-    loading,
-    sendMessage,
-    createOrFindRoom
-  } = useChat();
 
+  // Mock messages for demo
+  const messages: Message[] = [
+    {
+      id: '1',
+      content: 'Olá! Como posso ajudá-lo hoje?',
+      sender_id: 'admin',
+      sender_name: 'Rafael Gontijo',
+      sender_type: 'admin',
+      created_at: new Date().toISOString(),
+      chat_room_id: 'room1'
+    }
+  ];
   // Equipe Ascalate
   const ascalateTeam = [
     {
@@ -89,25 +89,13 @@ const ClientCommunication = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Initialize chat room on component mount
-  useEffect(() => {
-    if (user && client) {
-      try {
-        console.log('🔄 Initializing chat room for user:', user.id);
-        createOrFindRoom();
-      } catch (error) {
-        console.error('❌ Error initializing chat room:', error);
-      }
-    }
-  }, [user, client, createOrFindRoom]);
-
-  // Handle send message
+  // Handle send message (demo version)
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !currentRoom) return;
+    if (!newMessage.trim()) return;
 
     try {
-      console.log('📤 Sending message:', newMessage.substring(0, 50));
-      await sendMessage(newMessage, currentRoom);
+      console.log('📤 Would send message:', newMessage.substring(0, 50));
+      toast.success('Mensagem enviada! (Demo)');
       setNewMessage('');
       inputRef.current?.focus();
     } catch (error) {
@@ -164,7 +152,7 @@ const ClientCommunication = () => {
     }
   };
 
-  if (loading && !currentRoom) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[600px]">
         <div className="flex flex-col items-center gap-4">
@@ -225,83 +213,65 @@ const ClientCommunication = () => {
             <CardContent className="flex-1 p-0">
               <ScrollArea className="h-[400px] lg:h-[500px] p-4">
                 <div className="space-y-6">
-                  {Object.entries(groupedMessages).map(([date, dayMessages]) => (
-                    <div key={date} className="space-y-4">
-                      {/* Date Divider */}
-                      <div className="flex items-center justify-center">
-                        <div className="bg-muted px-3 py-1 rounded-full text-xs text-muted-foreground">
-                          {formatDate(dayMessages[0].created_at)}
-                        </div>
-                      </div>
+                   
+                   {messages.length === 0 && (
+                     <div className="flex items-center justify-center h-32">
+                       <p className="text-muted-foreground">Nenhuma mensagem ainda. Inicie a conversa!</p>
+                     </div>
+                   )}
+                   
+                   {messages.length > 0 && (
+                     <div className="space-y-4">
+                       {messages.map((message, index) => (
+                         <div 
+                           key={message.id}
+                           className={`flex gap-3 ${
+                             message.sender_type === 'client' ? 'flex-row-reverse' : ''
+                           } animate-fade-in-up`}
+                           style={{ animationDelay: `${index * 50}ms` }}
+                         >
+                           {message.sender_type === 'admin' && (
+                             <Avatar className="w-8 h-8">
+                               <AvatarFallback className={
+                                 ascalateTeam.find(t => t.name.includes(message.sender_name.split(' ')[0]))?.color || 
+                                 'bg-gradient-to-br from-gray-500 to-gray-600'
+                               }>
+                                 <AvatarInitials name={message.sender_name} />
+                               </AvatarFallback>
+                             </Avatar>
+                           )}
 
-                      {/* Messages for this date */}
-                      {dayMessages.map((message, index) => (
-                        <div 
-                          key={message.id}
-                          className={`flex gap-3 ${
-                            message.sender_type === 'client' ? 'flex-row-reverse' : ''
-                          } animate-fade-in-up`}
-                          style={{ animationDelay: `${index * 50}ms` }}
-                        >
-                          {message.sender_type === 'admin' && (
-                            <Avatar className="w-8 h-8">
-                              <AvatarFallback className={
-                                ascalateTeam.find(t => t.name.includes(message.sender_name.split(' ')[0]))?.color || 
-                                'bg-gradient-to-br from-gray-500 to-gray-600'
-                              }>
-                                <AvatarInitials name={message.sender_name} />
-                              </AvatarFallback>
-                            </Avatar>
-                          )}
-
-                          <div className={`max-w-[70%] ${
-                            message.sender_type === 'client' ? 'ml-12' : 'mr-12'
-                          }`}>
-                            <div className={`rounded-2xl px-4 py-3 ${
-                              message.sender_type === 'client'
-                                ? 'bg-primary text-primary-foreground ml-auto'
-                                : 'bg-muted'
-                            } hover-scale transition-all duration-200`}>
-                              {message.sender_type === 'admin' && (
-                                <p className="text-xs font-medium text-muted-foreground mb-1">
-                                  {message.sender_name}
-                                </p>
-                              )}
-                              <p className="text-sm leading-relaxed">{message.content}</p>
-                              <div className={`flex items-center gap-1 mt-2 text-xs ${
-                                message.sender_type === 'client' 
-                                  ? 'text-primary-foreground/70 justify-end' 
-                                  : 'text-muted-foreground'
-                              }`}>
-                                <Clock className="h-3 w-3" />
-                                {formatTime(message.created_at)}
-                                {message.sender_type === 'client' && (
-                                  <CheckCheck className="h-3 w-3 ml-1" />
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-                  
-                  {isTyping && (
-                    <div className="flex gap-3 animate-fade-in">
-                      <Avatar className="w-8 h-8">
-                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-blue-600">
-                          <AvatarInitials name="Ascalate" />
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="bg-muted rounded-2xl px-4 py-3">
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                          <div className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                           <div className={`max-w-[70%] ${
+                             message.sender_type === 'client' ? 'ml-12' : 'mr-12'
+                           }`}>
+                             <div className={`rounded-2xl px-4 py-3 ${
+                               message.sender_type === 'client'
+                                 ? 'bg-primary text-primary-foreground ml-auto'
+                                 : 'bg-muted'
+                             } hover-scale transition-all duration-200`}>
+                               {message.sender_type === 'admin' && (
+                                 <p className="text-xs font-medium text-muted-foreground mb-1">
+                                   {message.sender_name}
+                                 </p>
+                               )}
+                               <p className="text-sm leading-relaxed">{message.content}</p>
+                               <div className={`flex items-center gap-1 mt-2 text-xs ${
+                                 message.sender_type === 'client' 
+                                   ? 'text-primary-foreground/70 justify-end' 
+                                   : 'text-muted-foreground'
+                               }`}>
+                                 <Clock className="h-3 w-3" />
+                                 {formatTime(message.created_at)}
+                                 {message.sender_type === 'client' && (
+                                   <CheckCheck className="h-3 w-3 ml-1" />
+                                 )}
+                               </div>
+                             </div>
+                           </div>
+                         </div>
+                       ))}
+                     </div>
+                   )}
                 </div>
                 <div ref={messagesEndRef} />
               </ScrollArea>
