@@ -34,6 +34,7 @@ import ClientFPAData from './fpa/ClientFPAData';
 import ClientFPAReports from './fpa/ClientFPAReports';
 import ClientFPAScenarios from './fpa/ClientFPAScenarios';
 import ClientFPACommunication from './fpa/ClientFPACommunication';
+import ClientCommunication from './ClientCommunication';
 import ClientBIDashboard from './fpa/ClientBIDashboard';
 
 const ClientArea = () => {
@@ -102,8 +103,10 @@ const ClientArea = () => {
                 <Route path="/fpa/dados" element={<ClientFPAData />} />
                 <Route path="/fpa/relatorios" element={<ClientFPAReports />} />
                 <Route path="/fpa/cenarios" element={<ClientFPAScenarios />} />
-                <Route path="/fpa/comunicacao" element={<ClientFPACommunication />} />
                 <Route path="/fpa/bi" element={<ClientBIDashboard />} />
+                
+                {/* Communication - direct with Ascalate */}
+                <Route path="/comunicacao" element={<ClientCommunication />} />
               </Routes>
             </main>
           </SidebarInset>

@@ -205,4 +205,13 @@
   .animation-delay-4000 {
     animation-delay: 4s;
   }
+
+  /* Chat animations */
+  .hover-scale {
+    transition: transform 0.2s ease;
+  }
+  
+  .hover-scale:hover {
+    transform: scale(1.02);
+  }
 }

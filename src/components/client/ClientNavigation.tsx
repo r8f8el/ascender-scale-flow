@@ -117,7 +117,7 @@ const fpaNavigation = [
   },
   {
     name: 'Comunicação',
-    href: '/cliente/fpa/comunicacao',
+    href: '/cliente/comunicacao',
     icon: MessageCircle,
   },
   {

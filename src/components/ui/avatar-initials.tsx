@@ -3,9 +3,10 @@ import React from 'react';
 
 interface AvatarInitialsProps {
   name: string;
+  className?: string;
 }
 
-export const AvatarInitials: React.FC<AvatarInitialsProps> = ({ name }) => {
+export const AvatarInitials: React.FC<AvatarInitialsProps> = ({ name, className }) => {
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -15,5 +16,5 @@ export const AvatarInitials: React.FC<AvatarInitialsProps> = ({ name }) => {
       .toUpperCase();
   };
 
-  return <span>{getInitials(name)}</span>;
+  return <span className={className}>{getInitials(name)}</span>;
 };
