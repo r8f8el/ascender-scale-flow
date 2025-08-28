@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 interface ChatMessage {
@@ -23,10 +24,14 @@ interface ChatRoom {
 }
 
 export const useChat = (isAdmin = false) => {
-  const { user, client } = useAuth();
+  const { user: clientUser, client } = useAuth();
+  const { user: adminUser, isAdminAuthenticated } = useAdminAuth();
   const { toast } = useToast();
   
-  console.log('🔄 useChat hook initialized - user:', user?.id, 'client:', client?.id, 'isAdmin:', isAdmin);
+  // Use admin user if admin, otherwise client user
+  const user = isAdmin ? adminUser : clientUser;
+  
+  console.log('🔄 useChat hook initialized - user:', user?.id, 'client:', client?.id, 'isAdmin:', isAdmin, 'adminAuth:', isAdminAuthenticated);
   
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
@@ -47,11 +52,12 @@ export const useChat = (isAdmin = false) => {
     }
 
     try {
-      console.log('🔄 Loading chat rooms for user:', user.id);
+      console.log('🔄 Loading chat rooms for user:', user.id, 'isAdmin:', isAdmin);
       setLoading(true);
       
       let query = supabase.from('chat_rooms').select('*');
       
+      // Admins can see all rooms, clients only their own
       if (!isAdmin) {
         query = query.eq('client_id', user.id);
       }
@@ -63,14 +69,19 @@ export const useChat = (isAdmin = false) => {
         throw error;
       }
       
-      console.log('✅ Chat rooms loaded:', data?.length);
+      console.log('✅ Chat rooms loaded:', data?.length || 0, 'rooms');
       setRooms(data || []);
     } catch (error) {
       console.error('❌ Exception in loadChatRooms:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar salas de chat",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
-  }, [user, isAdmin]); // Removed loading from dependencies
+  }, [user, isAdmin, toast]); // Removed loading from dependencies
 
   // Carregar mensagens de uma sala
   const loadMessages = useCallback(async (roomId: string) => {

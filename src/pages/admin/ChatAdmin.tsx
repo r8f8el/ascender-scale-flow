@@ -18,7 +18,7 @@ import {
   MoreVertical
 } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { toast } from 'sonner';
 
 interface ChatRoom {
@@ -30,14 +30,16 @@ interface ChatRoom {
 }
 
 const ChatAdmin = () => {
-  const { user } = useAuth();
+  const { user, admin, isAdminAuthenticated } = useAdminAuth();
   const [newMessage, setNewMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Use chat hook as admin
+  console.log('👨‍💼 ChatAdmin - Admin authenticated:', isAdminAuthenticated, 'User:', user?.id, 'Admin:', admin?.email);
+
+  // Use chat hook as admin with proper authentication check
   const { 
     messages, 
     rooms,
@@ -124,6 +126,19 @@ const ChatAdmin = () => {
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h`;
     return formatDate(timestamp);
   };
+
+  // Show loading/error states for admin authentication
+  if (!isAdminAuthenticated) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <MessageCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <h3 className="text-lg font-medium mb-2">Acesso Restrito</h3>
+          <p className="text-muted-foreground">Apenas administradores podem acessar esta área.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-[calc(100vh-8rem)] flex gap-6">
