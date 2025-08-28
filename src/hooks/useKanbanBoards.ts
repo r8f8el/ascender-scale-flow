@@ -61,32 +61,47 @@ export const useKanbanBoards = (clientId?: string) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
 
-      console.log('🔍 Buscando quadros Kanban para usuário:', user.id);
+      console.log('🔍 [KANBAN DEBUG] Buscando quadros para usuário:', user.id);
 
       // Buscar perfil do usuário para obter empresa
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('client_profiles')
-        .select('company')
+        .select('*')
         .eq('id', user.id)
         .single();
+
+      console.log('🔍 [KANBAN DEBUG] Perfil do usuário:', profile, 'Erro:', profileError);
 
       let userCompany = profile?.company;
 
       // Se não tem empresa no perfil, verificar se é membro da equipe
       if (!userCompany) {
-        const { data: teamMember } = await supabase
+        console.log('🔍 [KANBAN DEBUG] Sem empresa no perfil, verificando team_members...');
+        const { data: teamMember, error: teamError } = await supabase
           .from('team_members')
           .select(`
-            company:client_profiles!team_members_company_id_fkey(company)
+            *,
+            company:client_profiles!team_members_company_id_fkey(*)
           `)
           .eq('user_id', user.id)
           .eq('status', 'active')
           .maybeSingle();
 
+        console.log('🔍 [KANBAN DEBUG] Team member:', teamMember, 'Erro:', teamError);
+
         if (teamMember?.company?.company) {
           userCompany = teamMember.company.company;
+          console.log('🔍 [KANBAN DEBUG] Empresa obtida do team member:', userCompany);
         }
       }
+
+      if (!userCompany) {
+        console.log('⚠️ [KANBAN DEBUG] Nenhuma empresa encontrada para o usuário');
+        setBoards([]);
+        return;
+      }
+
+      console.log('🔍 [KANBAN DEBUG] Buscando quadros da empresa:', userCompany);
 
       // Buscar quadros da empresa
       const { data, error } = await supabase
@@ -99,12 +114,14 @@ export const useKanbanBoards = (clientId?: string) => {
         .eq('client_profiles.company', userCompany)
         .order('board_order');
 
+      console.log('🔍 [KANBAN DEBUG] Resultado busca quadros:', data, 'Erro:', error);
+
       if (error) throw error;
       
-      console.log('✅ Quadros Kanban encontrados:', data?.length || 0);
+      console.log('✅ [KANBAN DEBUG] Quadros Kanban encontrados:', data?.length || 0);
       setBoards(data || []);
     } catch (error) {
-      console.error('Error fetching kanban boards:', error);
+      console.error('❌ [KANBAN DEBUG] Erro ao buscar quadros:', error);
       toast.error('Erro ao carregar quadros');
     } finally {
       setLoading(false);
