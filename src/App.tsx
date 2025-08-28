@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ErrorBoundary } from 'react-error-boundary';
 import ErrorFallback from '@/components/ErrorFallback';
+import { ScrollToTop } from '@/components/ScrollToTop';
 
 import { AuthProvider } from '@/contexts/AuthContext';
 import AdminAuthProvider from '@/contexts/AdminAuthContext';
@@ -54,7 +55,7 @@ function App() {
         <AuthProvider>
           <Router>
             <div className="App">
-              
+              <ScrollToTop />
               <Routes>
                 {/* Páginas públicas */}
                 <Route path="/" element={<Index />} />
