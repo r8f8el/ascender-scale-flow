@@ -34,10 +34,15 @@ export const useChat = (isAdmin = false) => {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
 
-  // Carregar salas de chat
   const loadChatRooms = useCallback(async () => {
     if (!user) {
       console.log('⚠️ loadChatRooms: No user, skipping');
+      return;
+    }
+
+    // Prevent multiple simultaneous calls
+    if (loading) {
+      console.log('⚠️ loadChatRooms: Already loading, skipping');
       return;
     }
 
@@ -65,7 +70,7 @@ export const useChat = (isAdmin = false) => {
     } finally {
       setLoading(false);
     }
-  }, [user, isAdmin]);
+  }, [user, isAdmin]); // Removed loading from dependencies
 
   // Carregar mensagens de uma sala
   const loadMessages = useCallback(async (roomId: string) => {
@@ -197,21 +202,34 @@ export const useChat = (isAdmin = false) => {
     }
   }, [user, client, currentRoom, isAdmin, createOrFindRoom, toast]);
 
-  // Configurar realtime
+  // Configurar realtime - fixed to avoid multiple subscriptions
   useEffect(() => {
     if (!user) return;
 
+    console.log('🔄 Setting up realtime subscriptions for user:', user.id);
+    
+    // Create a unique channel name to avoid conflicts
+    const channelName = `chat-updates-${user.id}-${Date.now()}`;
+    
     const channel = supabase
-      .channel('chat-updates')
+      .channel(channelName)
       .on('postgres_changes', 
         { event: 'INSERT', schema: 'public', table: 'chat_messages' }, 
         (payload) => {
           const newMessage = payload.new as any;
+          console.log('📨 New message received:', newMessage);
+          
           if (newMessage.chat_room_id === currentRoom) {
-            setMessages(prev => [...prev, {
-              ...newMessage,
-              sender_type: newMessage.sender_type as 'client' | 'admin'
-            }]);
+            setMessages(prev => {
+              // Avoid duplicate messages
+              const exists = prev.some(msg => msg.id === newMessage.id);
+              if (exists) return prev;
+              
+              return [...prev, {
+                ...newMessage,
+                sender_type: newMessage.sender_type as 'client' | 'admin'
+              }];
+            });
           }
           loadChatRooms(); // Atualizar lista de salas
         }
@@ -219,22 +237,27 @@ export const useChat = (isAdmin = false) => {
       .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'chat_rooms' },
         () => {
+          console.log('🏠 New chat room created');
           loadChatRooms();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 Realtime status:', status);
+      });
 
     return () => {
+      console.log('🧹 Cleaning up realtime subscriptions');
       supabase.removeChannel(channel);
     };
   }, [user, currentRoom, loadChatRooms]);
 
-  // Carregar salas inicialmente
+  // Carregar salas inicialmente - only once
   useEffect(() => {
-    if (user) {
+    if (user && rooms.length === 0) {
+      console.log('🔄 Initial chat rooms load for user:', user.id);
       loadChatRooms();
     }
-  }, [user, loadChatRooms]);
+  }, [user]); // Removed loadChatRooms from dependencies to avoid infinite loops
 
   return {
     messages,

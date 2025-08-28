@@ -73,12 +73,13 @@ const ClientCommunication = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Initialize chat room on component mount
+  // Initialize chat room on component mount - simplified
   useEffect(() => {
-    if (user && client && !currentRoom) {
+    if (user && client && !currentRoom && !loading) {
+      console.log('🏠 Initializing chat room for client:', client.name);
       createOrFindRoom();
     }
-  }, [user, client, currentRoom, createOrFindRoom]);
+  }, [user, client, currentRoom, loading, createOrFindRoom]);
 
   useEffect(() => {
     scrollToBottom();
@@ -154,15 +155,18 @@ const ClientCommunication = () => {
   };
 
   if (loading || chatLoading) {
+    console.log('🔄 ClientCommunication: Loading - loading:', loading, 'chatLoading:', chatLoading);
     return (
       <div className="flex items-center justify-center min-h-[600px]">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          <p className="text-muted-foreground">Iniciando conversa...</p>
+          <p className="text-muted-foreground">Carregando chat...</p>
         </div>
       </div>
     );
   }
+
+  console.log('🎯 ClientCommunication: Rendering chat - currentRoom:', currentRoom, 'messages:', messages.length);
 
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col gap-6">
