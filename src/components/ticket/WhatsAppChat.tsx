@@ -96,8 +96,8 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ ticketId, ticketTitle, onBa
 
     setIsSending(true);
     try {
-      const { error } = await supabase
-        .from('ticket_responses')
+      const { error } = await (supabase
+        .from('ticket_responses') as any)
         .insert({
           ticket_id: ticketId,
           message: newMessage.trim(),

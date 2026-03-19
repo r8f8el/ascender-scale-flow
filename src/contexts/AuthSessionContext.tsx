@@ -49,7 +49,7 @@ const fetchClientProfile = async (userId: string) => {
       return profile;
     }
     
-    if (clientProfile && !Array.isArray(clientProfile) && clientProfile.id) {
+    if (clientProfile && !Array.isArray(clientProfile) && (clientProfile as any).id) {
       console.log('✅ Found existing CLIENT profile via RPC:', clientProfile);
       return clientProfile;
     }

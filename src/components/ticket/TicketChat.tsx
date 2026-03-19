@@ -138,8 +138,8 @@ export const TicketChat: React.FC<TicketChatProps> = ({ ticketId, isTicketClosed
     setIsSending(true);
     try {
       // Primeiro, inserir a mensagem
-      const { data: responseData, error: responseError } = await supabase
-        .from('ticket_responses')
+      const { data: responseData, error: responseError } = await (supabase
+        .from('ticket_responses') as any)
         .insert({
           ticket_id: ticketId,
           message: newMessage.trim() || 'Anexo enviado',

@@ -78,7 +78,7 @@ export const SeletorAprovadores: React.FC<SeletorAprovadoresProps> = ({
 
         if (error) throw error;
 
-        const aprovadores = (data || []).map(item => ({
+        const aprovadores = (data as any[] || []).map((item: any) => ({
           id: item.id,
           name: item.name,
           email: item.email,
