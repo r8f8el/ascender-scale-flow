@@ -499,7 +499,8 @@ export default function GanttAdmin() {
       if (error) throw error;
 
       toast({ title: "Sucesso!", description: "Projeto excluído com sucesso" });
-      await loadProjects(selectedClientId);
+      const company = companies.find(c => c.company === selectedCompany);
+      if (company) await loadProjectsByCompany(company.memberIds);
       setSelectedProjectId('');
     } catch (error) {
       console.error('Erro ao excluir projeto:', error);
