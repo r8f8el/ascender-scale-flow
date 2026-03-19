@@ -416,7 +416,7 @@ const AdminFPADashboard = () => {
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
-                            {Math.abs(analysis.variance_percentage) <= 5 ? (
+                            {Math.abs(analysis.variance_percentage || 0) <= 5 ? (
                               <CheckCircle className="h-5 w-5 text-green-500" />
                             ) : (
                               <AlertTriangle className="h-5 w-5 text-yellow-500" />

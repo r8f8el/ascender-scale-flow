@@ -222,12 +222,14 @@ const MyTickets = () => {
     try {
       const { error } = await supabase
         .from('ticket_responses' as any)
-        .insert({
+        .insert([{
           ticket_id: selectedTicket.id,
           admin_id: admin.id,
-          message: response.trim(),
+          content: response.trim(),
+          sender_type: 'admin',
+          sender_name: admin.name || 'Admin',
           is_internal_note: false
-        });
+        }]);
 
       if (error) throw error;
 

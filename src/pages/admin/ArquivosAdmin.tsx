@@ -179,6 +179,7 @@ const ArquivosAdmin = () => {
       const { error: dbError } = await supabase
         .from('documents' as any)
         .insert([{
+          title: nomeNovoArquivo.includes('.') ? nomeNovoArquivo : `${nomeNovoArquivo}.${fileExt}`,
           filename: nomeNovoArquivo.includes('.') ? nomeNovoArquivo : `${nomeNovoArquivo}.${fileExt}`,
           file_path: filePath,
           file_size: arquivoSelecionado.size,

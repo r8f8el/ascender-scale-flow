@@ -264,6 +264,7 @@ const CronogramasAdmin = () => {
         // Inserir etapas
         const etapasData = novoCronograma.etapas.map((etapa, index) => ({
           schedule_id: scheduleData.id,
+          name: etapa.description || `Etapa ${index + 1}`,
           description: etapa.description,
           start_date: etapa.start_date,
           end_date: etapa.end_date,

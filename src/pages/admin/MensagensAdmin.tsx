@@ -380,7 +380,7 @@ const MensagensAdmin = () => {
               <CardContent className="p-4">
                 <div className="bg-gray-50 p-3 rounded-md">
                   <pre className="text-sm whitespace-pre-wrap font-sans">
-                    {mensagem.body}
+                    {mensagem.message_content}
                   </pre>
                 </div>
               </CardContent>
