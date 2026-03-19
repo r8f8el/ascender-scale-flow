@@ -159,7 +159,7 @@ const ClientFPADashboardReal = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Lucro Líquido</p>
                 <p className="text-2xl font-bold">
-                  {financialData.length > 0 ? formatCurrency(financialData[0].net_income || 0) : formatCurrency(0)}
+                  {financialData.length > 0 ? formatCurrency((financialData[0] as any).net_income || 0) : formatCurrency(0)}
                 </p>
                 <p className="text-xs text-green-600 flex items-center gap-1">
                   <TrendingUp className="h-3 w-3" />
