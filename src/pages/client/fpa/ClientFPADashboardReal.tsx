@@ -319,9 +319,9 @@ const ClientFPADashboardReal = () => {
                     <div key={report.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
                         <h4 className="font-medium text-gray-900">{report.title}</h4>
-                        <p className="text-sm text-gray-600">{report.period_covered}</p>
+                        <p className="text-sm text-gray-600">{(report as any).period_covered || report.description || ''}</p>
                         <Badge variant="outline" className="text-xs mt-1">
-                          {report.status === 'published' ? 'Disponível' : 'Em análise'}
+                          {(report as any).status === 'published' ? 'Disponível' : 'Em análise'}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2">
