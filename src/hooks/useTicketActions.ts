@@ -72,8 +72,8 @@ export const useTicketActions = (
         updateData.closed_at = new Date().toISOString();
       }
 
-      const { error } = await supabase
-        .from('tickets')
+      const { error } = await (supabase
+        .from('tickets') as any)
         .update(updateData)
         .eq('id', ticketId);
 
