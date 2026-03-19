@@ -187,7 +187,7 @@ const AdminFPAVarianceAnalysis = () => {
                         <div>
                           <h4 className="font-medium text-gray-900 flex items-center gap-2">
                             {getVarianceIcon(analysis.variance_percentage)}
-                            {analysis.metric_name}
+                            {(analysis as any).metric_name || analysis.account_name}
                           </h4>
                           <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
                             <span className="flex items-center gap-1">
