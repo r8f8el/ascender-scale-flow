@@ -761,7 +761,7 @@ export default function GanttAdmin() {
             </div>
             
             {getCurrentProject() && (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-wrap">
                 <div className="text-sm">
                   <span className="font-medium">Progresso:</span> {getCurrentProject()?.progress || 0}%
                 </div>
@@ -774,6 +774,14 @@ export default function GanttAdmin() {
                 <div className="text-sm">
                   <span className="font-medium">Período:</span> {new Date(getCurrentProject()?.start_date || '').toLocaleDateString('pt-BR')} - {new Date(getCurrentProject()?.end_date || '').toLocaleDateString('pt-BR')}
                 </div>
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={() => handleDeleteProject(selectedProjectId)}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Excluir Projeto
+                </Button>
               </div>
             )}
           </div>
