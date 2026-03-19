@@ -79,6 +79,36 @@ export type Database = {
           },
         ]
       }
+      approval_requests: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          requested_by_user_id: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          requested_by_user_id?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          requested_by_user_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       automatic_messages: {
         Row: {
           created_at: string
@@ -448,18 +478,21 @@ export type Database = {
       }
       document_categories: {
         Row: {
+          color: string | null
           created_at: string
           description: string | null
           id: string
           name: string
         }
         Insert: {
+          color?: string | null
           created_at?: string
           description?: string | null
           id?: string
           name: string
         }
         Update: {
+          color?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -469,42 +502,61 @@ export type Database = {
       }
       documents: {
         Row: {
+          category_id: string | null
           client_id: string | null
+          content_type: string | null
           created_at: string
           description: string | null
           file_path: string | null
           file_size: number | null
           file_type: string | null
+          filename: string | null
           id: string
           title: string
           updated_at: string
           uploaded_by: string | null
+          user_id: string | null
         }
         Insert: {
+          category_id?: string | null
           client_id?: string | null
+          content_type?: string | null
           created_at?: string
           description?: string | null
           file_path?: string | null
           file_size?: number | null
           file_type?: string | null
+          filename?: string | null
           id?: string
           title: string
           updated_at?: string
           uploaded_by?: string | null
+          user_id?: string | null
         }
         Update: {
+          category_id?: string | null
           client_id?: string | null
+          content_type?: string | null
           created_at?: string
           description?: string | null
           file_path?: string | null
           file_size?: number | null
           file_type?: string | null
+          filename?: string | null
           id?: string
           title?: string
           updated_at?: string
           uploaded_by?: string | null
+          user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "documents_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "document_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "documents_client_id_fkey"
             columns: ["client_id"]
@@ -1128,7 +1180,7 @@ export type Database = {
           description: string | null
           duration_minutes: number | null
           ended_at: string | null
-          hours: number
+          hours: number | null
           id: string
           log_date: string
           note: string | null
@@ -1141,7 +1193,7 @@ export type Database = {
           description?: string | null
           duration_minutes?: number | null
           ended_at?: string | null
-          hours: number
+          hours?: number | null
           id?: string
           log_date?: string
           note?: string | null
@@ -1154,7 +1206,7 @@ export type Database = {
           description?: string | null
           duration_minutes?: number | null
           ended_at?: string | null
-          hours?: number
+          hours?: number | null
           id?: string
           log_date?: string
           note?: string | null
@@ -1454,7 +1506,7 @@ export type Database = {
           description: string | null
           duration_minutes: number | null
           ended_at: string | null
-          hours: number
+          hours: number | null
           id: string
           log_date: string
           note: string | null
@@ -1467,7 +1519,7 @@ export type Database = {
           description?: string | null
           duration_minutes?: number | null
           ended_at?: string | null
-          hours: number
+          hours?: number | null
           id?: string
           log_date?: string
           note?: string | null
@@ -1480,7 +1532,7 @@ export type Database = {
           description?: string | null
           duration_minutes?: number | null
           ended_at?: string | null
-          hours?: number
+          hours?: number | null
           id?: string
           log_date?: string
           note?: string | null
@@ -1533,30 +1585,46 @@ export type Database = {
       }
       project_schedules: {
         Row: {
+          client_id: string | null
           created_at: string
           description: string | null
           id: string
           project_id: string | null
+          published: boolean | null
           scheduled_date: string | null
           title: string
+          updated_at: string | null
         }
         Insert: {
+          client_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
           project_id?: string | null
+          published?: boolean | null
           scheduled_date?: string | null
           title: string
+          updated_at?: string | null
         }
         Update: {
+          client_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
           project_id?: string | null
+          published?: boolean | null
           scheduled_date?: string | null
           title?: string
+          updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "project_schedules_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "project_schedules_project_id_fkey"
             columns: ["project_id"]
@@ -1622,28 +1690,37 @@ export type Database = {
       schedule_phases: {
         Row: {
           created_at: string
+          description: string | null
           end_date: string | null
           id: string
           name: string
+          phase_order: number | null
           project_id: string | null
+          schedule_id: string | null
           start_date: string | null
           status: string | null
         }
         Insert: {
           created_at?: string
+          description?: string | null
           end_date?: string | null
           id?: string
           name: string
+          phase_order?: number | null
           project_id?: string | null
+          schedule_id?: string | null
           start_date?: string | null
           status?: string | null
         }
         Update: {
           created_at?: string
+          description?: string | null
           end_date?: string | null
           id?: string
           name?: string
+          phase_order?: number | null
           project_id?: string | null
+          schedule_id?: string | null
           start_date?: string | null
           status?: string | null
         }
@@ -1653,6 +1730,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_phases_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "project_schedules"
             referencedColumns: ["id"]
           },
         ]
@@ -1724,8 +1808,11 @@ export type Database = {
           details: string | null
           id: string
           ip_address: string | null
+          level: string | null
+          type: string | null
           user_email: string | null
           user_id: string | null
+          user_name: string | null
         }
         Insert: {
           action: string
@@ -1733,8 +1820,11 @@ export type Database = {
           details?: string | null
           id?: string
           ip_address?: string | null
+          level?: string | null
+          type?: string | null
           user_email?: string | null
           user_id?: string | null
+          user_name?: string | null
         }
         Update: {
           action?: string
@@ -1742,8 +1832,11 @@ export type Database = {
           details?: string | null
           id?: string
           ip_address?: string | null
+          level?: string | null
+          type?: string | null
           user_email?: string | null
           user_id?: string | null
+          user_name?: string | null
         }
         Relationships: []
       }
