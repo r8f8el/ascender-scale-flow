@@ -192,8 +192,8 @@ const AdminFPADashboard = () => {
                   <div>
                     <p className="text-sm text-muted-foreground">Margem EBITDA</p>
                     <p className="text-2xl font-bold">
-                      {financialData.length > 0 && financialData[0].revenue ? 
-                        formatPercentage((financialData[0].ebitda || 0) / financialData[0].revenue * 100) : 
+                      {financialData.length > 0 && (financialData[0] as any).revenue ? 
+                        formatPercentage(((financialData[0] as any).ebitda || 0) / (financialData[0] as any).revenue * 100) : 
                         '0%'
                       }
                     </p>
