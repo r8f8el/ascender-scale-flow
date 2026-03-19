@@ -360,13 +360,13 @@ const ClientFPADashboardReal = () => {
                   {varianceAnalysis.slice(0, 5).map((analysis) => (
                     <div key={analysis.id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
                       <div>
-                        <h4 className="font-medium text-gray-900">{analysis.metric_name}</h4>
+                        <h4 className="font-medium text-gray-900">{(analysis as any).metric_name || analysis.account_name}</h4>
                         <p className="text-sm text-gray-600">
                           Variação: {formatPercentage(analysis.variance_percentage)}
                         </p>
-                        {analysis.analysis_comment && (
+                        {(analysis.analysis_notes || (analysis as any).analysis_comment) && (
                           <p className="text-xs text-gray-500 mt-1 italic">
-                            "{analysis.analysis_comment}"
+                            "{analysis.analysis_notes || (analysis as any).analysis_comment}"
                           </p>
                         )}
                       </div>
