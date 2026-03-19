@@ -462,7 +462,8 @@ export default function GanttAdmin() {
       });
 
       // Recarregar projetos e selecionar o novo
-      await loadProjects(selectedClientId);
+      const company = companies.find(c => c.company === selectedCompany);
+      if (company) await loadProjectsByCompany(company.memberIds);
       setSelectedProjectId(data.id);
       setIsProjectModalOpen(false);
       setNewProject({
