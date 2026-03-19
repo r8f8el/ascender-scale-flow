@@ -791,7 +791,7 @@ export default function GanttAdmin() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {getClientProjects().map((project) => (
+                    {getCompanyProjects().map((project) => (
                       <SelectItem key={project.id} value={project.id}>
                         {project.name}
                       </SelectItem>
