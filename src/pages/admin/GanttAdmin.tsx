@@ -66,6 +66,7 @@ export default function GanttAdmin() {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   
   // Estados de controle
@@ -76,6 +77,16 @@ export default function GanttAdmin() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [assigneeFilter, setAssigneeFilter] = useState('all');
+
+  // Estado do formulário de novo projeto
+  const [newProject, setNewProject] = useState({
+    name: '',
+    description: '',
+    start_date: new Date().toISOString().split('T')[0],
+    end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    priority: 'medium',
+    status: 'planning'
+  });
 
   // Estados de dados reais
   const [clients, setClients] = useState<ClientProfile[]>([]);
