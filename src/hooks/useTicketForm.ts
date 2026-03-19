@@ -192,8 +192,8 @@ export const useTicketForm = () => {
             throw uploadError;
           }
 
-          return supabase
-            .from('ticket_attachments')
+          return (supabase
+            .from('ticket_attachments') as any)
             .insert({
               ticket_id: ticket.id,
               filename: file.name,
