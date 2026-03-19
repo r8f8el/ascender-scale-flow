@@ -38,7 +38,7 @@ class ErrorBoundary extends React.Component<Props, State> {
     console.error('User agent:', navigator.userAgent);
     
     // Em produção, enviar erro para serviço de monitoramento
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.PROD) {
       console.log('Error would be sent to monitoring service:', { 
         errorId, 
         error: error.toString(), 
