@@ -258,10 +258,10 @@ const MensagensAdmin = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="type">Tipo de Mensagem*</Label>
+              <Label htmlFor="trigger_type">Tipo de Mensagem*</Label>
               <Select 
-                value={formValues.type} 
-                onValueChange={(value) => handleInputChange('type', value)}
+                value={formValues.trigger_type} 
+                onValueChange={(value) => handleInputChange('trigger_type', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o tipo de mensagem" />
