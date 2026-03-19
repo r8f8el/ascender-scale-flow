@@ -181,7 +181,7 @@ const MensagensAdmin = () => {
   };
 
   const adicionarNovaMensagem = async () => {
-    if (!formValues.type || !formValues.subject || !formValues.body) {
+    if (!formValues.trigger_type || !formValues.message_content) {
       toast({
         title: "Erro",
         description: "Por favor, preencha todos os campos obrigatórios",
