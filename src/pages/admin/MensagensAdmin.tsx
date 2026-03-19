@@ -100,9 +100,8 @@ const MensagensAdmin = () => {
       const { error } = await supabase
         .from('automatic_messages' as any)
         .update({
-          subject: formValues.subject,
-          body: formValues.body,
-          enabled: formValues.enabled
+          message_content: formValues.message_content,
+          is_active: formValues.is_active
         })
         .eq('id', id);
 
