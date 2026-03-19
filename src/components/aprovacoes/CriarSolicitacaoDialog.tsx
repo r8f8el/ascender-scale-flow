@@ -168,7 +168,7 @@ export const CriarSolicitacaoDialog: React.FC<CriarSolicitacaoDialogProps> = ({
           <div className="flex gap-3 pt-4">
             <Button
               type="submit"
-              disabled={createSolicitacao.isPending || !formData.titulo.trim()}
+              disabled={createSolicitacao.isPending || !formData.titulo.trim() || aprovadores.length === 0}
               className="flex-1"
             >
               {createSolicitacao.isPending ? (
