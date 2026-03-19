@@ -128,7 +128,7 @@ const MensagensAdmin = () => {
     try {
       const { error } = await supabase
         .from('automatic_messages' as any)
-        .update({ enabled: novoStatus })
+        .update({ is_active: novoStatus })
         .eq('id', id);
 
       if (error) throw error;
