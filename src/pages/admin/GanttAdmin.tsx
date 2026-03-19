@@ -102,12 +102,19 @@ export default function GanttAdmin() {
   useEffect(() => {
     if (selectedClientId) {
       loadProjects(selectedClientId);
+    } else {
+      setProjects([]);
+      setSelectedProjectId('');
+      setIsLoading(false);
     }
   }, [selectedClientId]);
 
   useEffect(() => {
     if (selectedProjectId) {
       loadTasks(selectedProjectId);
+    } else {
+      setTasks([]);
+      setIsLoading(false);
     }
   }, [selectedProjectId]);
 
