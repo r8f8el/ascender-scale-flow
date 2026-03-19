@@ -105,7 +105,7 @@ class ErrorBoundary extends React.Component<Props, State> {
                 Ocorreu um erro inesperado. Nossa equipe foi notificada automaticamente.
               </p>
               
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+              {import.meta.env.DEV && this.state.error && (
                 <details className="text-left mb-6 p-4 bg-gray-100 rounded-lg text-xs">
                   <summary className="font-medium cursor-pointer mb-2 flex items-center">
                     <Bug className="w-4 h-4 mr-2" />

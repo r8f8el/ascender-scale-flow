@@ -52,7 +52,7 @@ const ErrorFallback: React.FC<FallbackProps> = ({ error, resetErrorBoundary }) =
             Ocorreu um erro inesperado. Nossa equipe foi notificada automaticamente.
           </p>
           
-          {process.env.NODE_ENV === 'development' && error && (
+          {import.meta.env.DEV && error && (
             <details className="text-left mb-6 p-4 bg-gray-100 rounded-lg text-xs">
               <summary className="font-medium cursor-pointer mb-2 flex items-center">
                 <Bug className="w-4 h-4 mr-2" />
