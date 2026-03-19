@@ -142,8 +142,8 @@ export const useTicketForm = () => {
           statusId = abertoStatus.id;
         } else {
           // Criar status padrão se não existir
-          const { data: createdStatus, error: createError } = await supabase
-            .from('ticket_statuses')
+          const { data: createdStatus, error: createError } = await (supabase
+            .from('ticket_statuses') as any)
             .insert({ name: 'Aberto', color: '#3B82F6', is_closed: false })
             .select('id')
             .single();
