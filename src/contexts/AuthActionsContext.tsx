@@ -41,7 +41,9 @@ export const AuthActionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
         return { error };
       }
 
-      if (data.user) {
+      if (data.user && data.session) {
+        setUser(data.user);
+        setSession(data.session);
         console.log('✅ Login successful for user:', data.user.id);
         toast.success('Login realizado com sucesso!');
       }
