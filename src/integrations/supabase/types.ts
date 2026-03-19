@@ -1809,6 +1809,7 @@ export type Database = {
           created_at: string
           email: string
           expires_at: string
+          hierarchy_level_id: string | null
           id: string
           inviter_name: string
           message: string | null
@@ -1822,6 +1823,7 @@ export type Database = {
           created_at?: string
           email: string
           expires_at?: string
+          hierarchy_level_id?: string | null
           id?: string
           inviter_name: string
           message?: string | null
@@ -1835,6 +1837,7 @@ export type Database = {
           created_at?: string
           email?: string
           expires_at?: string
+          hierarchy_level_id?: string | null
           id?: string
           inviter_name?: string
           message?: string | null
@@ -1849,16 +1852,26 @@ export type Database = {
             referencedRelation: "client_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "team_invitations_hierarchy_level_id_fkey"
+            columns: ["hierarchy_level_id"]
+            isOneToOne: false
+            referencedRelation: "hierarchy_levels"
+            referencedColumns: ["id"]
+          },
         ]
       }
       team_members: {
         Row: {
           company_id: string | null
           created_at: string
+          email: string | null
           hierarchy_level_id: string | null
           id: string
+          invited_at: string | null
           invited_by: string | null
           invited_email: string | null
+          is_primary_contact: boolean | null
           joined_at: string | null
           name: string | null
           status: string
@@ -1868,10 +1881,13 @@ export type Database = {
         Insert: {
           company_id?: string | null
           created_at?: string
+          email?: string | null
           hierarchy_level_id?: string | null
           id?: string
+          invited_at?: string | null
           invited_by?: string | null
           invited_email?: string | null
+          is_primary_contact?: boolean | null
           joined_at?: string | null
           name?: string | null
           status?: string
@@ -1881,10 +1897,13 @@ export type Database = {
         Update: {
           company_id?: string | null
           created_at?: string
+          email?: string | null
           hierarchy_level_id?: string | null
           id?: string
+          invited_at?: string | null
           invited_by?: string | null
           invited_email?: string | null
+          is_primary_contact?: boolean | null
           joined_at?: string | null
           name?: string | null
           status?: string
@@ -1916,6 +1935,7 @@ export type Database = {
           file_type: string | null
           filename: string
           id: string
+          response_id: string | null
           ticket_id: string | null
           uploaded_by: string | null
         }
@@ -1926,6 +1946,7 @@ export type Database = {
           file_type?: string | null
           filename: string
           id?: string
+          response_id?: string | null
           ticket_id?: string | null
           uploaded_by?: string | null
         }
@@ -1936,10 +1957,18 @@ export type Database = {
           file_type?: string | null
           filename?: string
           id?: string
+          response_id?: string | null
           ticket_id?: string | null
           uploaded_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ticket_attachments_response_id_fkey"
+            columns: ["response_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_responses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ticket_attachments_ticket_id_fkey"
             columns: ["ticket_id"]
@@ -2163,6 +2192,48 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_team_invitation: {
+        Args: { p_token: string; p_user_id: string }
+        Returns: boolean
+      }
+      check_rate_limit: {
+        Args: {
+          p_action_type: string
+          p_max_attempts?: number
+          p_user_id: string
+          p_window_minutes?: number
+        }
+        Returns: boolean
+      }
+      get_client_profile_bypass: {
+        Args: { p_user_id: string }
+        Returns: {
+          cnpj: string
+          company: string
+          created_at: string
+          email: string
+          hierarchy_level_id: string
+          id: string
+          is_primary_contact: boolean
+          name: string
+          phone: string
+          pode_aprovar: boolean
+          updated_at: string
+        }[]
+      }
+      get_invitation_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          company_id: string
+          company_name: string
+          email: string
+          hierarchy_level_id: string
+          invitation_id: string
+          inviter_name: string
+          is_valid: boolean
+          message: string
+        }[]
+      }
       get_user_company: { Args: never; Returns: string }
       invite_team_member_secure: {
         Args: {
@@ -2177,6 +2248,17 @@ export type Database = {
       }
       is_admin_user_secure: { Args: never; Returns: boolean }
       is_super_admin_secure: { Args: never; Returns: boolean }
+      log_system_action: {
+        Args: {
+          p_action: string
+          p_details?: string
+          p_ip_address: string
+          p_level?: string
+          p_type: string
+          p_user_name: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
