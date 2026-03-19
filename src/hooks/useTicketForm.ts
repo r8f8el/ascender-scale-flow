@@ -122,8 +122,8 @@ export const useTicketForm = () => {
       let statusId: string;
       
       // Buscar status "Novo" primeiro
-      const { data: novoStatus } = await supabase
-        .from('ticket_statuses')
+      const { data: novoStatus } = await (supabase
+        .from('ticket_statuses') as any)
         .select('id')
         .eq('name', 'Novo')
         .maybeSingle();
