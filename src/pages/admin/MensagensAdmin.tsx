@@ -87,7 +87,7 @@ const MensagensAdmin = () => {
   };
 
   const salvarEdicao = async (id: string) => {
-    if (!formValues.subject || !formValues.body) {
+    if (!formValues.message_content) {
       toast({
         title: "Erro",
         description: "Por favor, preencha todos os campos obrigatórios",
