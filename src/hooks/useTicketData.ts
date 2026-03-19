@@ -91,8 +91,8 @@ export const useTicketData = () => {
       if (prioritiesError) throw prioritiesError;
 
       // Load categories
-      const { data: categoriesData, error: categoriesError } = await supabase
-        .from('ticket_categories')
+      const { data: categoriesData, error: categoriesError } = await (supabase
+        .from('ticket_categories') as any)
         .select('*')
         .order('name');
 
