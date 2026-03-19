@@ -276,21 +276,11 @@ const MensagensAdmin = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="subject">Assunto do E-mail*</Label>
-              <Input
-                id="subject"
-                value={formValues.subject}
-                onChange={(e) => handleInputChange('subject', e.target.value)}
-                placeholder="Ex: Confirmação de Chamado"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="body">Conteúdo da Mensagem*</Label>
+              <Label htmlFor="message_content">Conteúdo da Mensagem*</Label>
               <Textarea
-                id="body"
-                value={formValues.body}
-                onChange={(e) => handleInputChange('body', e.target.value)}
+                id="message_content"
+                value={formValues.message_content}
+                onChange={(e) => handleInputChange('message_content', e.target.value)}
                 placeholder="Digite o conteúdo da mensagem..."
                 className="min-h-[150px]"
               />
@@ -301,11 +291,11 @@ const MensagensAdmin = () => {
             
             <div className="flex items-center space-x-2">
               <Switch
-                id="enabled"
-                checked={formValues.enabled}
-                onCheckedChange={(checked) => handleInputChange('enabled', checked)}
+                id="is_active"
+                checked={formValues.is_active}
+                onCheckedChange={(checked) => handleInputChange('is_active', checked)}
               />
-              <Label htmlFor="enabled">Habilitar envio automático por e-mail</Label>
+              <Label htmlFor="is_active">Habilitar envio automático</Label>
             </div>
           </CardContent>
           <CardFooter className="flex justify-end gap-2">
