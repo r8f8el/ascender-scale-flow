@@ -316,10 +316,10 @@ const MensagensAdmin = () => {
             <CardHeader className="bg-gray-50 p-4 pb-2">
               <div className="flex justify-between items-start">
                 <div className="flex items-start gap-3">
-                  {getIconeParaTipo(mensagem.type)}
+                  {getIconeParaTipo(mensagem.trigger_type)}
                   <div>
-                    <CardTitle>{mensagem.subject}</CardTitle>
-                    <CardDescription>{getNomeTipo(mensagem.type)}</CardDescription>
+                    <CardTitle>{getNomeTipo(mensagem.trigger_type)}</CardTitle>
+                    <CardDescription>{mensagem.trigger_type}</CardDescription>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
