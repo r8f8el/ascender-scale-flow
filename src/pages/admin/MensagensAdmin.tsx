@@ -71,20 +71,18 @@ const MensagensAdmin = () => {
   const iniciarEdicao = (mensagem: MensagemAutomatica) => {
     setMensagemEmEdicao(mensagem.id);
     setFormValues({
-      type: mensagem.type,
-      subject: mensagem.subject,
-      body: mensagem.body,
-      enabled: mensagem.enabled
+      trigger_type: mensagem.trigger_type,
+      message_content: mensagem.message_content,
+      is_active: mensagem.is_active
     });
   };
 
   const cancelarEdicao = () => {
     setMensagemEmEdicao(null);
     setFormValues({
-      type: '',
-      subject: '',
-      body: '',
-      enabled: true
+      trigger_type: '',
+      message_content: '',
+      is_active: true
     });
   };
 
