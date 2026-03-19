@@ -30,13 +30,11 @@ export const SeletorAprovadoresEquipe: React.FC<SeletorAprovadoresEquipeProps> =
   
   const { data: companyAccess, isLoading } = useCompanyAccess();
 
-  // Get company members who can approve (excluding current user)
+  // Get company members who can be approvers (excluding current user)
   const aprovadoresDisponiveis = (companyAccess?.companyMembers || []).filter(member => {
     // Exclude self
     if (member.id === user?.id) return false;
-    // Check if has hierarchy level with can_approve, or has pode_aprovar flag
-    const canApprove = member.hierarchy_levels?.can_approve || member.pode_aprovar;
-    return canApprove;
+    return true;
   });
 
   const adicionarAprovador = () => {
