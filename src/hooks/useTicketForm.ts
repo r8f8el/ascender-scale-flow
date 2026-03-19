@@ -164,8 +164,8 @@ export const useTicketForm = () => {
 
       console.log('Creating ticket with data:', ticketData);
 
-      const { data: ticket, error: ticketError } = await supabase
-        .from('tickets')
+      const { data: ticket, error: ticketError } = await (supabase
+        .from('tickets') as any)
         .insert(ticketData)
         .select('*, ticket_priorities(name)')
         .single();
