@@ -5,11 +5,10 @@ import { supabase } from '@/integrations/supabase/client';
 interface DocumentCategory {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   icon: string;
   color: string;
   created_at: string;
-  updated_at: string;
 }
 
 export const useDocumentCategories = () => {
@@ -26,7 +25,11 @@ export const useDocumentCategories = () => {
         throw error;
       }
       
-      return data as DocumentCategory[];
+      // Map data ensuring icon field has a default
+      return (data || []).map(cat => ({
+        ...cat,
+        icon: (cat as any).icon || 'FileText',
+      })) as DocumentCategory[];
     }
   });
 };
