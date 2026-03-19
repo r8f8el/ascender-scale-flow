@@ -16,59 +16,57 @@ const EmailConfirmation = () => {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    const handleEmailConfirmation = async () => {
-      try {
-        // Verificar se tem parâmetros de erro na URL
-        const error = searchParams.get('error');
-        const errorDescription = searchParams.get('error_description');
-        
-        if (error) {
-          console.log('❌ Erro na confirmação:', error, errorDescription);
-          
-          if (error === 'access_denied' && errorDescription?.includes('expired')) {
-            setStatus('expired');
-            setMessage('O link de confirmação expirou. Solicite um novo email de confirmação.');
-            return;
-          }
-          
-          setStatus('error');
-          setMessage(errorDescription || 'Erro na confirmação do email.');
-          return;
-        }
+    // Check for error params first
+    const error = searchParams.get('error');
+    const errorDescription = searchParams.get('error_description');
+    
+    if (error) {
+      if (error === 'access_denied' && errorDescription?.includes('expired')) {
+        setStatus('expired');
+        setMessage('O link de confirmação expirou. Solicite um novo email de confirmação.');
+      } else {
+        setStatus('error');
+        setMessage(errorDescription || 'Erro na confirmação do email.');
+      }
+      return;
+    }
 
-        // Verificar se já está logado
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session?.user) {
-          console.log('✅ Usuário já autenticado:', session.user.email);
-          setStatus('success');
-          setMessage(`Email confirmado com sucesso! Redirecionando para a área do cliente...`);
-          
-          toast({
-            title: "Email confirmado!",
-            description: "Sua conta foi ativada com sucesso.",
-          });
-          
-          setTimeout(() => {
-            navigate('/cliente');
-          }, 2000);
-          return;
-        }
+    // Listen for auth state change - Supabase will process URL tokens automatically
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        console.log('✅ Email confirmado, usuário autenticado:', session.user.email);
+        setStatus('success');
+        setMessage('Email confirmado com sucesso! Redirecionando...');
+        toast({
+          title: "Email confirmado!",
+          description: "Sua conta foi ativada com sucesso.",
+        });
+        setTimeout(() => navigate('/cliente'), 2000);
+      }
+    });
 
-        // Se chegou até aqui e não há sessão, algo deu errado
-        console.log('❌ Nenhuma sessão encontrada após confirmação');
+    // Also check if already signed in (e.g. token already processed)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user && status === 'loading') {
+        setStatus('success');
+        setMessage('Email confirmado com sucesso! Redirecionando...');
+        setTimeout(() => navigate('/cliente'), 2000);
+      }
+    });
+
+    // Timeout fallback - if nothing happens in 5s, show error
+    const timeout = setTimeout(() => {
+      if (status === 'loading') {
         setStatus('error');
         setMessage('Erro ao processar a confirmação. Tente fazer login manualmente.');
-        
-      } catch (error: any) {
-        console.error('❌ Erro ao processar confirmação:', error);
-        setStatus('error');
-        setMessage('Erro interno. Tente novamente ou faça login manualmente.');
       }
-    };
+    }, 5000);
 
-    handleEmailConfirmation();
-  }, [searchParams, navigate, toast]);
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
+  }, [searchParams, navigate, toast, status]);
 
   const handleResendEmail = async () => {
     const email = searchParams.get('email') || prompt('Digite seu email para reenviar a confirmação:');
