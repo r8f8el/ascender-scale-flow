@@ -83,8 +83,8 @@ export const useTicketData = () => {
       if (statusesError) throw statusesError;
 
       // Load priorities
-      const { data: prioritiesData, error: prioritiesError } = await supabase
-        .from('ticket_priorities')
+      const { data: prioritiesData, error: prioritiesError } = await (supabase
+        .from('ticket_priorities') as any)
         .select('*')
         .order('level');
 
