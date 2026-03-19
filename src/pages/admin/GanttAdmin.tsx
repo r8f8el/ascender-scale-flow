@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { 
   BarChart3, 
   Calendar, 
@@ -24,7 +26,8 @@ import {
   Settings,
   RefreshCw,
   List,
-  Building2
+  Building2,
+  FolderPlus
 } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -63,6 +66,7 @@ export default function GanttAdmin() {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   
   // Estados de controle
@@ -73,6 +77,16 @@ export default function GanttAdmin() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [assigneeFilter, setAssigneeFilter] = useState('all');
+
+  // Estado do formulário de novo projeto
+  const [newProject, setNewProject] = useState({
+    name: '',
+    description: '',
+    start_date: new Date().toISOString().split('T')[0],
+    end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    priority: 'medium',
+    status: 'planning'
+  });
 
   // Estados de dados reais
   const [clients, setClients] = useState<ClientProfile[]>([]);
@@ -373,6 +387,86 @@ export default function GanttAdmin() {
 
   const stats = getProjectStats();
 
+  const handleCreateProject = async () => {
+    if (!selectedClientId || !newProject.name.trim()) {
+      toast({
+        title: "Erro",
+        description: "Selecione um cliente e preencha o nome do projeto",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('gantt_projects')
+        .insert({
+          name: newProject.name,
+          description: newProject.description || null,
+          client_id: selectedClientId,
+          created_by: user?.id || null,
+          start_date: newProject.start_date,
+          end_date: newProject.end_date,
+          priority: newProject.priority,
+          status: newProject.status,
+          progress: 0,
+          is_active: true
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso!",
+        description: "Projeto criado com sucesso"
+      });
+
+      // Recarregar projetos e selecionar o novo
+      await loadProjects(selectedClientId);
+      setSelectedProjectId(data.id);
+      setIsProjectModalOpen(false);
+      setNewProject({
+        name: '',
+        description: '',
+        start_date: new Date().toISOString().split('T')[0],
+        end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        priority: 'medium',
+        status: 'planning'
+      });
+    } catch (error) {
+      console.error('Erro ao criar projeto:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao criar projeto",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    if (!confirm('Tem certeza que deseja excluir este projeto e todas as suas tarefas?')) return;
+
+    try {
+      // Delete tasks first
+      await supabase.from('gantt_tasks').delete().eq('project_id', projectId);
+      
+      const { error } = await supabase
+        .from('gantt_projects')
+        .delete()
+        .eq('id', projectId);
+
+      if (error) throw error;
+
+      toast({ title: "Sucesso!", description: "Projeto excluído com sucesso" });
+      await loadProjects(selectedClientId);
+      setSelectedProjectId('');
+    } catch (error) {
+      console.error('Erro ao excluir projeto:', error);
+      toast({ title: "Erro", description: "Erro ao excluir projeto", variant: "destructive" });
+    }
+  };
+
   const handleCreateTask = () => {
     if (!selectedProjectId) {
       toast({
@@ -608,6 +702,20 @@ export default function GanttAdmin() {
             <Share2 className="h-4 w-4 mr-2" />
             Compartilhar
           </Button>
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={() => {
+              if (!selectedClientId) {
+                toast({ title: "Erro", description: "Selecione um cliente primeiro", variant: "destructive" });
+                return;
+              }
+              setIsProjectModalOpen(true);
+            }}
+          >
+            <FolderPlus className="h-4 w-4 mr-2" />
+            Novo Projeto
+          </Button>
           <Button size="sm" onClick={handleCreateTask}>
             <Plus className="h-4 w-4 mr-2" />
             Nova Tarefa
@@ -653,7 +761,7 @@ export default function GanttAdmin() {
             </div>
             
             {getCurrentProject() && (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-wrap">
                 <div className="text-sm">
                   <span className="font-medium">Progresso:</span> {getCurrentProject()?.progress || 0}%
                 </div>
@@ -666,6 +774,14 @@ export default function GanttAdmin() {
                 <div className="text-sm">
                   <span className="font-medium">Período:</span> {new Date(getCurrentProject()?.start_date || '').toLocaleDateString('pt-BR')} - {new Date(getCurrentProject()?.end_date || '').toLocaleDateString('pt-BR')}
                 </div>
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={() => handleDeleteProject(selectedProjectId)}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Excluir Projeto
+                </Button>
               </div>
             )}
           </div>
@@ -1064,6 +1180,99 @@ export default function GanttAdmin() {
         projectName={getCurrentProject()?.name || 'Projeto'}
         tasks={tasks}
       />
+
+      {/* Dialog de Criação de Projeto */}
+      <Dialog open={isProjectModalOpen} onOpenChange={setIsProjectModalOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FolderPlus className="h-5 w-5" />
+              Novo Projeto
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Cliente</Label>
+              <p className="text-sm text-muted-foreground mt-1">
+                {getCurrentClient()?.company || getCurrentClient()?.name || 'Nenhum cliente selecionado'}
+              </p>
+            </div>
+            <div>
+              <Label>Nome do Projeto *</Label>
+              <Input
+                value={newProject.name}
+                onChange={(e) => setNewProject(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Ex: Implementação ERP"
+              />
+            </div>
+            <div>
+              <Label>Descrição</Label>
+              <Textarea
+                value={newProject.description}
+                onChange={(e) => setNewProject(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Descrição do projeto..."
+                rows={3}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Data Início</Label>
+                <Input
+                  type="date"
+                  value={newProject.start_date}
+                  onChange={(e) => setNewProject(prev => ({ ...prev, start_date: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label>Data Fim</Label>
+                <Input
+                  type="date"
+                  value={newProject.end_date}
+                  onChange={(e) => setNewProject(prev => ({ ...prev, end_date: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Prioridade</Label>
+                <Select value={newProject.priority} onValueChange={(v) => setNewProject(prev => ({ ...prev, priority: v }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Baixa</SelectItem>
+                    <SelectItem value="medium">Média</SelectItem>
+                    <SelectItem value="high">Alta</SelectItem>
+                    <SelectItem value="urgent">Urgente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Status</Label>
+                <Select value={newProject.status} onValueChange={(v) => setNewProject(prev => ({ ...prev, status: v }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="planning">Planejamento</SelectItem>
+                    <SelectItem value="in_progress">Em Progresso</SelectItem>
+                    <SelectItem value="on_hold">Pausado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsProjectModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleCreateProject} disabled={!newProject.name.trim()}>
+              <Plus className="h-4 w-4 mr-2" />
+              Criar Projeto
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
