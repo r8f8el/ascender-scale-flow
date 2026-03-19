@@ -130,9 +130,12 @@ export default function GanttAdmin() {
       setClients(data || []);
       if (data && data.length > 0) {
         setSelectedClientId(data[0].id);
+      } else {
+        setIsLoading(false);
       }
     } catch (error) {
       console.error('Erro ao carregar clientes:', error);
+      setIsLoading(false);
       toast({
         title: "Erro",
         description: "Erro ao carregar clientes",
