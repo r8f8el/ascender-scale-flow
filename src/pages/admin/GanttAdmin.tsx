@@ -76,6 +76,7 @@ export default function GanttAdmin() {
   const [selectedTask, setSelectedTask] = useState<any>(null);
   
   // Estados de controle
+  const [selectedCompany, setSelectedCompany] = useState<string>('');
   const [selectedClientId, setSelectedClientId] = useState<string>('');
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
