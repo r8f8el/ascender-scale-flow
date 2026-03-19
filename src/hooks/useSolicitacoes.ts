@@ -29,7 +29,6 @@ interface CreateHistoricoParams {
   comentario?: string;
 }
 
-// Type for raw database response
 interface RawSolicitacao {
   id: string;
   titulo: string;
@@ -50,7 +49,6 @@ interface RawSolicitacao {
   data_ultima_modificacao: string;
 }
 
-// Helper function to format raw data to Solicitacao
 const formatSolicitacao = (rawData: RawSolicitacao): Solicitacao => {
   return {
     ...rawData,
@@ -60,113 +58,118 @@ const formatSolicitacao = (rawData: RawSolicitacao): Solicitacao => {
   };
 };
 
+// My own requests
 export const useSolicitacoes = (userId?: string) => {
   return useQuery({
     queryKey: ['solicitacoes', userId],
     queryFn: async () => {
-      if (!userId) {
-        console.log('No userId provided for solicitacoes query');
-        return [];
-      }
+      if (!userId) return [];
 
-      console.log('Fetching solicitacoes for user:', userId);
-      
-      try {
-        const { data, error } = await supabase
-          .from('solicitacoes')
-          .select('*')
-          .eq('solicitante_id', userId)
-          .order('data_criacao', { ascending: false });
+      const { data, error } = await supabase
+        .from('solicitacoes')
+        .select('*')
+        .eq('solicitante_id', userId)
+        .order('data_criacao', { ascending: false });
 
-        if (error) {
-          console.error('Error fetching solicitacoes:', error);
-          throw error;
-        }
-
-        console.log('Solicitacoes raw data:', data);
-        console.log('Solicitacoes fetched successfully:', data?.length || 0);
-        
-        // Return the data with proper type conversion
-        const formattedData = (data || []).map(formatSolicitacao);
-        
-        return formattedData;
-      } catch (error) {
-        console.error('Error in solicitacoes query:', error);
-        throw error; // Re-throw to show error in UI
-      }
+      if (error) throw error;
+      return (data || []).map(formatSolicitacao);
     },
     enabled: !!userId,
-    retry: 1, // Reduced retry for faster debugging
-    staleTime: 0, // Force fresh data for debugging
-    gcTime: 0, // Don't cache for debugging
   });
 };
 
+// All requests (admin)
 export const useAllSolicitacoes = () => {
   return useQuery({
     queryKey: ['all-solicitacoes'],
     queryFn: async () => {
-      console.log('Fetching all solicitacoes for admin');
-      
-      try {
-        const { data, error } = await supabase
-          .from('solicitacoes')
-          .select('*')
-          .order('data_criacao', { ascending: false });
+      const { data, error } = await supabase
+        .from('solicitacoes')
+        .select('*')
+        .order('data_criacao', { ascending: false });
 
-        if (error) {
-          console.error('Error fetching all solicitacoes:', error);
-          throw error;
-        }
-
-        console.log('All solicitacoes fetched successfully:', data?.length || 0);
-        
-        // Return the data with proper type conversion
-        const formattedData = (data || []).map(formatSolicitacao);
-        
-        return formattedData;
-      } catch (error) {
-        console.error('Error in all solicitacoes query:', error);
-        return [];
-      }
+      if (error) throw error;
+      return (data || []).map(formatSolicitacao);
     },
     staleTime: 1000 * 60 * 2,
   });
 };
 
+// Pending requests where I am an approver (checks aprovadores_necessarios JSON or aprovador_atual_id)
 export const useSolicitacaoPendentes = (userId?: string) => {
   return useQuery({
     queryKey: ['solicitacoes-pendentes', userId],
     queryFn: async () => {
-      if (!userId) {
-        return [];
-      }
+      if (!userId) return [];
 
-      try {
-        const { data, error } = await supabase
-          .from('solicitacoes')
-          .select('*')
-          .eq('aprovador_atual_id', userId)
-          .eq('status', 'Pendente')
-          .order('data_criacao', { ascending: false });
+      // Get all pending requests
+      const { data, error } = await supabase
+        .from('solicitacoes')
+        .select('*')
+        .eq('status', 'Pendente')
+        .order('data_criacao', { ascending: false });
 
-        if (error) {
-          console.error('Error fetching pending solicitacoes:', error);
-          throw error;
+      if (error) throw error;
+
+      // Filter client-side: requests where I am listed as an approver
+      const pendentes = (data || []).filter(sol => {
+        // Check if I'm the current approver
+        if (sol.aprovador_atual_id === userId) return true;
+        
+        // Check if I'm in the aprovadores_necessarios list
+        const aprovadores = sol.aprovadores_necessarios as any[];
+        if (Array.isArray(aprovadores)) {
+          return aprovadores.some((ap: any) => ap.id === userId && !ap.aprovado);
         }
+        
+        return false;
+      });
 
-        // Return the data with proper type conversion
-        const formattedData = (data || []).map(formatSolicitacao);
-
-        return formattedData;
-      } catch (error) {
-        console.error('Error in pending solicitacoes query:', error);
-        return [];
-      }
+      return pendentes.map(formatSolicitacao);
     },
     enabled: !!userId,
-    retry: 2,
-    staleTime: 1000 * 60 * 2,
+    staleTime: 1000 * 60,
+  });
+};
+
+// Company requests (all requests from company members)
+export const useCompanySolicitacoes = () => {
+  return useQuery({
+    queryKey: ['company-solicitacoes'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+
+      // Get user's company
+      const { data: profile } = await supabase
+        .from('client_profiles')
+        .select('company')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.company) return [];
+
+      // Get all company member IDs
+      const { data: members } = await supabase
+        .from('client_profiles')
+        .select('id')
+        .eq('company', profile.company);
+
+      if (!members?.length) return [];
+
+      const memberIds = members.map(m => m.id);
+
+      // Get all requests from company members
+      const { data, error } = await supabase
+        .from('solicitacoes')
+        .select('*')
+        .in('solicitante_id', memberIds)
+        .order('data_criacao', { ascending: false });
+
+      if (error) throw error;
+      return (data || []).map(formatSolicitacao);
+    },
+    staleTime: 1000 * 60,
   });
 };
 
@@ -174,30 +177,18 @@ export const useAnexos = (solicitacaoId?: string) => {
   return useQuery({
     queryKey: ['anexos', solicitacaoId],
     queryFn: async () => {
-      if (!solicitacaoId) {
-        return [];
-      }
+      if (!solicitacaoId) return [];
 
-      try {
-        const { data, error } = await supabase
-          .from('anexos')
-          .select('*')
-          .eq('solicitacao_id', solicitacaoId)
-          .order('data_upload', { ascending: false });
+      const { data, error } = await supabase
+        .from('anexos')
+        .select('*')
+        .eq('solicitacao_id', solicitacaoId)
+        .order('data_upload', { ascending: false });
 
-        if (error) {
-          console.error('Error fetching anexos:', error);
-          return [];
-        }
-
-        return (data || []) as Anexo[];
-      } catch (error) {
-        console.error('Error in anexos query:', error);
-        return [];
-      }
+      if (error) return [];
+      return (data || []) as Anexo[];
     },
     enabled: !!solicitacaoId,
-    staleTime: 1000 * 60 * 5,
   });
 };
 
@@ -205,30 +196,18 @@ export const useHistoricoAprovacao = (solicitacaoId?: string) => {
   return useQuery({
     queryKey: ['historico-aprovacao', solicitacaoId],
     queryFn: async () => {
-      if (!solicitacaoId) {
-        return [];
-      }
+      if (!solicitacaoId) return [];
 
-      try {
-        const { data, error } = await supabase
-          .from('historico_aprovacao')
-          .select('*')
-          .eq('solicitacao_id', solicitacaoId)
-          .order('data_acao', { ascending: false });
+      const { data, error } = await supabase
+        .from('historico_aprovacao')
+        .select('*')
+        .eq('solicitacao_id', solicitacaoId)
+        .order('data_acao', { ascending: false });
 
-        if (error) {
-          console.error('Error fetching historico:', error);
-          return [];
-        }
-
-        return (data || []) as HistoricoAprovacao[];
-      } catch (error) {
-        console.error('Error in historico query:', error);
-        return [];
-      }
+      if (error) return [];
+      return (data || []) as HistoricoAprovacao[];
     },
     enabled: !!solicitacaoId,
-    staleTime: 1000 * 60 * 5,
   });
 };
 
@@ -237,114 +216,83 @@ export const useCreateSolicitacao = () => {
 
   return useMutation({
     mutationFn: async ({ solicitacao, files, aprovadores }: CreateSolicitacaoParams) => {
-      try {
-        console.log('Creating solicitacao with data:', solicitacao);
-        
-        // Garantir que os valores obrigatórios estão presentes e seguem a estrutura da tabela
-        const solicitacaoData = {
-          titulo: solicitacao.titulo,
-          descricao: solicitacao.descricao || '',
-          tipo_solicitacao: solicitacao.tipo_solicitacao || 'Geral',
-          periodo_referencia: solicitacao.periodo_referencia,
-          valor_solicitado: solicitacao.valor_solicitado || null,
-          justificativa: solicitacao.justificativa || null,
-          data_limite: solicitacao.data_limite || null,
-          prioridade: solicitacao.prioridade || 'Media',
-          status: solicitacao.status || 'Em Elaboração',
-          solicitante_id: solicitacao.solicitante_id,
-          aprovador_atual_id: solicitacao.aprovador_atual_id || null,
-          etapa_atual: solicitacao.etapa_atual || 1,
-          aprovadores_necessarios: aprovadores.map(ap => ({
-            id: ap.id,
-            name: ap.name,
-            email: ap.email,
-            nivel: ap.nivel,
-            aprovado: false
-          })),
-          aprovadores_completos: []
-        };
+      // Get user name for history
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase
+        .from('client_profiles')
+        .select('name')
+        .eq('id', user?.id || '')
+        .single();
 
-        // Criar solicitação
-        const { data: solicitacaoResult, error: solicitacaoError } = await supabase
-          .from('solicitacoes')
-          .insert([solicitacaoData])
-          .select('*')
-          .single();
+      const solicitacaoData = {
+        titulo: solicitacao.titulo,
+        descricao: solicitacao.descricao || '',
+        tipo_solicitacao: solicitacao.tipo_solicitacao || 'Geral',
+        periodo_referencia: solicitacao.periodo_referencia,
+        valor_solicitado: solicitacao.valor_solicitado || null,
+        justificativa: solicitacao.justificativa || null,
+        data_limite: solicitacao.data_limite || null,
+        prioridade: solicitacao.prioridade || 'Media',
+        status: aprovadores.length > 0 ? 'Pendente' : 'Em Elaboração',
+        solicitante_id: solicitacao.solicitante_id,
+        aprovador_atual_id: aprovadores.length > 0 
+          ? aprovadores.sort((a, b) => a.nivel - b.nivel)[0]?.id 
+          : null,
+        etapa_atual: 1,
+        aprovadores_necessarios: aprovadores.map(ap => ({
+          id: ap.id,
+          name: ap.name,
+          email: ap.email,
+          nivel: ap.nivel,
+          aprovado: false
+        })),
+        aprovadores_completos: []
+      };
 
-        if (solicitacaoError) {
-          console.error('Error creating solicitacao:', solicitacaoError);
-          throw solicitacaoError;
+      const { data: result, error } = await supabase
+        .from('solicitacoes')
+        .insert([solicitacaoData])
+        .select('*')
+        .single();
+
+      if (error) throw error;
+
+      // Upload files
+      if (files.length > 0) {
+        for (const file of files) {
+          const fileName = `${result.id}/${Date.now()}_${file.name}`;
+          
+          await supabase.storage.from('documents').upload(fileName, file);
+          
+          await supabase.from('anexos').insert({
+            solicitacao_id: result.id,
+            nome_arquivo: file.name,
+            tipo_arquivo: file.type,
+            tamanho_arquivo: file.size,
+            url_arquivo: fileName
+          });
         }
-
-        console.log('Solicitacao created successfully:', solicitacaoResult.id);
-
-        // Upload de arquivos se houver
-        if (files.length > 0) {
-          for (const file of files) {
-            const fileName = `${solicitacaoResult.id}/${Date.now()}_${file.name}`;
-            
-            const { error: uploadError } = await supabase.storage
-              .from('solicitacao-files')
-              .upload(fileName, file);
-
-            if (uploadError) {
-              console.error('Error uploading file:', uploadError);
-              // Continuar mesmo com erro de upload
-            }
-
-            // Registrar arquivo na tabela anexos se ela existir
-            try {
-              const { error: anexoError } = await supabase
-                .from('anexos')
-                .insert({
-                  solicitacao_id: solicitacaoResult.id,
-                  nome_arquivo: file.name,
-                  tipo_arquivo: file.type,
-                  tamanho_arquivo: file.size,
-                  url_arquivo: fileName
-                });
-
-              if (anexoError) {
-                console.error('Error creating anexo record:', anexoError);
-              }
-            } catch (error) {
-              console.error('Anexos table might not exist:', error);
-            }
-          }
-        }
-
-        // Criar histórico de criação se a tabela existir
-        try {
-          const { error: historicoError } = await supabase
-            .from('historico_aprovacao')
-            .insert({
-              solicitacao_id: solicitacaoResult.id,
-              usuario_id: solicitacao.solicitante_id,
-              nome_usuario: 'Usuário',
-              acao: 'Criação',
-              comentario: 'Solicitação criada'
-            });
-
-          if (historicoError) {
-            console.error('Error creating historico:', historicoError);
-          }
-        } catch (error) {
-          console.error('Historico table might not exist:', error);
-        }
-
-        return solicitacaoResult;
-      } catch (error) {
-        console.error('Error in createSolicitacao mutation:', error);
-        throw error;
       }
+
+      // Create history entry
+      await supabase.from('historico_aprovacao').insert({
+        solicitacao_id: result.id,
+        usuario_id: solicitacao.solicitante_id,
+        nome_usuario: profile?.name || 'Usuário',
+        acao: 'Criação',
+        comentario: 'Solicitação criada'
+      });
+
+      return result;
     },
     onSuccess: () => {
       toast.success('Solicitação criada com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['solicitacoes'] });
       queryClient.invalidateQueries({ queryKey: ['all-solicitacoes'] });
+      queryClient.invalidateQueries({ queryKey: ['company-solicitacoes'] });
+      queryClient.invalidateQueries({ queryKey: ['solicitacoes-pendentes'] });
     },
     onError: (error: any) => {
-      console.error('Mutation error:', error);
       toast.error('Erro ao criar solicitação: ' + (error.message || 'Erro desconhecido'));
     },
   });
@@ -355,35 +303,26 @@ export const useUpdateSolicitacao = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: UpdateSolicitacaoParams) => {
-      try {
-        const { data, error } = await supabase
-          .from('solicitacoes')
-          .update({
-            ...updates,
-            data_ultima_modificacao: new Date().toISOString()
-          })
-          .eq('id', id)
-          .select('*')
-          .single();
+      const { data, error } = await supabase
+        .from('solicitacoes')
+        .update({
+          ...updates,
+          data_ultima_modificacao: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select('*')
+        .single();
 
-        if (error) {
-          console.error('Error updating solicitacao:', error);
-          throw error;
-        }
-
-        return data;
-      } catch (error) {
-        console.error('Error in updateSolicitacao mutation:', error);
-        throw error;
-      }
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['solicitacoes'] });
       queryClient.invalidateQueries({ queryKey: ['all-solicitacoes'] });
       queryClient.invalidateQueries({ queryKey: ['solicitacoes-pendentes'] });
+      queryClient.invalidateQueries({ queryKey: ['company-solicitacoes'] });
     },
     onError: (error: any) => {
-      console.error('Update mutation error:', error);
       toast.error('Erro ao atualizar solicitação: ' + (error.message || 'Erro desconhecido'));
     },
   });
@@ -394,32 +333,22 @@ export const useCreateHistorico = () => {
 
   return useMutation({
     mutationFn: async (params: CreateHistoricoParams) => {
-      try {
-        const { data, error } = await supabase
-          .from('historico_aprovacao')
-          .insert([{
-            ...params,
-            data_acao: new Date().toISOString()
-          }])
-          .select()
-          .single();
+      const { data, error } = await supabase
+        .from('historico_aprovacao')
+        .insert([{
+          ...params,
+          data_acao: new Date().toISOString()
+        }])
+        .select()
+        .single();
 
-        if (error) {
-          console.error('Error creating historico:', error);
-          throw error;
-        }
-
-        return data;
-      } catch (error) {
-        console.error('Error in createHistorico mutation:', error);
-        throw error;
-      }
+      if (error) throw error;
+      return data;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['historico-aprovacao', variables.solicitacao_id] });
     },
     onError: (error: any) => {
-      console.error('Historico mutation error:', error);
       toast.error('Erro ao criar histórico: ' + (error.message || 'Erro desconhecido'));
     },
   });

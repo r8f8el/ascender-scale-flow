@@ -4,8 +4,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X, Plus, Shield } from 'lucide-react';
-import { useSecureTeamMembers } from '@/hooks/useSecureTeamMembers';
+import { X, Plus, Shield, Users } from 'lucide-react';
+import { useCompanyAccess } from '@/hooks/useCompanyAccess';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface Aprovador {
@@ -28,28 +28,32 @@ export const SeletorAprovadoresEquipe: React.FC<SeletorAprovadoresEquipeProps> =
   const { user } = useAuth();
   const [aprovadorSelecionado, setAprovadorSelecionado] = useState<string>('');
   
-  const { data: teamMembers = [], isLoading } = useSecureTeamMembers();
+  const { data: companyAccess, isLoading } = useCompanyAccess();
 
-  // Filtrar apenas membros que podem aprovar (excluindo o próprio usuário)
-  const aprovadoresDisponiveis = teamMembers.filter(member => 
-    member.hierarchy_levels?.can_approve && member.user_id !== user?.id
-  );
+  // Get company members who can approve (excluding current user)
+  const aprovadoresDisponiveis = (companyAccess?.companyMembers || []).filter(member => {
+    // Exclude self
+    if (member.id === user?.id) return false;
+    // Check if has hierarchy level with can_approve, or has pode_aprovar flag
+    const canApprove = member.hierarchy_levels?.can_approve || member.pode_aprovar;
+    return canApprove;
+  });
 
   const adicionarAprovador = () => {
     if (!aprovadorSelecionado) return;
 
     const membro = aprovadoresDisponiveis.find(m => m.id === aprovadorSelecionado);
-    if (!membro || !membro.hierarchy_levels) return;
+    if (!membro) return;
 
-    // Verificar se já foi adicionado
+    // Check if already added
     if (aprovadoresSelecionados.some(a => a.id === membro.id)) return;
 
     const novoAprovador: Aprovador = {
       id: membro.id,
       name: membro.name,
-      email: membro.invited_email,
-      cargo: membro.hierarchy_levels.name,
-      nivel: membro.hierarchy_levels.level
+      email: membro.email,
+      cargo: membro.hierarchy_levels?.name || 'Colaborador',
+      nivel: membro.hierarchy_levels?.level || 5
     };
 
     onAprovadoresChange([...aprovadoresSelecionados, novoAprovador]);
@@ -68,11 +72,11 @@ export const SeletorAprovadoresEquipe: React.FC<SeletorAprovadoresEquipeProps> =
     <div className="space-y-4">
       <div>
         <Label className="flex items-center gap-2">
-          <Shield className="h-4 w-4" />
+          <Users className="h-4 w-4" />
           Selecionar Aprovadores da Equipe
         </Label>
         <p className="text-sm text-muted-foreground mb-3">
-          Apenas membros da sua equipe com permissão de aprovação aparecerão na lista
+          Escolha os membros da empresa que devem aprovar esta solicitação
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -89,7 +93,7 @@ export const SeletorAprovadoresEquipe: React.FC<SeletorAprovadoresEquipeProps> =
                   <div className="flex flex-col">
                     <span className="font-medium">{membro.name}</span>
                     <span className="text-xs text-muted-foreground">
-                      {membro.hierarchy_levels?.name} - {membro.invited_email}
+                      {membro.hierarchy_levels?.name || 'Colaborador'} - {membro.email}
                     </span>
                   </div>
                 </SelectItem>
@@ -109,13 +113,13 @@ export const SeletorAprovadoresEquipe: React.FC<SeletorAprovadoresEquipeProps> =
         </div>
       </div>
 
-      {/* Lista de aprovadores selecionados */}
+      {/* Selected approvers list */}
       {aprovadoresSelecionados.length > 0 && (
         <div className="space-y-2">
           <Label>Aprovadores selecionados (por ordem hierárquica):</Label>
           <div className="space-y-2">
             {aprovadoresSelecionados
-              .sort((a, b) => b.nivel - a.nivel) // Ordenar por hierarquia (maior primeiro)
+              .sort((a, b) => a.nivel - b.nivel) // Lower level = higher hierarchy
               .map((aprovador, index) => (
                 <div key={aprovador.id} className="flex items-center justify-between bg-muted/50 p-3 rounded-md">
                   <div className="flex items-center gap-3">
@@ -146,7 +150,7 @@ export const SeletorAprovadoresEquipe: React.FC<SeletorAprovadoresEquipeProps> =
           <Shield className="h-8 w-8 mx-auto mb-2 opacity-50" />
           <p>Nenhum membro da equipe com permissão de aprovação encontrado.</p>
           <p className="text-sm mt-1">
-            Convide membros da equipe ou configure permissões de aprovação.
+            Configure o nível hierárquico dos membros na seção de Equipe.
           </p>
         </div>
       )}
