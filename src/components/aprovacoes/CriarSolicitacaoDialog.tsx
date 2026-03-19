@@ -10,6 +10,7 @@ import { useCreateSolicitacao } from '@/hooks/useSolicitacoes';
 import { FileUploadSolicitacao } from './FileUploadSolicitacao';
 import { SeletorAprovadoresEquipe } from './SeletorAprovadoresEquipe';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface CriarSolicitacaoDialogProps {
   open: boolean;
@@ -60,6 +61,12 @@ export const CriarSolicitacaoDialog: React.FC<CriarSolicitacaoDialogProps> = ({
     }
 
     if (!formData.titulo.trim()) {
+      toast.error('Título é obrigatório');
+      return;
+    }
+
+    if (aprovadores.length === 0) {
+      toast.error('Selecione pelo menos um aprovador');
       return;
     }
 
@@ -69,13 +76,11 @@ export const CriarSolicitacaoDialog: React.FC<CriarSolicitacaoDialogProps> = ({
           titulo: formData.titulo,
           periodo_referencia: formData.periodo_referencia,
           descricao: formData.descricao,
-          tipo_solicitacao: 'Geral', // Valor padrão
-          prioridade: 'Media', // Valor padrão
-          status: aprovadores.length > 0 ? 'Pendente' : 'Em Elaboração',
+          tipo_solicitacao: 'Geral',
+          prioridade: 'Media',
+          status: 'Pendente',
           solicitante_id: user.id,
-          aprovador_atual_id: aprovadores.length > 0 
-            ? aprovadores.sort((a, b) => b.nivel - a.nivel)[0].id 
-            : null,
+          aprovador_atual_id: aprovadores.sort((a, b) => a.nivel - b.nivel)[0]?.id || null,
           etapa_atual: 1
         },
         files,
@@ -163,7 +168,7 @@ export const CriarSolicitacaoDialog: React.FC<CriarSolicitacaoDialogProps> = ({
           <div className="flex gap-3 pt-4">
             <Button
               type="submit"
-              disabled={createSolicitacao.isPending || !formData.titulo.trim()}
+              disabled={createSolicitacao.isPending || !formData.titulo.trim() || aprovadores.length === 0}
               className="flex-1"
             >
               {createSolicitacao.isPending ? (
