@@ -62,10 +62,10 @@ const MensagensAdmin = () => {
   };
 
   const handleInputChange = (field: string, value: string | boolean) => {
-    setFormValues({
-      ...formValues,
+    setFormValues(prev => ({
+      ...prev,
       [field]: value
-    });
+    }));
   };
 
   const iniciarEdicao = (mensagem: MensagemAutomatica) => {
