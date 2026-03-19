@@ -106,6 +106,33 @@ export type Database = {
         }
         Relationships: []
       }
+      cargos: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: string
+          nivel: number
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nivel?: number
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nivel?: number
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           chat_room_id: string | null
@@ -238,7 +265,9 @@ export type Database = {
       }
       client_documents: {
         Row: {
+          category: string | null
           category_id: string | null
+          content_type: string | null
           created_at: string
           description: string | null
           file_path: string | null
@@ -247,11 +276,15 @@ export type Database = {
           filename: string
           id: string
           updated_at: string
+          uploaded_at: string
           uploaded_by: string | null
+          uploaded_by_admin_id: string | null
           user_id: string | null
         }
         Insert: {
+          category?: string | null
           category_id?: string | null
+          content_type?: string | null
           created_at?: string
           description?: string | null
           file_path?: string | null
@@ -260,11 +293,15 @@ export type Database = {
           filename: string
           id?: string
           updated_at?: string
+          uploaded_at?: string
           uploaded_by?: string | null
+          uploaded_by_admin_id?: string | null
           user_id?: string | null
         }
         Update: {
+          category?: string | null
           category_id?: string | null
+          content_type?: string | null
           created_at?: string
           description?: string | null
           file_path?: string | null
@@ -273,7 +310,9 @@ export type Database = {
           filename?: string
           id?: string
           updated_at?: string
+          uploaded_at?: string
           uploaded_by?: string | null
+          uploaded_by_admin_id?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -297,6 +336,7 @@ export type Database = {
           is_primary_contact: boolean
           name: string
           phone: string | null
+          pode_aprovar: boolean
           updated_at: string
         }
         Insert: {
@@ -309,6 +349,7 @@ export type Database = {
           is_primary_contact?: boolean
           name: string
           phone?: string | null
+          pode_aprovar?: boolean
           updated_at?: string
         }
         Update: {
@@ -321,6 +362,7 @@ export type Database = {
           is_primary_contact?: boolean
           name?: string
           phone?: string | null
+          pode_aprovar?: boolean
           updated_at?: string
         }
         Relationships: [
@@ -466,9 +508,63 @@ export type Database = {
           },
         ]
       }
+      empresa_funcionarios: {
+        Row: {
+          cargo_id: string | null
+          created_at: string
+          empresa_id: string | null
+          funcionario_id: string | null
+          id: string
+          pode_aprovar: boolean
+          updated_at: string
+        }
+        Insert: {
+          cargo_id?: string | null
+          created_at?: string
+          empresa_id?: string | null
+          funcionario_id?: string | null
+          id?: string
+          pode_aprovar?: boolean
+          updated_at?: string
+        }
+        Update: {
+          cargo_id?: string | null
+          created_at?: string
+          empresa_id?: string | null
+          funcionario_id?: string | null
+          id?: string
+          pode_aprovar?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empresa_funcionarios_cargo_id_fkey"
+            columns: ["cargo_id"]
+            isOneToOne: false
+            referencedRelation: "cargos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empresa_funcionarios_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "empresa_funcionarios_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       files: {
         Row: {
+          category: string | null
           client_id: string | null
+          client_name: string | null
           created_at: string
           file_path: string
           file_size: number | null
@@ -476,11 +572,16 @@ export type Database = {
           folder: string | null
           id: string
           name: string
+          size: number | null
+          type: string | null
           updated_at: string
+          uploaded_at: string
           uploaded_by: string | null
         }
         Insert: {
+          category?: string | null
           client_id?: string | null
+          client_name?: string | null
           created_at?: string
           file_path: string
           file_size?: number | null
@@ -488,11 +589,16 @@ export type Database = {
           folder?: string | null
           id?: string
           name: string
+          size?: number | null
+          type?: string | null
           updated_at?: string
+          uploaded_at?: string
           uploaded_by?: string | null
         }
         Update: {
+          category?: string | null
           client_id?: string | null
+          client_name?: string | null
           created_at?: string
           file_path?: string
           file_size?: number | null
@@ -500,7 +606,10 @@ export type Database = {
           folder?: string | null
           id?: string
           name?: string
+          size?: number | null
+          type?: string | null
           updated_at?: string
+          uploaded_at?: string
           uploaded_by?: string | null
         }
         Relationships: [
@@ -1011,27 +1120,39 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          duration_minutes: number | null
+          ended_at: string | null
           hours: number
           id: string
           log_date: string
+          note: string | null
+          started_at: string
           task_id: string
           user_id: string | null
         }
         Insert: {
           created_at?: string
           description?: string | null
+          duration_minutes?: number | null
+          ended_at?: string | null
           hours: number
           id?: string
           log_date?: string
+          note?: string | null
+          started_at?: string
           task_id: string
           user_id?: string | null
         }
         Update: {
           created_at?: string
           description?: string | null
+          duration_minutes?: number | null
+          ended_at?: string | null
           hours?: number
           id?: string
           log_date?: string
+          note?: string | null
+          started_at?: string
           task_id?: string
           user_id?: string | null
         }
@@ -1322,27 +1443,39 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          duration_minutes: number | null
+          ended_at: string | null
           hours: number
           id: string
           log_date: string
+          note: string | null
+          started_at: string
           task_id: string
           user_id: string | null
         }
         Insert: {
           created_at?: string
           description?: string | null
+          duration_minutes?: number | null
+          ended_at?: string | null
           hours: number
           id?: string
           log_date?: string
+          note?: string | null
+          started_at?: string
           task_id: string
           user_id?: string | null
         }
         Update: {
           created_at?: string
           description?: string | null
+          duration_minutes?: number | null
+          ended_at?: string | null
           hours?: number
           id?: string
           log_date?: string
+          note?: string | null
+          started_at?: string
           task_id?: string
           user_id?: string | null
         }
@@ -1426,34 +1559,43 @@ export type Database = {
       }
       projects: {
         Row: {
+          budget: number | null
           client_id: string | null
           created_at: string
           description: string | null
           end_date: string | null
           id: string
           name: string
+          priority: string
+          progress: number
           start_date: string | null
           status: string
           updated_at: string
         }
         Insert: {
+          budget?: number | null
           client_id?: string | null
           created_at?: string
           description?: string | null
           end_date?: string | null
           id?: string
           name: string
+          priority?: string
+          progress?: number
           start_date?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
+          budget?: number | null
           client_id?: string | null
           created_at?: string
           description?: string | null
           end_date?: string | null
           id?: string
           name?: string
+          priority?: string
+          progress?: number
           start_date?: string | null
           status?: string
           updated_at?: string
@@ -1598,11 +1740,13 @@ export type Database = {
       }
       tasks: {
         Row: {
+          actual_hours: number
           assigned_to: string | null
           completed_at: string | null
           created_at: string
           description: string | null
           due_date: string | null
+          estimated_hours: number | null
           id: string
           priority: string
           project_id: string | null
@@ -1611,11 +1755,13 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          actual_hours?: number
           assigned_to?: string | null
           completed_at?: string | null
           created_at?: string
           description?: string | null
           due_date?: string | null
+          estimated_hours?: number | null
           id?: string
           priority?: string
           project_id?: string | null
@@ -1624,11 +1770,13 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          actual_hours?: number
           assigned_to?: string | null
           completed_at?: string | null
           created_at?: string
           description?: string | null
           due_date?: string | null
+          estimated_hours?: number | null
           id?: string
           priority?: string
           project_id?: string | null
@@ -1848,33 +1996,52 @@ export type Database = {
       }
       ticket_responses: {
         Row: {
+          admin_id: string | null
           content: string
           created_at: string
           id: string
+          is_internal_note: boolean
+          message: string | null
           sender_email: string | null
           sender_name: string | null
           sender_type: string | null
           ticket_id: string | null
+          user_id: string | null
         }
         Insert: {
+          admin_id?: string | null
           content: string
           created_at?: string
           id?: string
+          is_internal_note?: boolean
+          message?: string | null
           sender_email?: string | null
           sender_name?: string | null
           sender_type?: string | null
           ticket_id?: string | null
+          user_id?: string | null
         }
         Update: {
+          admin_id?: string | null
           content?: string
           created_at?: string
           id?: string
+          is_internal_note?: boolean
+          message?: string | null
           sender_email?: string | null
           sender_name?: string | null
           sender_type?: string | null
           ticket_id?: string | null
+          user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ticket_responses_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "admin_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ticket_responses_ticket_id_fkey"
             columns: ["ticket_id"]
@@ -1996,7 +2163,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_company: { Args: never; Returns: string }
+      invite_team_member_secure: {
+        Args: {
+          p_company_id: string
+          p_company_name?: string
+          p_email: string
+          p_hierarchy_level_id?: string
+          p_inviter_name: string
+          p_message?: string
+        }
+        Returns: string
+      }
+      is_admin_user_secure: { Args: never; Returns: boolean }
+      is_super_admin_secure: { Args: never; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
