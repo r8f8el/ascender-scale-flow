@@ -220,7 +220,7 @@ const CronogramasAdmin = () => {
 
         // Deletar etapas antigas
         const { error: deleteError } = await supabase
-          .from('schedule_phases')
+          .from('schedule_phases' as any)
           .delete()
           .eq('schedule_id', cronogramaSelecionado.id);
 
@@ -237,7 +237,7 @@ const CronogramasAdmin = () => {
         }));
 
         const { error: phasesError } = await supabase
-          .from('schedule_phases')
+          .from('schedule_phases' as any)
           .insert(etapasData);
 
         if (phasesError) throw phasesError;
@@ -271,7 +271,7 @@ const CronogramasAdmin = () => {
         }));
 
         const { error: phasesError } = await supabase
-          .from('schedule_phases')
+          .from('schedule_phases' as any)
           .insert(etapasData);
 
         if (phasesError) throw phasesError;
@@ -350,7 +350,7 @@ const CronogramasAdmin = () => {
   const alterarStatusEtapa = async (cronogramaId: string, etapaId: string, novoStatus: string) => {
     try {
       const { error } = await supabase
-        .from('schedule_phases')
+        .from('schedule_phases' as any)
         .update({ status: novoStatus })
         .eq('id', etapaId);
 

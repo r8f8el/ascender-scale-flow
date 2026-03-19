@@ -85,7 +85,7 @@ const ArquivosAdmin = () => {
   const loadArquivos = async () => {
     try {
       const { data, error } = await supabase
-        .from('documents')
+        .from('documents' as any)
         .select(`
           *,
           document_categories(name, color)
@@ -170,14 +170,14 @@ const ArquivosAdmin = () => {
       const filePath = `documents/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('documents')
+        .from('documents' as any)
         .upload(filePath, arquivoSelecionado);
 
       if (uploadError) throw uploadError;
 
       // Inserir registro no banco
       const { error: dbError } = await supabase
-        .from('documents')
+        .from('documents' as any)
         .insert([{
           filename: nomeNovoArquivo.includes('.') ? nomeNovoArquivo : `${nomeNovoArquivo}.${fileExt}`,
           file_path: filePath,
@@ -217,14 +217,14 @@ const ArquivosAdmin = () => {
       try {
         // Deletar arquivo do storage
         const { error: storageError } = await supabase.storage
-          .from('documents')
+          .from('documents' as any)
           .remove([arquivo.file_path]);
 
         if (storageError) throw storageError;
 
         // Deletar registro do banco
         const { error: dbError } = await supabase
-          .from('documents')
+          .from('documents' as any)
           .delete()
           .eq('id', arquivo.id);
 
@@ -250,7 +250,7 @@ const ArquivosAdmin = () => {
   const handleDownload = async (arquivo: Arquivo) => {
     try {
       const { data, error } = await supabase.storage
-        .from('documents')
+        .from('documents' as any)
         .download(arquivo.file_path);
 
       if (error) throw error;

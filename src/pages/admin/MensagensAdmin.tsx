@@ -45,7 +45,7 @@ const MensagensAdmin = () => {
   const loadMensagens = async () => {
     try {
       const { data, error } = await supabase
-        .from('automatic_messages')
+        .from('automatic_messages' as any)
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -102,7 +102,7 @@ const MensagensAdmin = () => {
     
     try {
       const { error } = await supabase
-        .from('automatic_messages')
+        .from('automatic_messages' as any)
         .update({
           subject: formValues.subject,
           body: formValues.body,
@@ -132,7 +132,7 @@ const MensagensAdmin = () => {
   const alterarStatus = async (id: string, novoStatus: boolean) => {
     try {
       const { error } = await supabase
-        .from('automatic_messages')
+        .from('automatic_messages' as any)
         .update({ enabled: novoStatus })
         .eq('id', id);
 
@@ -158,7 +158,7 @@ const MensagensAdmin = () => {
     if (window.confirm('Tem certeza que deseja excluir esta mensagem automática?')) {
       try {
         const { error } = await supabase
-          .from('automatic_messages')
+          .from('automatic_messages' as any)
           .delete()
           .eq('id', id);
 
@@ -197,7 +197,7 @@ const MensagensAdmin = () => {
     
     try {
       const { error } = await supabase
-        .from('automatic_messages')
+        .from('automatic_messages' as any)
         .insert([formValues]);
 
       if (error) throw error;
