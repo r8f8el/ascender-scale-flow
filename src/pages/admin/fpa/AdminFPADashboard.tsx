@@ -410,9 +410,9 @@ const AdminFPADashboard = () => {
                       {varianceAnalysis.slice(0, 5).map((analysis) => (
                         <div key={analysis.id} className="flex items-center justify-between p-4 border rounded-lg">
                           <div>
-                            <h4 className="font-medium text-gray-900">{analysis.metric_name}</h4>
+                             <h4 className="font-medium text-gray-900">{(analysis as any).metric_name || analysis.account_name}</h4>
                             <p className="text-sm text-gray-600">
-                              Variância: {formatPercentage(analysis.variance_percentage)}
+                              Variância: {formatPercentage(analysis.variance_percentage || 0)}
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
