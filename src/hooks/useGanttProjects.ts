@@ -29,31 +29,53 @@ export const useGanttProjects = (clientId?: string) => {
       setLoading(true);
       setError(null);
 
-      let query = supabase
-        .from('gantt_projects')
-        .select('*')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
-
-      if (clientId) {
-        query = query.eq('client_id', clientId);
+      if (!clientId) {
+        setProjects([]);
+        setLoading(false);
+        return;
       }
 
-      const { data, error: fetchError } = await query;
+      // First get the user's company
+      const { data: profile } = await supabase
+        .from('client_profiles')
+        .select('company')
+        .eq('id', clientId)
+        .single();
 
-      if (fetchError) throw fetchError;
-      
-      if (data && data.length > 0) {
-        setProjects(data);
+      if (profile?.company) {
+        // Get all company member IDs
+        const { data: companyMembers } = await supabase
+          .from('client_profiles')
+          .select('id')
+          .eq('company', profile.company);
+
+        const memberIds = companyMembers?.map(m => m.id) || [clientId];
+
+        // Fetch projects for all company members
+        const { data, error: fetchError } = await supabase
+          .from('gantt_projects')
+          .select('*')
+          .eq('is_active', true)
+          .in('client_id', memberIds)
+          .order('created_at', { ascending: false });
+
+        if (fetchError) throw fetchError;
+        setProjects(data || []);
       } else {
-        // Se não há projetos, retorna array vazio
-        setProjects([]);
+        // Fallback: just fetch for the user
+        const { data, error: fetchError } = await supabase
+          .from('gantt_projects')
+          .select('*')
+          .eq('is_active', true)
+          .eq('client_id', clientId)
+          .order('created_at', { ascending: false });
+
+        if (fetchError) throw fetchError;
+        setProjects(data || []);
       }
     } catch (error) {
       console.error('Error fetching gantt projects:', error);
       setError(error instanceof Error ? error.message : 'Erro desconhecido');
-      
-      // Em caso de erro, retorna array vazio
       setProjects([]);
     } finally {
       setLoading(false);

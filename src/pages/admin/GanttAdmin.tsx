@@ -46,6 +46,12 @@ interface ClientProfile {
   company: string | null;
 }
 
+interface CompanyOption {
+  company: string;
+  memberIds: string[];
+  primaryContact?: string;
+}
+
 interface GanttProject {
   id: string;
   name: string;
@@ -70,6 +76,7 @@ export default function GanttAdmin() {
   const [selectedTask, setSelectedTask] = useState<any>(null);
   
   // Estados de controle
+  const [selectedCompany, setSelectedCompany] = useState<string>('');
   const [selectedClientId, setSelectedClientId] = useState<string>('');
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [viewMode, setViewMode] = useState<'day' | 'week' | 'month'>('week');
@@ -88,8 +95,11 @@ export default function GanttAdmin() {
     status: 'planning'
   });
 
-  // Estados de dados reais
+  // Estados derivados
+  const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [clients, setClients] = useState<ClientProfile[]>([]);
+
+  // Carregar dados reais do banco
   const [projects, setProjects] = useState<GanttProject[]>([]);
   const [tasks, setTasks] = useState<GanttTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -100,14 +110,18 @@ export default function GanttAdmin() {
   }, []);
 
   useEffect(() => {
-    if (selectedClientId) {
-      loadProjects(selectedClientId);
+    if (selectedCompany) {
+      const company = companies.find(c => c.company === selectedCompany);
+      if (company && company.memberIds.length > 0) {
+        setSelectedClientId(company.memberIds[0]);
+        loadProjectsByCompany(company.memberIds);
+      }
     } else {
       setProjects([]);
       setSelectedProjectId('');
       setIsLoading(false);
     }
-  }, [selectedClientId]);
+  }, [selectedCompany]);
 
   useEffect(() => {
     if (selectedProjectId) {
@@ -123,13 +137,28 @@ export default function GanttAdmin() {
       const { data, error } = await supabase
         .from('client_profiles')
         .select('id, name, email, company')
+        .order('company')
         .order('name');
 
       if (error) throw error;
       
       setClients(data || []);
-      if (data && data.length > 0) {
-        setSelectedClientId(data[0].id);
+      
+      // Group by company
+      const companyMap: Record<string, CompanyOption> = {};
+      (data || []).forEach(client => {
+        const companyName = client.company || client.name || 'Sem empresa';
+        if (!companyMap[companyName]) {
+          companyMap[companyName] = { company: companyName, memberIds: [], primaryContact: client.name };
+        }
+        companyMap[companyName].memberIds.push(client.id);
+      });
+      
+      const companyList = Object.values(companyMap).sort((a, b) => a.company.localeCompare(b.company));
+      setCompanies(companyList);
+      
+      if (companyList.length > 0) {
+        setSelectedCompany(companyList[0].company);
       } else {
         setIsLoading(false);
       }
@@ -144,12 +173,12 @@ export default function GanttAdmin() {
     }
   };
 
-  const loadProjects = async (clientId: string) => {
+  const loadProjectsByCompany = async (memberIds: string[]) => {
     try {
       const { data, error } = await supabase
         .from('gantt_projects')
         .select('*')
-        .eq('client_id', clientId)
+        .in('client_id', memberIds)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -433,7 +462,8 @@ export default function GanttAdmin() {
       });
 
       // Recarregar projetos e selecionar o novo
-      await loadProjects(selectedClientId);
+      const company = companies.find(c => c.company === selectedCompany);
+      if (company) await loadProjectsByCompany(company.memberIds);
       setSelectedProjectId(data.id);
       setIsProjectModalOpen(false);
       setNewProject({
@@ -469,7 +499,8 @@ export default function GanttAdmin() {
       if (error) throw error;
 
       toast({ title: "Sucesso!", description: "Projeto excluído com sucesso" });
-      await loadProjects(selectedClientId);
+      const company = companies.find(c => c.company === selectedCompany);
+      if (company) await loadProjectsByCompany(company.memberIds);
       setSelectedProjectId('');
     } catch (error) {
       console.error('Erro ao excluir projeto:', error);
@@ -662,15 +693,15 @@ export default function GanttAdmin() {
   };
 
   const getCurrentProject = () => {
-    return projects.find(p => p.id === selectedProjectId && p.client_id === selectedClientId);
+    return projects.find(p => p.id === selectedProjectId);
   };
 
-  const getCurrentClient = () => {
-    return clients.find(c => c.id === selectedClientId);
+  const getCurrentCompany = () => {
+    return companies.find(c => c.company === selectedCompany);
   };
 
-  const getClientProjects = () => {
-    return projects.filter(p => p.client_id === selectedClientId);
+  const getCompanyProjects = () => {
+    return projects;
   };
 
   if (isLoading) {
@@ -738,15 +769,15 @@ export default function GanttAdmin() {
           <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
             <div className="flex flex-col gap-4">
               <div>
-                <Label className="text-sm font-medium">Cliente</Label>
-                <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                <Label className="text-sm font-medium">Empresa</Label>
+                <Select value={selectedCompany} onValueChange={setSelectedCompany}>
                   <SelectTrigger className="w-64">
-                    <SelectValue />
+                    <SelectValue placeholder="Selecione uma empresa" />
                   </SelectTrigger>
                   <SelectContent>
-                    {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.company || client.name}
+                    {companies.map((company) => (
+                      <SelectItem key={company.company} value={company.company}>
+                        {company.company} ({company.memberIds.length} membro{company.memberIds.length !== 1 ? 's' : ''})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -760,7 +791,7 @@ export default function GanttAdmin() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {getClientProjects().map((project) => (
+                    {getCompanyProjects().map((project) => (
                       <SelectItem key={project.id} value={project.id}>
                         {project.name}
                       </SelectItem>
@@ -779,7 +810,7 @@ export default function GanttAdmin() {
                   <span className="font-medium">Status:</span> {getCurrentProject()?.status}
                 </div>
                 <div className="text-sm">
-                  <span className="font-medium">Cliente:</span> {getCurrentClient()?.company || getCurrentClient()?.name}
+                  <span className="font-medium">Empresa:</span> {selectedCompany || 'Não selecionada'}
                 </div>
                 <div className="text-sm">
                   <span className="font-medium">Período:</span> {new Date(getCurrentProject()?.start_date || '').toLocaleDateString('pt-BR')} - {new Date(getCurrentProject()?.end_date || '').toLocaleDateString('pt-BR')}
@@ -1204,7 +1235,7 @@ export default function GanttAdmin() {
             <div>
               <Label>Cliente</Label>
               <p className="text-sm text-muted-foreground mt-1">
-                {getCurrentClient()?.company || getCurrentClient()?.name || 'Nenhum cliente selecionado'}
+                {selectedCompany || 'Nenhuma empresa selecionada'}
               </p>
             </div>
             <div>
