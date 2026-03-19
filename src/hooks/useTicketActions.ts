@@ -124,16 +124,15 @@ export const useTicketActions = (
   const deleteTicket = async (ticketId: string) => {
     try {
       // First delete related responses
-      const { error: responsesError } = await supabase
-        .from('ticket_responses')
+      const { error: responsesError } = await (supabase
+        .from('ticket_responses') as any)
         .delete()
         .eq('ticket_id', ticketId);
 
       if (responsesError) throw responsesError;
 
-      // Then delete the ticket
-      const { error } = await supabase
-        .from('tickets')
+      const { error } = await (supabase
+        .from('tickets') as any)
         .delete()
         .eq('id', ticketId);
 
