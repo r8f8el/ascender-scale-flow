@@ -36,7 +36,7 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
   const [admin, setAdmin] = useState<Admin | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   
   const isAscalateEmail = (email: string) => {
     return email.endsWith('@ascalate.com.br');
@@ -63,9 +63,18 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
           setUser(currentSession.user);
           setAdmin(createBasicAdmin(currentSession.user));
           setIsAdminAuthenticated(true);
+        } else {
+          setSession(null);
+          setUser(null);
+          setAdmin(null);
+          setIsAdminAuthenticated(false);
         }
       } catch (error) {
         console.error('Auth init error:', error);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -78,15 +87,18 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
           setUser(null);
           setAdmin(null);
           setIsAdminAuthenticated(false);
+          setLoading(false);
           return;
         }
 
-        if (session?.user && isAscalateEmail(session.user.email || '')) {
+        if (session.user && isAscalateEmail(session.user.email || '')) {
           setSession(session);
           setUser(session.user);
           setAdmin(createBasicAdmin(session.user));
           setIsAdminAuthenticated(true);
-        } else if (session?.user) {
+          setLoading(false);
+        } else if (session.user) {
+          setLoading(false);
           supabase.auth.signOut();
         }
       }
@@ -106,17 +118,27 @@ export const AdminAuthProvider: React.FC<{children: React.ReactNode}> = ({ child
         return false;
       }
       
+      setLoading(true);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
+        setLoading(false);
         return false;
+      }
+
+      if (data.user && data.session) {
+        setSession(data.session);
+        setUser(data.user);
+        setAdmin(createBasicAdmin(data.user));
+        setIsAdminAuthenticated(true);
       }
 
       return !!(data.user && data.session);
     } catch (error) {
+      setLoading(false);
       return false;
     }
   };
