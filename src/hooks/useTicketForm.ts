@@ -62,8 +62,8 @@ export const useTicketForm = () => {
 
     try {
       const [categoriesRes, prioritiesRes] = await Promise.all([
-        supabase.from('ticket_categories').select('*').order('name'),
-        supabase.from('ticket_priorities').select('*').order('level')
+        (supabase.from('ticket_categories') as any).select('*').order('name'),
+        (supabase.from('ticket_priorities') as any).select('*').order('level')
       ]);
 
       if (categoriesRes.data) {
