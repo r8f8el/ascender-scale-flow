@@ -769,15 +769,15 @@ export default function GanttAdmin() {
           <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
             <div className="flex flex-col gap-4">
               <div>
-                <Label className="text-sm font-medium">Cliente</Label>
-                <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                <Label className="text-sm font-medium">Empresa</Label>
+                <Select value={selectedCompany} onValueChange={setSelectedCompany}>
                   <SelectTrigger className="w-64">
-                    <SelectValue />
+                    <SelectValue placeholder="Selecione uma empresa" />
                   </SelectTrigger>
                   <SelectContent>
-                    {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.company || client.name}
+                    {companies.map((company) => (
+                      <SelectItem key={company.company} value={company.company}>
+                        {company.company} ({company.memberIds.length} membro{company.memberIds.length !== 1 ? 's' : ''})
                       </SelectItem>
                     ))}
                   </SelectContent>
