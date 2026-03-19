@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,9 +10,12 @@ import { SecureInviteTeamMemberDialog } from '@/components/client/SecureInviteTe
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCompanyAccess } from '@/hooks/useCompanyAccess';
 
+const TEAM_SYNC_INTERVAL = 5000;
+
 const ClientTeam = () => {
   const { data: companyAccess, isLoading: accessLoading } = useCompanyAccess();
-  
+  const isCompanyAccessEnabled = !!companyAccess?.hasCompanyAccess && !accessLoading;
+
   const { data: teamMembers, isLoading, refetch } = useQuery({
     queryKey: ['secure-team-members'],
     queryFn: async () => {
@@ -21,7 +24,6 @@ const ClientTeam = () => {
 
       console.log('🔍 Buscando membros da equipe para o usuário:', user.id);
       
-      // Buscar o perfil do usuário para obter a empresa
       const { data: profile } = await supabase
         .from('client_profiles')
         .select('company, is_primary_contact')
@@ -35,7 +37,6 @@ const ClientTeam = () => {
 
       console.log('🏢 Empresa do usuário:', profile.company);
 
-      // Buscar todos os membros da equipe da mesma empresa
       const { data: members, error } = await supabase
         .from('team_members')
         .select(`
@@ -64,10 +65,15 @@ const ClientTeam = () => {
       console.log('👥 Membros encontrados:', members);
       return members || [];
     },
-    enabled: !!companyAccess?.hasCompanyAccess && !accessLoading
+    enabled: isCompanyAccessEnabled,
+    refetchInterval: isCompanyAccessEnabled ? TEAM_SYNC_INTERVAL : false,
+    refetchOnWindowFocus: true,
   });
 
-  const { data: pendingInvitations } = useQuery({
+  const {
+    data: pendingInvitations,
+    refetch: refetchPendingInvitations,
+  } = useQuery({
     queryKey: ['pending-invitations'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -87,8 +93,53 @@ const ClientTeam = () => {
 
       return data || [];
     },
-    enabled: !!companyAccess?.hasCompanyAccess && !accessLoading
+    enabled: isCompanyAccessEnabled,
+    refetchInterval: isCompanyAccessEnabled ? TEAM_SYNC_INTERVAL : false,
+    refetchOnWindowFocus: true,
   });
+
+  useEffect(() => {
+    if (!isCompanyAccessEnabled) {
+      return;
+    }
+
+    const syncTeamData = () => {
+      console.log('🔄 Sincronizando dados da equipe após evento realtime');
+      refetch();
+      refetchPendingInvitations();
+    };
+
+    const invitationChannel = supabase
+      .channel('client-team-invitations-sync')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'team_invitations',
+        },
+        syncTeamData,
+      )
+      .subscribe();
+
+    const teamMembersChannel = supabase
+      .channel('client-team-members-sync')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'team_members',
+        },
+        syncTeamData,
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(invitationChannel);
+      supabase.removeChannel(teamMembersChannel);
+    };
+  }, [isCompanyAccessEnabled, refetch, refetchPendingInvitations]);
 
   if (accessLoading) {
     return (
@@ -114,7 +165,7 @@ const ClientTeam = () => {
   const getInitials = (name: string) => {
     return name
       .split(' ')
-      .map(n => n[0])
+      .map((n) => n[0])
       .join('')
       .toUpperCase()
       .substring(0, 2);
@@ -152,7 +203,10 @@ const ClientTeam = () => {
         </div>
         
         {companyAccess?.profile?.is_primary_contact && (
-          <SecureInviteTeamMemberDialog onInviteSuccess={() => refetch()} />
+          <SecureInviteTeamMemberDialog onInviteSuccess={() => {
+            refetch();
+            refetchPendingInvitations();
+          }} />
         )}
       </div>
 
