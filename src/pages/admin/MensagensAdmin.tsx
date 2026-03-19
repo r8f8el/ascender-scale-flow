@@ -18,10 +18,9 @@ import { useToast } from '@/hooks/use-toast';
 
 interface MensagemAutomatica {
   id: string;
-  type: string;
-  subject: string;
-  body: string;
-  enabled: boolean;
+  trigger_type: string;
+  message_content: string;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -32,10 +31,9 @@ const MensagensAdmin = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [mensagemEmEdicao, setMensagemEmEdicao] = useState<string | null>(null);
   const [formValues, setFormValues] = useState({
-    type: '',
-    subject: '',
-    body: '',
-    enabled: true
+    trigger_type: '',
+    message_content: '',
+    is_active: true
   });
 
   useEffect(() => {
