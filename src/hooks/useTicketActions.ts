@@ -34,8 +34,8 @@ export const useTicketActions = (
 ) => {
   const assignTicket = async (ticketId: string, adminId: string) => {
     try {
-      const { error } = await supabase
-        .from('tickets')
+      const { error } = await (supabase
+        .from('tickets') as any)
         .update({ 
           assigned_to: adminId,
           updated_at: new Date().toISOString()
