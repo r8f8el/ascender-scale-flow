@@ -387,6 +387,86 @@ export default function GanttAdmin() {
 
   const stats = getProjectStats();
 
+  const handleCreateProject = async () => {
+    if (!selectedClientId || !newProject.name.trim()) {
+      toast({
+        title: "Erro",
+        description: "Selecione um cliente e preencha o nome do projeto",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('gantt_projects')
+        .insert({
+          name: newProject.name,
+          description: newProject.description || null,
+          client_id: selectedClientId,
+          created_by: user?.id || null,
+          start_date: newProject.start_date,
+          end_date: newProject.end_date,
+          priority: newProject.priority,
+          status: newProject.status,
+          progress: 0,
+          is_active: true
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso!",
+        description: "Projeto criado com sucesso"
+      });
+
+      // Recarregar projetos e selecionar o novo
+      await loadProjects(selectedClientId);
+      setSelectedProjectId(data.id);
+      setIsProjectModalOpen(false);
+      setNewProject({
+        name: '',
+        description: '',
+        start_date: new Date().toISOString().split('T')[0],
+        end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        priority: 'medium',
+        status: 'planning'
+      });
+    } catch (error) {
+      console.error('Erro ao criar projeto:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao criar projeto",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    if (!confirm('Tem certeza que deseja excluir este projeto e todas as suas tarefas?')) return;
+
+    try {
+      // Delete tasks first
+      await supabase.from('gantt_tasks').delete().eq('project_id', projectId);
+      
+      const { error } = await supabase
+        .from('gantt_projects')
+        .delete()
+        .eq('id', projectId);
+
+      if (error) throw error;
+
+      toast({ title: "Sucesso!", description: "Projeto excluído com sucesso" });
+      await loadProjects(selectedClientId);
+      setSelectedProjectId('');
+    } catch (error) {
+      console.error('Erro ao excluir projeto:', error);
+      toast({ title: "Erro", description: "Erro ao excluir projeto", variant: "destructive" });
+    }
+  };
+
   const handleCreateTask = () => {
     if (!selectedProjectId) {
       toast({
