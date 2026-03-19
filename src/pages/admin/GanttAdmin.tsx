@@ -95,8 +95,10 @@ export default function GanttAdmin() {
     status: 'planning'
   });
 
-  // Estados de dados reais
-  const [clients, setClients] = useState<ClientProfile[]>([]);
+  // Estados derivados
+  const [companies, setCompanies] = useState<CompanyOption[]>([]);
+
+  // Carregar dados reais do banco
   const [projects, setProjects] = useState<GanttProject[]>([]);
   const [tasks, setTasks] = useState<GanttTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
