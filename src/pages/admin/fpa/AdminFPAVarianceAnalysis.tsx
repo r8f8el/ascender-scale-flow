@@ -210,11 +210,11 @@ const AdminFPAVarianceAnalysis = () => {
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-3">
                         <div>
                           <span className="text-gray-600">Planejado:</span>
-                          <div className="font-medium">{formatCurrency(analysis.planned_value)}</div>
+                          <div className="font-medium">{formatCurrency((analysis as any).planned_value || analysis.budget_amount)}</div>
                         </div>
                         <div>
                           <span className="text-gray-600">Realizado:</span>
-                          <div className="font-medium">{formatCurrency(analysis.actual_value)}</div>
+                          <div className="font-medium">{formatCurrency((analysis as any).actual_value || analysis.actual_amount)}</div>
                         </div>
                         <div>
                           <span className="text-gray-600">Variância:</span>
