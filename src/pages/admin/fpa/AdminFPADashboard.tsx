@@ -156,7 +156,7 @@ const AdminFPADashboard = () => {
                   <div>
                     <p className="text-sm text-muted-foreground">EBITDA</p>
                     <p className="text-2xl font-bold">
-                      {financialData.length > 0 ? formatCurrency(financialData[0].ebitda || 0) : formatCurrency(0)}
+                      {financialData.length > 0 ? formatCurrency((financialData[0] as any).ebitda || 0) : formatCurrency(0)}
                     </p>
                     <p className="text-xs text-red-600 flex items-center gap-1">
                       <TrendingDown className="h-3 w-3" />
