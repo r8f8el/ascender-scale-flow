@@ -61,8 +61,8 @@ export const useTicketData = () => {
       setLoading(true);
 
       // Load tickets with joins
-      const { data: ticketsData, error: ticketsError } = await supabase
-        .from('tickets')
+      const { data: ticketsData, error: ticketsError } = await (supabase
+        .from('tickets') as any)
         .select(`
           *,
           ticket_statuses:status_id(name, color, is_closed),
@@ -75,24 +75,24 @@ export const useTicketData = () => {
       if (ticketsError) throw ticketsError;
 
       // Load statuses
-      const { data: statusesData, error: statusesError } = await supabase
-        .from('ticket_statuses')
+      const { data: statusesData, error: statusesError } = await (supabase
+        .from('ticket_statuses') as any)
         .select('*')
         .order('name');
 
       if (statusesError) throw statusesError;
 
       // Load priorities
-      const { data: prioritiesData, error: prioritiesError } = await supabase
-        .from('ticket_priorities')
+      const { data: prioritiesData, error: prioritiesError } = await (supabase
+        .from('ticket_priorities') as any)
         .select('*')
         .order('level');
 
       if (prioritiesError) throw prioritiesError;
 
       // Load categories
-      const { data: categoriesData, error: categoriesError } = await supabase
-        .from('ticket_categories')
+      const { data: categoriesData, error: categoriesError } = await (supabase
+        .from('ticket_categories') as any)
         .select('*')
         .order('name');
 

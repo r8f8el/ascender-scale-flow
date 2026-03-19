@@ -1,14 +1,13 @@
 
 import React, { useState } from 'react';
-import { Plus, Search, Filter, Edit, Trash2, Eye, Users } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Plus, Search, Edit, Trash2, Eye, Users, X } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -18,6 +17,7 @@ interface Client {
   email: string;
   company: string;
   cnpj?: string;
+  phone?: string;
   is_primary_contact: boolean;
   created_at: string;
   fpa_data?: {
@@ -30,21 +30,22 @@ interface Client {
 const ClientManagementFixed = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState('all');
   const [isNewClientDialogOpen, setIsNewClientDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const [newClientData, setNewClientData] = useState({
+  const [formData, setFormData] = useState({
     name: '',
     email: '',
     company: '',
     cnpj: '',
-    industry: '',
-    phone: ''
+    phone: '',
+    industry: ''
   });
 
-  // Carregar clientes
   React.useEffect(() => {
     loadClients();
   }, []);
@@ -84,8 +85,12 @@ const ClientManagementFixed = () => {
     }
   };
 
+  const resetForm = () => {
+    setFormData({ name: '', email: '', company: '', cnpj: '', phone: '', industry: '' });
+  };
+
   const handleCreateClient = async () => {
-    if (!newClientData.name || !newClientData.email || !newClientData.company) {
+    if (!formData.name || !formData.email || !formData.company) {
       toast({
         title: "Erro",
         description: "Nome, email e empresa são obrigatórios",
@@ -96,66 +101,56 @@ const ClientManagementFixed = () => {
 
     setIsLoading(true);
     try {
-      // Criar usuário no Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: newClientData.email,
-        password: Math.random().toString(36).slice(-8), // Senha temporária
-        email_confirm: true,
-        user_metadata: {
-          name: newClientData.name,
-          company: newClientData.company
+      // Create auth user via signup (not admin API which requires service role)
+      const tempPassword = 'Temp' + Math.random().toString(36).slice(-8) + '!1';
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: tempPassword,
+        options: {
+          data: {
+            name: formData.name,
+            company: formData.company
+          }
         }
       });
 
       if (authError) throw authError;
 
-      // O profile será criado automaticamente via trigger
-      // Aguardar um momento para o trigger processar
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!authData.user) {
+        throw new Error('Erro ao criar usuário');
+      }
 
-      // Atualizar dados adicionais se necessário
-      if (newClientData.cnpj || newClientData.industry) {
-        const { error: updateError } = await supabase
-          .from('client_profiles')
-          .update({
-            cnpj: newClientData.cnpj || null
-          })
-          .eq('id', authData.user.id);
+      // Create client profile directly
+      const { error: profileError } = await supabase
+        .from('client_profiles')
+        .upsert({
+          id: authData.user.id,
+          name: formData.name,
+          email: formData.email,
+          company: formData.company,
+          cnpj: formData.cnpj || null,
+          phone: formData.phone || null,
+          is_primary_contact: true
+        });
 
-        if (updateError) console.error('Erro ao atualizar profile:', updateError);
+      if (profileError) throw profileError;
 
-        // Atualizar dados FPA se necessário
-        if (newClientData.industry) {
-          const { error: fpaError } = await supabase
-            .from('fpa_clients')
-            .update({
-              industry: newClientData.industry
-            })
-            .eq('client_profile_id', authData.user.id);
-
-          if (fpaError) console.error('Erro ao atualizar FPA:', fpaError);
-        }
+      // Update FPA data if industry provided
+      if (formData.industry) {
+        await supabase
+          .from('fpa_clients')
+          .update({ industry: formData.industry })
+          .eq('client_profile_id', authData.user.id);
       }
 
       toast({
         title: "Sucesso!",
-        description: `Cliente ${newClientData.name} criado com sucesso`
+        description: `Cliente ${formData.name} criado. Senha temporária: ${tempPassword}`
       });
 
-      // Limpar formulário e fechar dialog
-      setNewClientData({
-        name: '',
-        email: '',
-        company: '',
-        cnpj: '',
-        industry: '',
-        phone: ''
-      });
+      resetForm();
       setIsNewClientDialogOpen(false);
-
-      // Recarregar lista
       await loadClients();
-
     } catch (error: any) {
       console.error('Erro ao criar cliente:', error);
       toast({
@@ -168,28 +163,175 @@ const ClientManagementFixed = () => {
     }
   };
 
+  const handleEditClient = async () => {
+    if (!selectedClient) return;
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from('client_profiles')
+        .update({
+          name: formData.name,
+          company: formData.company,
+          cnpj: formData.cnpj || null,
+          phone: formData.phone || null
+        })
+        .eq('id', selectedClient.id);
+
+      if (error) throw error;
+
+      if (formData.industry) {
+        await supabase
+          .from('fpa_clients')
+          .update({ industry: formData.industry })
+          .eq('client_profile_id', selectedClient.id);
+      }
+
+      toast({ title: "Sucesso!", description: "Cliente atualizado" });
+      setIsEditDialogOpen(false);
+      setSelectedClient(null);
+      resetForm();
+      await loadClients();
+    } catch (error: any) {
+      console.error('Erro ao atualizar cliente:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao atualizar cliente",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteClient = async (client: Client) => {
+    if (!confirm(`Tem certeza que deseja excluir o cliente "${client.name}"?`)) return;
+
+    try {
+      // Delete FPA data first
+      await supabase.from('fpa_clients').delete().eq('client_profile_id', client.id);
+      
+      const { error } = await supabase
+        .from('client_profiles')
+        .delete()
+        .eq('id', client.id);
+
+      if (error) throw error;
+
+      toast({ title: "Sucesso!", description: "Cliente excluído" });
+      await loadClients();
+    } catch (error: any) {
+      console.error('Erro ao excluir cliente:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao excluir cliente",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const openEditDialog = (client: Client) => {
+    setSelectedClient(client);
+    setFormData({
+      name: client.name,
+      email: client.email,
+      company: client.company || '',
+      cnpj: client.cnpj || '',
+      phone: client.phone || '',
+      industry: client.fpa_data?.industry || ''
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const openViewDialog = (client: Client) => {
+    setSelectedClient(client);
+    setIsViewDialogOpen(true);
+  };
+
   const filteredClients = clients.filter(client => {
-    const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    return client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.company?.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesFilter = selectedFilter === 'all' ||
-      (selectedFilter === 'fpa' && !!client.fpa_data) ||
-      (selectedFilter === 'pending' && !client.fpa_data);
-
-    return matchesSearch && matchesFilter;
   });
+
+  const ClientFormFields = ({ isEdit = false }: { isEdit?: boolean }) => (
+    <div className="space-y-4">
+      <div>
+        <Label>Nome Completo *</Label>
+        <Input
+          placeholder="Nome do cliente"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+        />
+      </div>
+      {!isEdit && (
+        <div>
+          <Label>Email *</Label>
+          <Input
+            type="email"
+            placeholder="email@exemplo.com"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          />
+        </div>
+      )}
+      <div>
+        <Label>Empresa *</Label>
+        <Input
+          placeholder="Nome da empresa"
+          value={formData.company}
+          onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+        />
+      </div>
+      <div>
+        <Label>CNPJ</Label>
+        <Input
+          placeholder="XX.XXX.XXX/XXXX-XX"
+          value={formData.cnpj}
+          onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
+        />
+      </div>
+      <div>
+        <Label>Telefone</Label>
+        <Input
+          placeholder="(11) 99999-9999"
+          value={formData.phone}
+          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+        />
+      </div>
+      <div>
+        <Label>Setor</Label>
+        <Select
+          value={formData.industry}
+          onValueChange={(value) => setFormData({ ...formData, industry: value })}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Selecione o setor" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="technology">Tecnologia</SelectItem>
+            <SelectItem value="finance">Financeiro</SelectItem>
+            <SelectItem value="healthcare">Saúde</SelectItem>
+            <SelectItem value="retail">Varejo</SelectItem>
+            <SelectItem value="manufacturing">Manufatura</SelectItem>
+            <SelectItem value="services">Serviços</SelectItem>
+            <SelectItem value="other">Outros</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gerenciamento de Clientes</h1>
-          <p className="text-gray-600">Gerencie todos os clientes do sistema</p>
+          <h1 className="text-2xl font-bold">Gerenciamento de Clientes</h1>
+          <p className="text-muted-foreground">Gerencie todos os clientes do sistema</p>
         </div>
 
-        <Dialog open={isNewClientDialogOpen} onOpenChange={setIsNewClientDialogOpen}>
+        <Dialog open={isNewClientDialogOpen} onOpenChange={(open) => { setIsNewClientDialogOpen(open); if (!open) resetForm(); }}>
           <DialogTrigger asChild>
             <Button className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
@@ -200,136 +342,46 @@ const ClientManagementFixed = () => {
             <DialogHeader>
               <DialogTitle>Criar Novo Cliente</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Nome Completo *</Label>
-                <Input
-                  id="name"
-                  placeholder="Nome do cliente"
-                  value={newClientData.name}
-                  onChange={(e) => setNewClientData({...newClientData, name: e.target.value})}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="email@exemplo.com"
-                  value={newClientData.email}
-                  onChange={(e) => setNewClientData({...newClientData, email: e.target.value})}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="company">Empresa *</Label>
-                <Input
-                  id="company"
-                  placeholder="Nome da empresa"
-                  value={newClientData.company}
-                  onChange={(e) => setNewClientData({...newClientData, company: e.target.value})}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="cnpj">CNPJ</Label>
-                <Input
-                  id="cnpj"
-                  placeholder="XX.XXX.XXX/XXXX-XX"
-                  value={newClientData.cnpj}
-                  onChange={(e) => setNewClientData({...newClientData, cnpj: e.target.value})}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="industry">Setor</Label>
-                <Select 
-                  value={newClientData.industry} 
-                  onValueChange={(value) => setNewClientData({...newClientData, industry: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o setor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="technology">Tecnologia</SelectItem>
-                    <SelectItem value="finance">Financeiro</SelectItem>
-                    <SelectItem value="healthcare">Saúde</SelectItem>
-                    <SelectItem value="retail">Varejo</SelectItem>
-                    <SelectItem value="manufacturing">Manufatura</SelectItem>
-                    <SelectItem value="services">Serviços</SelectItem>
-                    <SelectItem value="other">Outros</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex gap-2 pt-4">
-                <Button 
-                  onClick={handleCreateClient} 
-                  disabled={isLoading}
-                  className="flex-1"
-                >
-                  {isLoading ? 'Criando...' : 'Criar Cliente'}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setIsNewClientDialogOpen(false)}
-                >
-                  Cancelar
-                </Button>
-              </div>
+            <ClientFormFields />
+            <div className="flex gap-2 pt-4">
+              <Button onClick={handleCreateClient} disabled={isLoading} className="flex-1">
+                {isLoading ? 'Criando...' : 'Criar Cliente'}
+              </Button>
+              <Button variant="outline" onClick={() => setIsNewClientDialogOpen(false)}>
+                Cancelar
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Filtros */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Buscar clientes..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
-        
-        <Select value={selectedFilter} onValueChange={setSelectedFilter}>
-          <SelectTrigger className="w-full sm:w-[180px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os Clientes</SelectItem>
-            <SelectItem value="fpa">FP&A Completo</SelectItem>
-            <SelectItem value="pending">Sem FP&A</SelectItem>
-          </SelectContent>
-        </Select>
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+        <Input
+          placeholder="Buscar clientes..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10"
+        />
       </div>
 
-      {/* Lista de Clientes */}
+      {/* Clients List */}
       <div className="grid gap-4">
         {isLoading ? (
           <Card>
             <CardContent className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-2 text-gray-500">Carregando clientes...</p>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-2 text-muted-foreground">Carregando clientes...</p>
             </CardContent>
           </Card>
         ) : filteredClients.length === 0 ? (
           <Card>
             <CardContent className="text-center py-12">
-              <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Nenhum cliente encontrado
-              </h3>
-              <p className="text-gray-500">
-                {clients.length === 0 
-                  ? 'Comece criando seu primeiro cliente'
-                  : 'Tente ajustar os filtros de busca'
-                }
+              <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">Nenhum cliente encontrado</h3>
+              <p className="text-muted-foreground">
+                {clients.length === 0 ? 'Comece criando seu primeiro cliente' : 'Tente ajustar os filtros de busca'}
               </p>
             </CardContent>
           </Card>
@@ -339,48 +391,44 @@ const ClientManagementFixed = () => {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4 flex-1">
-                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-blue-600 font-semibold text-lg">
+                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                      <span className="text-primary font-semibold text-lg">
                         {client.name.charAt(0).toUpperCase()}
                       </span>
                     </div>
-                    
+
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-gray-900">{client.name}</h3>
+                        <h3 className="font-semibold">{client.name}</h3>
                         {client.is_primary_contact && (
                           <Badge variant="secondary">Principal</Badge>
                         )}
-                        <Badge 
-                          variant={client.fpa_data ? "default" : "outline"}
-                        >
-                          {client.fpa_data ? 'FP&A Ativo' : 'Sem FP&A'}
-                        </Badge>
                       </div>
-                      
-                      <p className="text-sm text-gray-600 mb-1">{client.email}</p>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-muted-foreground mb-1">{client.email}</p>
+                      <p className="text-sm text-muted-foreground">
                         {client.company}
                         {client.fpa_data?.industry && ` • ${client.fpa_data.industry}`}
                       </p>
-                      
-                      <div className="flex items-center gap-4 text-xs text-gray-400 mt-2">
-                        <span>Cliente desde {new Date(client.created_at).toLocaleDateString()}</span>
-                        {client.fpa_data?.current_phase && (
-                          <span>Fase FP&A: {client.fpa_data.current_phase}</span>
-                        )}
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
+                        <span>Desde {new Date(client.created_at).toLocaleDateString('pt-BR')}</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex gap-1 ml-4">
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={() => openViewDialog(client)} title="Visualizar">
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={() => openEditDialog(client)} title="Editar">
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => handleDeleteClient(client)}
+                      title="Excluir"
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -390,6 +438,75 @@ const ClientManagementFixed = () => {
           ))
         )}
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={(open) => { setIsEditDialogOpen(open); if (!open) { setSelectedClient(null); resetForm(); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Cliente</DialogTitle>
+          </DialogHeader>
+          <ClientFormFields isEdit />
+          <div className="flex gap-2 pt-4">
+            <Button onClick={handleEditClient} disabled={isLoading} className="flex-1">
+              {isLoading ? 'Salvando...' : 'Salvar Alterações'}
+            </Button>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancelar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={(open) => { setIsViewDialogOpen(open); if (!open) setSelectedClient(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Detalhes do Cliente</DialogTitle>
+          </DialogHeader>
+          {selectedClient && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                  <span className="text-primary font-bold text-2xl">
+                    {selectedClient.name.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">{selectedClient.name}</h3>
+                  <p className="text-muted-foreground">{selectedClient.company}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                <div>
+                  <p className="text-sm text-muted-foreground">Email</p>
+                  <p className="font-medium">{selectedClient.email}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Telefone</p>
+                  <p className="font-medium">{selectedClient.phone || 'Não informado'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">CNPJ</p>
+                  <p className="font-medium">{selectedClient.cnpj || 'Não informado'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Contato Principal</p>
+                  <p className="font-medium">{selectedClient.is_primary_contact ? 'Sim' : 'Não'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Setor</p>
+                  <p className="font-medium">{selectedClient.fpa_data?.industry || 'Não informado'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Cliente desde</p>
+                  <p className="font-medium">{new Date(selectedClient.created_at).toLocaleDateString('pt-BR')}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

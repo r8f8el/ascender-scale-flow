@@ -62,8 +62,8 @@ export const useTicketForm = () => {
 
     try {
       const [categoriesRes, prioritiesRes] = await Promise.all([
-        supabase.from('ticket_categories').select('*').order('name'),
-        supabase.from('ticket_priorities').select('*').order('level')
+        (supabase.from('ticket_categories') as any).select('*').order('name'),
+        (supabase.from('ticket_priorities') as any).select('*').order('level')
       ]);
 
       if (categoriesRes.data) {
@@ -122,8 +122,8 @@ export const useTicketForm = () => {
       let statusId: string;
       
       // Buscar status "Novo" primeiro
-      const { data: novoStatus } = await supabase
-        .from('ticket_statuses')
+      const { data: novoStatus } = await (supabase
+        .from('ticket_statuses') as any)
         .select('id')
         .eq('name', 'Novo')
         .maybeSingle();
@@ -132,8 +132,8 @@ export const useTicketForm = () => {
         statusId = novoStatus.id;
       } else {
         // Se não existir "Novo", buscar "Aberto"
-        const { data: abertoStatus } = await supabase
-          .from('ticket_statuses')
+        const { data: abertoStatus } = await (supabase
+          .from('ticket_statuses') as any)
           .select('id')
           .eq('name', 'Aberto')
           .maybeSingle();
@@ -142,8 +142,8 @@ export const useTicketForm = () => {
           statusId = abertoStatus.id;
         } else {
           // Criar status padrão se não existir
-          const { data: createdStatus, error: createError } = await supabase
-            .from('ticket_statuses')
+          const { data: createdStatus, error: createError } = await (supabase
+            .from('ticket_statuses') as any)
             .insert({ name: 'Aberto', color: '#3B82F6', is_closed: false })
             .select('id')
             .single();
@@ -164,8 +164,8 @@ export const useTicketForm = () => {
 
       console.log('Creating ticket with data:', ticketData);
 
-      const { data: ticket, error: ticketError } = await supabase
-        .from('tickets')
+      const { data: ticket, error: ticketError } = await (supabase
+        .from('tickets') as any)
         .insert(ticketData)
         .select('*, ticket_priorities(name)')
         .single();
@@ -192,8 +192,8 @@ export const useTicketForm = () => {
             throw uploadError;
           }
 
-          return supabase
-            .from('ticket_attachments')
+          return (supabase
+            .from('ticket_attachments') as any)
             .insert({
               ticket_id: ticket.id,
               filename: file.name,
