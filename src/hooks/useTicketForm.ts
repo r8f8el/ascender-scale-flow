@@ -132,8 +132,8 @@ export const useTicketForm = () => {
         statusId = novoStatus.id;
       } else {
         // Se não existir "Novo", buscar "Aberto"
-        const { data: abertoStatus } = await supabase
-          .from('ticket_statuses')
+        const { data: abertoStatus } = await (supabase
+          .from('ticket_statuses') as any)
           .select('id')
           .eq('name', 'Aberto')
           .maybeSingle();
