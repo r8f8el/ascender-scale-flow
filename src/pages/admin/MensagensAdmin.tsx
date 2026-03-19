@@ -354,20 +354,11 @@ const MensagensAdmin = () => {
             {mensagemEmEdicao === mensagem.id ? (
               <CardContent className="p-4 space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor={`subject-${mensagem.id}`}>Assunto do E-mail*</Label>
-                  <Input
-                    id={`subject-${mensagem.id}`}
-                    value={formValues.subject}
-                    onChange={(e) => handleInputChange('subject', e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor={`body-${mensagem.id}`}>Conteúdo da Mensagem*</Label>
+                  <Label htmlFor={`content-${mensagem.id}`}>Conteúdo da Mensagem*</Label>
                   <Textarea
-                    id={`body-${mensagem.id}`}
-                    value={formValues.body}
-                    onChange={(e) => handleInputChange('body', e.target.value)}
+                    id={`content-${mensagem.id}`}
+                    value={formValues.message_content}
+                    onChange={(e) => handleInputChange('message_content', e.target.value)}
                     className="min-h-[150px]"
                   />
                   <p className="text-xs text-gray-500">
