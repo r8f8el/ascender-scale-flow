@@ -810,7 +810,7 @@ export default function GanttAdmin() {
                   <span className="font-medium">Status:</span> {getCurrentProject()?.status}
                 </div>
                 <div className="text-sm">
-                  <span className="font-medium">Cliente:</span> {getCurrentClient()?.company || getCurrentClient()?.name}
+                  <span className="font-medium">Empresa:</span> {selectedCompany || 'Não selecionada'}
                 </div>
                 <div className="text-sm">
                   <span className="font-medium">Período:</span> {new Date(getCurrentProject()?.start_date || '').toLocaleDateString('pt-BR')} - {new Date(getCurrentProject()?.end_date || '').toLocaleDateString('pt-BR')}
