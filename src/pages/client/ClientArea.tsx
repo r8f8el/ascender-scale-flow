@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { ClientHeader } from '@/components/client/ClientHeader';
 import { ClientNavigation } from '@/components/client/ClientNavigation';
@@ -8,6 +8,8 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import ClientDocumentSync from '@/components/client/ClientDocumentSync';
 import { Chat } from '@/components/Chat';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import { supabase } from '@/integrations/supabase/client';
+import { PageLoader } from '@/components/ui/page-loader';
 
 // Client pages
 import ClientDocuments from './ClientDocuments';
@@ -39,24 +41,69 @@ import ClientCommunicationSimple from './ClientCommunicationSimple';
 import ClientBIDashboard from './fpa/ClientBIDashboard';
 
 const ClientArea = () => {
-  const { client, logout } = useAuth();
+  const { client, user, loading, logout } = useAuth();
   const navigate = useNavigate();
+  const [retryCount, setRetryCount] = useState(0);
+  const [profileReady, setProfileReady] = useState(false);
 
-  console.log('🔍 ClientArea: Renderizando com cliente:', client?.name);
+  console.log('🔍 ClientArea: client:', client?.name, 'user:', user?.id, 'loading:', loading);
+
+  // Retry fetching profile if not found yet
+  useEffect(() => {
+    if (client) {
+      setProfileReady(true);
+      return;
+    }
+    
+    if (loading || !user) return;
+
+    // Profile not found - retry a few times (trigger may still be creating it)
+    if (retryCount < 5) {
+      const timer = setTimeout(async () => {
+        console.log(`🔄 Retry ${retryCount + 1}: fetching profile for user ${user.id}`);
+        try {
+          const { data } = await supabase.rpc('get_client_profile_bypass', { p_user_id: user.id });
+          if (data && Array.isArray(data) && data.length > 0) {
+            console.log('✅ Profile found on retry');
+            setProfileReady(true);
+            // Force page reload to re-initialize auth context with profile
+            window.location.reload();
+            return;
+          }
+        } catch (e) {
+          console.error('Retry error:', e);
+        }
+        setRetryCount(prev => prev + 1);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [client, user, loading, retryCount]);
 
   const handleLogout = () => {
-    console.log('👋 ClientArea: Fazendo logout');
     logout();
     navigate('/login');
   };
 
-  if (!client) {
-    console.log('⚠️ ClientArea: Cliente não encontrado, mas usuário autenticado');
+  if (loading) {
+    return <PageLoader text="Verificando autenticação..." />;
+  }
+
+  if (!client && retryCount < 5) {
+    return <PageLoader text="Carregando perfil..." />;
+  }
+
+  if (!client && retryCount >= 5) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-lg font-semibold">Carregando perfil...</h2>
-          <p className="text-gray-600">Aguarde enquanto carregamos suas informações.</p>
+        <div className="text-center space-y-4">
+          <h2 className="text-lg font-semibold">Perfil não encontrado</h2>
+          <p className="text-muted-foreground">Não foi possível carregar seu perfil. Tente fazer login novamente.</p>
+          <button 
+            onClick={handleLogout}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+          >
+            Voltar ao Login
+          </button>
         </div>
       </div>
     );
