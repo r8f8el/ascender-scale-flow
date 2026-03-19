@@ -10,6 +10,7 @@ import { useCreateSolicitacao } from '@/hooks/useSolicitacoes';
 import { FileUploadSolicitacao } from './FileUploadSolicitacao';
 import { SeletorAprovadoresEquipe } from './SeletorAprovadoresEquipe';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface CriarSolicitacaoDialogProps {
   open: boolean;
