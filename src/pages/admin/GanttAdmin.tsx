@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { 
   BarChart3, 
   Calendar, 
@@ -24,7 +26,8 @@ import {
   Settings,
   RefreshCw,
   List,
-  Building2
+  Building2,
+  FolderPlus
 } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
