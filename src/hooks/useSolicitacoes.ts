@@ -128,7 +128,9 @@ export const useSolicitacaoPendentes = (userId?: string) => {
       return pendentes.map(formatSolicitacao);
     },
     enabled: !!userId,
-    staleTime: 1000 * 60,
+    staleTime: 1000 * 30,
+    refetchInterval: 5000,
+    refetchOnWindowFocus: true,
   });
 };
 
