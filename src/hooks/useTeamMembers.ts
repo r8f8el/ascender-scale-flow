@@ -81,6 +81,15 @@ export const useInviteTeamMember = () => {
       name: string;
       hierarchyLevelId: string;
     }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+
+      const { data: profile } = await supabase
+        .from('client_profiles')
+        .select('name, company')
+        .eq('id', user.id)
+        .single();
+
       const { data, error } = await supabase.rpc('invite_team_member', {
         p_email: email,
         p_name: name,
@@ -88,6 +97,36 @@ export const useInviteTeamMember = () => {
       });
 
       if (error) throw error;
+
+      // Get the token for the invitation just created
+      const { data: invitation } = await supabase
+        .from('team_invitations')
+        .select('token')
+        .eq('email', email)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (invitation?.token) {
+        const inviteUrl = `${window.location.origin}/convite-equipe-seguro?token=${invitation.token}`;
+
+        try {
+          await supabase.functions.invoke('send-invitation-email', {
+            body: {
+              to: email,
+              inviterName: profile?.name || 'Administrador',
+              invitedName: name,
+              companyName: profile?.company || 'Empresa',
+              inviteUrl
+            }
+          });
+          console.log('✅ Email de convite enviado para:', email);
+        } catch (emailError) {
+          console.error('⚠️ Erro ao enviar email:', emailError);
+        }
+      }
+
       return data;
     },
     onSuccess: () => {
