@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Plus, Search, Edit, Trash2, Eye, Users, X } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Eye, Users, Building2, ChevronDown, ChevronRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -27,6 +28,11 @@ interface Client {
   };
 }
 
+interface CompanyGroup {
+  company: string;
+  members: Client[];
+}
+
 const ClientManagementFixed = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -35,6 +41,7 @@ const ClientManagementFixed = () => {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -63,7 +70,9 @@ const ClientManagementFixed = () => {
             current_phase
           )
         `)
-        .order('created_at', { ascending: false });
+        .order('company')
+        .order('is_primary_contact', { ascending: false })
+        .order('name');
 
       if (error) throw error;
 
@@ -73,6 +82,10 @@ const ClientManagementFixed = () => {
       })) || [];
 
       setClients(formattedClients);
+      
+      // Auto-expand all companies initially
+      const companies = new Set(formattedClients.map(c => c.company || 'Sem empresa'));
+      setExpandedCompanies(companies);
     } catch (error) {
       console.error('Erro ao carregar clientes:', error);
       toast({
@@ -101,7 +114,6 @@ const ClientManagementFixed = () => {
 
     setIsLoading(true);
     try {
-      // Create auth user via signup (not admin API which requires service role)
       const tempPassword = 'Temp' + Math.random().toString(36).slice(-8) + '!1';
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
@@ -115,12 +127,8 @@ const ClientManagementFixed = () => {
       });
 
       if (authError) throw authError;
+      if (!authData.user) throw new Error('Erro ao criar usuário');
 
-      if (!authData.user) {
-        throw new Error('Erro ao criar usuário');
-      }
-
-      // Create client profile directly
       const { error: profileError } = await supabase
         .from('client_profiles')
         .upsert({
@@ -135,7 +143,6 @@ const ClientManagementFixed = () => {
 
       if (profileError) throw profileError;
 
-      // Update FPA data if industry provided
       if (formData.industry) {
         await supabase
           .from('fpa_clients')
@@ -193,7 +200,6 @@ const ClientManagementFixed = () => {
       resetForm();
       await loadClients();
     } catch (error: any) {
-      console.error('Erro ao atualizar cliente:', error);
       toast({
         title: "Erro",
         description: error.message || "Erro ao atualizar cliente",
@@ -208,20 +214,13 @@ const ClientManagementFixed = () => {
     if (!confirm(`Tem certeza que deseja excluir o cliente "${client.name}"?`)) return;
 
     try {
-      // Delete FPA data first
       await supabase.from('fpa_clients').delete().eq('client_profile_id', client.id);
-      
-      const { error } = await supabase
-        .from('client_profiles')
-        .delete()
-        .eq('id', client.id);
-
+      const { error } = await supabase.from('client_profiles').delete().eq('id', client.id);
       if (error) throw error;
 
       toast({ title: "Sucesso!", description: "Cliente excluído" });
       await loadClients();
     } catch (error: any) {
-      console.error('Erro ao excluir cliente:', error);
       toast({
         title: "Erro",
         description: error.message || "Erro ao excluir cliente",
@@ -248,66 +247,65 @@ const ClientManagementFixed = () => {
     setIsViewDialogOpen(true);
   };
 
+  const toggleCompany = (company: string) => {
+    setExpandedCompanies(prev => {
+      const next = new Set(prev);
+      if (next.has(company)) {
+        next.delete(company);
+      } else {
+        next.add(company);
+      }
+      return next;
+    });
+  };
+
   const filteredClients = clients.filter(client => {
     return client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.company?.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
+  // Group clients by company
+  const companyGroups: CompanyGroup[] = React.useMemo(() => {
+    const groups: Record<string, Client[]> = {};
+    filteredClients.forEach(client => {
+      const company = client.company || 'Sem empresa';
+      if (!groups[company]) groups[company] = [];
+      groups[company].push(client);
+    });
+    return Object.entries(groups)
+      .map(([company, members]) => ({ company, members }))
+      .sort((a, b) => a.company.localeCompare(b.company));
+  }, [filteredClients]);
+
   const ClientFormFields = ({ isEdit = false }: { isEdit?: boolean }) => (
     <div className="space-y-4">
       <div>
         <Label>Nome Completo *</Label>
-        <Input
-          placeholder="Nome do cliente"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-        />
+        <Input placeholder="Nome do cliente" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
       </div>
       {!isEdit && (
         <div>
           <Label>Email *</Label>
-          <Input
-            type="email"
-            placeholder="email@exemplo.com"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          />
+          <Input type="email" placeholder="email@exemplo.com" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
         </div>
       )}
       <div>
         <Label>Empresa *</Label>
-        <Input
-          placeholder="Nome da empresa"
-          value={formData.company}
-          onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-        />
+        <Input placeholder="Nome da empresa" value={formData.company} onChange={(e) => setFormData({ ...formData, company: e.target.value })} />
       </div>
       <div>
         <Label>CNPJ</Label>
-        <Input
-          placeholder="XX.XXX.XXX/XXXX-XX"
-          value={formData.cnpj}
-          onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
-        />
+        <Input placeholder="XX.XXX.XXX/XXXX-XX" value={formData.cnpj} onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })} />
       </div>
       <div>
         <Label>Telefone</Label>
-        <Input
-          placeholder="(11) 99999-9999"
-          value={formData.phone}
-          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-        />
+        <Input placeholder="(11) 99999-9999" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
       </div>
       <div>
         <Label>Setor</Label>
-        <Select
-          value={formData.industry}
-          onValueChange={(value) => setFormData({ ...formData, industry: value })}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Selecione o setor" />
-          </SelectTrigger>
+        <Select value={formData.industry} onValueChange={(value) => setFormData({ ...formData, industry: value })}>
+          <SelectTrigger><SelectValue placeholder="Selecione o setor" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="technology">Tecnologia</SelectItem>
             <SelectItem value="finance">Financeiro</SelectItem>
@@ -328,7 +326,9 @@ const ClientManagementFixed = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold">Gerenciamento de Clientes</h1>
-          <p className="text-muted-foreground">Gerencie todos os clientes do sistema</p>
+          <p className="text-muted-foreground">
+            {companyGroups.length} empresa{companyGroups.length !== 1 ? 's' : ''} • {filteredClients.length} usuário{filteredClients.length !== 1 ? 's' : ''}
+          </p>
         </div>
 
         <Dialog open={isNewClientDialogOpen} onOpenChange={(open) => { setIsNewClientDialogOpen(open); if (!open) resetForm(); }}>
@@ -347,9 +347,7 @@ const ClientManagementFixed = () => {
               <Button onClick={handleCreateClient} disabled={isLoading} className="flex-1">
                 {isLoading ? 'Criando...' : 'Criar Cliente'}
               </Button>
-              <Button variant="outline" onClick={() => setIsNewClientDialogOpen(false)}>
-                Cancelar
-              </Button>
+              <Button variant="outline" onClick={() => setIsNewClientDialogOpen(false)}>Cancelar</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -358,16 +356,11 @@ const ClientManagementFixed = () => {
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-        <Input
-          placeholder="Buscar clientes..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
+        <Input placeholder="Buscar clientes por nome, email ou empresa..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
       </div>
 
-      {/* Clients List */}
-      <div className="grid gap-4">
+      {/* Grouped Clients List */}
+      <div className="space-y-4">
         {isLoading ? (
           <Card>
             <CardContent className="text-center py-8">
@@ -375,7 +368,7 @@ const ClientManagementFixed = () => {
               <p className="mt-2 text-muted-foreground">Carregando clientes...</p>
             </CardContent>
           </Card>
-        ) : filteredClients.length === 0 ? (
+        ) : companyGroups.length === 0 ? (
           <Card>
             <CardContent className="text-center py-12">
               <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
@@ -386,73 +379,80 @@ const ClientManagementFixed = () => {
             </CardContent>
           </Card>
         ) : (
-          filteredClients.map((client) => (
-            <Card key={client.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                      <span className="text-primary font-semibold text-lg">
-                        {client.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold">{client.name}</h3>
-                        {client.is_primary_contact && (
-                          <Badge variant="secondary">Principal</Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-1">{client.email}</p>
+          companyGroups.map((group) => {
+            const isExpanded = expandedCompanies.has(group.company);
+            const primaryContact = group.members.find(m => m.is_primary_contact);
+            
+            return (
+              <Card key={group.company} className="overflow-hidden">
+                <div
+                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => toggleCompany(group.company)}
+                >
+                  <div className="flex items-center gap-3">
+                    {isExpanded ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronRight className="h-5 w-5 text-muted-foreground" />}
+                    <Building2 className="h-5 w-5 text-primary" />
+                    <div>
+                      <h3 className="font-semibold text-lg">{group.company}</h3>
                       <p className="text-sm text-muted-foreground">
-                        {client.company}
-                        {client.fpa_data?.industry && ` • ${client.fpa_data.industry}`}
+                        {group.members.length} membro{group.members.length !== 1 ? 's' : ''}
+                        {primaryContact && ` • Contato: ${primaryContact.name}`}
                       </p>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
-                        <span>Desde {new Date(client.created_at).toLocaleDateString('pt-BR')}</span>
-                      </div>
                     </div>
                   </div>
-
-                  <div className="flex gap-1 ml-4">
-                    <Button variant="ghost" size="sm" onClick={() => openViewDialog(client)} title="Visualizar">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => openEditDialog(client)} title="Editar">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => handleDeleteClient(client)}
-                      title="Excluir"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <Badge variant="secondary">{group.members.length}</Badge>
                 </div>
-              </CardContent>
-            </Card>
-          ))
+                
+                {isExpanded && (
+                  <div className="border-t divide-y">
+                    {group.members.map((client) => (
+                      <div key={client.id} className="p-4 pl-14 flex items-center justify-between hover:bg-muted/30 transition-colors">
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                            <span className="text-primary font-semibold">
+                              {client.name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{client.name}</span>
+                              {client.is_primary_contact && <Badge variant="outline" className="text-xs">Principal</Badge>}
+                            </div>
+                            <p className="text-sm text-muted-foreground">{client.email}</p>
+                            {client.phone && <p className="text-xs text-muted-foreground">{client.phone}</p>}
+                          </div>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); openViewDialog(client); }} title="Visualizar">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); openEditDialog(client); }} title="Editar">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteClient(client); }} title="Excluir">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            );
+          })
         )}
       </div>
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={(open) => { setIsEditDialogOpen(open); if (!open) { setSelectedClient(null); resetForm(); } }}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Editar Cliente</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Editar Cliente</DialogTitle></DialogHeader>
           <ClientFormFields isEdit />
           <div className="flex gap-2 pt-4">
             <Button onClick={handleEditClient} disabled={isLoading} className="flex-1">
               {isLoading ? 'Salvando...' : 'Salvar Alterações'}
             </Button>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Cancelar
-            </Button>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancelar</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -460,23 +460,18 @@ const ClientManagementFixed = () => {
       {/* View Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={(open) => { setIsViewDialogOpen(open); if (!open) setSelectedClient(null); }}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Detalhes do Cliente</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Detalhes do Cliente</DialogTitle></DialogHeader>
           {selectedClient && (
             <div className="space-y-4">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-                  <span className="text-primary font-bold text-2xl">
-                    {selectedClient.name.charAt(0).toUpperCase()}
-                  </span>
+                  <span className="text-primary font-bold text-2xl">{selectedClient.name.charAt(0).toUpperCase()}</span>
                 </div>
                 <div>
                   <h3 className="text-xl font-bold">{selectedClient.name}</h3>
                   <p className="text-muted-foreground">{selectedClient.company}</p>
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                 <div>
                   <p className="text-sm text-muted-foreground">Email</p>
@@ -496,10 +491,10 @@ const ClientManagementFixed = () => {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Setor</p>
-                  <p className="font-medium">{selectedClient.fpa_data?.industry || 'Não informado'}</p>
+                  <p className="font-medium">{selectedClient.fpa_data?.industry || 'Não definido'}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Cliente desde</p>
+                  <p className="text-sm text-muted-foreground">Desde</p>
                   <p className="font-medium">{new Date(selectedClient.created_at).toLocaleDateString('pt-BR')}</p>
                 </div>
               </div>
