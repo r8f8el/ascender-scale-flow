@@ -693,15 +693,15 @@ export default function GanttAdmin() {
   };
 
   const getCurrentProject = () => {
-    return projects.find(p => p.id === selectedProjectId && p.client_id === selectedClientId);
+    return projects.find(p => p.id === selectedProjectId);
   };
 
-  const getCurrentClient = () => {
-    return clients.find(c => c.id === selectedClientId);
+  const getCurrentCompany = () => {
+    return companies.find(c => c.company === selectedCompany);
   };
 
-  const getClientProjects = () => {
-    return projects.filter(p => p.client_id === selectedClientId);
+  const getCompanyProjects = () => {
+    return projects;
   };
 
   if (isLoading) {
