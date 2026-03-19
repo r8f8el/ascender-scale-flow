@@ -97,6 +97,7 @@ export default function GanttAdmin() {
 
   // Estados derivados
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
+  const [clients, setClients] = useState<ClientProfile[]>([]);
 
   // Carregar dados reais do banco
   const [projects, setProjects] = useState<GanttProject[]>([]);
@@ -109,14 +110,18 @@ export default function GanttAdmin() {
   }, []);
 
   useEffect(() => {
-    if (selectedClientId) {
-      loadProjects(selectedClientId);
+    if (selectedCompany) {
+      const company = companies.find(c => c.company === selectedCompany);
+      if (company && company.memberIds.length > 0) {
+        setSelectedClientId(company.memberIds[0]);
+        loadProjectsByCompany(company.memberIds);
+      }
     } else {
       setProjects([]);
       setSelectedProjectId('');
       setIsLoading(false);
     }
-  }, [selectedClientId]);
+  }, [selectedCompany]);
 
   useEffect(() => {
     if (selectedProjectId) {
@@ -132,13 +137,28 @@ export default function GanttAdmin() {
       const { data, error } = await supabase
         .from('client_profiles')
         .select('id, name, email, company')
+        .order('company')
         .order('name');
 
       if (error) throw error;
       
       setClients(data || []);
-      if (data && data.length > 0) {
-        setSelectedClientId(data[0].id);
+      
+      // Group by company
+      const companyMap: Record<string, CompanyOption> = {};
+      (data || []).forEach(client => {
+        const companyName = client.company || client.name || 'Sem empresa';
+        if (!companyMap[companyName]) {
+          companyMap[companyName] = { company: companyName, memberIds: [], primaryContact: client.name };
+        }
+        companyMap[companyName].memberIds.push(client.id);
+      });
+      
+      const companyList = Object.values(companyMap).sort((a, b) => a.company.localeCompare(b.company));
+      setCompanies(companyList);
+      
+      if (companyList.length > 0) {
+        setSelectedCompany(companyList[0].company);
       } else {
         setIsLoading(false);
       }
@@ -153,12 +173,12 @@ export default function GanttAdmin() {
     }
   };
 
-  const loadProjects = async (clientId: string) => {
+  const loadProjectsByCompany = async (memberIds: string[]) => {
     try {
       const { data, error } = await supabase
         .from('gantt_projects')
         .select('*')
-        .eq('client_id', clientId)
+        .in('client_id', memberIds)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
