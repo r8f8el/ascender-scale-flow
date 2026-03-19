@@ -62,11 +62,11 @@ const AdminFPADashboard = () => {
   };
 
   // Prepare chart data
-  const chartData = financialData.slice(0, 6).map((data, index) => {
+  const chartData = financialData.slice(0, 6).map((data: any, index) => {
     const periodData = Array.isArray(data.period) ? data.period[0] : data.period;
     return {
       period: periodData?.period_name || `Período ${index + 1}`,
-      revenue: data.revenue || 0,
+      revenue: data.revenue || data.amount || 0,
       ebitda: data.ebitda || 0,
       netIncome: data.net_income || 0
     };
