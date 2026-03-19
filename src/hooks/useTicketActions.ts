@@ -101,8 +101,8 @@ export const useTicketActions = (
     }
 
     try {
-      const { error } = await supabase
-        .from('ticket_responses')
+      const { error } = await (supabase
+        .from('ticket_responses') as any)
         .insert({
           ticket_id: ticketId,
           admin_id: (await supabase.auth.getUser()).data.user?.id,

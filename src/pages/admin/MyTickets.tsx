@@ -221,7 +221,7 @@ const MyTickets = () => {
 
     try {
       const { error } = await supabase
-        .from('ticket_responses')
+        .from('ticket_responses' as any)
         .insert({
           ticket_id: selectedTicket.id,
           admin_id: admin.id,
