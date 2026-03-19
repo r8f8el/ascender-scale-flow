@@ -11,6 +11,7 @@ import { Solicitacao } from '@/types/aprovacoes';
 import { useCompanyAccess } from '@/hooks/useCompanyAccess';
 
 const DashboardAprovacoes = () => {
+  const { user } = useAuth();
   const { data: tarefasPendentes, isLoading } = useSolicitacaoPendentes(user?.id);
   const { data: companySolicitacoes } = useCompanySolicitacoes();
   const { data: companyAccess } = useCompanyAccess();
