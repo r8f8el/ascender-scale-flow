@@ -55,7 +55,7 @@ export const SeletorAprovadoresSecure: React.FC<SeletorAprovadoresSecureProps> =
     fetchUserCompany();
   }, [user?.id]);
 
-  // Fetch approvers from the same company only
+  // Fetch all company members as potential approvers (excluding self)
   useEffect(() => {
     if (!userCompany || !user?.id) {
       setAprovadoresDisponiveis([]);
@@ -65,7 +65,7 @@ export const SeletorAprovadoresSecure: React.FC<SeletorAprovadoresSecureProps> =
     const fetchAprovadores = async () => {
       setLoading(true);
       try {
-        // Only fetch users from the same company who can approve
+        // Fetch all users from the same company (excluding self)
         const { data, error } = await supabase
           .from('client_profiles')
           .select(`
@@ -73,13 +73,12 @@ export const SeletorAprovadoresSecure: React.FC<SeletorAprovadoresSecureProps> =
             name,
             email,
             pode_aprovar,
-            empresa_funcionarios!inner(
-              cargos!inner(nome, nivel)
-            )
+            hierarchy_level_id,
+            hierarchy_levels(name, level, can_approve)
           `)
           .eq('company', userCompany)
-          .eq('pode_aprovar', true)
-          .order('empresa_funcionarios.cargos.nivel', { ascending: false });
+          .neq('id', user.id)
+          .order('name');
 
         if (error) throw error;
 
@@ -87,8 +86,8 @@ export const SeletorAprovadoresSecure: React.FC<SeletorAprovadoresSecureProps> =
           id: item.id,
           name: item.name,
           email: item.email,
-          cargo: item.empresa_funcionarios?.[0]?.cargos?.nome || 'Sem cargo',
-          nivel: item.empresa_funcionarios?.[0]?.cargos?.nivel || 0
+          cargo: item.hierarchy_levels?.name || 'Colaborador',
+          nivel: item.hierarchy_levels?.level || 5
         }));
 
         setAprovadoresDisponiveis(aprovadores);
