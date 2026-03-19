@@ -326,11 +326,11 @@ const MensagensAdmin = () => {
                   <div className="flex items-center gap-2">
                     <Switch
                       id={`status-${mensagem.id}`}
-                      checked={mensagem.enabled}
+                      checked={mensagem.is_active}
                       onCheckedChange={(checked) => alterarStatus(mensagem.id, checked)}
                     />
                     <Label htmlFor={`status-${mensagem.id}`} className="text-xs">
-                      {mensagem.enabled ? 'Ativo' : 'Inativo'}
+                      {mensagem.is_active ? 'Ativo' : 'Inativo'}
                     </Label>
                   </div>
                   <Button 
