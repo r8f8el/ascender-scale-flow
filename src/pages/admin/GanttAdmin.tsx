@@ -46,6 +46,12 @@ interface ClientProfile {
   company: string | null;
 }
 
+interface CompanyOption {
+  company: string;
+  memberIds: string[];
+  primaryContact?: string;
+}
+
 interface GanttProject {
   id: string;
   name: string;
