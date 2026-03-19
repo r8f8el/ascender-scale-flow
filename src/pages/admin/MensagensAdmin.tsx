@@ -230,7 +230,7 @@ const MensagensAdmin = () => {
       case 'document': return 'Novo Documento';
       case 'meeting': return 'Lembrete de Reunião';
       case 'delivery': return 'Lembrete de Entrega';
-      default: return 'Outro';
+      default: return tipo || 'Outro';
     }
   };
 
