@@ -61,8 +61,8 @@ export const useTicketData = () => {
       setLoading(true);
 
       // Load tickets with joins
-      const { data: ticketsData, error: ticketsError } = await supabase
-        .from('tickets')
+      const { data: ticketsData, error: ticketsError } = await (supabase
+        .from('tickets') as any)
         .select(`
           *,
           ticket_statuses:status_id(name, color, is_closed),
