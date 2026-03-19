@@ -13,7 +13,7 @@ export const MonitoringConfig = {
     enableInDevelopment: true,
     enableInProduction: true,
     maxErrorsPerSession: 50,
-    sentryDsn: process.env.VITE_SENTRY_DSN,
+    sentryDsn: import.meta.env.VITE_SENTRY_DSN,
   },
 
   // Analytics
@@ -34,8 +34,8 @@ export const MonitoringConfig = {
 };
 
 export const getEnvironmentConfig = () => {
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isDevelopment = import.meta.env.DEV;
+  const isProduction = import.meta.env.PROD;
 
   return {
     isDevelopment,

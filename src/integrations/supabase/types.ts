@@ -414,21 +414,27 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          invited_email: string | null
           name: string
+          status: string | null
         }
         Insert: {
           company_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
+          invited_email?: string | null
           name: string
+          status?: string | null
         }
         Update: {
           company_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
+          invited_email?: string | null
           name?: string
+          status?: string | null
         }
         Relationships: [
           {
@@ -1170,6 +1176,7 @@ export type Database = {
         Row: {
           can_approve: boolean
           can_invite_members: boolean
+          can_manage_permissions: boolean
           created_at: string
           id: string
           level: number
@@ -1179,6 +1186,7 @@ export type Database = {
         Insert: {
           can_approve?: boolean
           can_invite_members?: boolean
+          can_manage_permissions?: boolean
           created_at?: string
           id?: string
           level?: number
@@ -1188,6 +1196,7 @@ export type Database = {
         Update: {
           can_approve?: boolean
           can_invite_members?: boolean
+          can_manage_permissions?: boolean
           created_at?: string
           id?: string
           level?: number
@@ -1929,6 +1938,7 @@ export type Database = {
       }
       ticket_attachments: {
         Row: {
+          content_type: string | null
           created_at: string
           file_path: string
           file_size: number | null
@@ -1940,6 +1950,7 @@ export type Database = {
           uploaded_by: string | null
         }
         Insert: {
+          content_type?: string | null
           created_at?: string
           file_path: string
           file_size?: number | null
@@ -1951,6 +1962,7 @@ export type Database = {
           uploaded_by?: string | null
         }
         Update: {
+          content_type?: string | null
           created_at?: string
           file_path?: string
           file_size?: number | null
@@ -2235,14 +2247,19 @@ export type Database = {
         }[]
       }
       get_user_company: { Args: never; Returns: string }
+      invite_team_member: {
+        Args: { p_email: string; p_hierarchy_level_id?: string; p_name: string }
+        Returns: string
+      }
       invite_team_member_secure: {
         Args: {
-          p_company_id: string
+          p_company_id?: string
           p_company_name?: string
           p_email: string
           p_hierarchy_level_id?: string
-          p_inviter_name: string
+          p_inviter_name?: string
           p_message?: string
+          p_name?: string
         }
         Returns: string
       }
