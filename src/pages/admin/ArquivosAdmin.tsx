@@ -93,7 +93,7 @@ const ArquivosAdmin = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setArquivos(data || []);
+      setArquivos((data as any) || []);
     } catch (error) {
       console.error('Erro ao carregar arquivos:', error);
       toast({

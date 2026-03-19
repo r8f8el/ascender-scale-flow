@@ -115,11 +115,13 @@ const ClientTicketDetail = () => {
     try {
       const { error } = await supabase
         .from('ticket_responses')
-        .insert({
+        .insert([{
           ticket_id: id,
-          message: newMessage.trim(),
+          content: newMessage.trim(),
+          sender_type: 'client',
+          sender_name: client?.name || 'Cliente',
           user_id: client?.id || null
-        });
+        }]);
 
       if (error) throw error;
 

@@ -48,7 +48,7 @@ const MensagensAdmin = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setMensagens(data || []);
+      setMensagens((data as any) || []);
     } catch (error) {
       console.error('Erro ao carregar mensagens:', error);
       toast({

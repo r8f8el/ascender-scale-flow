@@ -176,8 +176,8 @@ const AdminFPAReportBuilder = () => {
                           </Button>
                         </div>
                       </div>
-                      {report.insights && (
-                        <p className="text-sm text-gray-600 mt-2">{report.insights}</p>
+                      {(report as any).insights && (
+                        <p className="text-sm text-gray-600 mt-2">{(report as any).insights}</p>
                       )}
                     </div>
                   ))}

@@ -230,9 +230,9 @@ const AdminFPAVarianceAnalysis = () => {
                         </div>
                       </div>
                       
-                      {analysis.analysis_comment && (
+                      {(analysis.analysis_notes || (analysis as any).analysis_comment) && (
                         <div className="bg-gray-50 rounded p-3 mt-3">
-                          <p className="text-sm text-gray-700">{analysis.analysis_comment}</p>
+                          <p className="text-sm text-gray-700">{analysis.analysis_notes || (analysis as any).analysis_comment}</p>
                         </div>
                       )}
                     </div>
