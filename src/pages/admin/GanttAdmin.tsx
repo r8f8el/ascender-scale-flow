@@ -702,6 +702,20 @@ export default function GanttAdmin() {
             <Share2 className="h-4 w-4 mr-2" />
             Compartilhar
           </Button>
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={() => {
+              if (!selectedClientId) {
+                toast({ title: "Erro", description: "Selecione um cliente primeiro", variant: "destructive" });
+                return;
+              }
+              setIsProjectModalOpen(true);
+            }}
+          >
+            <FolderPlus className="h-4 w-4 mr-2" />
+            Novo Projeto
+          </Button>
           <Button size="sm" onClick={handleCreateTask}>
             <Plus className="h-4 w-4 mr-2" />
             Nova Tarefa
