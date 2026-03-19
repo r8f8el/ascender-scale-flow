@@ -153,11 +153,11 @@ const AdminFPAReportBuilder = () => {
                           <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
                             <span className="flex items-center gap-1">
                               <Calendar className="h-4 w-4" />
-                              {report.period_covered}
+                              {(report as any).period_covered || report.description || ''}
                             </span>
                             <Badge variant="outline">{report.report_type}</Badge>
-                            <Badge variant={report.status === 'published' ? 'default' : 'secondary'}>
-                              {report.status === 'published' ? 'Publicado' : 'Rascunho'}
+                            <Badge variant={(report as any).status === 'published' ? 'default' : 'secondary'}>
+                              {(report as any).status === 'published' ? 'Publicado' : 'Rascunho'}
                             </Badge>
                           </div>
                         </div>
