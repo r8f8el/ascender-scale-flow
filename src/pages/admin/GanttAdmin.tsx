@@ -1235,7 +1235,7 @@ export default function GanttAdmin() {
             <div>
               <Label>Cliente</Label>
               <p className="text-sm text-muted-foreground mt-1">
-                {getCurrentClient()?.company || getCurrentClient()?.name || 'Nenhum cliente selecionado'}
+                {selectedCompany || 'Nenhuma empresa selecionada'}
               </p>
             </div>
             <div>
