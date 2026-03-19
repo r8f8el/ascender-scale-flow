@@ -62,11 +62,11 @@ const AdminFPADashboard = () => {
   };
 
   // Prepare chart data
-  const chartData = financialData.slice(0, 6).map((data, index) => {
+  const chartData = financialData.slice(0, 6).map((data: any, index) => {
     const periodData = Array.isArray(data.period) ? data.period[0] : data.period;
     return {
       period: periodData?.period_name || `Período ${index + 1}`,
-      revenue: data.revenue || 0,
+      revenue: data.revenue || data.amount || 0,
       ebitda: data.ebitda || 0,
       netIncome: data.net_income || 0
     };
@@ -138,7 +138,7 @@ const AdminFPADashboard = () => {
                   <div>
                     <p className="text-sm text-muted-foreground">Receita Total</p>
                     <p className="text-2xl font-bold">
-                      {financialData.length > 0 ? formatCurrency(financialData[0].revenue || 0) : formatCurrency(0)}
+                      {financialData.length > 0 ? formatCurrency((financialData[0] as any).revenue || (financialData[0] as any).amount || 0) : formatCurrency(0)}
                     </p>
                     <p className="text-xs text-green-600 flex items-center gap-1">
                       <TrendingUp className="h-3 w-3" />
@@ -156,7 +156,7 @@ const AdminFPADashboard = () => {
                   <div>
                     <p className="text-sm text-muted-foreground">EBITDA</p>
                     <p className="text-2xl font-bold">
-                      {financialData.length > 0 ? formatCurrency(financialData[0].ebitda || 0) : formatCurrency(0)}
+                      {financialData.length > 0 ? formatCurrency((financialData[0] as any).ebitda || 0) : formatCurrency(0)}
                     </p>
                     <p className="text-xs text-red-600 flex items-center gap-1">
                       <TrendingDown className="h-3 w-3" />
@@ -174,7 +174,7 @@ const AdminFPADashboard = () => {
                   <div>
                     <p className="text-sm text-muted-foreground">Lucro Líquido</p>
                     <p className="text-2xl font-bold">
-                      {financialData.length > 0 ? formatCurrency(financialData[0].net_income || 0) : formatCurrency(0)}
+                      {financialData.length > 0 ? formatCurrency((financialData[0] as any).net_income || 0) : formatCurrency(0)}
                     </p>
                     <p className="text-xs text-green-600 flex items-center gap-1">
                       <TrendingUp className="h-3 w-3" />
@@ -192,8 +192,8 @@ const AdminFPADashboard = () => {
                   <div>
                     <p className="text-sm text-muted-foreground">Margem EBITDA</p>
                     <p className="text-2xl font-bold">
-                      {financialData.length > 0 && financialData[0].revenue ? 
-                        formatPercentage((financialData[0].ebitda || 0) / financialData[0].revenue * 100) : 
+                      {financialData.length > 0 && (financialData[0] as any).revenue ? 
+                        formatPercentage(((financialData[0] as any).ebitda || 0) / (financialData[0] as any).revenue * 100) : 
                         '0%'
                       }
                     </p>
@@ -303,15 +303,15 @@ const AdminFPADashboard = () => {
                             <div className="grid grid-cols-3 gap-4 text-sm">
                               <div>
                                 <span className="text-gray-600">Receita:</span>
-                                <div className="font-medium">{formatCurrency(data.revenue || 0)}</div>
+                                <div className="font-medium">{formatCurrency((data as any).revenue || data.amount || 0)}</div>
                               </div>
                               <div>
                                 <span className="text-gray-600">EBITDA:</span>
-                                <div className="font-medium">{formatCurrency(data.ebitda || 0)}</div>
+                                <div className="font-medium">{formatCurrency((data as any).ebitda || 0)}</div>
                               </div>
                               <div>
                                 <span className="text-gray-600">Lucro Líquido:</span>
-                                <div className="font-medium">{formatCurrency(data.net_income || 0)}</div>
+                                <div className="font-medium">{formatCurrency((data as any).net_income || 0)}</div>
                               </div>
                             </div>
                           </div>
@@ -363,7 +363,7 @@ const AdminFPADashboard = () => {
                         <div key={report.id} className="flex items-center justify-between p-4 border rounded-lg">
                           <div>
                             <h4 className="font-medium text-gray-900">{report.title}</h4>
-                            <p className="text-sm text-gray-600">{report.period_covered}</p>
+                            <p className="text-sm text-gray-600">{(report as any).period_covered || report.description || ''}</p>
                           </div>
                           <div className="flex items-center gap-2">
                             <Button variant="outline" size="sm">
@@ -410,13 +410,13 @@ const AdminFPADashboard = () => {
                       {varianceAnalysis.slice(0, 5).map((analysis) => (
                         <div key={analysis.id} className="flex items-center justify-between p-4 border rounded-lg">
                           <div>
-                            <h4 className="font-medium text-gray-900">{analysis.metric_name}</h4>
+                             <h4 className="font-medium text-gray-900">{(analysis as any).metric_name || analysis.account_name}</h4>
                             <p className="text-sm text-gray-600">
-                              Variância: {formatPercentage(analysis.variance_percentage)}
+                              Variância: {formatPercentage(analysis.variance_percentage || 0)}
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
-                            {Math.abs(analysis.variance_percentage) <= 5 ? (
+                            {Math.abs(analysis.variance_percentage || 0) <= 5 ? (
                               <CheckCircle className="h-5 w-5 text-green-500" />
                             ) : (
                               <AlertTriangle className="h-5 w-5 text-yellow-500" />

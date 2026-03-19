@@ -187,7 +187,7 @@ const AdminFPAVarianceAnalysis = () => {
                         <div>
                           <h4 className="font-medium text-gray-900 flex items-center gap-2">
                             {getVarianceIcon(analysis.variance_percentage)}
-                            {analysis.metric_name}
+                            {(analysis as any).metric_name || analysis.account_name}
                           </h4>
                           <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
                             <span className="flex items-center gap-1">
@@ -210,11 +210,11 @@ const AdminFPAVarianceAnalysis = () => {
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-3">
                         <div>
                           <span className="text-gray-600">Planejado:</span>
-                          <div className="font-medium">{formatCurrency(analysis.planned_value)}</div>
+                          <div className="font-medium">{formatCurrency((analysis as any).planned_value || analysis.budget_amount)}</div>
                         </div>
                         <div>
                           <span className="text-gray-600">Realizado:</span>
-                          <div className="font-medium">{formatCurrency(analysis.actual_value)}</div>
+                          <div className="font-medium">{formatCurrency((analysis as any).actual_value || analysis.actual_amount)}</div>
                         </div>
                         <div>
                           <span className="text-gray-600">Variância:</span>
@@ -230,9 +230,9 @@ const AdminFPAVarianceAnalysis = () => {
                         </div>
                       </div>
                       
-                      {analysis.analysis_comment && (
+                      {(analysis.analysis_notes || (analysis as any).analysis_comment) && (
                         <div className="bg-gray-50 rounded p-3 mt-3">
-                          <p className="text-sm text-gray-700">{analysis.analysis_comment}</p>
+                          <p className="text-sm text-gray-700">{analysis.analysis_notes || (analysis as any).analysis_comment}</p>
                         </div>
                       )}
                     </div>

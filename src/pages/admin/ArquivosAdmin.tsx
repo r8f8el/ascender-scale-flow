@@ -93,7 +93,7 @@ const ArquivosAdmin = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setArquivos(data || []);
+      setArquivos((data as any) || []);
     } catch (error) {
       console.error('Erro ao carregar arquivos:', error);
       toast({
@@ -179,6 +179,7 @@ const ArquivosAdmin = () => {
       const { error: dbError } = await supabase
         .from('documents' as any)
         .insert([{
+          title: nomeNovoArquivo.includes('.') ? nomeNovoArquivo : `${nomeNovoArquivo}.${fileExt}`,
           filename: nomeNovoArquivo.includes('.') ? nomeNovoArquivo : `${nomeNovoArquivo}.${fileExt}`,
           file_path: filePath,
           file_size: arquivoSelecionado.size,

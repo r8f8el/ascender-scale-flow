@@ -132,7 +132,7 @@ const ClientFPAReports = () => {
                       <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
-                          {report.period_covered || 'N/A'}
+                          {(report as any).period_covered || report.description || 'N/A'}
                         </div>
                         <Badge variant="outline" className="capitalize">
                           {report.report_type}
@@ -141,8 +141,8 @@ const ClientFPAReports = () => {
                           {report.created_at && new Date(report.created_at).toLocaleDateString('pt-BR')}
                         </span>
                       </div>
-                      {report.insights && (
-                        <p className="text-gray-700 mb-4">{report.insights}</p>
+                      {((report as any).insights || report.description) && (
+                        <p className="text-gray-700 mb-4">{(report as any).insights || report.description}</p>
                       )}
                     </div>
                   </div>

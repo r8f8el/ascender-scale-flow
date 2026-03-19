@@ -18,10 +18,9 @@ import { useToast } from '@/hooks/use-toast';
 
 interface MensagemAutomatica {
   id: string;
-  type: string;
-  subject: string;
-  body: string;
-  enabled: boolean;
+  trigger_type: string;
+  message_content: string;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -32,10 +31,9 @@ const MensagensAdmin = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [mensagemEmEdicao, setMensagemEmEdicao] = useState<string | null>(null);
   const [formValues, setFormValues] = useState({
-    type: '',
-    subject: '',
-    body: '',
-    enabled: true
+    trigger_type: '',
+    message_content: '',
+    is_active: true
   });
 
   useEffect(() => {
@@ -50,7 +48,7 @@ const MensagensAdmin = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setMensagens(data || []);
+      setMensagens((data as any) || []);
     } catch (error) {
       console.error('Erro ao carregar mensagens:', error);
       toast({
@@ -64,34 +62,32 @@ const MensagensAdmin = () => {
   };
 
   const handleInputChange = (field: string, value: string | boolean) => {
-    setFormValues({
-      ...formValues,
+    setFormValues(prev => ({
+      ...prev,
       [field]: value
-    });
+    }));
   };
 
   const iniciarEdicao = (mensagem: MensagemAutomatica) => {
     setMensagemEmEdicao(mensagem.id);
     setFormValues({
-      type: mensagem.type,
-      subject: mensagem.subject,
-      body: mensagem.body,
-      enabled: mensagem.enabled
+      trigger_type: mensagem.trigger_type,
+      message_content: mensagem.message_content,
+      is_active: mensagem.is_active
     });
   };
 
   const cancelarEdicao = () => {
     setMensagemEmEdicao(null);
     setFormValues({
-      type: '',
-      subject: '',
-      body: '',
-      enabled: true
+      trigger_type: '',
+      message_content: '',
+      is_active: true
     });
   };
 
   const salvarEdicao = async (id: string) => {
-    if (!formValues.subject || !formValues.body) {
+    if (!formValues.message_content) {
       toast({
         title: "Erro",
         description: "Por favor, preencha todos os campos obrigatórios",
@@ -104,9 +100,8 @@ const MensagensAdmin = () => {
       const { error } = await supabase
         .from('automatic_messages' as any)
         .update({
-          subject: formValues.subject,
-          body: formValues.body,
-          enabled: formValues.enabled
+          message_content: formValues.message_content,
+          is_active: formValues.is_active
         })
         .eq('id', id);
 
@@ -133,7 +128,7 @@ const MensagensAdmin = () => {
     try {
       const { error } = await supabase
         .from('automatic_messages' as any)
-        .update({ enabled: novoStatus })
+        .update({ is_active: novoStatus })
         .eq('id', id);
 
       if (error) throw error;
@@ -186,7 +181,7 @@ const MensagensAdmin = () => {
   };
 
   const adicionarNovaMensagem = async () => {
-    if (!formValues.type || !formValues.subject || !formValues.body) {
+    if (!formValues.trigger_type || !formValues.message_content) {
       toast({
         title: "Erro",
         description: "Por favor, preencha todos os campos obrigatórios",
@@ -235,7 +230,7 @@ const MensagensAdmin = () => {
       case 'document': return 'Novo Documento';
       case 'meeting': return 'Lembrete de Reunião';
       case 'delivery': return 'Lembrete de Entrega';
-      default: return 'Outro';
+      default: return tipo || 'Outro';
     }
   };
 
@@ -263,10 +258,10 @@ const MensagensAdmin = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="type">Tipo de Mensagem*</Label>
+              <Label htmlFor="trigger_type">Tipo de Mensagem*</Label>
               <Select 
-                value={formValues.type} 
-                onValueChange={(value) => handleInputChange('type', value)}
+                value={formValues.trigger_type} 
+                onValueChange={(value) => handleInputChange('trigger_type', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o tipo de mensagem" />
@@ -281,21 +276,11 @@ const MensagensAdmin = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="subject">Assunto do E-mail*</Label>
-              <Input
-                id="subject"
-                value={formValues.subject}
-                onChange={(e) => handleInputChange('subject', e.target.value)}
-                placeholder="Ex: Confirmação de Chamado"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="body">Conteúdo da Mensagem*</Label>
+              <Label htmlFor="message_content">Conteúdo da Mensagem*</Label>
               <Textarea
-                id="body"
-                value={formValues.body}
-                onChange={(e) => handleInputChange('body', e.target.value)}
+                id="message_content"
+                value={formValues.message_content}
+                onChange={(e) => handleInputChange('message_content', e.target.value)}
                 placeholder="Digite o conteúdo da mensagem..."
                 className="min-h-[150px]"
               />
@@ -306,11 +291,11 @@ const MensagensAdmin = () => {
             
             <div className="flex items-center space-x-2">
               <Switch
-                id="enabled"
-                checked={formValues.enabled}
-                onCheckedChange={(checked) => handleInputChange('enabled', checked)}
+                id="is_active"
+                checked={formValues.is_active}
+                onCheckedChange={(checked) => handleInputChange('is_active', checked)}
               />
-              <Label htmlFor="enabled">Habilitar envio automático por e-mail</Label>
+              <Label htmlFor="is_active">Habilitar envio automático</Label>
             </div>
           </CardContent>
           <CardFooter className="flex justify-end gap-2">
@@ -331,21 +316,21 @@ const MensagensAdmin = () => {
             <CardHeader className="bg-gray-50 p-4 pb-2">
               <div className="flex justify-between items-start">
                 <div className="flex items-start gap-3">
-                  {getIconeParaTipo(mensagem.type)}
+                  {getIconeParaTipo(mensagem.trigger_type)}
                   <div>
-                    <CardTitle>{mensagem.subject}</CardTitle>
-                    <CardDescription>{getNomeTipo(mensagem.type)}</CardDescription>
+                    <CardTitle>{getNomeTipo(mensagem.trigger_type)}</CardTitle>
+                    <CardDescription>{mensagem.trigger_type}</CardDescription>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-2">
                     <Switch
                       id={`status-${mensagem.id}`}
-                      checked={mensagem.enabled}
+                      checked={mensagem.is_active}
                       onCheckedChange={(checked) => alterarStatus(mensagem.id, checked)}
                     />
                     <Label htmlFor={`status-${mensagem.id}`} className="text-xs">
-                      {mensagem.enabled ? 'Ativo' : 'Inativo'}
+                      {mensagem.is_active ? 'Ativo' : 'Inativo'}
                     </Label>
                   </div>
                   <Button 
@@ -369,20 +354,11 @@ const MensagensAdmin = () => {
             {mensagemEmEdicao === mensagem.id ? (
               <CardContent className="p-4 space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor={`subject-${mensagem.id}`}>Assunto do E-mail*</Label>
-                  <Input
-                    id={`subject-${mensagem.id}`}
-                    value={formValues.subject}
-                    onChange={(e) => handleInputChange('subject', e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor={`body-${mensagem.id}`}>Conteúdo da Mensagem*</Label>
+                  <Label htmlFor={`content-${mensagem.id}`}>Conteúdo da Mensagem*</Label>
                   <Textarea
-                    id={`body-${mensagem.id}`}
-                    value={formValues.body}
-                    onChange={(e) => handleInputChange('body', e.target.value)}
+                    id={`content-${mensagem.id}`}
+                    value={formValues.message_content}
+                    onChange={(e) => handleInputChange('message_content', e.target.value)}
                     className="min-h-[150px]"
                   />
                   <p className="text-xs text-gray-500">
@@ -404,7 +380,7 @@ const MensagensAdmin = () => {
               <CardContent className="p-4">
                 <div className="bg-gray-50 p-3 rounded-md">
                   <pre className="text-sm whitespace-pre-wrap font-sans">
-                    {mensagem.body}
+                    {mensagem.message_content}
                   </pre>
                 </div>
               </CardContent>

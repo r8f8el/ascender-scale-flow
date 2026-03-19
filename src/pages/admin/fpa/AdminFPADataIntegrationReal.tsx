@@ -441,15 +441,15 @@ const AdminFPADataIntegrationReal = () => {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                           <div>
                             <span className="text-gray-600">Receita:</span>
-                            <div className="font-medium">{formatCurrency(data.revenue || 0)}</div>
+                            <div className="font-medium">{formatCurrency((data as any).revenue || data.amount || 0)}</div>
                           </div>
                           <div>
                             <span className="text-gray-600">EBITDA:</span>
-                            <div className="font-medium">{formatCurrency(data.ebitda || 0)}</div>
+                            <div className="font-medium">{formatCurrency((data as any).ebitda || 0)}</div>
                           </div>
                           <div>
                             <span className="text-gray-600">Lucro Líquido:</span>
-                            <div className="font-medium">{formatCurrency(data.net_income || 0)}</div>
+                            <div className="font-medium">{formatCurrency((data as any).net_income || 0)}</div>
                           </div>
                           <div>
                             <span className="text-gray-600">Atualizado:</span>
