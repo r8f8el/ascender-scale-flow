@@ -39,7 +39,7 @@ const Index = () => {
       {/* Banner CTA - Budget Planejamento Orçamentário */}
       <section className="bg-white py-6 border-b border-gray-100">
         <div className="container mx-auto px-4 sm:px-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white rounded-xl px-6 py-5 text-center sm:text-left">
+          <div className="flex flex-col items-center justify-center gap-4 bg-white rounded-xl px-6 py-5 text-center">
             <div className="flex items-start gap-4">
               <div className="w-1 h-12 bg-gray-800 rounded-full flex-shrink-0 mt-1" />
               <div>
