@@ -30,6 +30,7 @@ import AbrirChamado from '@/pages/AbrirChamado';
 import NewsletterSignup from '@/pages/NewsletterSignup';
 import ParticipantData from '@/pages/ParticipantData';
 import ConviteEquipeCadastro from '@/pages/ConviteEquipeCadastro';
+import PlanOrcamentario from '@/pages/PlanOrcamentario';
 
 const queryClient = new QueryClient({
   defaultOptions: {
