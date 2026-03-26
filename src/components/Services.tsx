@@ -150,15 +150,27 @@ const Services = () => {
                     )}
                   </AnimatePresence>
                   
-                  <motion.a 
-                    href="#contact" 
-                    className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors group mt-auto"
-                    whileHover={{ x: 5 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                  >
-                    <span>Saiba mais</span>
-                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                  </motion.a>
+                  {index === 2 ? (
+                    <motion.a 
+                      href="/plan-orcamentario" 
+                      className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors group mt-auto"
+                      whileHover={{ x: 5 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                    >
+                      <span>Saiba mais</span>
+                      <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    </motion.a>
+                  ) : (
+                    <motion.a 
+                      href="#contact" 
+                      className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors group mt-auto"
+                      whileHover={{ x: 5 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                    >
+                      <span>Saiba mais</span>
+                      <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    </motion.a>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>

@@ -63,6 +63,7 @@ function App() {
                 {/* Páginas públicas */}
                 <Route path="/" element={<Index />} />
                 <Route path="/abrir-chamado" element={<AbrirChamado />} />
+                <Route path="/plan-orcamentario" element={<PlanOrcamentario />} />
                 <Route path="/newsletter" element={<NewsletterSignup />} />
                 <Route path="/participant-data" element={<ParticipantData />} />
                 
