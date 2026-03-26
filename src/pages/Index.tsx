@@ -41,7 +41,7 @@ const Index = () => {
         <div className="container mx-auto px-4 sm:px-6">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 bg-white rounded-xl px-6 py-5 text-center sm:text-left">
             <div className="flex items-start gap-4">
-              <div className="w-1 h-12 bg-gray-800 rounded-full flex-shrink-0 mt-1" />
+              <div className="w-1 h-12 bg-blue rounded-full flex-shrink-0 mt-1" />
               <div>
                 <h3 className="text-base sm:text-lg font-bold text-gray-900">
                   Budget Essencial & Budget Pro — Planejamento Orçamentário
