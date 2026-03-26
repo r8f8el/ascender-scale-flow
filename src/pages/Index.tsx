@@ -53,7 +53,7 @@ const Index = () => {
             </div>
             <a
               href="/plan-orcamentario"
-              className="inline-flex items-center gap-2 bg-gray-800 hover:bg-gray-900 text-white text-sm font-medium px-6 py-3 rounded-full transition-colors whitespace-nowrap"
+              className="inline-flex items-center gap-2 bg-blue hover:bg-blue/90 text-blue-foreground text-sm font-medium px-6 py-3 rounded-full transition-colors whitespace-nowrap"
             >
               Ver produtos →
             </a>
