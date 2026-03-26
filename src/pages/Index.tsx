@@ -35,6 +35,32 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
       <Navbar />
       <HeroImage />
+      
+      {/* Banner CTA - Budget Planejamento Orçamentário */}
+      <section className="bg-white py-6 border-b border-gray-100">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white rounded-xl px-6 py-5">
+            <div className="flex items-start gap-4">
+              <div className="w-1 h-12 bg-gray-800 rounded-full flex-shrink-0 mt-1" />
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-gray-900">
+                  Budget Essencial & Budget Pro — Planejamento Orçamentário
+                </h3>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  Conheça os dois produtos da Ascalate para estruturação e gestão do ciclo orçamentário.
+                </p>
+              </div>
+            </div>
+            <a
+              href="/plan-orcamentario"
+              className="inline-flex items-center gap-2 bg-gray-800 hover:bg-gray-900 text-white text-sm font-medium px-6 py-3 rounded-full transition-colors whitespace-nowrap"
+            >
+              Ver produtos →
+            </a>
+          </div>
+        </div>
+      </section>
+
       <Hero />
       <Services />
       <Partner />
