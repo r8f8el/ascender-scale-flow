@@ -30,6 +30,7 @@ import AbrirChamado from '@/pages/AbrirChamado';
 import NewsletterSignup from '@/pages/NewsletterSignup';
 import ParticipantData from '@/pages/ParticipantData';
 import ConviteEquipeCadastro from '@/pages/ConviteEquipeCadastro';
+import PlanOrcamentario from '@/pages/PlanOrcamentario';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,6 +63,7 @@ function App() {
                 {/* Páginas públicas */}
                 <Route path="/" element={<Index />} />
                 <Route path="/abrir-chamado" element={<AbrirChamado />} />
+                <Route path="/plan-orcamentario" element={<PlanOrcamentario />} />
                 <Route path="/newsletter" element={<NewsletterSignup />} />
                 <Route path="/participant-data" element={<ParticipantData />} />
                 
