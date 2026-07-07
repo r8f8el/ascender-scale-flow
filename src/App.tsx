@@ -18,7 +18,6 @@ import ClientLogin from '@/pages/ClientLogin';
 import ClientRegister from '@/pages/ClientRegister';
 import EmailConfirmation from '@/pages/EmailConfirmation';
 import AdminLogin from '@/pages/AdminLogin';
-import AdminRegister from '@/pages/AdminRegister';
 import AdminUnauthorized from '@/pages/AdminUnauthorized';
 import ClientArea from '@/pages/client/ClientArea';
 import AdminArea from '@/pages/AdminArea';
@@ -110,14 +109,6 @@ function App() {
                   element={
                     <AdminAuthProvider>
                       <AdminLogin />
-                    </AdminAuthProvider>
-                  } 
-                />
-                <Route 
-                  path="/admin/register" 
-                  element={
-                    <AdminAuthProvider>
-                      <AdminRegister />
                     </AdminAuthProvider>
                   } 
                 />
