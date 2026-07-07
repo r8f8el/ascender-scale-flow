@@ -293,6 +293,68 @@ export type Database = {
           },
         ]
       }
+      client_document_requests: {
+        Row: {
+          category: string | null
+          client_id: string
+          content_type: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          file_path: string | null
+          file_size: number | null
+          filename: string | null
+          id: string
+          period_reference: string
+          rejection_reason: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          client_id: string
+          content_type?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          filename?: string | null
+          id?: string
+          period_reference: string
+          rejection_reason?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          client_id?: string
+          content_type?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          filename?: string | null
+          id?: string
+          period_reference?: string
+          rejection_reason?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_document_requests_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_documents: {
         Row: {
           category: string | null
@@ -876,6 +938,7 @@ export type Database = {
           fpa_client_id: string
           id: string
           is_actual: boolean
+          is_locked: boolean
           period_name: string
           period_type: string
           start_date: string
@@ -886,6 +949,7 @@ export type Database = {
           fpa_client_id: string
           id?: string
           is_actual?: boolean
+          is_locked?: boolean
           period_name: string
           period_type?: string
           start_date: string
@@ -896,6 +960,7 @@ export type Database = {
           fpa_client_id?: string
           id?: string
           is_actual?: boolean
+          is_locked?: boolean
           period_name?: string
           period_type?: string
           start_date?: string
