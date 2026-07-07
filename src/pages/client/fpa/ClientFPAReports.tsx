@@ -18,11 +18,15 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useFPAReports } from '@/hooks/useFPAReports';
 import { useFPAClients } from '@/hooks/useFPAClients';
+import { useFPAFinancialData } from '@/hooks/useFPAFinancialData';
+import { ReportViewerModal } from '@/components/fpa/ReportViewerModal';
 
 const ClientFPAReports = () => {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
+  const [selectedReportForView, setSelectedReportForView] = useState<any>(null);
+  const [isReportViewerOpen, setIsReportViewerOpen] = useState(false);
   
   const { data: clients = [], isLoading: clientsLoading } = useFPAClients();
   const currentClient = clients.find(client => 
@@ -30,6 +34,7 @@ const ClientFPAReports = () => {
   );
   
   const { data: reports = [], isLoading: reportsLoading } = useFPAReports(currentClient?.id);
+  const { data: financialData = [] } = useFPAFinancialData(currentClient?.id);
 
   const filteredReports = reports.filter(report => {
     if (!report) return false;
@@ -147,11 +152,25 @@ const ClientFPAReports = () => {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setSelectedReportForView(report);
+                        setIsReportViewerOpen(true);
+                      }}
+                    >
                       <Eye className="h-4 w-4 mr-2" />
                       Visualizar
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setSelectedReportForView(report);
+                        setIsReportViewerOpen(true);
+                      }}
+                    >
                       <Download className="h-4 w-4 mr-2" />
                       Download
                     </Button>
@@ -162,6 +181,18 @@ const ClientFPAReports = () => {
           ))
         )}
       </div>
+      {selectedReportForView && (
+        <ReportViewerModal
+          isOpen={isReportViewerOpen}
+          onClose={() => {
+            setIsReportViewerOpen(false);
+            setSelectedReportForView(null);
+          }}
+          report={selectedReportForView}
+          clientName={currentClient?.company_name || 'Minha Empresa'}
+          financialData={financialData}
+        />
+      )}
     </div>
   );
 };

@@ -24,12 +24,15 @@ import {
   Save
 } from 'lucide-react';
 import FPAClientSelector from '@/components/fpa/FPAClientSelector';
+import { ReportViewerModal } from '@/components/fpa/ReportViewerModal';
 
 const AdminFPAReportBuilder = () => {
   const { toast } = useToast();
   const [selectedClientId, setSelectedClientId] = useState('');
   const [isCreatingReport, setIsCreatingReport] = useState(false);
   const [editingReport, setEditingReport] = useState<any>(null);
+  const [selectedReportForView, setSelectedReportForView] = useState<any>(null);
+  const [isReportViewerOpen, setIsReportViewerOpen] = useState(false);
   const [newReportData, setNewReportData] = useState({
     title: '',
     report_type: 'monthly',
@@ -162,16 +165,32 @@ const AdminFPAReportBuilder = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedReportForView(report);
+                              setIsReportViewerOpen(true);
+                            }}
+                            title="Visualizar Relatório"
+                          >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" title="Editar Relatório">
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedReportForView(report);
+                              setIsReportViewerOpen(true);
+                            }}
+                            title="Exportar Relatório (PDF/Excel)"
+                          >
                             <Download className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50" title="Excluir Relatório">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -203,6 +222,18 @@ const AdminFPAReportBuilder = () => {
             ) : null}
           </CardContent>
         </Card>
+      )}
+      {selectedReportForView && (
+        <ReportViewerModal
+          isOpen={isReportViewerOpen}
+          onClose={() => {
+            setIsReportViewerOpen(false);
+            setSelectedReportForView(null);
+          }}
+          report={selectedReportForView}
+          clientName={selectedClient?.company_name || 'Cliente'}
+          financialData={financialData}
+        />
       )}
     </div>
   );
