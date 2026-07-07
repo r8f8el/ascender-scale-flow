@@ -1,229 +1,410 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { FileUp, CloudDownload, CheckCircle } from 'lucide-react';
+import { FileUp, CloudDownload, CheckCircle, Loader2, AlertTriangle, KeyRound } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger } from '@/components/ui/navigation-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { supabase } from "@/integrations/supabase/client";
 
 const OneDriveIntegration = () => {
+  const [loading, setLoading] = useState(true);
+  const [connecting, setConnecting] = useState(false);
   const [connected, setConnected] = useState(false);
-  const [userName, setUserName] = useState('');
-  const [email, setEmail] = useState('');
-  const [autoSync, setAutoSync] = useState(true);
   
-  const mockLogin = () => {
-    // Simular login no Microsoft
-    toast.success("Autenticando com a Microsoft...");
+  // Connection details
+  const [connectionDetails, setConnectionDetails] = useState<{
+    email?: string;
+    name?: string;
+    rootFolder?: string;
+    clientId?: string;
+    tenantId?: string;
+  }>({});
+
+  // Form state
+  const [clientId, setClientId] = useState('');
+  const [clientSecret, setClientSecret] = useState('');
+  const [tenantId, setTenantId] = useState('common');
+  const [rootFolder, setRootFolder] = useState('Ascalate/Clientes');
+
+  const redirectUri = `${window.location.origin}/admin/onedrive`;
+
+  // 1. Check connection status on mount and handle OAuth code callback
+  useEffect(() => {
+    const init = async () => {
+      try {
+        setLoading(true);
+        
+        // Check if there is an authorization code in URL
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        
+        if (code) {
+          setConnecting(true);
+          const pendingConfigStr = localStorage.getItem('microsoft_oauth_pending');
+          
+          if (pendingConfigStr) {
+            const pendingConfig = JSON.parse(pendingConfigStr);
+            console.log('Exchanging auth code with saved config...');
+            
+            const { data, error } = await supabase.functions.invoke('microsoft-oauth', {
+              body: {
+                action: 'exchange_code',
+                clientId: pendingConfig.clientId,
+                clientSecret: pendingConfig.clientSecret,
+                tenantId: pendingConfig.tenantId,
+                code,
+                redirectUri,
+                rootFolder: pendingConfig.rootFolder
+              }
+            });
+            
+            if (error) throw error;
+            
+            toast.success(`Conta Microsoft conectada: ${data.name || data.email}`);
+            localStorage.removeItem('microsoft_oauth_pending');
+          } else {
+            console.warn('Authorization code found, but no pending OAuth config in localStorage');
+          }
+          
+          // Clear query params from URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        
+        // Fetch current integration status
+        await checkStatus();
+      } catch (err: any) {
+        console.error('Error during OneDrive integration init:', err);
+        toast.error('Erro ao conectar ao OneDrive: ' + (err.message || err.error));
+        localStorage.removeItem('microsoft_oauth_pending');
+      } finally {
+        setConnecting(false);
+        setLoading(false);
+      }
+    };
     
-    setTimeout(() => {
+    init();
+  }, []);
+
+  const checkStatus = async () => {
+    const { data, error } = await supabase.functions.invoke('microsoft-oauth', {
+      body: { action: 'check_status' }
+    });
+    
+    if (error) {
+      console.error('Error checking status:', error);
+      return;
+    }
+    
+    if (data?.connected) {
       setConnected(true);
-      setUserName('Usuário Ascalate');
-      setEmail('admin@ascalate.com.br');
-      toast.success("Conta Microsoft conectada com sucesso!");
-    }, 1500);
-  };
-  
-  const handleDisconnect = () => {
-    if (window.confirm("Tem certeza que deseja desconectar sua conta Microsoft?")) {
+      setConnectionDetails(data);
+      setRootFolder(data.rootFolder || 'Ascalate/Clientes');
+    } else {
       setConnected(false);
-      setUserName('');
-      setEmail('');
-      toast.success("Conta Microsoft desconectada");
+      setConnectionDetails({});
     }
   };
-  
+
+  // 2. Initiate OAuth redirect to Microsoft
+  const handleConnect = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!clientId.trim() || !clientSecret.trim() || !rootFolder.trim()) {
+      toast.error('Preencha todas as credenciais do aplicativo Azure.');
+      return;
+    }
+
+    try {
+      setConnecting(true);
+      toast.info('Obtendo URL de autorização da Microsoft...');
+      
+      const { data, error } = await supabase.functions.invoke('microsoft-oauth', {
+        body: {
+          action: 'get_auth_url',
+          clientId,
+          tenantId,
+          redirectUri
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.authUrl) {
+        // Save form configuration in localStorage to exchange the code after redirect
+        localStorage.setItem('microsoft_oauth_pending', JSON.stringify({
+          clientId,
+          clientSecret,
+          tenantId,
+          rootFolder
+        }));
+        
+        // Redirect to Microsoft Sign-in
+        window.location.href = data.authUrl;
+      } else {
+        throw new Error('Url de autorização não retornada pelo servidor.');
+      }
+    } catch (err: any) {
+      console.error('Error getting auth url:', err);
+      toast.error('Falha ao iniciar conexão: ' + err.message);
+      setConnecting(false);
+    }
+  };
+
+  // 3. Disconnect account (delete tokens)
+  const handleDisconnect = async () => {
+    if (!window.confirm("Tem certeza que deseja desconectar sua conta Microsoft? A sincronização automática de arquivos será interrompida.")) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      const { error } = await supabase
+        .from('microsoft_tokens' as any)
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+        
+      if (error) throw error;
+      
+      setConnected(false);
+      setConnectionDetails({});
+      setClientId('');
+      setClientSecret('');
+      toast.success("Integração Microsoft desconectada com sucesso!");
+    } catch (err: any) {
+      console.error('Error disconnecting:', err);
+      toast.error('Falha ao desconectar conta: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 space-y-4">
+        <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
+        <p className="text-muted-foreground text-sm">Carregando configurações de integração...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-medium mb-1">Integração Microsoft OneDrive/SharePoint</h2>
           <p className="text-muted-foreground text-sm">
-            Configure a integração com sua conta Microsoft para armazenamento e gerenciamento de arquivos
+            Configure a integração com sua conta Microsoft para armazenamento e gerenciamento de arquivos em nuvem corporativa
           </p>
         </div>
       </div>
 
+      {connecting && (
+        <Alert className="bg-blue-50 border-blue-200">
+          <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+          <AlertTitle>Conectando...</AlertTitle>
+          <AlertDescription>
+            Trocando códigos de segurança com a Microsoft Graph API. Por favor, aguarde.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
+        <Card className="flex flex-col justify-between">
           <CardHeader>
             <CardTitle>Status da Conexão</CardTitle>
             <CardDescription>
               {connected 
-                ? "Sua conta Microsoft está conectada" 
-                : "Conecte sua conta Microsoft para integração com OneDrive/SharePoint"}
+                ? "Sua conta Microsoft está conectada e ativa" 
+                : "Conecte sua conta Microsoft corporativa para sincronizar os uploads automaticamente"}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {connected ? (
               <div className="flex flex-col space-y-4">
                 <div className="flex items-center space-x-4">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src="" />
-                    <AvatarFallback className="bg-blue-700 text-white">MS</AvatarFallback>
+                  <Avatar className="h-12 w-12 border">
+                    <AvatarFallback className="bg-blue-600 text-white font-bold">MS</AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-medium">{userName}</p>
-                    <p className="text-sm text-muted-foreground">{email}</p>
+                    <p className="font-semibold text-base">{connectionDetails.name}</p>
+                    <p className="text-sm text-muted-foreground">{connectionDetails.email}</p>
                   </div>
                 </div>
-                <Alert className="bg-green-50 border-green-200">
+                
+                <Alert className="bg-green-50 border-green-200 text-green-800">
                   <CheckCircle className="h-4 w-4 text-green-600" />
-                  <AlertTitle>Conectado</AlertTitle>
-                  <AlertDescription>
-                    Sua integração com o OneDrive/SharePoint está ativa e funcionando
+                  <AlertTitle className="font-semibold">Integração Ativa</AlertTitle>
+                  <AlertDescription className="text-sm">
+                    Os arquivos aprovados dos checklists de clientes serão enviados diretamente para a árvore de pastas:
+                    <code className="block bg-green-100/50 p-2 rounded mt-2 text-xs font-mono text-green-900">
+                      {connectionDetails.rootFolder}/[Nome-Cliente]/[Categoria]/[Arquivo]
+                    </code>
                   </AlertDescription>
                 </Alert>
+                
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <p><strong>Client ID do Azure:</strong> <code className="bg-muted px-1 rounded">{connectionDetails.clientId?.substring(0, 8)}...</code></p>
+                  <p><strong>Tenant ID:</strong> <code className="bg-muted px-1 rounded">{connectionDetails.tenantId}</code></p>
+                </div>
               </div>
             ) : (
               <div className="flex flex-col items-center space-y-6 py-6">
-                <FileUp className="h-12 w-12 text-blue-600" />
-                <div className="text-center">
-                  <p className="mb-2">Clique no botão abaixo para conectar sua conta Microsoft</p>
-                  <p className="text-sm text-muted-foreground">
-                    Esta integração permitirá o armazenamento seguro de arquivos no seu OneDrive/SharePoint
+                <div className="h-16 w-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center">
+                  <FileUp className="h-8 w-8" />
+                </div>
+                <div className="text-center max-w-sm">
+                  <p className="font-medium text-sm mb-2">Conecte sua conta Microsoft</p>
+                  <p className="text-xs text-muted-foreground">
+                    Esta integração salvará todos os balancetes, extratos e relatórios aprovados diretamente no OneDrive ou SharePoint da sua consultoria.
                   </p>
                 </div>
-                <Button onClick={mockLogin} className="gap-2">
-                  <CloudDownload className="h-4 w-4" />
-                  Conectar com Microsoft
-                </Button>
+                
+                <Alert variant="destructive" className="bg-amber-50 border-amber-200 text-amber-900">
+                  <AlertTriangle className="h-4 w-4 text-amber-600" />
+                  <AlertTitle className="font-semibold text-amber-800">Pré-requisito</AlertTitle>
+                  <AlertDescription className="text-xs text-amber-700">
+                    Você deve criar um **App Registration (SPA ou Web)** no portal da Microsoft Azure e coletar as credenciais ao lado. Adicione a Redirect URI do seu portal.
+                  </AlertDescription>
+                </Alert>
               </div>
             )}
           </CardContent>
-          <CardFooter className="flex justify-between border-t pt-4">
-            {connected && (
-              <>
-                <Button variant="outline" onClick={handleDisconnect}>
-                  Desconectar conta
-                </Button>
-                <Button onClick={() => toast.success("Conexão testada com sucesso!")}>
-                  Testar conexão
-                </Button>
-              </>
+          <CardFooter className="border-t pt-4 flex justify-between bg-muted/20">
+            {connected ? (
+              <Button variant="destructive" onClick={handleDisconnect} disabled={connecting} className="w-full">
+                Desconectar Conta Microsoft
+              </Button>
+            ) : (
+              <p className="text-xs text-muted-foreground text-center w-full">
+                Preencha o formulário ao lado para liberar a conexão.
+              </p>
             )}
           </CardFooter>
         </Card>
         
+        {!connected && (
+          <Card>
+            <form onSubmit={handleConnect}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <KeyRound className="h-5 w-5 text-blue-600" />
+                  <span>Credenciais do Aplicativo Azure</span>
+                </CardTitle>
+                <CardDescription>
+                  Configure as informações do seu registro de aplicativo no Microsoft Entra ID (antigo Azure AD)
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="azure-client-id">Application (client) ID <span className="text-red-500">*</span></Label>
+                  <Input
+                    id="azure-client-id"
+                    placeholder="ex: 4a3e811c-2212-4c28-93d5-ae9ad7b4a9bf"
+                    value={clientId}
+                    onChange={(e) => setClientId(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="azure-client-secret">Client Secret <span className="text-red-500">*</span></Label>
+                  <Input
+                    id="azure-client-secret"
+                    type="password"
+                    placeholder="Valor do segredo gerado no Azure"
+                    value={clientSecret}
+                    onChange={(e) => setClientSecret(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="azure-tenant-id">Directory (tenant) ID</Label>
+                    <Input
+                      id="azure-tenant-id"
+                      value={tenantId}
+                      onChange={(e) => setTenantId(e.target.value)}
+                      placeholder="common"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="azure-root-folder">Pasta Raiz no OneDrive</Label>
+                    <Input
+                      id="azure-root-folder"
+                      value={rootFolder}
+                      onChange={(e) => setRootFolder(e.target.value)}
+                      placeholder="Ascalate/Clientes"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="text-xs text-muted-foreground space-y-1 mt-2">
+                  <p><strong>Configuração do Azure:</strong></p>
+                  <p>• Adicione a URI de Redirecionamento (Web): <code className="bg-muted px-1 rounded text-[10px] break-all">{redirectUri}</code></p>
+                  <p>• Scopes necessários: <code className="bg-muted px-1 rounded text-[10px]">Files.ReadWrite.All</code>, <code className="bg-muted px-1 rounded text-[10px]">offline_access</code>, <code className="bg-muted px-1 rounded text-[10px]">User.Read</code></p>
+                </div>
+              </CardContent>
+              <CardFooter className="border-t pt-4 bg-muted/20">
+                <Button type="submit" disabled={connecting} className="w-full gap-2 bg-blue-600 hover:bg-blue-700 text-white">
+                  {connecting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" /> Conectando...
+                    </>
+                  ) : (
+                    <>
+                      <CloudDownload className="h-4 w-4" /> Conectar com Microsoft
+                    </>
+                  )}
+                </Button>
+              </CardFooter>
+            </form>
+          </Card>
+        )}
+
         {connected && (
           <Card>
             <CardHeader>
               <CardTitle>Configurações de Sincronização</CardTitle>
               <CardDescription>
-                Personalize as configurações de sincronização entre o sistema e o OneDrive/SharePoint
+                Informações e regras de estruturação dos arquivos no OneDrive/SharePoint
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="auto-sync">Sincronização Automática</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Sincronizar automaticamente novos arquivos
-                  </p>
+              <div>
+                <Label className="text-sm font-semibold">Pasta Base de Sincronização</Label>
+                <div className="bg-muted p-2 rounded mt-1 text-sm font-mono text-muted-foreground break-all">
+                  {connectionDetails.rootFolder}
                 </div>
-                <Switch
-                  id="auto-sync"
-                  checked={autoSync}
-                  onCheckedChange={setAutoSync}
-                />
               </div>
               
               <Separator />
               
               <div>
-                <Label htmlFor="root-folder">Pasta Principal</Label>
-                <div className="flex gap-2 mt-1">
-                  <Input
-                    id="root-folder"
-                    defaultValue="Ascalate/Clientes"
-                    placeholder="Caminho da pasta"
-                  />
-                  <Button variant="outline">Escolher</Button>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Pasta base onde os arquivos dos clientes serão armazenados
-                </p>
-              </div>
-              
-              <Separator />
-              
-              <div>
-                <p className="font-medium mb-2">Estrutura de Pastas para Clientes</p>
-                <div className="bg-muted p-3 rounded-md text-sm">
-                  <pre className="whitespace-pre-wrap">
-                    Ascalate/Clientes/[Nome do Cliente]/
-                    ├── Documentos/
-                    ├── Contratos/
-                    ├── Relatórios/
-                    └── Outros/
-                  </pre>
+                <Label className="text-sm font-semibold">Como os arquivos serão estruturados:</Label>
+                <div className="bg-slate-900 text-slate-100 p-4 rounded-md text-xs font-mono mt-2 overflow-x-auto space-y-1">
+                  <p className="text-slate-400"># Raiz configurada: {connectionDetails.rootFolder}/</p>
+                  <p>└── [Nome da Empresa]/</p>
+                  <p>    ├── Contábil/ &nbsp;&nbsp;&nbsp;<span className="text-slate-500"># Balancete de Verificação, etc.</span></p>
+                  <p>    ├── Financeiro/ <span className="text-slate-500"># DRE, Extratos Bancários, etc.</span></p>
+                  <p>    ├── RH/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-slate-500"># Folha de Pagamento, etc.</span></p>
+                  <p>    └── Outros/</p>
                 </div>
               </div>
             </CardContent>
-            <CardFooter>
-              <Button className="w-full" onClick={() => toast.success("Configurações salvas")}>
-                Salvar Configurações
-              </Button>
+            <CardFooter className="border-t pt-4 bg-muted/20">
+              <p className="text-[11px] text-muted-foreground">
+                Sincronia automática ativada: quando um documento de checklist for aprovado pelo consultor no painel, ele será copiado em tempo real para a pasta correspondente.
+              </p>
             </CardFooter>
           </Card>
         )}
       </div>
-      
-      {connected && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Gerenciamento de Permissões</CardTitle>
-            <CardDescription>
-              Configure quem pode acessar os arquivos no OneDrive/SharePoint
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <NavigationMenu>
-              <NavigationMenuList>
-                <NavigationMenuItem>
-                  <NavigationMenuTrigger>Níveis de Acesso</NavigationMenuTrigger>
-                  <NavigationMenuContent>
-                    <div className="grid w-[400px] gap-3 p-4">
-                      <div className="row-span-3">
-                        <h4 className="font-medium leading-none">Permissões</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Configure os diferentes níveis de acesso para as pastas de clientes.
-                        </p>
-                      </div>
-                      <Separator className="my-1" />
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <h4 className="text-sm font-medium">Administrador</h4>
-                          <p className="text-xs text-muted-foreground">Acesso completo</p>
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-medium">Cliente</h4>
-                          <p className="text-xs text-muted-foreground">Acesso limitado</p>
-                        </div>
-                      </div>
-                    </div>
-                  </NavigationMenuContent>
-                </NavigationMenuItem>
-              </NavigationMenuList>
-            </NavigationMenu>
-            
-            <div className="bg-muted p-4 rounded-md">
-              <p className="font-medium mb-2">Importante sobre Permissões</p>
-              <ul className="text-sm space-y-1 list-disc list-inside">
-                <li>Clientes só têm acesso às suas próprias pastas</li>
-                <li>Administradores têm acesso completo a todas as pastas</li>
-                <li>As permissões são sincronizadas automaticamente</li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

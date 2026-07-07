@@ -154,6 +154,11 @@ const systemNavigation = [
     icon: Settings,
   },
   {
+    name: 'Integração OneDrive',
+    href: '/admin/onedrive',
+    icon: Upload,
+  },
+  {
     name: 'Testes',
     href: '/admin/testing',
     icon: TestTube,

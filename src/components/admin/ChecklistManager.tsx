@@ -339,6 +339,25 @@ const ChecklistManager: React.FC<ChecklistManagerProps> = ({ clientId }) => {
         }
       }
 
+      // Sincronizar automaticamente com o OneDrive/SharePoint em segundo plano
+      try {
+        supabase.functions.invoke('microsoft-oauth', {
+          body: {
+            action: 'sync_file',
+            requestId: requestId
+          }
+        }).then(({ data, error: syncErr }) => {
+          if (syncErr) {
+            console.error('Erro de sincronização automática com o OneDrive:', syncErr);
+          } else if (data?.success) {
+            console.log('Arquivo sincronizado com o OneDrive com sucesso:', data.oneDrivePath);
+            toast.info(`Arquivo enviado ao OneDrive: ${data.oneDrivePath.split('/').pop()}`);
+          }
+        });
+      } catch (syncErr) {
+        console.error('Erro ao disparar sincronização com o OneDrive:', syncErr);
+      }
+
       toast.success('Documento aprovado e adicionado à base!');
       refetchRequests();
     } catch (err: any) {

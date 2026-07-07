@@ -15,6 +15,7 @@ import MyTickets from './admin/MyTickets';
 import ArquivosAdmin from './admin/ArquivosAdmin';
 import ClientDocumentsAdmin from './admin/ClientDocumentsAdmin';
 import ConfiguracoesAdmin from './admin/ConfiguracoesAdmin';
+import OneDriveIntegration from './admin/OneDriveIntegration';
 import LogsAdmin from './admin/LogsAdmin';
 import AdminApprovals from './admin/AdminApprovals';
 import TestingDashboard from './admin/TestingDashboard';
@@ -54,6 +55,8 @@ const AdminArea = () => {
               <Route path="arquivos" element={<ClientDocumentsAdmin />} />
               <Route path="documentos" element={<ClientDocumentsAdmin />} />
               <Route path="configuracoes" element={<ConfiguracoesAdmin />} />
+              <Route path="onedrive" element={<OneDriveIntegration />} />
+              <Route path="onedrive/callback" element={<OneDriveIntegration />} />
               <Route path="logs" element={<LogsAdmin />} />
               <Route path="aprovacoes" element={<AdminApprovals />} />
               <Route path="testing" element={<TestingDashboard />} />
