@@ -33,6 +33,9 @@ const Index = () => {
   
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+      <div className="bg-blue-600 text-white text-center py-2 text-xs font-medium tracking-wide">
+        🚀 Projeto atualizado em 07/07/2026 — Sincronização automática via Git ativa!
+      </div>
       <Navbar />
       <HeroImage />
       
