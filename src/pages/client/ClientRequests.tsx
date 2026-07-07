@@ -254,7 +254,8 @@ const RequestCard: React.FC<RequestCardProps> = ({ request, onSuccess }) => {
             )}
           </div>
         </div>
-      </Card>
+      </CardContent>
+    </Card>
   );
 };
 
