@@ -253,7 +253,7 @@ const RequestCard: React.FC<RequestCardProps> = ({ request, onSuccess }) => {
               </form>
             )}
           </div>
-        </div>
+        </CardContent>
       </Card>
   );
 };
