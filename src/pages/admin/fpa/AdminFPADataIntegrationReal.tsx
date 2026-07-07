@@ -8,9 +8,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useFPAClients } from '@/hooks/useFPAClients';
-import { useFPAPeriods } from '@/hooks/useFPAPeriods';
+import { useFPAPeriods, useUpdateFPAPeriod } from '@/hooks/useFPAPeriods';
 import { useFPAFinancialData } from '@/hooks/useFPAFinancialData';
 import { useFPADataUploads } from '@/hooks/useFPADataUploads';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import * as XLSX from 'xlsx';
 import { 
   Upload, 
@@ -27,16 +28,20 @@ import {
   Plus,
   Building,
   DollarSign,
-  BarChart3
+  BarChart3,
+  Lock,
+  Unlock
 } from 'lucide-react';
 import FPAClientSelector from '@/components/fpa/FPAClientSelector';
 
 const AdminFPADataIntegrationReal = () => {
   const { toast } = useToast();
+  const updatePeriod = useUpdateFPAPeriod();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClientId, setSelectedClientId] = useState('');
   const [selectedPeriod, setSelectedPeriod] = useState('');
   const [isCreatingPeriod, setIsCreatingPeriod] = useState(false);
+  const [updatingLock, setUpdatingLock] = useState(false);
   const [newPeriodData, setNewPeriodData] = useState({
     period_name: '',
     period_type: 'monthly',
@@ -248,24 +253,67 @@ const AdminFPADataIntegrationReal = () => {
             />
             <div>
               <Label htmlFor="period">Período de Dados</Label>
-              <select 
-                id="period"
-                value={selectedPeriod}
-                onChange={(e) => setSelectedPeriod(e.target.value)}
-                className="w-full p-2 border rounded-md"
-                disabled={periodsLoading}
-              >
-                <option value="">Selecione um período</option>
-                {periods.map((period) => (
-                  <option key={period.id} value={period.id}>
-                    {period.period_name} {period.is_actual && '(Atual)'}
-                  </option>
-                ))}
-              </select>
+              <div className="flex gap-2">
+                <select 
+                  id="period"
+                  value={selectedPeriod}
+                  onChange={(e) => setSelectedPeriod(e.target.value)}
+                  className="w-full p-2 border rounded-md"
+                  disabled={periodsLoading}
+                >
+                  <option value="">Selecione um período</option>
+                  {periods.map((period) => (
+                    <option key={period.id} value={period.id}>
+                      {period.period_name} {period.is_actual && '(Atual)'} {period.is_locked && '🔒'}
+                    </option>
+                  ))}
+                </select>
+                {selectedPeriod && (
+                  <Button 
+                    type="button"
+                    variant={(periods.find(p => p.id === selectedPeriod) as any)?.is_locked ? "destructive" : "outline"}
+                    onClick={async () => {
+                      const p = periods.find(p => p.id === selectedPeriod) as any;
+                      if (!p) return;
+                      try {
+                        setUpdatingLock(true);
+                        await updatePeriod.mutateAsync({
+                          id: selectedPeriod,
+                          is_locked: !p.is_locked
+                        });
+                      } catch (err) {
+                        console.error(err);
+                      } finally {
+                        setUpdatingLock(false);
+                      }
+                    }}
+                    disabled={updatingLock}
+                    className="gap-1 shrink-0"
+                    title={(periods.find(p => p.id === selectedPeriod) as any)?.is_locked ? "Período Trancado. Clique para abrir." : "Período Aberto. Clique para trancar."}
+                  >
+                    {(periods.find(p => p.id === selectedPeriod) as any)?.is_locked ? (
+                      <Lock className="h-4 w-4" />
+                    ) : (
+                      <Unlock className="h-4 w-4" />
+                    )}
+                    <span>{(periods.find(p => p.id === selectedPeriod) as any)?.is_locked ? 'Trancado' : 'Aberto'}</span>
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {selectedPeriod && (periods.find(p => p.id === selectedPeriod) as any)?.is_locked && (
+        <Alert variant="destructive" className="bg-amber-50 border-amber-200 text-amber-900">
+          <Lock className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="font-semibold text-amber-800">Período Trancado para Edições</AlertTitle>
+          <AlertDescription className="text-xs text-amber-700">
+            Este período foi congelado. A importação de novas planilhas e edição de dados financeiros correspondentes estão desabilitadas.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Cliente Summary */}
       {selectedClient && (
@@ -493,7 +541,7 @@ const AdminFPADataIntegrationReal = () => {
                     />
                     <Button
                       onClick={() => document.getElementById('excel-upload')?.click()}
-                      disabled={!selectedClientId || !selectedPeriod}
+                      disabled={!selectedClientId || !selectedPeriod || (periods.find(p => p.id === selectedPeriod) as any)?.is_locked}
                     >
                       <Upload className="h-4 w-4 mr-2" /> Importar Excel
                     </Button>

@@ -4,15 +4,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertCircle, Loader2, Lock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFPAClients } from '@/hooks/useFPAClients';
 import { useFPADataUploads, useCreateFPADataUpload } from '@/hooks/useFPADataUploads';
+import { useFPAPeriods } from '@/hooks/useFPAPeriods';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from 'sonner';
 
 const ClientFPAData = () => {
   const { user } = useAuth();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedPeriodId, setSelectedPeriodId] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
   console.log('🎯 ClientFPAData - User:', user?.id, user?.email);
@@ -26,7 +29,11 @@ const ClientFPAData = () => {
   console.log('🏢 Current FPA client found:', !!currentClient, currentClient?.company_name);
   
   const { data: uploads = [], isLoading: uploadsLoading } = useFPADataUploads(currentClient?.id);
+  const { data: periods = [], isLoading: periodsLoading } = useFPAPeriods(currentClient?.id);
   const createUpload = useCreateFPADataUpload();
+
+  const selectedPeriod = periods.find((p: any) => p.id === selectedPeriodId) as any;
+  const isPeriodLocked = selectedPeriod?.is_locked || false;
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -37,8 +44,13 @@ const ClientFPAData = () => {
   };
 
   const handleUpload = async () => {
-    if (!selectedFile || !currentClient) {
-      toast.error('Por favor, selecione um arquivo primeiro');
+    if (!selectedFile || !currentClient || !selectedPeriodId) {
+      toast.error('Por favor, selecione um arquivo e o período primeiro');
+      return;
+    }
+
+    if (isPeriodLocked) {
+      toast.error('Este período está trancado para edições.');
       return;
     }
     
@@ -47,6 +59,7 @@ const ClientFPAData = () => {
     try {
       const uploadData = {
         fpa_client_id: currentClient.id,
+        period_id: selectedPeriodId,
         file_name: selectedFile.name,
         file_path: `uploads/${currentClient.id}/${selectedFile.name}`,
         file_type: selectedFile.type || 'application/octet-stream',
@@ -133,18 +146,47 @@ const ClientFPAData = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="file-upload">Selecionar Arquivo</Label>
+            <Label htmlFor="period-select">Período de Referência <span className="text-red-500">*</span></Label>
+            <select
+              id="period-select"
+              value={selectedPeriodId}
+              onChange={(e) => setSelectedPeriodId(e.target.value)}
+              className="w-full p-2 border rounded-md mt-1"
+              disabled={periodsLoading}
+            >
+              <option value="">Selecione o período...</option>
+              {periods.map((p: any) => (
+                <option key={p.id} value={p.id}>
+                  {p.period_name} {p.is_actual && '(Atual)'} {p.is_locked && '🔒'}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <Label htmlFor="file-upload">Selecionar Arquivo <span className="text-red-500">*</span></Label>
             <Input
               id="file-upload"
               type="file"
               accept=".xlsx,.xls,.csv"
               onChange={handleFileSelect}
               className="mt-1"
+              disabled={isPeriodLocked}
             />
             <p className="text-sm text-gray-500 mt-1">
               Formatos aceitos: Excel (.xlsx, .xls) e CSV
             </p>
           </div>
+
+          {isPeriodLocked && (
+            <Alert variant="destructive" className="bg-amber-50 border-amber-200 text-amber-900">
+              <Lock className="h-4 w-4 text-amber-600" />
+              <AlertTitle className="font-semibold text-amber-800">Período Trancado</AlertTitle>
+              <AlertDescription className="text-xs text-amber-700">
+                Este período está trancado pela consultoria para edições. Não é possível enviar novos arquivos para ele.
+              </AlertDescription>
+            </Alert>
+          )}
 
           {selectedFile && (
             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
@@ -162,7 +204,7 @@ const ClientFPAData = () => {
 
           <Button 
             onClick={handleUpload}
-            disabled={!selectedFile || isUploading}
+            disabled={!selectedFile || !selectedPeriodId || isPeriodLocked || isUploading}
             className="w-full"
             size="lg"
           >

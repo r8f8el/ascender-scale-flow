@@ -38,6 +38,7 @@ export const useCreateFPAPeriod = () => {
       period_type: string;
       period_name?: string;
       is_actual?: boolean;
+      is_locked?: boolean;
     }) => {
       // Gerar period_name se não fornecido
       const finalPeriodData = {
