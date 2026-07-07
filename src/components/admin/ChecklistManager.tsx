@@ -81,7 +81,7 @@ const ChecklistManager: React.FC<ChecklistManagerProps> = ({ clientId }) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('client_profiles')
-        .select('id, name, company')
+        .select('id, name, company, email')
         .order('name');
       if (error) throw error;
       return data || [];
@@ -98,7 +98,8 @@ const ChecklistManager: React.FC<ChecklistManagerProps> = ({ clientId }) => {
           *,
           client_profiles (
             name,
-            company
+            company,
+            email
           )
         `);
 
@@ -164,6 +165,29 @@ const ChecklistManager: React.FC<ChecklistManagerProps> = ({ clientId }) => {
         } as any);
 
       if (error) throw error;
+
+      // Enviar notificação por e-mail para o cliente
+      const client = clients.find((c: any) => c.id === newRequest.clientId);
+      if (client && client.email) {
+        try {
+          await supabase.functions.invoke('send-notification', {
+            body: {
+              type: 'document_requested',
+              data: {
+                recipientEmail: client.email,
+                clientName: client.name,
+                documentTitle: newRequest.title,
+                dueDate: newRequest.dueDate,
+                periodReference: newRequest.periodReference,
+                description: newRequest.description,
+                portalUrl: `${window.location.origin}/cliente/requests`
+              }
+            }
+          });
+        } catch (emailErr) {
+          console.error('Erro ao disparar notificação de e-mail:', emailErr);
+        }
+      }
 
       toast.success('Solicitação criada com sucesso!');
       setIsCreateOpen(false);
@@ -243,6 +267,32 @@ const ChecklistManager: React.FC<ChecklistManagerProps> = ({ clientId }) => {
 
       if (error) throw error;
 
+      // Enviar e-mails para cada documento solicitado em lote
+      const client = clients.find((c: any) => c.id === bulkRequest.clientId);
+      if (client && client.email) {
+        try {
+          const promises = requestsToInsert.map(req =>
+            supabase.functions.invoke('send-notification', {
+              body: {
+                type: 'document_requested',
+                data: {
+                  recipientEmail: client.email,
+                  clientName: client.name,
+                  documentTitle: req.title,
+                  dueDate: req.due_date,
+                  periodReference: req.period_reference,
+                  description: req.description,
+                  portalUrl: `${window.location.origin}/cliente/requests`
+                }
+              }
+            })
+          );
+          await Promise.all(promises);
+        } catch (emailErr) {
+          console.error('Erro ao disparar e-mails de checklist em lote:', emailErr);
+        }
+      }
+
       toast.success(`${requestsToInsert.length} solicitações criadas com sucesso!`);
       setIsBulkOpen(false);
       setBulkRequest({
@@ -266,6 +316,28 @@ const ChecklistManager: React.FC<ChecklistManagerProps> = ({ clientId }) => {
         .eq('id', requestId);
 
       if (error) throw error;
+
+      // Enviar e-mail ao cliente avisando sobre a aprovação
+      const req = requests.find((r: any) => r.id === requestId) as any;
+      if (req && req.client_profiles?.email) {
+        try {
+          await supabase.functions.invoke('send-notification', {
+            body: {
+              type: 'document_evaluated',
+              data: {
+                recipientEmail: req.client_profiles.email,
+                clientName: req.client_profiles.name,
+                documentTitle: req.title,
+                periodReference: req.period_reference,
+                status: 'approved',
+                portalUrl: `${window.location.origin}/cliente/requests`
+              }
+            }
+          });
+        } catch (emailErr) {
+          console.error('Erro ao disparar e-mail de aprovação:', emailErr);
+        }
+      }
 
       toast.success('Documento aprovado e adicionado à base!');
       refetchRequests();
@@ -293,7 +365,30 @@ const ChecklistManager: React.FC<ChecklistManagerProps> = ({ clientId }) => {
 
       if (error) throw error;
 
-      toast.success('Solicitação marcada como rejeitada. O cliente será avisado no portal.');
+      // Enviar e-mail ao cliente avisando sobre a rejeição
+      const req = requests.find((r: any) => r.id === rejectingRequestId) as any;
+      if (req && req.client_profiles?.email) {
+        try {
+          await supabase.functions.invoke('send-notification', {
+            body: {
+              type: 'document_evaluated',
+              data: {
+                recipientEmail: req.client_profiles.email,
+                clientName: req.client_profiles.name,
+                documentTitle: req.title,
+                periodReference: req.period_reference,
+                status: 'rejected',
+                rejectionReason: rejectionReason,
+                portalUrl: `${window.location.origin}/cliente/requests`
+              }
+            }
+          });
+        } catch (emailErr) {
+          console.error('Erro ao disparar e-mail de rejeição:', emailErr);
+        }
+      }
+
+      toast.success('Solicitação marcada como rejeitada. O cliente será avisado no portal e receberá e-mail.');
       setIsRejectOpen(false);
       setRejectingRequestId(null);
       setRejectionReason('');

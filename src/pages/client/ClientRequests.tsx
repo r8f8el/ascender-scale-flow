@@ -44,6 +44,7 @@ interface RequestCardProps {
 
 const RequestCard: React.FC<RequestCardProps> = ({ request, onSuccess }) => {
   const { uploadFile, isUploading } = useUploadManager();
+  const { client } = useAuth();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const getStatusBadge = (status: string) => {
@@ -123,6 +124,26 @@ const RequestCard: React.FC<RequestCardProps> = ({ request, onSuccess }) => {
         .eq('id', request.id);
 
       if (error) throw error;
+
+      // Enviar notificação por e-mail para o administrador
+      try {
+        await supabase.functions.invoke('send-notification', {
+          body: {
+            type: 'document_submitted',
+            data: {
+              clientCompany: client?.company || 'Empresa Cliente',
+              clientName: client?.name || 'Cliente',
+              clientEmail: client?.email || '',
+              documentTitle: request.title,
+              periodReference: request.period_reference,
+              filename: result.name,
+              adminPanelUrl: `${window.location.origin}/admin/arquivos`
+            }
+          }
+        });
+      } catch (emailErr) {
+        console.error('Erro ao disparar notificação de e-mail:', emailErr);
+      }
 
       toast.success('Documento enviado com sucesso para a consultoria!');
       setSelectedFile(null);
