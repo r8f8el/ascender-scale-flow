@@ -11,16 +11,46 @@ export const useCompanyAccess = () => {
 
       console.log('🔍 Verificando acesso da empresa para usuário:', user.id);
 
-      // Buscar perfil do usuário atual
-      const { data: profile, error: profileError } = await supabase
+      // Buscar perfil do usuário atual no client_profiles
+      let { data: profile, error: profileError } = await supabase
         .from('client_profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (profileError) {
+      // Se não encontrou no client_profiles, tentar buscar no admin_profiles (caso seja admin)
+      if (!profile) {
+        const { data: adminProfile } = await supabase
+          .from('admin_profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
+          
+        if (adminProfile) {
+          console.log('✅ Perfil de administrador encontrado:', adminProfile);
+          return {
+            profile: {
+              id: user.id,
+              name: adminProfile.name,
+              email: adminProfile.email,
+              company: 'Ascalate',
+              is_primary_contact: true
+            },
+            companyMembers: [],
+            hasCompanyAccess: true,
+            isTeamMember: false,
+            teamMemberData: null
+          };
+        }
+      }
+
+      if (profileError && profileError.code !== 'PGRST116') {
         console.error('❌ Erro ao buscar perfil:', profileError);
         throw profileError;
+      }
+
+      if (!profile) {
+        throw new Error('Perfil de usuário não encontrado');
       }
 
       console.log('✅ Perfil encontrado:', profile);
