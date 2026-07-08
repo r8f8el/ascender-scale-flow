@@ -30,6 +30,10 @@ const OneDriveIntegration = () => {
   const [tenantId, setTenantId] = useState('common');
   const [rootFolder, setRootFolder] = useState('Ascalate/Clientes');
 
+  const [approvedRequests, setApprovedRequests] = useState<any[]>([]);
+  const [syncingAll, setSyncingAll] = useState(false);
+  const [syncProgress, setSyncProgress] = useState(0);
+
   const redirectUri = `${window.location.origin}/admin/onedrive`;
 
   // 1. Check connection status on mount and handle OAuth code callback
@@ -106,6 +110,64 @@ const OneDriveIntegration = () => {
     } else {
       setConnected(false);
       setConnectionDetails({});
+    }
+  };
+
+  const fetchApprovedRequests = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('client_document_requests' as any)
+        .select('id, filename, title')
+        .eq('status', 'approved');
+      
+      if (error) throw error;
+      setApprovedRequests(data || []);
+    } catch (err) {
+      console.error('Error fetching approved requests:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (connected) {
+      fetchApprovedRequests();
+    }
+  }, [connected]);
+
+  const handleBulkSync = async () => {
+    if (approvedRequests.length === 0) return;
+    
+    setSyncingAll(true);
+    setSyncProgress(0);
+    toast.info(`Iniciando sincronização de ${approvedRequests.length} arquivos...`);
+
+    let successCount = 0;
+    
+    for (let i = 0; i < approvedRequests.length; i++) {
+      const request = approvedRequests[i];
+      try {
+        console.log(`Syncing file ${i+1}/${approvedRequests.length}: ${request.filename}`);
+        const { data, error } = await supabase.functions.invoke('microsoft-oauth', {
+          body: {
+            action: 'sync_file',
+            requestId: request.id
+          }
+        });
+        
+        if (error) throw error;
+        if (data?.success) {
+          successCount++;
+        }
+      } catch (err) {
+        console.error(`Erro ao sincronizar arquivo ${request.filename}:`, err);
+      }
+      setSyncProgress(i + 1);
+    }
+    
+    setSyncingAll(false);
+    if (successCount === approvedRequests.length) {
+      toast.success(`Sincronização em lote finalizada! ${successCount} de ${approvedRequests.length} arquivos enviados com sucesso.`);
+    } else {
+      toast.warning(`Sincronização concluída com avisos: ${successCount} de ${approvedRequests.length} arquivos enviados com sucesso.`);
     }
   };
 
@@ -405,6 +467,60 @@ const OneDriveIntegration = () => {
           </Card>
         )}
       </div>
+
+      {connected && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileUp className="h-5 w-5 text-blue-600" />
+              <span>Sincronização em Lote (Bulk Sync)</span>
+            </CardTitle>
+            <CardDescription>
+              Transfira em lote todos os documentos já aprovados para a nuvem da Microsoft
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-muted/30 rounded-xl gap-4">
+              <div>
+                <p className="text-sm font-semibold">Documentos Aprovados no Portal</p>
+                <p className="text-sm text-muted-foreground mt-0.5">Arquivos prontos para serem enviados ao OneDrive/SharePoint</p>
+                <p className="text-3xl font-bold text-blue-600 mt-1">{approvedRequests.length}</p>
+              </div>
+              <Button 
+                onClick={handleBulkSync}
+                disabled={syncingAll || approvedRequests.length === 0}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-medium gap-2 min-w-[200px]"
+              >
+                {syncingAll ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Sincronizando ({syncProgress}/{approvedRequests.length})
+                  </>
+                ) : (
+                  <>
+                    <CloudDownload className="h-4 w-4" />
+                    Sincronizar Todos
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {syncingAll && (
+              <div className="space-y-2 pt-2">
+                <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                  <div 
+                    className="bg-blue-600 h-2.5 rounded-full transition-all duration-300" 
+                    style={{ width: `${(syncProgress / approvedRequests.length) * 100}%` }}
+                  ></div>
+                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  Enviando arquivos para o OneDrive/SharePoint... Por favor, não feche esta página.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
