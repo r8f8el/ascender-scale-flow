@@ -113,6 +113,7 @@ const AdminFPAVarianceAnalysis = () => {
             onChange={setSelectedClientId}
             label="Cliente FP&A"
             placeholder="Selecione um cliente para análise de variância"
+            clients={clients}
           />
         </CardContent>
       </Card>

@@ -80,6 +80,7 @@ const AdminFPAReportBuilder = () => {
             onChange={setSelectedClientId}
             label="Cliente FP&A"
             placeholder="Selecione um cliente para criar relatórios"
+            clients={clients}
           />
         </CardContent>
       </Card>

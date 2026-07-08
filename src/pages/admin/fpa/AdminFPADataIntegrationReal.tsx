@@ -250,6 +250,7 @@ const AdminFPADataIntegrationReal = () => {
               onChange={setSelectedClientId}
               label="Cliente FP&A"
               placeholder="Selecione um cliente para gerenciar dados"
+              clients={clients}
             />
             <div>
               <Label htmlFor="period">Período de Dados</Label>
