@@ -93,9 +93,6 @@ const ClientFPAScenarios = () => {
     }).format(value);
   };
 
-  const handleCreateScenario = () => {
-    setIsCreatingScenario(true);
-    // Simular criação de cenário
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-96">
@@ -292,7 +289,6 @@ const ClientFPAScenarios = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
 
       {/* Dialog de Criação de Cenário */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -355,6 +351,7 @@ const ClientFPAScenarios = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
   );
 };
 

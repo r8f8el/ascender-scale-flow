@@ -99,6 +99,12 @@ export const AuthSessionProvider: React.FC<{ children: React.ReactNode }> = ({ c
           setSession(session);
           setUser(session?.user ?? null);
           
+          if (event === 'PASSWORD_RECOVERY') {
+            console.log('🔑 Password recovery event detected! Redirecting to /redefinir-senha');
+            window.location.assign('/redefinir-senha');
+            return;
+          }
+          
           if (session?.user) {
             console.log('✅ User authenticated, setting profile fetch timeout');
             // Defer profile fetching to prevent auth interference

@@ -19,6 +19,8 @@ const ClientLogin = () => {
   const [error, setError] = useState('');
   const [showAccountHelp, setShowAccountHelp] = useState(false);
   const [cleanupLoading, setCleanupLoading] = useState(false);
+  const [isResetMode, setIsResetMode] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -35,6 +37,38 @@ const ClientLogin = () => {
       setEmail(stateEmail);
     }
   }, [stateEmail]);
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    
+    if (!email) {
+      setError('Por favor, informe seu email.');
+      return;
+    }
+
+    setResetLoading(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/redefinir-senha`
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success('Email de recuperação enviado!', {
+        description: 'Verifique sua caixa de entrada para redefinir sua senha.'
+      });
+      setIsResetMode(false);
+    } catch (err: any) {
+      console.error('❌ Reset password error:', err);
+      setError(err.message || 'Erro ao enviar email de recuperação. Tente novamente.');
+    } finally {
+      setResetLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,7 +193,7 @@ const ClientLogin = () => {
         <div className="text-center mb-8">
           <Logo className="h-16 mx-auto mb-6" />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Área do Cliente
+            {isResetMode ? 'Recuperar Senha' : 'Área do Cliente'}
           </h1>
         </div>
 
@@ -176,94 +210,146 @@ const ClientLogin = () => {
         {/* Login Card */}
         <Card className="shadow-sm border border-gray-200">
           <CardContent className="p-8">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium text-gray-700">
-                  Email
-                </label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="seu.email@exemplo.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  disabled={loading}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium text-gray-700">
-                  Senha
-                </label>
-                <div className="relative">
+            {isResetMode ? (
+              <form onSubmit={handlePasswordReset} className="space-y-6">
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+                
+                <div className="space-y-2">
+                  <label htmlFor="email" className="text-sm font-medium text-gray-700">
+                    Email de Recuperação
+                  </label>
                   <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="h-12 pr-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    id="email"
+                    type="email"
+                    placeholder="seu.email@exemplo.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    disabled={resetLoading}
+                  />
+                  <p className="text-xs text-gray-500">
+                    Enviaremos um link de redefinição de senha para este email.
+                  </p>
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                  disabled={resetLoading}
+                >
+                  {resetLoading ? 'Enviando...' : 'Enviar link de recuperação'}
+                </Button>
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full h-12 text-gray-700 font-medium"
+                  onClick={() => {
+                    setIsResetMode(false);
+                    setError('');
+                  }}
+                  disabled={resetLoading}
+                >
+                  Voltar para o Login
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+                
+                <div className="space-y-2">
+                  <label htmlFor="email" className="text-sm font-medium text-gray-700">
+                    Email
+                  </label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="seu.email@exemplo.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     disabled={loading}
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="password" className="text-sm font-medium text-gray-700">
+                    Senha
+                  </label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="h-12 pr-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      disabled={loading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      disabled={loading}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                  disabled={loading}
+                >
+                  {loading ? 'Entrando...' : 'Entrar'}
+                </Button>
+              </form>
+            )}
+
+            {!isResetMode && (
+              <div className="mt-6 text-center">
+                <button
+                  type="button"
+                  onClick={() => setIsResetMode(true)}
+                  className="text-sm text-gray-600 hover:text-gray-800"
+                >
+                  Esqueci minha senha
+                </button>
+                
+                <div className="mt-2">
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    disabled={loading}
+                    onClick={handleResendConfirmation}
+                    className="text-sm text-blue-600 hover:text-blue-800"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    Reenviar email de confirmação
+                  </button>
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-sm text-gray-600 mb-2">Problemas para criar conta?</p>
+                  <button
+                    type="button"
+                    onClick={handleAccountCleanup}
+                    disabled={cleanupLoading}
+                    className="text-sm text-orange-600 hover:text-orange-800 disabled:opacity-50"
+                  >
+                    {cleanupLoading ? 'Verificando...' : 'Verificar se posso criar conta com este email'}
                   </button>
                 </div>
               </div>
-
-              <Button
-                type="submit"
-                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium"
-                disabled={loading}
-              >
-                {loading ? 'Entrando...' : 'Entrar'}
-              </Button>
-            </form>
-
-            <div className="mt-6 text-center">
-              <button
-                type="button"
-                onClick={() => navigate('/')}
-                className="text-sm text-gray-600 hover:text-gray-800"
-              >
-                Esqueci minha senha
-              </button>
-              
-              <div className="mt-2">
-                <button
-                  type="button"
-                  onClick={handleResendConfirmation}
-                  className="text-sm text-blue-600 hover:text-blue-800"
-                >
-                  Reenviar email de confirmação
-                </button>
-              </div>
-
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <p className="text-sm text-gray-600 mb-2">Problemas para criar conta?</p>
-                <button
-                  type="button"
-                  onClick={handleAccountCleanup}
-                  disabled={cleanupLoading}
-                  className="text-sm text-orange-600 hover:text-orange-800 disabled:opacity-50"
-                >
-                  {cleanupLoading ? 'Verificando...' : 'Verificar se posso criar conta com este email'}
-                </button>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 

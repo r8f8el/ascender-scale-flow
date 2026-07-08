@@ -30,6 +30,7 @@ import NewsletterSignup from '@/pages/NewsletterSignup';
 import ParticipantData from '@/pages/ParticipantData';
 import ConviteEquipeCadastro from '@/pages/ConviteEquipeCadastro';
 import PlanOrcamentario from '@/pages/PlanOrcamentario';
+import RedefinirSenha from '@/pages/RedefinirSenha';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -72,6 +73,7 @@ function App() {
                 <Route path="/confirmar-email" element={<EmailConfirmation />} />
                 <Route path="/login" element={<ClientLogin />} />
                 <Route path="/registro" element={<ClientRegister />} />
+                <Route path="/redefinir-senha" element={<RedefinirSenha />} />
                 
                 {/* Páginas de convite */}
                 <Route path="/convite-equipe" element={<ConviteEquipeCadastro />} />
