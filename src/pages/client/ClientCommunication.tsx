@@ -28,6 +28,7 @@ import { toast } from 'sonner';
 const ClientCommunication = () => {
   const { user, client, loading } = useAuth();
   const [newMessage, setNewMessage] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -38,6 +39,7 @@ const ClientCommunication = () => {
     loading: chatLoading,
     sending,
     sendMessage,
+    uploadAttachment,
     createOrFindRoom
   } = useChat(false);
   // Equipe Ascalate
@@ -100,14 +102,23 @@ const ClientCommunication = () => {
 
   // Handle send message (real implementation)
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || sending) return;
+    if ((!newMessage.trim() && !selectedFile) || sending) return;
 
     try {
+      let attachmentsPayload: any[] = [];
+      
+      if (selectedFile) {
+        toast.info(`Fazendo upload do arquivo: ${selectedFile.name}...`);
+        const uploadedFile = await uploadAttachment(selectedFile);
+        attachmentsPayload = [uploadedFile];
+      }
+
       console.log('📤 Sending message:', newMessage.substring(0, 50));
-      const success = await sendMessage(newMessage.trim());
+      const success = await sendMessage(newMessage.trim(), currentRoom || undefined, attachmentsPayload);
       
       if (success) {
         setNewMessage('');
+        setSelectedFile(null);
         inputRef.current?.focus();
         toast.success('Mensagem enviada!');
       } else {
@@ -116,6 +127,14 @@ const ClientCommunication = () => {
     } catch (error) {
       console.error('❌ Error in handleSendMessage:', error);
       toast.error('Erro ao enviar mensagem');
+    }
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      toast.success(`Arquivo "${file.name}" selecionado`);
     }
   };
 
@@ -273,6 +292,29 @@ const ClientCommunication = () => {
                                  </p>
                                )}
                                <p className="text-sm leading-relaxed">{message.content}</p>
+                                {message.attachments && Array.isArray(message.attachments) && message.attachments.length > 0 && (
+                                  <div className="mt-2 space-y-1">
+                                    {message.attachments.map((attachment: any, idx: number) => (
+                                      <a 
+                                        key={idx} 
+                                        href={attachment.url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-2 p-2 bg-black bg-opacity-10 hover:bg-opacity-20 transition-all rounded text-xs text-inherit"
+                                      >
+                                        <FileText className="h-3.5 w-3.5" />
+                                        <span className="underline truncate max-w-[200px]" title={attachment.name}>
+                                          {attachment.name}
+                                        </span>
+                                        {attachment.size && (
+                                          <span className="opacity-70">
+                                            ({(attachment.size / 1024).toFixed(1)} KB)
+                                          </span>
+                                        )}
+                                      </a>
+                                    ))}
+                                  </div>
+                                )}
                                <div className={`flex items-center gap-1 mt-2 text-xs ${
                                  message.sender_type === 'client' 
                                    ? 'text-primary-foreground/70 justify-end' 
@@ -297,6 +339,24 @@ const ClientCommunication = () => {
 
             {/* Input Area */}
             <div className="border-t p-4 bg-muted/20">
+              {selectedFile && (
+                <div className="mb-3 p-2 bg-blue-50 rounded-xl border border-blue-200 flex items-center gap-2 text-sm">
+                  <FileText className="h-4 w-4 text-blue-600" />
+                  <span className="truncate max-w-[300px]">{selectedFile.name}</span>
+                  <span className="text-xs text-gray-500">
+                    ({(selectedFile.size / 1024).toFixed(1)} KB)
+                  </span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setSelectedFile(null)}
+                    className="ml-auto text-gray-500 hover:text-red-500 h-6 px-2"
+                  >
+                    ×
+                  </Button>
+                </div>
+              )}
+              
               <div className="flex items-end gap-2">
                 <div className="flex-1 relative">
                   <Input
@@ -319,23 +379,24 @@ const ClientCommunication = () => {
                 </div>
                 
                 <div className="flex items-center gap-1">
+                  <input
+                    type="file"
+                    id="client-chat-file-upload"
+                    className="hidden"
+                    onChange={handleFileSelect}
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                  />
                   <Button
                     variant="outline"
                     size="icon"
+                    onClick={() => document.getElementById('client-chat-file-upload')?.click()}
                     className="h-[44px] w-[44px] rounded-xl"
                   >
                     <Paperclip className="h-4 w-4" />
                   </Button>
                   <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-[44px] w-[44px] rounded-xl"
-                  >
-                    <Mic className="h-4 w-4" />
-                  </Button>
-                  <Button
                     onClick={handleSendMessage}
-                    disabled={!newMessage.trim() || sending}
+                    disabled={(!newMessage.trim() && !selectedFile) || sending}
                     className="h-[44px] w-[44px] rounded-xl hover-scale"
                   >
                     {sending ? (

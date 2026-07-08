@@ -1,10 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { 
   MessageSquare, 
   Send, 
@@ -20,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFPAClients } from '@/hooks/useFPAClients';
+import { useChat } from '@/hooks/useChat';
 import { toast } from 'sonner';
 
 const ClientFPACommunication = () => {
@@ -27,6 +27,7 @@ const ClientFPACommunication = () => {
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: clients = [], isLoading: clientsLoading } = useFPAClients();
   
@@ -34,49 +35,27 @@ const ClientFPACommunication = () => {
     client.client_profile?.id === user?.id
   );
 
-  // Dados mock para comunicação
-  const messages = [
-    {
-      id: '1',
-      sender_type: 'admin',
-      sender_name: 'Rafael Gontijo',
-      sender_role: 'Consultor Senior FP&A',
-      message: 'Olá! Finalizei a análise dos dados financeiros de Q1. Os resultados mostram uma melhoria significativa na margem EBITDA. Gostaria de agendar uma reunião para apresentar os insights detalhados?',
-      created_at: '2024-01-15T10:30:00Z',
-      context_type: 'analysis_complete',
-      attachments: ['Relatório Q1 2024.pdf'],
-      is_read: true
-    },
-    {
-      id: '2',
-      sender_type: 'client',
-      sender_name: user?.user_metadata?.name || 'Cliente',
-      message: 'Perfeito, Rafael! Sim, podemos agendar para esta semana? Tenho algumas dúvidas específicas sobre as variações no custo de produção.',
-      created_at: '2024-01-15T14:15:00Z',
-      context_type: 'meeting_request',
-      is_read: true
-    },
-    {
-      id: '3',
-      sender_type: 'admin',
-      sender_name: 'Daniel Ascalate',
-      sender_role: 'Gerente de Projeto',
-      message: 'Oi! Estou acompanhando o progresso do projeto. A implementação do dashboard está 80% concluída. Na próxima semana teremos a versão beta disponível para testes.',
-      created_at: '2024-01-16T09:45:00Z',
-      context_type: 'project_update',
-      is_read: true
-    },
-    {
-      id: '4',
-      sender_type: 'admin',
-      sender_name: 'Rafael Gontijo',
-      sender_role: 'Consultor Senior FP&A',
-      message: 'Consegui agendar nossa reunião para quinta-feira, 18/01, às 14h. Vou preparar uma apresentação focada nas suas dúvidas sobre custos. Te envio o link da videochamada até amanhã.',
-      created_at: '2024-01-16T16:20:00Z',
-      context_type: 'meeting_scheduled',
-      is_read: false
+  const { 
+    messages, 
+    currentRoom, 
+    loading: chatLoading,
+    sendMessage,
+    uploadAttachment,
+    createOrFindRoom
+  } = useChat(false);
+
+  // Inicializar a sala de chat caso o usuário tenha um perfil vinculado
+  useEffect(() => {
+    if (user && currentClient && !currentRoom && !chatLoading) {
+      console.log('🔄 Inicializando sala de chat FP&A para o cliente:', currentClient.company_name);
+      createOrFindRoom();
     }
-  ];
+  }, [user, currentClient, currentRoom, chatLoading, createOrFindRoom]);
+
+  // Rolar para o final quando novas mensagens chegarem
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   // Equipe FP&A
   const team = [
@@ -122,7 +101,8 @@ const ClientFPACommunication = () => {
     }
   };
 
-  const getContextBadge = (contextType: string) => {
+  const getContextBadge = (contextType?: string) => {
+    if (!contextType) return null;
     switch (contextType) {
       case 'analysis_complete':
         return <Badge variant="outline" className="bg-blue-100 text-blue-700">Análise</Badge>;
@@ -133,7 +113,7 @@ const ClientFPACommunication = () => {
       case 'meeting_scheduled':
         return <Badge variant="outline" className="bg-orange-100 text-orange-700">Agendado</Badge>;
       default:
-        return null;
+        return <Badge variant="outline">{contextType}</Badge>;
     }
   };
 
@@ -145,12 +125,23 @@ const ClientFPACommunication = () => {
 
     setIsSending(true);
     try {
-      // Simular envio
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      toast.success('Mensagem enviada com sucesso!');
-      setNewMessage('');
-      setSelectedFile(null);
+      let attachmentsPayload: any[] = [];
+      
+      if (selectedFile) {
+        toast.info(`Fazendo upload do arquivo: ${selectedFile.name}...`);
+        const uploadedFile = await uploadAttachment(selectedFile);
+        attachmentsPayload = [uploadedFile];
+      }
+
+      const success = await sendMessage(newMessage, currentRoom || undefined, attachmentsPayload);
+      
+      if (success) {
+        toast.success('Mensagem enviada!');
+        setNewMessage('');
+        setSelectedFile(null);
+      }
     } catch (error) {
+      console.error('Erro ao enviar mensagem:', error);
       toast.error('Erro ao enviar mensagem');
     } finally {
       setIsSending(false);
@@ -175,7 +166,7 @@ const ClientFPACommunication = () => {
     });
   };
 
-  if (clientsLoading) {
+  if (clientsLoading || (user && currentClient && !currentRoom && chatLoading)) {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="flex flex-col items-center gap-4">
@@ -185,7 +176,6 @@ const ClientFPACommunication = () => {
       </div>
     );
   }
-
 
   return (
     <div className="space-y-6">
@@ -211,52 +201,67 @@ const ClientFPACommunication = () => {
             </CardHeader>
             
             {/* Mensagens */}
-            <CardContent className="flex-1 overflow-y-auto space-y-4">
-              {messages.map((message) => (
-                <div 
-                  key={message.id}
-                  className={`flex ${message.sender_type === 'client' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div className={`max-w-[80%] ${
-                    message.sender_type === 'client' 
-                      ? 'bg-blue-500 text-white' 
-                      : 'bg-gray-100 text-gray-900'
-                  } rounded-lg p-4 shadow-sm`}>
-                    <div className="flex items-center gap-2 mb-1">
-                      {message.sender_type === 'admin' ? (
-                        <User className="h-4 w-4" />
-                      ) : (
-                        <Users className="h-4 w-4" />
-                      )}
-                      <span className="text-sm font-medium">{message.sender_name}</span>
-                      {message.sender_role && (
-                        <span className="text-xs opacity-75">({message.sender_role})</span>
-                      )}
-                      {getContextBadge(message.context_type)}
-                      {!message.is_read && message.sender_type === 'admin' && (
-                        <Badge variant="destructive" className="text-xs">Novo</Badge>
-                      )}
-                    </div>
-                    <p className="text-sm leading-relaxed">{message.message}</p>
-                    
-                    {message.attachments && message.attachments.length > 0 && (
-                      <div className="mt-2 space-y-1">
-                        {message.attachments.map((attachment, index) => (
-                          <div key={index} className="flex items-center gap-2 p-2 bg-black bg-opacity-10 rounded text-xs">
-                            <FileText className="h-3 w-3" />
-                            <span>{attachment}</span>
-                          </div>
-                        ))}
+            <CardContent className="flex-1 overflow-y-auto space-y-4 p-4">
+              {messages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                  <MessageSquare className="h-12 w-12 mb-2 opacity-50" />
+                  <p>Inicie a conversa enviando uma mensagem abaixo.</p>
+                </div>
+              ) : (
+                messages.map((message) => (
+                  <div 
+                    key={message.id}
+                    className={`flex ${message.sender_type === 'client' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div className={`max-w-[80%] ${
+                      message.sender_type === 'client' 
+                        ? 'bg-blue-500 text-white' 
+                        : 'bg-gray-100 text-gray-900'
+                    } rounded-lg p-4 shadow-sm`}>
+                      <div className="flex items-center gap-2 mb-1">
+                        {message.sender_type === 'admin' ? (
+                          <User className="h-4 w-4" />
+                        ) : (
+                          <Users className="h-4 w-4" />
+                        )}
+                        <span className="text-sm font-medium">{message.sender_name}</span>
+                        {getContextBadge(message.context_type)}
                       </div>
-                    )}
-                    
-                    <div className="flex items-center gap-1 mt-2 text-xs opacity-75">
-                      <Clock className="h-3 w-3" />
-                      {formatDate(message.created_at)}
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                      
+                      {message.attachments && Array.isArray(message.attachments) && message.attachments.length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          {message.attachments.map((attachment: any, index: number) => (
+                            <a 
+                              key={index} 
+                              href={attachment.url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 p-2 bg-black bg-opacity-10 hover:bg-opacity-20 transition-all rounded text-xs text-inherit"
+                            >
+                              <FileText className="h-3.5 w-3.5" />
+                              <span className="underline truncate max-w-[200px]" title={attachment.name}>
+                                {attachment.name}
+                              </span>
+                              {attachment.size && (
+                                <span className="opacity-70">
+                                  ({(attachment.size / 1024).toFixed(1)} KB)
+                                </span>
+                              )}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center gap-1 mt-2 text-xs opacity-75">
+                        <Clock className="h-3 w-3" />
+                        {formatDate(message.created_at)}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
+              <div ref={messagesEndRef} />
             </CardContent>
 
             {/* Campo de Nova Mensagem */}
@@ -265,12 +270,15 @@ const ClientFPACommunication = () => {
                 <div className="mb-3 p-2 bg-blue-50 rounded border border-blue-200">
                   <div className="flex items-center gap-2 text-sm">
                     <FileText className="h-4 w-4 text-blue-600" />
-                    <span>{selectedFile.name}</span>
+                    <span className="truncate max-w-[300px]">{selectedFile.name}</span>
+                    <span className="text-xs text-gray-500">
+                      ({(selectedFile.size / 1024).toFixed(1)} KB)
+                    </span>
                     <Button 
                       variant="ghost" 
                       size="sm" 
                       onClick={() => setSelectedFile(null)}
-                      className="ml-auto"
+                      className="ml-auto text-gray-500 hover:text-red-500 h-6 px-2"
                     >
                       ×
                     </Button>
@@ -285,6 +293,7 @@ const ClientFPACommunication = () => {
                   onChange={(e) => setNewMessage(e.target.value)}
                   className="flex-1 resize-none"
                   rows={2}
+                  disabled={isSending}
                 />
                 <div className="flex flex-col gap-2">
                   <input
@@ -297,6 +306,7 @@ const ClientFPACommunication = () => {
                   <Button 
                     variant="outline" 
                     size="icon"
+                    disabled={isSending}
                     onClick={() => document.getElementById('file-upload')?.click()}
                   >
                     <Paperclip className="h-4 w-4" />

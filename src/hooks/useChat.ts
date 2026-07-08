@@ -13,6 +13,8 @@ interface ChatMessage {
   sender_type: 'client' | 'admin';
   chat_room_id: string;
   created_at: string;
+  attachments?: Array<{name: string, url: string, size?: number, type?: string}>;
+  context_type?: string;
 }
 
 interface ChatRoom {
@@ -170,14 +172,14 @@ export const useChat = (isAdmin = false) => {
   }, [user, client, isAdmin, loadChatRooms]);
 
   // Enviar mensagem
-  const sendMessage = useCallback(async (content: string, roomId?: string) => {
-    if (!user || !content.trim()) {
-      console.log('⚠️ sendMessage: Invalid user or content');
+  const sendMessage = useCallback(async (content: string, roomId?: string, attachments?: any[], contextType?: string) => {
+    if (!user || (!content.trim() && (!attachments || attachments.length === 0))) {
+      console.log('⚠️ sendMessage: Invalid user, content or attachments');
       return false;
     }
 
     try {
-      console.log('📤 Sending message:', content.substring(0, 50));
+      console.log('📤 Sending message:', content.substring(0, 50), 'attachments:', attachments?.length || 0);
       setSending(true);
       
       let targetRoomId = roomId || currentRoom;
@@ -205,7 +207,9 @@ export const useChat = (isAdmin = false) => {
           sender_id: user.id,
           sender_name: isAdmin ? 'Suporte' : (client?.name || user.email?.split('@')[0] || 'Cliente'),
           sender_type: isAdmin ? 'admin' : 'client',
-          chat_room_id: targetRoomId
+          chat_room_id: targetRoomId,
+          attachments: attachments || [],
+          context_type: contextType || null
         });
 
       if (error) {
@@ -227,6 +231,40 @@ export const useChat = (isAdmin = false) => {
       setSending(false);
     }
   }, [user, client, currentRoom, isAdmin, createOrFindRoom, toast]);
+
+  // Upload de anexo
+  const uploadAttachment = useCallback(async (file: File) => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+      const filePath = `${user?.id || 'anonymous'}/${fileName}`;
+      
+      const { data, error } = await supabase.storage
+        .from('chat-attachments')
+        .upload(filePath, file);
+        
+      if (error) throw error;
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('chat-attachments')
+        .getPublicUrl(filePath);
+        
+      return {
+        name: file.name,
+        url: publicUrl,
+        size: file.size,
+        type: file.type
+      };
+    } catch (error) {
+      console.error('Error uploading attachment:', error);
+      toast({
+        title: "Erro no upload",
+        description: "Erro ao fazer upload do anexo.",
+        variant: "destructive"
+      });
+      throw error;
+    }
+  }, [user, toast]);
 
   // Configurar realtime - properly manage subscriptions
   useEffect(() => {
@@ -308,6 +346,7 @@ export const useChat = (isAdmin = false) => {
     sending,
     loadMessages,
     sendMessage,
+    uploadAttachment,
     createOrFindRoom,
     setCurrentRoom
   };
