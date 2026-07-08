@@ -23,7 +23,7 @@ import {
   Download,
   LineChart as LineChartIcon
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, BarChart, Bar, Legend, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const ClientFPADashboardReal = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('');
@@ -37,6 +37,10 @@ const ClientFPADashboardReal = () => {
   const { data: reports = [], isLoading: reportsLoading } = useFPAReports(currentClient?.id);
   const { data: varianceAnalysis = [], isLoading: varianceLoading } = useFPAVarianceAnalysis(currentClient?.id);
   const { data: periods = [], isLoading: periodsLoading } = useFPAPeriods(currentClient?.id);
+
+  const filteredVarianceData = selectedPeriod 
+    ? varianceAnalysis.filter((item: any) => item.period_id === selectedPeriod)
+    : varianceAnalysis;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -339,9 +343,49 @@ const ClientFPADashboardReal = () => {
         </TabsContent>
 
         <TabsContent value="variance" className="space-y-6">
+          {/* Gráfico Comparativo Orçado vs Realizado */}
           <Card>
             <CardHeader>
-              <CardTitle>Análise de Performance</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                Comparativo Orçado vs Realizado
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                Valores em Reais (BRL) para as principais contas do período selecionado
+              </p>
+            </CardHeader>
+            <CardContent>
+              {varianceLoading ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : filteredVarianceData.length > 0 ? (
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={filteredVarianceData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey={(item) => item.metric_name || item.account_name} />
+                      <YAxis tickFormatter={(val) => `R$ ${(val / 1000).toFixed(0)}k`} />
+                      <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                      <Legend />
+                      <Bar dataKey="budget_amount" fill="#94A3B8" radius={[4, 4, 0, 0]} name="Orçado" />
+                      <Bar dataKey="actual_amount" fill="#3B82F6" radius={[4, 4, 0, 0]} name="Realizado" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">Nenhum dado comparativo disponível para o filtro selecionado</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Tabela Detalhada com Desvios */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Tabela de Variação Detalhada</CardTitle>
             </CardHeader>
             <CardContent>
               {varianceLoading ? (
@@ -349,39 +393,69 @@ const ClientFPADashboardReal = () => {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
                   <p className="text-gray-500 mt-2">Carregando análises...</p>
                 </div>
-              ) : varianceAnalysis.length === 0 ? (
+              ) : filteredVarianceData.length === 0 ? (
                 <div className="text-center py-8">
                   <AlertTriangle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-500">Análise de performance em preparação</p>
                   <p className="text-sm text-gray-400">Seu consultor está preparando os relatórios</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {varianceAnalysis.slice(0, 5).map((analysis) => (
-                    <div key={analysis.id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
-                      <div>
-                        <h4 className="font-medium text-gray-900">{(analysis as any).metric_name || analysis.account_name}</h4>
-                        <p className="text-sm text-gray-600">
-                          Variação: {formatPercentage(analysis.variance_percentage)}
-                        </p>
-                        {(analysis.analysis_notes || (analysis as any).analysis_comment) && (
-                          <p className="text-xs text-gray-500 mt-1 italic">
-                            "{analysis.analysis_notes || (analysis as any).analysis_comment}"
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {Math.abs(analysis.variance_percentage) <= 5 ? (
-                          <CheckCircle className="h-5 w-5 text-green-500" />
-                        ) : (
-                          <AlertTriangle className="h-5 w-5 text-yellow-500" />
-                        )}
-                        <span className={`text-sm font-medium ${analysis.variance_amount >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                          {formatCurrency(analysis.variance_amount)}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left border-collapse">
+                    <thead>
+                      <tr className="border-b bg-muted/30">
+                        <th className="p-3 font-semibold text-gray-700">Métrica / Conta</th>
+                        <th className="p-3 font-semibold text-gray-700">Orçado</th>
+                        <th className="p-3 font-semibold text-gray-700">Realizado</th>
+                        <th className="p-3 font-semibold text-gray-700">Desvio Absoluto</th>
+                        <th className="p-3 font-semibold text-gray-700">Desvio %</th>
+                        <th className="p-3 font-semibold text-gray-700">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredVarianceData.map((analysis: any) => {
+                        const absDev = analysis.variance_amount || 0;
+                        const pctDev = analysis.variance_percentage || 0;
+                        
+                        // Determinar se o desvio é favorável ou desfavorável
+                        const isFavorable = analysis.account_name?.toLowerCase().includes('receit') || 
+                                           analysis.account_name?.toLowerCase().includes('ebitda') || 
+                                           analysis.account_name?.toLowerCase().includes('lucro') 
+                          ? absDev >= 0 
+                          : absDev <= 0;
+
+                        return (
+                          <React.Fragment key={analysis.id}>
+                            <tr className="border-b hover:bg-muted/10 transition-colors">
+                              <td className="p-3 font-medium text-gray-900">
+                                {analysis.metric_name || analysis.account_name}
+                              </td>
+                              <td className="p-3">{formatCurrency(analysis.budget_amount)}</td>
+                              <td className="p-3">{formatCurrency(analysis.actual_amount)}</td>
+                              <td className={`p-3 font-semibold ${isFavorable ? 'text-green-600' : 'text-red-600'}`}>
+                                {absDev > 0 ? '+' : ''}{formatCurrency(absDev)}
+                              </td>
+                              <td className={`p-3 font-semibold ${isFavorable ? 'text-green-600' : 'text-red-600'}`}>
+                                {pctDev > 0 ? '+' : ''}{formatPercentage(pctDev)}
+                              </td>
+                              <td className="p-3">
+                                <Badge className={isFavorable ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                                  {isFavorable ? 'Favorável' : 'Desfavorável'}
+                                </Badge>
+                              </td>
+                            </tr>
+                            {(analysis.analysis_notes || analysis.analysis_comment) && (
+                              <tr className="border-b bg-gray-50/50">
+                                <td colSpan={6} className="p-3 text-xs text-gray-500 italic">
+                                  <strong>Comentário do Consultor:</strong> "{analysis.analysis_notes || analysis.analysis_comment}"
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </CardContent>
