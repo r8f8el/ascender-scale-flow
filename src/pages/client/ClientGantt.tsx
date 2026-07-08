@@ -498,7 +498,7 @@ export default function ClientGantt() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="gantt-chart-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-blue-600" />
@@ -751,6 +751,7 @@ export default function ClientGantt() {
         onClose={() => setIsExportModalOpen(false)}
         tasks={tasks}
         projectName={getCurrentProject()?.name || 'Projeto'}
+        chartElementId="gantt-chart-card"
       />
 
       <GanttShare

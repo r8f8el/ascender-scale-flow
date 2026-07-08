@@ -9,19 +9,23 @@ import { Download, FileText, FileSpreadsheet, Image } from 'lucide-react';
 import { GanttTask } from '@/hooks/useGanttTasks';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
+import { exportToPDF as pdfExporter } from '@/utils/reportExporter';
+import html2canvas from 'html2canvas';
 
 interface GanttExportProps {
   isOpen: boolean;
   onClose: () => void;
   tasks: GanttTask[];
   projectName: string;
+  chartElementId?: string;
 }
 
 export const GanttExport: React.FC<GanttExportProps> = ({
   isOpen,
   onClose,
   tasks,
-  projectName
+  projectName,
+  chartElementId = 'gantt-chart-card'
 }) => {
   const [exportFormat, setExportFormat] = useState<'excel' | 'csv' | 'pdf' | 'png'>('excel');
   const [selectedFields, setSelectedFields] = useState({
@@ -120,12 +124,47 @@ export const GanttExport: React.FC<GanttExportProps> = ({
     }
   };
 
-  const exportToPDF = () => {
-    toast.info('Funcionalidade de exportação para PDF em desenvolvimento');
+  const exportToPDF = async () => {
+    try {
+      const el = document.getElementById(chartElementId);
+      if (!el) {
+        toast.error('Elemento do cronograma não encontrado no DOM');
+        return;
+      }
+      toast.info('Gerando PDF do cronograma...');
+      await pdfExporter(chartElementId, `${projectName.replace(/[^a-zA-Z0-9]/g, '_')}_cronograma.pdf`);
+      toast.success('Cronograma exportado para PDF!');
+      onClose();
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao exportar para PDF');
+    }
   };
 
-  const exportToPNG = () => {
-    toast.info('Funcionalidade de exportação para PNG em desenvolvimento');
+  const exportToPNG = async () => {
+    try {
+      const el = document.getElementById(chartElementId);
+      if (!el) {
+        toast.error('Elemento do cronograma não encontrado no DOM');
+        return;
+      }
+      toast.info('Gerando imagem do cronograma...');
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      });
+      const url = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `${projectName.replace(/[^a-zA-Z0-9]/g, '_')}_cronograma.png`;
+      link.href = url;
+      link.click();
+      toast.success('Cronograma exportado para imagem PNG!');
+      onClose();
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao exportar para imagem PNG');
+    }
   };
 
   const handleExport = () => {
