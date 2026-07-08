@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -14,16 +16,23 @@ import {
   Eye,
   Settings,
   Plus,
-  Loader2
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFPAClients } from '@/hooks/useFPAClients';
+import { useFPAScenarios, useCreateFPAScenario } from '@/hooks/useFPAScenarios';
 import { toast } from 'sonner';
 
 const ClientFPAScenarios = () => {
   const { user } = useAuth();
   const [selectedScenario, setSelectedScenario] = useState('');
-  const [isCreatingScenario, setIsCreatingScenario] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [newScenario, setNewScenario] = useState({
+    name: '',
+    description: '',
+    type: 'base' as 'base' | 'otimista' | 'pessimista' | 'custom',
+  });
 
   const { data: clients = [], isLoading: clientsLoading } = useFPAClients();
   
@@ -31,69 +40,25 @@ const ClientFPAScenarios = () => {
     client.client_profile?.id === user?.id
   );
 
-  // Dados mock para cenários interativos
-  const scenarios = [
-    {
-      id: '1',
-      name: 'Cenário Base 2024',
-      description: 'Projeção conservadora baseada no histórico',
-      type: 'base',
-      status: 'ativo',
-      created_at: '2024-01-15T10:00:00Z',
-      assumptions: {
-        receita_crescimento: 15,
-        margem_bruta: 35,
-        despesas_crescimento: 8,
-        investimentos: 500000
-      },
-      results: {
-        receita_anual: 12500000,
-        lucro_liquido: 1875000,
-        ebitda: 2750000,
-        margem_ebitda: 22
-      }
-    },
-    {
-      id: '2',
-      name: 'Cenário Otimista',
-      description: 'Projeção com crescimento acelerado',
-      type: 'otimista',
-      status: 'ativo',
-      created_at: '2024-01-20T14:30:00Z',
-      assumptions: {
-        receita_crescimento: 25,
-        margem_bruta: 38,
-        despesas_crescimento: 12,
-        investimentos: 750000
-      },
-      results: {
-        receita_anual: 15625000,
-        lucro_liquido: 2968750,
-        ebitda: 4218750,
-        margem_ebitda: 27
-      }
-    },
-    {
-      id: '3',
-      name: 'Cenário Pessimista',
-      description: 'Projeção conservadora com desafios',
-      type: 'pessimista',
-      status: 'rascunho',
-      created_at: '2024-01-25T09:15:00Z',
-      assumptions: {
-        receita_crescimento: 5,
-        margem_bruta: 30,
-        despesas_crescimento: 15,
-        investimentos: 250000
-      },
-      results: {
-        receita_anual: 10500000,
-        lucro_liquido: 945000,
-        ebitda: 1575000,
-        margem_ebitda: 15
-      }
-    }
-  ];
+  const { data: scenarios = [], isLoading: scenariosLoading } = useFPAScenarios(currentClient?.id);
+  const createScenario = useCreateFPAScenario();
+
+  const handleCreateScenario = async () => {
+    if (!currentClient?.id || !newScenario.name.trim()) return;
+
+    await createScenario.mutateAsync({
+      fpa_client_id: currentClient.id,
+      name: newScenario.name.trim(),
+      description: newScenario.description.trim() || undefined,
+      type: newScenario.type,
+    });
+
+    setIsCreateDialogOpen(false);
+    setNewScenario({ name: '', description: '', type: 'base' });
+    toast.success('Novo cenário criado com sucesso!');
+  };
+
+  const isLoading = clientsLoading || scenariosLoading;
 
   const getScenarioIcon = (type: string) => {
     switch (type) {
@@ -131,13 +96,7 @@ const ClientFPAScenarios = () => {
   const handleCreateScenario = () => {
     setIsCreatingScenario(true);
     // Simular criação de cenário
-    setTimeout(() => {
-      setIsCreatingScenario(false);
-      toast.success('Novo cenário criado com sucesso!');
-    }, 2000);
-  };
-
-  if (clientsLoading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="flex flex-col items-center gap-4">
@@ -158,18 +117,9 @@ const ClientFPAScenarios = () => {
             Explore diferentes cenários financeiros e suas projeções
           </p>
         </div>
-        <Button onClick={handleCreateScenario} disabled={isCreatingScenario}>
-          {isCreatingScenario ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Criando...
-            </>
-          ) : (
-            <>
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Cenário
-            </>
-          )}
+        <Button onClick={() => setIsCreateDialogOpen(true)} disabled={!currentClient}>
+          <Plus className="h-4 w-4 mr-2" />
+          Novo Cenário
         </Button>
       </div>
 
@@ -196,7 +146,7 @@ const ClientFPAScenarios = () => {
               <div>
                 <p className="text-sm text-gray-600">Melhor Cenário</p>
                 <p className="text-lg font-bold">
-                  {Math.max(...scenarios.map(s => s.results.margem_ebitda))}%
+                  {scenarios.length > 0 ? Math.max(...scenarios.map(s => (s.results?.margem_ebitda ?? 0))) : 0}%
                 </p>
                 <p className="text-xs text-gray-500">Margem EBITDA</p>
               </div>
@@ -343,6 +293,68 @@ const ClientFPAScenarios = () => {
         </CardContent>
       </Card>
     </div>
+
+      {/* Dialog de Criação de Cenário */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo Cenário Financeiro</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="scenario-name">Nome do Cenário *</Label>
+              <Input
+                id="scenario-name"
+                value={newScenario.name}
+                onChange={(e) => setNewScenario(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Ex: Cenário Base 2025"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="scenario-type">Tipo</Label>
+              <Select
+                value={newScenario.type}
+                onValueChange={(val) => setNewScenario(prev => ({ ...prev, type: val as any }))}
+              >
+                <SelectTrigger id="scenario-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="base">Base</SelectItem>
+                  <SelectItem value="otimista">Otimista</SelectItem>
+                  <SelectItem value="pessimista">Pessimista</SelectItem>
+                  <SelectItem value="custom">Personalizado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="scenario-description">Descrição</Label>
+              <Textarea
+                id="scenario-description"
+                value={newScenario.description}
+                onChange={(e) => setNewScenario(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Descreva as premissas deste cenário..."
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleCreateScenario}
+              disabled={!newScenario.name.trim() || createScenario.isPending}
+            >
+              {createScenario.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Criando...</>
+              ) : (
+                <><Plus className="h-4 w-4 mr-2" />Criar Cenário</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
   );
 };
 

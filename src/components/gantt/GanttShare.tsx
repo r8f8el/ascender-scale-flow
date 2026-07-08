@@ -7,11 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Share2, Mail, Link2, Users, Trash2, Eye, Edit } from 'lucide-react';
+import { Share2, Mail, Link2, Users, Trash2, Eye, Edit, Loader2 } from 'lucide-react';
 import { GanttTask } from '@/hooks/useGanttTasks';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { supabase } from '@/integrations/supabase/client';
 
 interface GanttShareProps {
   isOpen: boolean;
@@ -28,6 +29,7 @@ interface ShareSettings {
   permission: 'view' | 'edit';
   created_at: string;
   status: 'pending' | 'accepted' | 'declined';
+  token: string;
 }
 
 export const GanttShare: React.FC<GanttShareProps> = ({
@@ -43,30 +45,36 @@ export const GanttShare: React.FC<GanttShareProps> = ({
   const [shareMessage, setShareMessage] = useState('');
   const [existingShares, setExistingShares] = useState<ShareSettings[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingShares, setIsLoadingShares] = useState(false);
   const [publicLink, setPublicLink] = useState('');
   const [isPublicLinkEnabled, setIsPublicLinkEnabled] = useState(false);
 
-  // Simulated data for demonstration
+  // Load real shares from Supabase
   useEffect(() => {
-    if (isOpen) {
-      // Simulate loading existing shares
-      setExistingShares([
-        {
-          id: '1',
-          shared_with_email: 'colaborador@empresa.com',
-          shared_with_name: 'João Silva',
-          permission: 'view',
-          created_at: new Date().toISOString(),
-          status: 'accepted'
-        }
-      ]);
-      
-      // Generate public link if enabled
-      if (projectId) {
-        setPublicLink(`${window.location.origin}/shared/gantt/${projectId}?token=abc123`);
-      }
+    if (isOpen && projectId) {
+      loadExistingShares();
     }
   }, [isOpen, projectId]);
+
+  const loadExistingShares = async () => {
+    setIsLoadingShares(true);
+    try {
+      const { data, error } = await supabase
+        .from('gantt_shares')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setExistingShares((data || []) as ShareSettings[]);
+    } catch (err) {
+      console.error('Error loading shares:', err);
+    } finally {
+      setIsLoadingShares(false);
+    }
+  };
+
+
 
   const handleShare = async () => {
     if (!shareEmail.trim() || !shareName.trim()) {
@@ -82,32 +90,24 @@ export const GanttShare: React.FC<GanttShareProps> = ({
     setIsLoading(true);
 
     try {
-      // Simulate API call to create share
-      const newShare: ShareSettings = {
-        id: Date.now().toString(),
-        shared_with_email: shareEmail,
-        shared_with_name: shareName,
-        permission: sharePermission,
-        created_at: new Date().toISOString(),
-        status: 'pending'
-      };
+      // Insert real share into Supabase
+      const { data: newShare, error } = await supabase
+        .from('gantt_shares')
+        .insert({
+          project_id: projectId,
+          shared_with_email: shareEmail.trim(),
+          shared_with_name: shareName.trim(),
+          permission: sharePermission,
+          message: shareMessage.trim() || null,
+          status: 'pending',
+        })
+        .select('*')
+        .single();
 
-      setExistingShares(prev => [...prev, newShare]);
+      if (error) throw error;
 
-      // Simulate sending email
-      const emailContent = `
-        Você foi convidado para visualizar o cronograma do projeto "${projectName}".
-        
-        ${shareMessage}
-        
-        Acesse através do link: ${window.location.origin}/shared/gantt/${projectId}
-        
-        Permissão: ${sharePermission === 'view' ? 'Visualização' : 'Edição'}
-      `;
-
-      console.log('Email que seria enviado:', emailContent);
-
-      toast.success('Convite enviado com sucesso!');
+      setExistingShares(prev => [...prev, newShare as ShareSettings]);
+      toast.success('Convite registrado com sucesso!');
       
       // Reset form
       setShareEmail('');
@@ -117,7 +117,7 @@ export const GanttShare: React.FC<GanttShareProps> = ({
 
     } catch (error) {
       console.error('Erro ao compartilhar:', error);
-      toast.error('Erro ao enviar convite');
+      toast.error('Erro ao registrar convite');
     } finally {
       setIsLoading(false);
     }
@@ -127,6 +127,13 @@ export const GanttShare: React.FC<GanttShareProps> = ({
     if (!confirm('Tem certeza que deseja remover este compartilhamento?')) return;
 
     try {
+      const { error } = await supabase
+        .from('gantt_shares')
+        .delete()
+        .eq('id', shareId);
+
+      if (error) throw error;
+
       setExistingShares(prev => prev.filter(share => share.id !== shareId));
       toast.success('Compartilhamento removido');
     } catch (error) {
@@ -142,11 +149,30 @@ export const GanttShare: React.FC<GanttShareProps> = ({
     }
   };
 
-  const generatePublicLink = () => {
-    const newLink = `${window.location.origin}/shared/gantt/${projectId}?token=${Date.now()}`;
-    setPublicLink(newLink);
-    setIsPublicLinkEnabled(true);
-    toast.success('Link público gerado');
+  const generatePublicLink = async () => {
+    try {
+      // Insert a special "public" share entry to generate a real token
+      const { data, error } = await supabase
+        .from('gantt_shares')
+        .insert({
+          project_id: projectId,
+          shared_with_email: 'public',
+          shared_with_name: 'Link Público',
+          permission: 'view',
+          status: 'accepted',
+        })
+        .select('token')
+        .single();
+
+      if (error) throw error;
+
+      const newLink = `${window.location.origin}/shared/gantt/${projectId}?token=${data.token}`;
+      setPublicLink(newLink);
+      setIsPublicLinkEnabled(true);
+      toast.success('Link público gerado');
+    } catch (err) {
+      toast.error('Erro ao gerar link público');
+    }
   };
 
   const disablePublicLink = () => {
@@ -313,12 +339,16 @@ export const GanttShare: React.FC<GanttShareProps> = ({
           </div>
 
           {/* Lista de Compartilhamentos Existentes */}
-          {existingShares.length > 0 && (
+          {isLoadingShares ? (
+            <div className="flex justify-center py-4">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : existingShares.filter(s => s.shared_with_email !== 'public').length > 0 && (
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Pessoas com Acesso</h3>
               
               <div className="space-y-2">
-                {existingShares.map((share) => (
+                {existingShares.filter(s => s.shared_with_email !== 'public').map((share) => (
                   <div key={share.id} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex items-center gap-3">
                       <div>

@@ -5,64 +5,45 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  BarChart3, 
-  Plus,
-  Save,
-  Copy,
-  Play,
-  Settings,
-  TrendingUp,
   Calculator,
-  Target,
-  Layers,
-  Code,
-  Eye,
-  Edit,
-  Trash2
+  TrendingUp,
+  FileText,
+  Settings,
+  Play,
+  Save,
+  Plus,
+  Loader2
 } from 'lucide-react';
+import { useFPAClients } from '@/hooks/useFPAClients';
 
 const AdminFPAModeling = () => {
-  const [selectedModel, setSelectedModel] = useState('techcorp-model');
+  const [selectedModel, setSelectedModel] = useState('');
+  
+  const { data: fpaClients = [], isLoading: clientsLoading } = useFPAClients();
 
-  // Mock financial models
-  const models = [
-    {
-      id: 'techcorp-model',
-      name: "Modelo TechCorp - Q1 2024",
-      client: "TechCorp Ltda",
-      status: "active",
-      version: "v2.1",
-      lastUpdate: "2024-03-20",
-      horizon: "18 meses",
-      drivers: 12,
-      scenarios: 3
-    },
-    {
-      id: 'innovate-model',
-      name: "Modelo InnovateLab - 2024",
-      client: "InnovateLab S.A.",
-      status: "draft",
-      version: "v1.0",
-      lastUpdate: "2024-03-18",
-      horizon: "12 meses",
-      drivers: 8,
-      scenarios: 2
-    },
-    {
-      id: 'greentech-model',
-      name: "Modelo GreenTech - Rolling",
-      client: "GreenTech Solutions",
-      status: "active",
-      version: "v3.2",
-      lastUpdate: "2024-03-19",
-      horizon: "24 meses",
-      drivers: 15,
-      scenarios: 5
+  // Build models list from real fpa_clients data
+  const models = fpaClients.map(client => ({
+    id: client.id,
+    name: `Modelo ${client.client_profile?.name || 'Cliente'} - ${client.current_period || new Date().getFullYear()}`,
+    client: client.client_profile?.name || client.client_profile?.email || 'Cliente',
+    status: client.status === 'active' ? 'active' : (client.status || 'draft'),
+    version: `v${client.updated_at ? new Date(client.updated_at).getFullYear() : '1'}.0`,
+    lastUpdate: client.updated_at ? client.updated_at.split('T')[0] : client.created_at?.split('T')[0] || '–',
+    horizon: `${client.forecast_months || 12} meses`,
+    drivers: 0,
+    scenarios: 0
+  }));
+
+  // Initialize selected model if not set
+  React.useEffect(() => {
+    if (!selectedModel && models.length > 0) {
+      setSelectedModel(models[0].id);
     }
-  ];
+  }, [models, selectedModel]);
+
+
 
   // Mock business drivers
   const businessDrivers = [

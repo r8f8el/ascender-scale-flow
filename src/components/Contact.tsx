@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Mail, Phone, MapPin, Send } from 'lucide-react';
 import { useToast } from "../hooks/use-toast";
 import { Card, CardContent } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client';
 
 const Contact = () => {
   const { toast } = useToast();
@@ -15,49 +16,48 @@ const Contact = () => {
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitProgress, setSubmitProgress] = useState(0);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormState(prev => ({ ...prev, [name]: value }));
   };
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setSubmitProgress(0);
     
-    // Simulando progresso de envio
-    const progressInterval = setInterval(() => {
-      setSubmitProgress(prev => {
-        if (prev >= 90) {
-          clearInterval(progressInterval);
-          return 90;
-        }
-        return prev + 10;
-      });
-    }, 100);
-    
-    // Simulando envio de formulário
-    setTimeout(() => {
-      setSubmitProgress(100);
-      clearInterval(progressInterval);
-      
-      setTimeout(() => {
-        console.log('Form submitted:', formState);
-        setIsSubmitting(false);
-        setSubmitProgress(0);
-        
-        toast({
-          title: "Mensagem enviada!",
-          description: "Entraremos em contato em breve.",
-          duration: 5000,
+    try {
+      const { error } = await supabase
+        .from('contact_messages')
+        .insert({
+          name: formState.name.trim(),
+          email: formState.email.trim(),
+          phone: formState.phone.trim() || null,
+          company: formState.company.trim() || null,
+          message: formState.message.trim(),
         });
-        
-        setFormState({ name: '', email: '', phone: '', company: '', message: '' });
-      }, 500);
-    }, 1500);
+
+      if (error) throw error;
+
+      toast({
+        title: "Mensagem enviada!",
+        description: "Entraremos em contato em breve.",
+        duration: 5000,
+      });
+      
+      setFormState({ name: '', email: '', phone: '', company: '', message: '' });
+    } catch (err: any) {
+      toast({
+        title: "Erro ao enviar mensagem",
+        description: "Tente novamente ou entre em contato por email.",
+        variant: "destructive",
+        duration: 5000,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
   
   return (
     <section id="contact" className="py-24 bg-gray-50 relative">
@@ -155,29 +155,21 @@ const Contact = () => {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className={`w-full py-3 px-6 rounded-md font-semibold text-white transition-colors duration-300 flex items-center justify-center relative overflow-hidden ${
+                    className={`w-full py-3 px-6 rounded-md font-semibold text-white transition-colors duration-300 flex items-center justify-center ${
                       isSubmitting ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
                     }`}
                   >
-                    {isSubmitting && (
-                      <div 
-                        className="absolute inset-0 bg-blue-500 transition-all duration-300"
-                        style={{ width: `${submitProgress}%` }}
-                      />
+                    {isSubmitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="mr-2 h-5 w-5" />
+                        Enviar mensagem
+                      </>
                     )}
-                    <span className="relative z-10 flex items-center">
-                      {isSubmitting ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                          Enviando... {submitProgress}%
-                        </>
-                      ) : (
-                        <>
-                          <Send className="mr-2 h-5 w-5" />
-                          Enviar mensagem
-                        </>
-                      )}
-                    </span>
                   </button>
                   
                   <p className="text-sm text-gray-500 text-center">

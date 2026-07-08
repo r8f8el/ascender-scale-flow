@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { TrendingUp, TrendingDown, BarChart3, PieChart, LineChart, Filter, Download } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { TrendingUp, TrendingDown, BarChart3, PieChart, LineChart, Filter, Download, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -22,6 +22,9 @@ import {
   Cell,
   Pie
 } from 'recharts';
+import { useFPAFinancialData } from '@/hooks/useFPAFinancialData';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface FPAAdvancedDashboardProps {
   clientId: string;
@@ -32,72 +35,108 @@ const FPAAdvancedDashboard: React.FC<FPAAdvancedDashboardProps> = ({ clientId })
   const [selectedMetric, setSelectedMetric] = useState('revenue');
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
-  // Mock data - em produção viria da API
-  const revenueData = [
-    { month: 'Jan', actual: 120000, forecast: 115000, budget: 110000 },
-    { month: 'Fev', actual: 132000, forecast: 125000, budget: 120000 },
-    { month: 'Mar', actual: 145000, forecast: 140000, budget: 135000 },
-    { month: 'Apr', actual: 158000, forecast: 155000, budget: 150000 },
-    { month: 'Mai', actual: 171000, forecast: 165000, budget: 160000 },
-    { month: 'Jun', actual: 185000, forecast: 180000, budget: 175000 }
-  ];
+  const { data: financialData = [], isLoading } = useFPAFinancialData(clientId);
 
-  const expenseBreakdown = [
-    { name: 'Salários', value: 45, color: '#8884d8' },
-    { name: 'Marketing', value: 20, color: '#82ca9d' },
-    { name: 'Operacional', value: 15, color: '#ffc658' },
-    { name: 'Tecnologia', value: 12, color: '#ff7300' },
-    { name: 'Outros', value: 8, color: '#00ff00' }
-  ];
+  // Build revenue chart from real data (actual vs budget per period)
+  const revenueData = useMemo(() => {
+    if (!financialData.length) return [];
 
-  const kpiData = [
-    {
-      title: 'Receita Atual',
-      value: 'R$ 185.000',
-      change: '+12.5%',
-      trend: 'up' as const,
-      prediction: 'R$ 195.000 (próximo mês)'
-    },
-    {
-      title: 'Margem EBITDA',
-      value: '28.5%',
-      change: '+2.1%',
-      trend: 'up' as const,
-      prediction: '29.2% (próximo mês)'
-    },
-    {
-      title: 'Burn Rate',
-      value: 'R$ 45.000/mês',
-      change: '-5.2%',
-      trend: 'down' as const,
-      prediction: 'R$ 42.000/mês (próximo mês)'
-    },
-    {
-      title: 'Customer LTV',
-      value: 'R$ 12.500',
-      change: '+8.3%',
-      trend: 'up' as const,
-      prediction: 'R$ 13.200 (próximo mês)'
-    }
-  ];
+    const byPeriod: Record<string, { actual: number; budget: number; month: string }> = {};
+    
+    financialData.forEach((entry: any) => {
+      const periodName = entry.period?.period_name || 'Período';
+      const isActual = entry.period?.is_actual;
+      const value = Number(entry.value) || 0;
+
+      if (!byPeriod[periodName]) {
+        byPeriod[periodName] = { actual: 0, budget: 0, month: periodName };
+      }
+      
+      if (isActual) {
+        byPeriod[periodName].actual += value;
+      } else {
+        byPeriod[periodName].budget += value;
+      }
+    });
+
+    return Object.values(byPeriod).slice(-6);
+  }, [financialData]);
+
+  // Calculate KPIs from real data
+  const kpiData = useMemo(() => {
+    const actualData = financialData.filter((e: any) => e.period?.is_actual);
+    const totalRevenue = actualData
+      .filter((e: any) => e.account_type === 'revenue')
+      .reduce((sum: number, e: any) => sum + (Number(e.value) || 0), 0);
+    const totalExpenses = actualData
+      .filter((e: any) => e.account_type === 'expense')
+      .reduce((sum: number, e: any) => sum + (Number(e.value) || 0), 0);
+    const ebitda = totalRevenue - totalExpenses;
+    const ebitdaMargin = totalRevenue > 0 ? ((ebitda / totalRevenue) * 100).toFixed(1) : '0';
+
+    const formatBRL = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(v);
+
+    return [
+      {
+        title: 'Receita (Realizado)',
+        value: financialData.length ? formatBRL(totalRevenue) : '–',
+        change: '',
+        trend: 'up' as const,
+        prediction: 'Baseado nos dados reais'
+      },
+      {
+        title: 'Margem EBITDA',
+        value: financialData.length ? `${ebitdaMargin}%` : '–',
+        change: '',
+        trend: ebitda >= 0 ? 'up' as const : 'down' as const,
+        prediction: 'Cálculo com dados reais'
+      },
+      {
+        title: 'Despesas Totais',
+        value: financialData.length ? formatBRL(totalExpenses) : '–',
+        change: '',
+        trend: 'down' as const,
+        prediction: 'Baseado nos dados reais'
+      },
+      {
+        title: 'EBITDA',
+        value: financialData.length ? formatBRL(ebitda) : '–',
+        change: '',
+        trend: ebitda >= 0 ? 'up' as const : 'down' as const,
+        prediction: 'Cálculo com dados reais'
+      }
+    ];
+  }, [financialData]);
+
+  // Expense breakdown from real data
+  const expenseBreakdown = useMemo(() => {
+    const expenses = financialData.filter((e: any) => e.account_type === 'expense');
+    if (!expenses.length) return [];
+    
+    const byCategory: Record<string, number> = {};
+    const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#0088fe', '#00C49F'];
+    
+    expenses.forEach((e: any) => {
+      const cat = e.account_name || e.category || 'Outros';
+      byCategory[cat] = (byCategory[cat] || 0) + (Number(e.value) || 0);
+    });
+    
+    const total = Object.values(byCategory).reduce((a, b) => a + b, 0);
+    return Object.entries(byCategory).slice(0, 6).map(([name, value], i) => ({
+      name,
+      value: total > 0 ? Math.round((value / total) * 100) : 0,
+      color: colors[i % colors.length]
+    }));
+  }, [financialData]);
 
   const insights = [
     {
-      type: 'positive',
-      title: 'Crescimento Sustentável',
-      description: 'Receita crescendo 12% a.m. com melhoria na margem operacional.'
-    },
-    {
-      type: 'warning',
-      title: 'Atenção: Custos de Aquisição',
-      description: 'CAC aumentou 15% no último trimestre. Revisar estratégia de marketing.'
-    },
-    {
       type: 'info',
-      title: 'Oportunidade: Expansão',
-      description: 'Cash flow positivo permite investimento em novos mercados.'
+      title: 'Dados Reais Conectados',
+      description: `${financialData.length} registros financeiros carregados do banco de dados.`
     }
   ];
+
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {

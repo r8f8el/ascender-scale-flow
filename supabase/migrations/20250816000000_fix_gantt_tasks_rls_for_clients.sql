@@ -6,7 +6,7 @@ DROP POLICY IF EXISTS "Clients can view tasks from their projects" ON public.gan
 -- Criar novas políticas mais permissivas
 -- Política para admins gerenciarem todas as tarefas
 CREATE POLICY "Admins can manage all gantt tasks" ON public.gantt_tasks
-  FOR ALL USING (public.is_admin_user_safe());
+  FOR ALL USING (public.(EXISTS (SELECT 1 FROM admin_profiles WHERE id = auth.uid())));
 
 -- Política para clientes visualizarem tarefas de seus projetos
 CREATE POLICY "Clients can view tasks from their projects" ON public.gantt_tasks
@@ -54,7 +54,7 @@ DROP POLICY IF EXISTS "Clients can view their gantt projects" ON public.gantt_pr
 
 -- Política para admins gerenciarem todos os projetos
 CREATE POLICY "Admins can manage all gantt projects" ON public.gantt_projects
-  FOR ALL USING (public.is_admin_user_safe());
+  FOR ALL USING (public.(EXISTS (SELECT 1 FROM admin_profiles WHERE id = auth.uid())));
 
 -- Política para clientes visualizarem seus projetos
 CREATE POLICY "Clients can view their gantt projects" ON public.gantt_projects

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +16,8 @@ import {
   LineChart as LineChartIcon
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Area, AreaChart } from 'recharts';
+import { useFPAFinancialData } from '@/hooks/useFPAFinancialData';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface ForecastPeriod {
   period: string;
@@ -32,40 +34,57 @@ const FPARollingForecast: React.FC<{ clientId: string }> = ({ clientId }) => {
   const [updateFrequency, setUpdateFrequency] = useState('monthly');
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Mock forecast data - in real implementation, this would come from the financial model
-  const [forecastData, setForecastData] = useState<ForecastPeriod[]>([
-    { period: 'Jan 2024', type: 'actual', revenue: 2100000, ebitda: 462000, netIncome: 315000, cashFlow: 380000, confidence: 100 },
-    { period: 'Fev 2024', type: 'actual', revenue: 2250000, ebitda: 495000, netIncome: 337500, cashFlow: 405000, confidence: 100 },
-    { period: 'Mar 2024', type: 'actual', revenue: 2180000, ebitda: 479600, netIncome: 327000, cashFlow: 392000, confidence: 100 },
-    { period: 'Abr 2024', type: 'forecast', revenue: 2350000, ebitda: 517000, netIncome: 352500, cashFlow: 420000, confidence: 95 },
-    { period: 'Mai 2024', type: 'forecast', revenue: 2420000, ebitda: 532400, netIncome: 363000, cashFlow: 435000, confidence: 90 },
-    { period: 'Jun 2024', type: 'forecast', revenue: 2380000, ebitda: 523600, netIncome: 357000, cashFlow: 428000, confidence: 88 },
-    { period: 'Jul 2024', type: 'forecast', revenue: 2500000, ebitda: 550000, netIncome: 375000, cashFlow: 450000, confidence: 85 },
-    { period: 'Ago 2024', type: 'forecast', revenue: 2580000, ebitda: 567600, netIncome: 387000, cashFlow: 464000, confidence: 82 },
-    { period: 'Set 2024', type: 'forecast', revenue: 2650000, ebitda: 583000, netIncome: 397500, cashFlow: 477000, confidence: 80 },
-    { period: 'Out 2024', type: 'forecast', revenue: 2720000, ebitda: 598400, netIncome: 408000, cashFlow: 490000, confidence: 78 },
-    { period: 'Nov 2024', type: 'forecast', revenue: 2800000, ebitda: 616000, netIncome: 420000, cashFlow: 504000, confidence: 75 },
-    { period: 'Dez 2024', type: 'forecast', revenue: 2900000, ebitda: 638000, netIncome: 435000, cashFlow: 522000, confidence: 72 }
-  ]);
+  const { data: financialData = [], isLoading } = useFPAFinancialData(clientId);
+  const queryClient = useQueryClient();
 
-  const handleUpdateForecast = () => {
+  // Build forecast data from real financial data grouped by period
+  const forecastData = useMemo((): ForecastPeriod[] => {
+    if (!financialData.length) return [];
+
+    const byPeriod: Record<string, { period: string; isActual: boolean; revenue: number; expense: number }> = {};
+
+    financialData.forEach((entry: any) => {
+      const periodName = entry.period?.period_name || 'Período';
+      const isActual = entry.period?.is_actual ?? false;
+      const value = Number(entry.value) || 0;
+      const type = entry.account_type;
+
+      if (!byPeriod[periodName]) {
+        byPeriod[periodName] = { period: periodName, isActual, revenue: 0, expense: 0 };
+      }
+
+      if (type === 'revenue') {
+        byPeriod[periodName].revenue += value;
+      } else if (type === 'expense') {
+        byPeriod[periodName].expense += value;
+      }
+    });
+
+    return Object.values(byPeriod).map((p, i, arr) => {
+      const ebitda = p.revenue - p.expense;
+      const margin = p.revenue > 0 ? ebitda / p.revenue : 0;
+      const confidence = p.isActual ? 100 : Math.max(60, 95 - (arr.filter(x => !x.isActual).indexOf(p) * 3));
+      
+      return {
+        period: p.period,
+        type: p.isActual ? 'actual' : 'forecast',
+        revenue: p.revenue,
+        ebitda,
+        netIncome: ebitda * 0.7,
+        cashFlow: ebitda * 0.8,
+        confidence,
+      };
+    });
+  }, [financialData]);
+
+  const handleUpdateForecast = async () => {
     setIsUpdating(true);
-    setTimeout(() => {
-      // Simulate rolling the forecast forward
-      const newForecastData = [...forecastData];
-      // Add new period and remove oldest
-      newForecastData.push({
-        period: 'Jan 2025',
-        type: 'forecast',
-        revenue: 3000000,
-        ebitda: 660000,
-        netIncome: 450000,
-        cashFlow: 540000,
-        confidence: 70
-      });
-      setForecastData(newForecastData);
-      setIsUpdating(false);
-    }, 2000);
+    try {
+      // Invalidate and refetch real data from Supabase
+      await queryClient.invalidateQueries({ queryKey: ['fpa-financial-data', clientId] });
+    } finally {
+      setTimeout(() => setIsUpdating(false), 800);
+    }
   };
 
   const formatCurrency = (value: number) => {
@@ -81,7 +100,9 @@ const FPARollingForecast: React.FC<{ clientId: string }> = ({ clientId }) => {
   const forecastPeriods = forecastData.filter(p => p.type === 'forecast');
   
   const totalForecastRevenue = forecastPeriods.reduce((sum, p) => sum + p.revenue, 0);
-  const avgConfidence = forecastPeriods.reduce((sum, p) => sum + p.confidence, 0) / forecastPeriods.length;
+  const avgConfidence = forecastPeriods.length > 0 
+    ? forecastPeriods.reduce((sum, p) => sum + p.confidence, 0) / forecastPeriods.length 
+    : 0;
 
   return (
     <div className="space-y-6">
